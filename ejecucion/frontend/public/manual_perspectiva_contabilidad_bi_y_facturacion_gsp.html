@@ -238,7 +238,7 @@
           <div class="flex items-center justify-between border-b border-white/10 pb-2">
             <span class="text-xs font-mono uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-2">
               <i data-lucide="git-merge" class="w-4 h-4"></i>
-              Diagrama de Secuencia Oficial: Circuito de 3 Firmas FES y Segregación de Funciones
+              Diagrama de Secuencia Oficial: Flujo Directo EDP (Analista &rarr; Comercial) y Facturación Contable Desacoplada
             </span>
             <span class="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">
               NORMATIVA AUDITORÍA GSP
@@ -249,22 +249,19 @@ sequenceDiagram
     autonumber
     actor OP as Operación en Faena
     actor CG as Analista Control Gestión (Yara)
-    actor CO as Contabilidad
     actor CM as Jefatura Comercial
     actor CL as Cliente Mandante
+    actor CO as Contabilidad (Desacoplada)
 
     OP->>CG: Cierran Reports Diarios en Terreno (Firmas FES)
-    Note over CG: Confección y Liquidación Técnica
-    CG->>CG: Cierra y Valida ITS (Horas, Equipos, Costos Directos)
-    CG->>CG: Confecciona Expediente EDP + Estampa 1° Firma FES
-    Note over CO: Validación Tributaria y Tarifaria
-    CG->>CO: Envía Expediente EDP para V°B° Contable
-    CO->>CO: Audita OC Mandante, Precios y Estampa 2° Firma FES
-    Note over CM: Conformidad Comercial
-    CO->>CM: Pasa a V°B° Comercial
-    CM->>CM: Estampa 3° Firma FES y Despacha al Cliente
-    Note over CO: Emisión Tributaria y Cierre
-    CO->>CO: Sube Factura DTE (Laudus / SII) y Calza Financieramente
+    Note over CG: Hito 1: Emisión Técnica EDP
+    CG->>CG: Confecciona Carátula EDP + Estampa 1° Firma FES (Analista)
+    CG->>CM: Pasa directo a Comercial Responsable (Sin bloqueo contable)
+    Note over CM: Hito 2: Visación y Despacho Comercial
+    CM->>CL: Estampa 2° Firma FES (Comercial) y Despacha EDP al Cliente
+    CM->>CO: Sube OC Mandante (si requiere) con copia automática a Contabilidad
+    Note over CO: Carril Contable Desacoplado
+    CO->>CO: Emite y Sube Factura DTE (Laudus / SII) sin firmar el EDP
           </div>
         </div>
 
@@ -315,9 +312,9 @@ sequenceDiagram
           <div class="bg-[#070b14] border border-amber-500/40 rounded-xl p-4 flex flex-col justify-between">
             <div>
               <div class="text-[10px] font-mono uppercase text-amber-400 font-bold tracking-wider">4. Emitido en EDP</div>
-              <div class="text-xs text-slate-400 mt-1">Prefactura con 3 Firmas FES</div>
+              <div class="text-xs text-slate-400 mt-1">Prefactura (Analista &rarr; Comercial)</div>
               <div class="text-xs text-slate-300 mt-2 font-mono">
-                Expediente formal visado por Control Gestión, Conta y Comercial.
+                Expediente emitido por Control Gestión y despachado por Comercial (Contabilidad desacoplada).
               </div>
             </div>
             <div class="mt-4 pt-2 border-t border-slate-800 text-[10px] font-mono text-amber-300">
@@ -387,7 +384,7 @@ sequenceDiagram
           <div class="bg-[#070b14] border border-slate-800 rounded-lg p-3 font-mono text-[11px] text-slate-300 space-y-1">
             <div><span class="text-emerald-400">✔</span> Monto devengado en reports diario > $0 o cantidad de reports > 0.</div>
             <div><span class="text-emerald-400">✔</span> Estado de Pago (EDP) emitido formalmente.</div>
-            <div><span class="text-emerald-400">✔</span> Proceso marcado como 🟢 <strong>Listo para Facturar Inmediato</strong> (3/3 firmas FES y OC completa).</div>
+            <div><span class="text-emerald-400">✔</span> Proceso marcado como 🟢 <strong>Listo para Facturar Inmediato</strong> (EDP emitido y OC completa cuando aplica).</div>
             <div><span class="text-emerald-400">✔</span> Proceso con una o más facturas DTE asociadas (cierre total o facturación parcial).</div>
             <div><span class="text-emerald-400">✔</span> Informe de Término de Servicio (ITS) cerrado o con monto > $0.</div>
             <div><span class="text-emerald-400">✔</span> Proceso que requiere OC Mandante, no la tiene, y ya registra faena devengada.</div>
@@ -403,7 +400,7 @@ sequenceDiagram
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-xs">
             <div class="bg-[#070b14] border border-emerald-500/30 p-2.5 rounded-lg text-emerald-300">
-              <strong>1° Prioridad (Top):</strong><br/>Listos para Facturar Inmediato (3/3 FES + OC) &bull; Proceso de prueba.
+              <strong>1° Prioridad (Top):</strong><br/>Listos para Facturar Inmediato (EDP + OC) &bull; Proceso de prueba.
             </div>
             <div class="bg-[#070b14] border border-purple-500/30 p-2.5 rounded-lg text-purple-300">
               <strong>2° Prioridad:</strong><br/>Facturación Parcial (DTEs previos con saldo pendiente de cobro).
@@ -443,7 +440,7 @@ sequenceDiagram
                 <td class="py-2.5 px-3 font-bold text-white">0. Proceso</td>
                 <td class="py-2.5 px-3 text-amber-400 font-bold">GSP-XXXX-XXXX ↗</td>
                 <td class="py-2.5 px-3 text-slate-400">/api/operaciones/edp/proyecto/:id/pdf</td>
-                <td class="py-2.5 px-3 text-emerald-400">Abre PDF Oficial Carátula EDP con las 3 firmas FES.</td>
+                <td class="py-2.5 px-3 text-emerald-400">Abre PDF Oficial Carátula EDP firmado por Analista y Comercial.</td>
               </tr>
               <tr>
                 <td class="py-2.5 px-3 font-bold text-white">1. Comprometido</td>
@@ -577,16 +574,16 @@ sequenceDiagram
       </div>
     </section>
 
-    <!-- SECCIÓN 7: LOS 3 SUBMENÚS Y EXPORTACIÓN A EXCEL -->
+    <!-- SECCIÓN 7: LOS 5 SUBMENÚS, FILTRO DESDE-HASTA Y EXPORTACIÓN A EXCEL -->
     <section class="space-y-4">
       <div class="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">
         <i data-lucide="sheet" class="w-4 h-4"></i>
-        <span>7. Tres Submenús Operativos y Exportación Nativa a Excel (.xlsx)</span>
+        <span>7. Cinco Submenús Operativos, Filtro Desde-Hasta (RRHH) y Exportación Nativa a Excel (.xlsx)</span>
       </div>
       <div class="bg-[#0b1324] border border-white/10 rounded-xl p-6 space-y-4 print-card">
-        <h2 class="text-lg font-bold text-white">Sábanas de Datos y Reportes Financieros en Tiempo Real</h2>
+        <h2 class="text-lg font-bold text-white">Sábanas de Datos Contables y Liquidación Mensual de Remuneraciones en Tiempo Real</h2>
         <p class="text-sm text-slate-300 leading-relaxed">
-          La perspectiva integra tres vistas operativas especializadas, cada una con su botón <code class="text-emerald-400 font-mono text-xs">📥 Exportar Excel (.xlsx)</code> generado en cliente sin bloqueos:
+          La perspectiva integra cinco vistas operativas especializadas, con filtro flexible por rango de fechas (<code class="text-cyan-300 font-mono text-xs">Desde &mdash; Hasta</code>) independiente del cierre del ITS y botón <code class="text-emerald-400 font-mono text-xs">📥 Exportar Excel (.xlsx)</code>:
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
@@ -605,16 +602,16 @@ sequenceDiagram
           </div>
 
           <!-- SUBMENÚ 2 -->
-          <div class="bg-[#070b14] border border-slate-800 rounded-xl p-4 space-y-2 flex flex-col justify-between">
+          <div class="bg-[#070b14] border border-cyan-500/40 rounded-xl p-4 space-y-2 flex flex-col justify-between">
             <div>
-              <span class="text-xs font-mono font-bold text-cyan-300 uppercase">Submenú 2</span>
+              <span class="text-xs font-mono font-bold text-cyan-300 uppercase">Submenú 2 &bull; RRHH / Remuneraciones</span>
               <h3 class="text-sm font-bold text-white mt-1">👷 Horas Operadores / Riggers</h3>
               <p class="text-xs text-slate-400 leading-relaxed mt-1">
-                Sábana de HH normales, sobretiempo y totales por trabajador, más desglose diario por report. Incluye viáticos operacionales reportados.
+                Alimentado directamente desde la <strong>Sección 3 del Report Diario</strong> con filtro <strong>Desde &mdash; Hasta</strong> y columna final <strong><code>Report Validado (SÍ / NO)</code></strong> para cierre de sueldos de fin de mes sin depender del cierre del ITS.
               </p>
             </div>
             <div class="pt-3 border-t border-slate-800 text-[10px] font-mono text-emerald-400">
-              Archivo: 2 Hojas (Consolidado + Detalle_Jornadas)
+              Archivo: Horas_Operadores_*.xlsx (2 Hojas)
             </div>
           </div>
 
@@ -629,6 +626,34 @@ sequenceDiagram
             </div>
             <div class="pt-3 border-t border-slate-800 text-[10px] font-mono text-emerald-400">
               Archivo: Ventas_Por_Equipo_*.xlsx
+            </div>
+          </div>
+
+          <!-- SUBMENÚ 4 -->
+          <div class="bg-[#070b14] border border-slate-800 rounded-xl p-4 space-y-2 flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-mono font-bold text-amber-400 uppercase">Submenú 4</span>
+              <h3 class="text-sm font-bold text-white mt-1">⛽ Control de Combustible</h3>
+              <p class="text-xs text-slate-400 leading-relaxed mt-1">
+                Resumen por tipo de vehículo y patente (<code class="text-slate-300">Hoja2</code>) más sábana de 28 columnas (<code class="text-slate-300">sistema</code>) con lecturas de horómetros y odómetros.
+              </p>
+            </div>
+            <div class="pt-3 border-t border-slate-800 text-[10px] font-mono text-emerald-400">
+              Archivo: Combustible_*.xlsx (2 Hojas)
+            </div>
+          </div>
+
+          <!-- SUBMENÚ 5 -->
+          <div class="bg-[#070b14] border border-slate-800 rounded-xl p-4 space-y-2 flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-mono font-bold text-emerald-300 uppercase">Submenú 5</span>
+              <h3 class="text-sm font-bold text-white mt-1">📦 Salidas de Bodega</h3>
+              <p class="text-xs text-slate-400 leading-relaxed mt-1">
+                Matriz mensual por Cuenta Contable (<code class="text-slate-300">Hoja2</code>) y detalle de 13 columnas (<code class="text-slate-300">Sistema</code>) de insumos y repuestos entregados a OTM.
+              </p>
+            </div>
+            <div class="pt-3 border-t border-slate-800 text-[10px] font-mono text-emerald-400">
+              Archivo: Salidas_Bodega_*.xlsx (2 Hojas)
             </div>
           </div>
         </div>

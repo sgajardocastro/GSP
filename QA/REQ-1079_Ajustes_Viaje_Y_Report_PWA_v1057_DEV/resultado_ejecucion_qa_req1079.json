@@ -1,0 +1,131 @@
+{
+  "fecha_ejecucion": "2026-10-30T20:56:25.458Z",
+  "ambiente": "DEV",
+  "version_pwa": "v1.0.57",
+  "requerimiento": "REQ-1079",
+  "casos_testigo": {
+    "escenario_1_cerrado_edp_rrhh": {
+      "id_proyecto": 156,
+      "codi_proyecto": "BMQ-2610-QA1079-1",
+      "token_viaje": "156",
+      "id_reporte_avance": "73",
+      "id_doc_pdf": null,
+      "url_viaje_ida": "https://servidor.leanglobal.cl/pwa-gsp-dev/#/viaje/156?tipo=IDA",
+      "url_report_diario": "https://servidor.leanglobal.cl/pwa-gsp-dev/#/reportDiario?id_proyecto=156&id_equipo=54"
+    },
+    "escenario_2_jornada_en_curso_viva": {
+      "id_proyecto": 157,
+      "codi_proyecto": "BMQ-2610-QA1079-2",
+      "token_viaje": "157",
+      "id_reporte_avance": "71",
+      "url_viaje_ida": "https://servidor.leanglobal.cl/pwa-gsp-dev/#/viaje/157?tipo=IDA",
+      "url_report_diario": "https://servidor.leanglobal.cl/pwa-gsp-dev/#/reportDiario?id_proyecto=157&id_equipo=54"
+    }
+  },
+  "resultados": [
+    {
+      "id": "TC-01",
+      "eslabon": "1. Origen Comercial",
+      "caso": "Creacion OT BMQ-2610-QA1079-1 con Grua Telescopica CHGC.99-4 (LTM-1400 400T)",
+      "esperado": "codi_proyecto=BMQ-2610-QA1079-1, regimen=RURAL, distancia=65km",
+      "obtenido": "id=156, codi=BMQ-2610-QA1079-1, regimen=RURAL, dist=65km",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-02",
+      "eslabon": "2. Gobernanza (Negative Path)",
+      "caso": "Bloqueo de inicio de jornada cuando se omite id_equipo",
+      "esperado": "HTTP 400 (codigo=EQUIPO_REQUERIDO)",
+      "obtenido": "HTTP 400 (codigo=EQUIPO_REQUERIDO)",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-03",
+      "eslabon": "2. Gobernanza (Negative Path)",
+      "caso": "Bloqueo de sellado de Report Diario cuando se omite firma manuscrita del mandante",
+      "esperado": "HTTP 400 (error firma obligatoria)",
+      "obtenido": "HTTP 400 (La firma manual del mandante es obligatoria para emitir el report)",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-04",
+      "eslabon": "3. Operacion PWA (Ajuste 1)",
+      "caso": "Fin Viaje Ida en OT BMQ- con Grua Telescopica oculta Acta Plataforma y muestra Iniciar Report Diario",
+      "esperado": "tieneActaPlataforma=false, tieneIniciarReport=true, OT=BMQ-2610-QA1079-1",
+      "obtenido": "actaPlataforma=false, iniciarReport=true, OT=true",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-05",
+      "eslabon": "3. Operacion PWA (Ajuste 3 - Fase 1)",
+      "caso": "Edicion numerica libre en cajas HH:MM de INICIO REPORT sin bloqueo reactivo y normalizacion en blur",
+      "esperado": "vacio='', escribe12='12', unDigito='8', blurHH='08', MM='30'",
+      "obtenido": "vacio='', escribe12='12', unDigito='8', blurHH='08', MM='30'",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-06",
+      "eslabon": "3. Operacion PWA + BD (Momento 1)",
+      "caso": "Persistencia en PostgreSQL de INICIO REPORT (JORNADA_EN_CURSO, 08:30, horometro 14500.5)",
+      "esperado": "estado=JORNADA_EN_CURSO, hora_inicio=08:30, horometro_inicio=14500.50",
+      "obtenido": "id=73, estado=JORNADA_EN_CURSO, hora=08:30, horo=14500.50",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-07",
+      "eslabon": "3. Operacion PWA (Ajuste 2 - Fase 2)",
+      "caso": "Hidratacion de Horario de Inicio (08 : 30) al abrir TERMINO DE REPORT (nunca 00 : 00)",
+      "esperado": "horaInicioHH=08, horaInicioMM=30",
+      "obtenido": "horaInicioHH=08, horaInicioMM=30",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-08",
+      "eslabon": "3. Operacion PWA (Ajuste 2 y 3)",
+      "caso": "Calculo base de HORA REPORT (08:30 a 18:30 con 60m colacion = 9 hrs, no 17.5 hrs)",
+      "esperado": "9 hrs",
+      "obtenido": "9 hrs",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-09",
+      "eslabon": "3. Operacion PWA (Regla Standby)",
+      "caso": "Standby Cliente (2h) mantiene HORA REPORT en 9 hrs; Standby Falla Equipo GSP (1h) rebaja HORA REPORT a 8 hrs",
+      "esperado": "conStbyCliente=9 hrs, conStbyGsp=8 hrs",
+      "obtenido": "conStbyCliente=9 hrs, conStbyGsp=8 hrs",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-10",
+      "eslabon": "4. Impacto BD & Documento PDF",
+      "caso": "Sellado de Report Diario en PostgreSQL con horometros (delta 9.0h), standbys y PDF emitido",
+      "esperado": "estado=PENDIENTE_VALIDACION, operadas=8.00, stbyCli=2.00, stbyGsp=1.00, facturables=10.00, deltaHoro=9.0",
+      "obtenido": "id=73, est=PENDIENTE_VALIDACION, op=8.00, stCli=2.00, stGsp=1.00, fact=10.00, pdf=null",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-11",
+      "eslabon": "4. Impacto Capital Humano (RRHH)",
+      "caso": "Cuadratura matematica de Liquidacion Diaria del Operador (Faena 9h + Flete 2h = 11h a $20.000/h + Viatico $10.000 = $230.000)",
+      "esperado": "horas_faena=9, horas_flete=2, horas_totales=11, tarifa=20000, monto_horas=220000, viatico=10000, total_dia=230000",
+      "obtenido": "faena=9h, flete=2h, tot=11h, tarifa=$20000, hrsMonto=$220000, viat=$10000, totalDia=$230000",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-12",
+      "eslabon": "4. Impacto Financiero (EDP Cliente)",
+      "caso": "Cuadratura matematica de Estado de Pago (EDP) en /api/operaciones/report/edp/resumen/:id",
+      "esperado": "horas_facturables=10.0, sobretiempo=2.0, equipos=$4.500.000, flete=$1.100.000, sobretiempo=$1.350.000, neto=$6.950.000",
+      "obtenido": "hrsFact=10.0, hrsSob=2.0, eq=$4500000, flt=$1100000, sob=$1350000, neto=$6950000, bruto=$8270500",
+      "veredicto": "PASA"
+    },
+    {
+      "id": "TC-13",
+      "eslabon": "5. Persistencia Testigo Vivo 2 (Cero Teardown)",
+      "caso": "Caso Testigo 2 (BMQ-2610-QA1079-2) vivo en DEV en Fase 2 (JORNADA_EN_CURSO) con 08:30 hidratado",
+      "esperado": "OT=BMQ-2610-QA1079-2, horaInicioHH=08, horaInicioMM=30",
+      "obtenido": "id_proyecto=157, id_reporte=71, HH=08, MM=30",
+      "veredicto": "PASA"
+    }
+  ]
+}

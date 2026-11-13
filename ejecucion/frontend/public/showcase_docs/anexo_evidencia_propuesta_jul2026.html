@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anexo Contractual — Evidencia Propuesta Original (Julio 2026)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F5F5F7;
+      --card: #FFFFFF;
+      --ink: #1D1D1F;
+      --muted: #6E6E73;
+      --border: rgba(0, 0, 0, 0.08);
+      --blue: #0071E3;
+      --blue-bg: rgba(0, 113, 227, 0.09);
+      --green: #1D7A2B;
+      --green-bg: rgba(40, 205, 65, 0.14);
+      --amber: #B25000;
+      --amber-bg: rgba(255, 149, 0, 0.14);
+      --purple: #6E3AFF;
+      --purple-bg: rgba(110, 58, 255, 0.10);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 36px 40px 56px;
+      line-height: 1.48;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+
+    .pdf-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pdf-btn {
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #FFFFFF;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .pdf-btn.secondary {
+      background: #FFFFFF;
+      color: var(--blue);
+      border: 1px solid rgba(0, 113, 227, 0.25);
+    }
+
+    .pdf-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 30px 32px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-full {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 30px 32px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-purple { background: var(--purple-bg); color: var(--purple); }
+    .badge-blue { background: var(--blue-bg); color: var(--blue); }
+
+    .card h2 {
+      font-size: 21px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+
+    .card p.lead {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .quote-box {
+      background: #F8FAFC;
+      border-left: 4px solid var(--blue);
+      padding: 14px 18px;
+      border-radius: 0 14px 14px 0;
+      font-size: 13.5px;
+      color: var(--ink);
+      margin-top: 14px;
+    }
+
+    .quote-box.purple {
+      border-left-color: var(--purple);
+      background: #FAF8FF;
+    }
+
+    .quote-ref {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    table.clean-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    table.clean-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    table.clean-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    table.clean-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .gantt-bar-cell {
+      width: 72px;
+      text-align: center;
+      padding: 8px 4px !important;
+    }
+
+    .bar-seg {
+      height: 10px;
+      border-radius: 999px;
+      width: 100%;
+    }
+
+    .bg-m-green { background: linear-gradient(90deg, #16a34a, #34d399); }
+    .bg-m-blue { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+    .bg-m-amber { background: linear-gradient(90deg, #d97706, #fbbf24); }
+    .bg-m-pink { background: linear-gradient(90deg, #db2777, #f472b6); }
+    .bg-m-purple { background: linear-gradient(90deg, #7c3aed, #c084fc); }
+
+    .status-chip {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .st-done { background: var(--green-bg); color: var(--green); }
+    .st-early { background: var(--amber-bg); color: var(--amber); }
+    .st-next { background: var(--blue-bg); color: var(--blue); }
+
+    @media (max-width: 980px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <div>
+        <div class="eyebrow">Evidencia Contractual · Propuesta Final Emitida en Julio 2026</div>
+        <h1>Alcance de Hitos de Pago vs. Roadmap Diferido (Hojas 32 a 36)</h1>
+      </div>
+      <div class="pdf-actions">
+        <a class="pdf-btn" href="./Propuesta_Final_GSP_Jul2026.pdf#page=32" target="_blank">Abrir PDF Original en Hoja 32 ↗</a>
+        <a class="pdf-btn secondary" href="./Propuesta_Final_GSP_Jul2026.pdf#page=34" target="_blank">Ver Hoja 34 (Gantt 6 Meses) ↗</a>
+        <a class="pdf-btn secondary" href="./Propuesta_Final_GSP_Jul2026.pdf#page=36" target="_blank">Ver Hoja 36 (Forma de Pago) ↗</a>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- EVIDENCIA 1: HOJAS 32 Y 36 -->
+      <div class="card">
+        <span class="badge badge-green">● Hojas 32 y 36 · Hitos de Facturación (Semanas 1 a 7)</span>
+        <h2>1. ¿Qué cubren los 3 Hitos de Pago del Proyecto?</h2>
+        <p class="lead">
+          En la Sección 11 (Hoja 32) y Sección 12 (Hoja 36), los 3 hitos de facturación del setup (30% / 40% / 30%) están circunscritos al plan de 7 semanas del Ecosistema Operativo Base:
+        </p>
+
+        <table class="clean-table">
+          <thead>
+            <tr>
+              <th>Hito Contractual</th>
+              <th>Entregable Comprometido (Hoja 32)</th>
+              <th>Plazo / Pago</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Hito 1 (30%)</strong></td>
+              <td>Prototipo interactivo, modelo conceptual y dossier formal.</td>
+              <td><span class="status-chip st-done">Semana 1</span></td>
+            </tr>
+            <tr>
+              <td><strong>Hito 2 (40%)</strong></td>
+              <td>Configuración técnica BD (Prisma) y endpoints de izaje.</td>
+              <td><span class="status-chip st-done">Semana 2</span></td>
+            </tr>
+            <tr>
+              <td><strong>Hito 3 (30%)</strong></td>
+              <td>App Móvil Terreno, integración ERP, pruebas QA y <strong>Marcha Blanca</strong>.</td>
+              <td><span class="status-chip st-done">Semana 3 a 7</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="quote-box">
+          <span class="quote-ref">Cita Textual — Hoja 36 (Sección 12: Forma de Pago)</span>
+          “• <strong>Forma de Pago (Desarrollo &amp; Implementación):</strong> 30% al inicio del desarrollo, 40% a la entrega de la configuración técnica (Hito 2) y <strong>30% al cierre de Hito 3 (Marcha Blanca)</strong>.”
+        </div>
+      </div>
+
+      <!-- EVIDENCIA 2: HOJAS 33 Y 34 -->
+      <div class="card">
+        <span class="badge badge-purple">● Hojas 33 y 34 · Roadmap Diferido (Mes 4 a Mes 6+)</span>
+        <h2>2. ¿Cuándo tocaban Facturación, Compras y Contabilidad?</h2>
+        <p class="lead">
+          La propuesta estableció explícitamente un despliegue diferido para no saturar a la operación, programando Facturación para el <strong>Mes 4</strong> y Compras / Contabilidad para el <strong>Mes 6 (M6+)</strong>:
+        </p>
+
+        <div class="quote-box purple">
+          <span class="quote-ref">Cita Textual — Hoja 33 (Estrategia de Transición Contable)</span>
+          “• <strong>Fase 1 (Semanas 1-7):</strong> Se implementa el ecosistema de operaciones (Torre de Control, App y CRM)...<br>
+          • <strong>Fase 2 (Mes 6+):</strong> Se implementa el <strong>Módulo de Contabilidad Simple Nativa</strong> comprometido en esta propuesta... Al entrar en régimen, centralizará toda la facturación, <strong>el ciclo completo de egresos y compras (adquisiciones, OCs, facturas de compra y facturas de proveedores)</strong> y balances en un solo sistema...”
+        </div>
+
+        <div class="quote-box" style="margin-top: 12px;">
+          <span class="quote-ref">Cita Textual — Hoja 33 y Hoja 34 (Fases 4 y 5)</span>
+          “• <strong>Fase 4: Integración Facturación SII (Mes 4):</strong> A partir del cuarto mes, una vez estabilizado el flujo de Torre de Control y OTs, habilitaremos el módulo de Facturación DTE integrado.<br>
+          • <strong>Fase 5: Módulo de Contabilidad Simple Integrada (Mes 6):</strong> ...integración completa de egresos (adquisiciones, OCs, facturas de compra y facturas de proveedores).”
+        </div>
+      </div>
+    </div>
+
+    <!-- CARTA GANTT OFICIAL DE LA HOJA 34 -->
+    <div class="card-full">
+      <span class="badge badge-blue">● Reproducción Exacta de la Carta Gantt Impresa en Hoja 34 del PDF</span>
+      <h2 style="font-size: 20px; margin-bottom: 6px;">Planificación Temporal Unificada (Mes 1 a Mes 6+) vs. Estado Real Hoy</h2>
+      <p style="font-size: 13.5px; color: var(--muted); margin-bottom: 14px;">
+        Comparativa directa entre la Carta Gantt de la Hoja 34 de la Propuesta Final y los módulos efectivamente entregados en Producción a la fecha:
+      </p>
+
+      <table class="clean-table">
+        <thead>
+          <tr>
+            <th style="width: 30%;">Módulos e Hitos de Desarrollo (Hoja 34)</th>
+            <th style="text-align: center;">Mes 1 (M1)</th>
+            <th style="text-align: center;">Mes 2 (M2)</th>
+            <th style="text-align: center;">Mes 3 (M3)</th>
+            <th style="text-align: center;">Mes 4 (M4)</th>
+            <th style="text-align: center;">Mes 5 (M5)</th>
+            <th style="text-align: center;">Mes 6 (M6+)</th>
+            <th style="width: 24%;">Estado Real al Precierre</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Ecosistema Base (Operación, CRM, App)</strong></td>
+            <td class="gantt-bar-cell"><div class="bar-seg bg-m-green"></div></td>
+            <td class="gantt-bar-cell"><div class="bar-seg bg-m-green"></div></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td><span class="status-chip st-done">✓ 100% Operativo (Hito 3)</span></td>
+          </tr>
+          <tr>
+            <td><strong>2. Mantenimiento &amp; Inspecciones HSEC</strong></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"><div class="bar-seg bg-m-blue"></div></td>
+            <td class="gantt-bar-cell"><div class="bar-seg bg-m-blue"></div></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td><span class="status-chip st-done">✓ 100% Operativo en Taller</span></td>
+          </tr>
+          <tr>
+            <td><strong>3. Adquisiciones &amp; Bodegas WMS</strong></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"><div class="bar-seg bg-m-amber"></div></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td><span class="status-chip st-done">✓ 100% Operativo (2.854 SKUs)</span></td>
+          </tr>
+          <tr>
+            <td><strong>4. Facturación SII DTE Integrada</strong></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"><div class="bar-seg bg-m-pink"></div></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td><span class="status-chip st-next">→ En Cierre vía Odoo</span></td>
+          </tr>
+          <tr>
+            <td><strong>5. Contabilidad Simple + Ciclo Compras / OCs</strong></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"></td>
+            <td class="gantt-bar-cell"><div class="bar-seg bg-m-purple"></div></td>
+            <td><span class="status-chip st-early">★ OCs Adelantado · Contab. Odoo</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

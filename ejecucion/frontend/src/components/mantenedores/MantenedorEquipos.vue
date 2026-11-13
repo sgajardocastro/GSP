@@ -107,6 +107,7 @@ async function getProyectos() {
 async function obtenerUsuarios() {
   const { data } = await apiAxios.get('/servicio/leanglobal/obtenerUsuarios')
   users.value = (Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []))
+    .filter(u => u && u.activo !== false && u.activo !== 0 && u.activo !== 'f' && u.activo !== 'false' && u.flag_activo !== false && u.is_active !== false)
     .map(u => ({
       ...u,
       nombre_user: u.nombre_user || `${u.name_frst} ${u.apellido_pat}`,

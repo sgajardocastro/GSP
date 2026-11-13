@@ -18,10 +18,15 @@ router.get('/usuario/pendientes', reportDiarioController.getReportsPendientesUsu
 router.post('/inicio-jornada', reportDiarioController.guardarInicioJornada);
 
 // 4. Guardar y sellar report diario desde PWA (Momento 2 + Report Mandante)
+router.post('/', reportDiarioController.guardarReportDiario);
 router.post('/guardar', reportDiarioController.guardarReportDiario);
 
 // 4. Validar report diario por el analista
 router.post('/:id/validar', reportDiarioController.validarReportDiario);
+router.put('/:id/validar', reportDiarioController.validarReportDiario);
+
+// 4.1 Obtener PDF Oficial de Faena o Streaming Auto-Reparable (SPEC-098)
+router.get('/:id/pdf', reportDiarioController.obtenerPdfReportDiario);
 
 // 5. Resumen de Estado de Pago (EDP) y Conciliación Financiera (Spec 38)
 router.get('/edp/resumen/:id_proyecto', reportDiarioController.getResumenEDP);

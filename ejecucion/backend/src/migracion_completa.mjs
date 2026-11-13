@@ -3,7 +3,7 @@ const { Client } = pkg;
 
 async function runMigration() {
   const client = new Client({
-    connectionString: "postgresql://usr_leangsp:usr_gsp_123@servidor.leanglobal.cl:5432/postgres"
+    connectionString: process.env.DATABASE_URL || "postgresql://usr_leangsp@servidor.leanglobal.cl:5432/postgres"
   });
   await client.connect();
 

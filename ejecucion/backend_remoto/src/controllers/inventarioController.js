@@ -156,6 +156,31 @@ class InventarioController {
   // 5. DESPACHO A OT Y DEVOLUCIONES
   // =========================================================================
 
+  async despacharLineaOt(req, res) {
+    try {
+      const empresaId = this._getEmpresaId(req);
+      const userId = this._getUserId(req);
+      const data = req.body;
+
+      if (!data.id_ot_repuesto) {
+        return res.status(400).json({ success: false, error: 'Parámetro id_ot_repuesto requerido.' });
+      }
+      if (!data.id_ubicacion) {
+        return res.status(400).json({ success: false, error: 'Debe seleccionar un casillero/ubicación de pañol.' });
+      }
+
+      const result = await inventarioModel.despacharLineaOt(empresaId, userId, data);
+      return res.status(200).json({ 
+        success: true, 
+        data: result, 
+        message: 'Repuesto despachado exitosamente e imputado a la OT' 
+      });
+    } catch (err) {
+      console.error('Error en InventarioController.despacharLineaOt:', err);
+      return res.status(400).json({ success: false, error: err.message });
+    }
+  }
+
   async despacharOt(req, res) {
     try {
       const empresaId = this._getEmpresaId(req);
@@ -202,6 +227,17 @@ class InventarioController {
       return res.status(200).json({ success: true, data: result });
     } catch (err) {
       console.error('Error en InventarioController.devolverOt:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async getConsumosOt(req, res) {
+    try {
+      const empresaId = this._getEmpresaId(req);
+      const consumos = await inventarioModel.getConsumosOt(empresaId);
+      return res.status(200).json({ success: true, data: consumos });
+    } catch (err) {
+      console.error('Error en InventarioController.getConsumosOt:', err);
       return res.status(500).json({ success: false, error: err.message });
     }
   }
@@ -253,6 +289,50 @@ class InventarioController {
     } catch (err) {
       console.error('Error en InventarioController.getConteos:', err);
       return res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  // =========================================================================
+  // 8. TRASPASOS & TRASLADOS ENTRE BODEGAS (SPEC-094 / REQ-1066)
+  // =========================================================================
+
+  async getTraspasos(req, res) {
+    try {
+      const empresaId = this._getEmpresaId(req);
+      const traspasos = await inventarioModel.getTraspasos(empresaId);
+      return res.status(200).json({ success: true, count: traspasos.length, data: traspasos });
+    } catch (err) {
+      console.error('Error en InventarioController.getTraspasos:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async crearTraspaso(req, res) {
+    try {
+      const empresaId = this._getEmpresaId(req);
+      const userId = this._getUserId(req);
+      const data = req.body;
+
+      const result = await inventarioModel.crearTraspaso(empresaId, userId, data);
+      return res.status(201).json({ success: true, data: result });
+    } catch (err) {
+      console.error('Error en InventarioController.crearTraspaso:', err);
+      return res.status(400).json({ success: false, error: err.message });
+    }
+  }
+
+  async recepcionarTraspaso(req, res) {
+    try {
+      const { id } = req.params;
+      const empresaId = this._getEmpresaId(req);
+      const userId = this._getUserId(req);
+      const data = req.body;
+
+      const result = await inventarioModel.recepcionarTraspaso(id, empresaId, userId, data);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      console.error('Error en InventarioController.recepcionarTraspaso:', err);
+      return res.status(400).json({ success: false, error: err.message });
     }
   }
 }

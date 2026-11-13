@@ -229,7 +229,7 @@
                   :class="form.cantidad_estanques === 2 ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20' : 'bg-white/5 text-slate-400 border border-white/10 hover:text-white'"
                   class="px-3 py-1 rounded-lg text-[10px] uppercase tracking-wider transition-all cursor-pointer"
                 >
-                  🏗️ 2 Estanques (Bimotor / Grúa AT)
+                  🚚 2 Estanques (Bimotor / Grúa Móvil AT)
                 </button>
               </div>
             </div>
@@ -283,15 +283,23 @@
 
           <!-- Formulario de Subida de Documento -->
           <div class="mt-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4 shrink-0">
-            <h4 class="text-[10px] font-black uppercase text-white tracking-widest">Cargar Nuevo Documento</h4>
+            <div class="flex items-center justify-between">
+              <h4 class="text-[10px] font-black uppercase text-white tracking-widest">Cargar / Actualizar Documento</h4>
+              <span v-if="selectedFile" class="text-[9px] font-bold text-amber-400 uppercase">
+                Archivo listo · Complete tipo y vencimiento
+              </span>
+            </div>
             
             <div class="grid grid-cols-2 gap-3">
               <!-- Selector Tipo de Certificado -->
               <div class="space-y-1">
-                <label class="text-[8px] font-black text-slate-400 uppercase">Tipo Documento</label>
+                <label class="text-[8px] font-black text-slate-400 uppercase">
+                  Tipo Documento <span class="text-emerald-400">*</span>
+                </label>
                 <select 
                   v-model="newDoc.id_tipo_certificado" 
-                  class="w-full bg-zinc-950 border border-white/10 rounded-lg p-2 text-[10px] font-bold text-white focus:outline-none"
+                  :class="selectedFile && !newDoc.id_tipo_certificado ? 'border-amber-500/70 ring-1 ring-amber-500/30' : 'border-white/10'"
+                  class="w-full bg-zinc-950 border rounded-lg p-2 text-[10px] font-bold text-white focus:outline-none"
                 >
                   <option :value="null">Seleccione...</option>
                   <option 
@@ -309,7 +317,7 @@
                 <input 
                   type="text" 
                   v-model="newDoc.entidad_emisora" 
-                  placeholder="EJ. PRT, INDEPENDIENTE" 
+                  placeholder="EJ. PRT, MUNICIPALIDAD" 
                   class="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-[10px] font-bold text-white focus:outline-none uppercase"
                 />
               </div>
@@ -327,11 +335,14 @@
               </div>
               <!-- Fecha Vencimiento -->
               <div class="space-y-1">
-                <label class="text-[8px] font-black text-slate-400 uppercase">Fecha Vencimiento</label>
+                <label class="text-[8px] font-black text-slate-400 uppercase">
+                  Fecha Vencimiento <span class="text-emerald-400">*</span>
+                </label>
                 <input 
                   type="date" 
                   v-model="newDoc.fecha_vencimiento" 
-                  class="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-[10px] font-bold text-white focus:outline-none"
+                  :class="selectedFile && !newDoc.fecha_vencimiento ? 'border-amber-500/70 ring-1 ring-amber-500/30' : 'border-white/10'"
+                  class="w-full bg-white/5 border rounded-lg p-2 text-[10px] font-bold text-white focus:outline-none"
                 />
               </div>
             </div>
@@ -348,20 +359,23 @@
               <button 
                 type="button" 
                 @click="$refs.fileInput.click()" 
-                class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all"
+                class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition-all truncate max-w-[70%]"
               >
-                <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                <span>{{ isUploading ? 'Subiendo...' : selectedFile ? selectedFile.name : 'Seleccionar Archivo' }}</span>
+                <svg class="w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <span class="truncate">{{ isUploading ? 'Subiendo...' : selectedFile ? selectedFile.name : 'Seleccionar Archivo' }}</span>
               </button>
               <button 
                 type="button" 
                 @click="addDocumentToList" 
                 :disabled="!newDoc.id_tipo_certificado || !newDoc.fecha_vencimiento || !selectedFile || isUploading"
-                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-black uppercase tracking-wider ml-auto disabled:opacity-50 disabled:hover:bg-emerald-600 transition-all"
+                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-black uppercase tracking-wider ml-auto disabled:opacity-50 disabled:hover:bg-emerald-600 transition-all shrink-0"
               >
                 Adjuntar
               </button>
             </div>
+            <p v-if="selectedFile && (!newDoc.id_tipo_certificado || !newDoc.fecha_vencimiento)" class="text-[9px] text-amber-400 font-bold">
+              ⚠️ Para guardar "{{ selectedFile.name }}", seleccione <span v-if="!newDoc.id_tipo_certificado">el Tipo de Documento</span><span v-if="!newDoc.id_tipo_certificado && !newDoc.fecha_vencimiento"> y </span><span v-if="!newDoc.fecha_vencimiento">la Fecha de Vencimiento</span>.
+            </p>
           </div>
 
           <!-- Listado de Certificados -->
@@ -388,6 +402,14 @@
               </div>
 
               <div class="flex items-center gap-2">
+                <button 
+                  type="button"
+                  @click="prepareReplaceCertificate(doc)"
+                  class="px-2.5 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-[9px] font-black uppercase tracking-wider text-blue-400 transition-colors"
+                  title="Cambiar o actualizar este documento"
+                >
+                  Cambiar
+                </button>
                 <button 
                   v-if="doc.id_certificado"
                   @click="removeCertificate(doc, idx)" 
@@ -503,6 +525,7 @@ const newDoc = ref({
 
 // Listado de certificados cargados/vinculados
 const documentsList = ref([])
+const replacedCertIds = ref([])
 
 const loadData = async () => {
   try {
@@ -585,12 +608,63 @@ const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleDateString('es-CL')
 }
 
+const normalizeText = (str) =>
+  String(str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+
+const inferDocTypeFromFilename = (filename) => {
+  const name = normalizeText(filename)
+  if (!name || !docTypes.value.length) return null
+
+  const rules = [
+    { match: (n) => n.includes('permiso') && n.includes('circula'), target: (t) => t.includes('permiso') && t.includes('circula') },
+    { match: (n) => (n.includes('revision') && n.includes('tecnic')) || /\bprt\b/.test(n), target: (t) => t.includes('revision') && t.includes('tecnic') },
+    { match: (n) => n.includes('soap') || (n.includes('seguro') && n.includes('obligatorio')), target: (t) => t.includes('soap') },
+    { match: (n) => n.includes('padron') || n.includes('inscripcion'), target: (t) => t.includes('padron') || t.includes('inscripcion') },
+    { match: (n) => n.includes('gases') || n.includes('emision'), target: (t) => t.includes('gases') || t.includes('emision') },
+    { match: (n) => n.includes('prueba') && n.includes('carga'), target: (t) => t.includes('prueba') && t.includes('carga') },
+    { match: (n) => n.includes('gancho') || n.includes('ensayo') || n.includes('particula'), target: (t) => t.includes('gancho') || t.includes('ensayo') },
+    { match: (n) => n.includes('inspeccion'), target: (t) => t.includes('inspeccion') }
+  ]
+
+  for (const rule of rules) {
+    if (rule.match(name)) {
+      const found = docTypes.value.find((d) => rule.target(normalizeText(d.nombre_tipo)))
+      if (found) return found.id_tipo_certificado
+    }
+  }
+
+  const direct = docTypes.value.find((d) => {
+    const tName = normalizeText(d.nombre_tipo)
+    return tName && name.includes(tName)
+  })
+  return direct ? direct.id_tipo_certificado : null
+}
+
+const prepareReplaceCertificate = (doc) => {
+  newDoc.value.id_tipo_certificado = doc.id_tipo_certificado
+  newDoc.value.entidad_emisora = doc.entidad_emisora || ''
+  newDoc.value.fecha_emision = doc.fecha_emision ? String(doc.fecha_emision).split('T')[0] : ''
+  newDoc.value.fecha_vencimiento = doc.fecha_vencimiento ? String(doc.fecha_vencimiento).split('T')[0] : ''
+  if (fileInput.value) {
+    fileInput.value.click()
+  }
+}
+
 // Carga física del archivo en backend (/api/archivo)
 const onFileSelected = async (e) => {
   const file = e.target.files[0]
   if (!file) return
 
   selectedFile.value = file
+  if (!newDoc.value.id_tipo_certificado) {
+    const inferred = inferDocTypeFromFilename(file.name)
+    if (inferred) {
+      newDoc.value.id_tipo_certificado = inferred
+    }
+  }
   isUploading.value = true
 
   try {
@@ -621,9 +695,20 @@ const onFileSelected = async (e) => {
   }
 }
 
-// Agregar certificado a la lista local
+// Agregar certificado a la lista local (reemplazando anterior del mismo tipo si existía)
 const addDocumentToList = () => {
   if (!newDoc.value.id_tipo_certificado || !newDoc.value.fecha_vencimiento || !newDoc.value.id_doc) return
+
+  const existingIdx = documentsList.value.findIndex(
+    (d) => Number(d.id_tipo_certificado) === Number(newDoc.value.id_tipo_certificado)
+  )
+  if (existingIdx !== -1) {
+    const existingDoc = documentsList.value[existingIdx]
+    if (existingDoc.id_certificado && !replacedCertIds.value.includes(existingDoc.id_certificado)) {
+      replacedCertIds.value.push(existingDoc.id_certificado)
+    }
+    documentsList.value.splice(existingIdx, 1)
+  }
 
   const item = {
     id_tipo_certificado: newDoc.value.id_tipo_certificado,
@@ -631,7 +716,7 @@ const addDocumentToList = () => {
     fecha_vencimiento: newDoc.value.fecha_vencimiento,
     entidad_emisora: newDoc.value.entidad_emisora || 'MANUAL',
     id_doc: newDoc.value.id_doc,
-    name_doc_orig: selectedFile.value.name
+    name_doc_orig: selectedFile.value ? selectedFile.value.name : 'Documento adjunto'
   }
 
   documentsList.value.push(item)
@@ -665,6 +750,26 @@ const removeCertificate = async (doc, idx) => {
 
 // Guardar equipo y sus certificados
 const saveEquipment = async () => {
+  if (isUploading.value) {
+    alert('Espere a que termine de subir el archivo antes de guardar.')
+    return
+  }
+
+  // Si el usuario seleccionó un archivo arriba pero no presionó "Adjuntar"
+  if (selectedFile.value || newDoc.value.id_doc) {
+    if (newDoc.value.id_tipo_certificado && newDoc.value.fecha_vencimiento && newDoc.value.id_doc) {
+      addDocumentToList()
+    } else {
+      const faltantes = []
+      if (!newDoc.value.id_tipo_certificado) faltantes.push('• Tipo de Documento')
+      if (!newDoc.value.fecha_vencimiento) faltantes.push('• Fecha de Vencimiento')
+      alert(
+        `Tiene el archivo "${selectedFile.value?.name || 'seleccionado'}" pendiente de adjuntar.\n\nPor favor complete:\n${faltantes.join('\n')}\n\ny presione "Adjuntar" o "Guardar Equipo".`
+      )
+      return
+    }
+  }
+
   isSaving.value = true
   try {
     let eqId = props.equipmentId
@@ -678,6 +783,16 @@ const saveEquipment = async () => {
       const createRes = await apiAxios.post('/tequ-equipos', payload)
       eqId = createRes.data.data.id_equipo
     }
+
+    // Eliminar certificados antiguos que fueron reemplazados por uno nuevo del mismo tipo
+    for (const oldCertId of replacedCertIds.value) {
+      try {
+        await apiAxios.delete(`/tequ-equipos/${eqId}/certificados/${oldCertId}`)
+      } catch (e) {
+        console.warn('No se pudo eliminar certificado anterior reemplazado:', oldCertId, e)
+      }
+    }
+    replacedCertIds.value = []
 
     // Vincular/guardar los certificados nuevos
     for (const cert of documentsList.value) {

@@ -696,7 +696,8 @@ const getSegmentStats = (s) => ({
 const getPhotoUrl = (n) => {
   if (!n) return ''
   if (n.startsWith('http')) return n
-  return `${import.meta.env.VITE_API_BASE_URL_CORE || 'https://servidor.leanglobal.cl/lean-services-transmac-dev/api'}/archivo/transmac/sst/${n}`
+  const base = (apiAxios.defaults.baseURL || '').replace(/\/$/, '')
+  return `${base}/archivo/transmac/sst/${n}`
 }
 
 const triggerPhoto = (i) => { activePhotoItem.value = i; photoInput.value?.click() }

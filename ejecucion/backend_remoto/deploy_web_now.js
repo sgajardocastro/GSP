@@ -8,7 +8,7 @@ const rootDir = 'd:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta
 const pkgPath = path.join(rootDir, 'ejecucion/frontend/package.json');
 const releaseLogPath = path.join(rootDir, 'RELEASE_LOG.md');
 const tareasPath = path.join(rootDir, 'Gestión/tareas.md');
-const localDist = path.join(rootDir, 'ejecucion/frontend/dist');
+const localDist = fs.existsSync(path.join(rootDir, 'ejecucion/frontend/dist_dev')) ? path.join(rootDir, 'ejecucion/frontend/dist_dev') : path.join(rootDir, 'ejecucion/frontend/dist');
 const remoteDir = '/var/www/html/lg-gsp-dev';
 
 /**

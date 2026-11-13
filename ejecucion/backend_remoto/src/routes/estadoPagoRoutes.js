@@ -48,4 +48,9 @@ router.post('/proyecto/:id_proyecto/soporte-documental', estadoPagoController.gu
 router.delete('/proyecto/:id_proyecto/dte/:id_dte', estadoPagoController.eliminarFacturaDteEDP);
 router.get('/proyecto/:id_proyecto/cotizacion-pdf', estadoPagoController.descargarPdfCotizacionProyecto);
 
+// 12. Submenú 6 RH: Generación de Anexo de Contrato de Trabajo (Cambio de Obra) y Biblioteca de Persona (REQ-1094)
+router.get('/anexos-contrato', estadoPagoController.listarAnexosContratoRH);
+router.post('/anexos-contrato', estadoPagoController.generarAnexoContratoRH);
+router.delete('/anexos-contrato/:id_cert', estadoPagoController.eliminarAnexoContratoRH);
+
 module.exports = router;

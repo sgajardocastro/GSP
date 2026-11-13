@@ -1,162 +1,202 @@
 <template>
   <div class="min-h-screen bg-[#0B0F19] text-slate-100 p-6 md:p-8 font-sans selection:bg-amber-500/30 selection:text-amber-300">
-    <!-- Encabezado de Pantalla -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-slate-800/80 pb-5">
-      <div class="flex items-center gap-4">
-        <div class="p-3.5 bg-amber-500/10 text-amber-500 rounded-2xl border border-amber-500/30 shadow-xl shadow-amber-500/5">
-          <Boxes class="w-7 h-7" />
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-2xl font-black tracking-tight text-white uppercase font-mono">2. Vista de Existencias y Bajas</h1>
-            <span class="text-xs bg-amber-500/10 text-amber-400 font-bold px-2.5 py-0.5 rounded border border-amber-500/20">GLOBAL MANAGER WMS</span>
+    <!-- ENCABEZADO CANÓNICO WMS -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 border-b border-slate-800/80 pb-5">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="p-3 bg-amber-500/10 text-amber-500 rounded-2xl border border-amber-500/30 shadow-lg shadow-amber-500/5">
+            <Boxes class="w-6 h-6" />
           </div>
-          <p class="text-slate-400 text-xs mt-0.5">Consultar el stock disponible en bodega, supervisar niveles mínimos y registrar la baja física de materiales</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- 1. RESUMEN CONTABLE (VISUALIZACIÓN) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
-        <div>
-          <div class="text-[10px] text-slate-400 font-black uppercase tracking-wider">Valorización Económica Total</div>
-          <div class="text-2xl font-black text-emerald-400 mt-1 font-mono">${{ totalValorizacion.toLocaleString('es-CL') }}</div>
-        </div>
-        <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl"><DollarSign class="w-6 h-6" /></div>
-      </div>
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
-        <div>
-          <div class="text-[10px] text-slate-400 font-black uppercase tracking-wider">Cantidad Global del Stock</div>
-          <div class="text-2xl font-black text-white mt-1 font-mono">{{ totalStockGlobal }} <span class="text-xs text-slate-400 font-normal">unids.</span></div>
-        </div>
-        <div class="p-3 bg-blue-500/10 text-blue-400 rounded-xl"><Boxes class="w-6 h-6" /></div>
-      </div>
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
-        <div>
-          <div class="text-[10px] text-slate-400 font-black uppercase tracking-wider">Productos en Quiebre</div>
-          <div class="text-2xl font-black text-rose-400 mt-1 font-mono">{{ productosQuiebreCount }}</div>
-        </div>
-        <div class="p-3 bg-rose-500/10 text-rose-400 rounded-xl"><AlertTriangle class="w-6 h-6" /></div>
-      </div>
-    </div>
-
-    <!-- 2. ALERTAS DE QUIEBRE DE STOCK (GRILLA SUPERIOR) -->
-    <div v-if="alertasQuiebre.length > 0" class="bg-slate-900/80 border border-rose-500/30 rounded-2xl p-5 mb-6 space-y-3">
-      <h3 class="text-xs font-black text-rose-400 uppercase tracking-wider flex items-center gap-2">
-        <AlertTriangle class="w-4 h-4" /> Alertas de Quiebre de Stock (Stock menor al mínimo)
-      </h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div v-for="a in alertasQuiebre" :key="a.id" class="bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl flex justify-between items-center text-xs">
           <div>
-            <span class="font-bold text-white block">{{ a.nombre }}</span>
-            <span class="text-slate-400 font-mono text-[10px]">SKU: {{ a.sku }}</span>
+            <div class="flex items-center gap-2">
+              <h1 class="text-2xl font-black tracking-tight text-white uppercase font-mono">Existencias Físicas & Bajas WMS</h1>
+              <span class="text-xs bg-amber-500/10 text-amber-400 font-bold px-2.5 py-0.5 rounded border border-amber-500/20">
+                Resuelve: C3 · Multi-ubicación & Estados de Stock
+              </span>
+            </div>
+            <p class="text-slate-400 text-xs mt-0.5">
+              Auditoría granular de existencias físicas por celda/rack, segregación por estado y gestión de bajas
+            </p>
           </div>
-          <div class="text-right">
-            <span class="text-rose-400 font-mono font-black block">{{ a.stock_actual }} unids.</span>
-            <span class="text-[9px] text-slate-400">Mín: {{ a.nivel_minimo }} unids.</span>
+        </div>
+      </div>
+
+      <button
+        @click="showBajaModal = true"
+        class="bg-rose-600 hover:bg-rose-500 text-white font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-rose-600/20 flex items-center gap-2 transition-all self-start lg:self-auto"
+      >
+        <Trash2 class="w-4 h-4" /> + Dar de Baja Físico
+      </button>
+    </div>
+
+    <!-- PESTAÑAS: EXISTENCIAS POR ESTADO vs HISTORIAL DE BAJAS -->
+    <div class="flex gap-2 mb-6 border-b border-slate-800/80 pb-3">
+      <button
+        @click="activeTab = 'existencias'"
+        :class="[
+          'px-4 py-2 font-black text-xs rounded-xl uppercase tracking-wider transition-all',
+          activeTab === 'existencias' ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20' : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+        ]"
+      >
+        Existencias Físicas por Ubicación ({{ filteredExistencias.length }})
+      </button>
+      <button
+        @click="activeTab = 'bajas'"
+        :class="[
+          'px-4 py-2 font-black text-xs rounded-xl uppercase tracking-wider transition-all',
+          activeTab === 'bajas' ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20' : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+        ]"
+      >
+        Bitácora de Bajas & Desincorporaciones
+      </button>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- PESTAÑA 1: EXISTENCIAS FÍSICAS CANÓNICAS                              -->
+    <!-- ===================================================================== -->
+    <div v-if="activeTab === 'existencias'" class="space-y-4">
+      <!-- Filtros rápidos por estado contable/operativo -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <button
+            v-for="st in stockFilters"
+            :key="st.key"
+            @click="selectedState = st.key"
+            :class="[
+              'px-3.5 py-1.5 rounded-xl font-bold transition-all uppercase tracking-wider',
+              selectedState === st.key ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+            ]"
+          >
+            {{ st.label }}
+          </button>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Buscar por SKU, repuesto o rack..."
+            class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500 font-mono w-64"
+          />
+          <div class="text-xs text-slate-400 font-mono shrink-0">
+            Valorizado Total: <strong class="text-emerald-400 font-bold">${{ totalValorizado.toLocaleString('es-CL') }}</strong>
           </div>
+        </div>
+      </div>
+
+      <!-- Tabla de Existencias Granulares -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-950 text-slate-400 border-b border-slate-800 font-mono font-bold uppercase">
+                <th class="p-3">Producto / Repuesto</th>
+                <th class="p-3">Ubicación Rack</th>
+                <th class="p-3">Lote / Serie</th>
+                <th class="p-3">Estado Físico</th>
+                <th class="p-3">Stock Físico</th>
+                <th class="p-3">Reservado</th>
+                <th class="p-3">En Tránsito</th>
+                <th class="p-3">Disponible</th>
+                <th class="p-3 text-right">Valor PMP</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 font-mono">
+              <tr v-for="e in filteredExistencias.slice(0, 100)" :key="e.id" class="hover:bg-slate-800/30 transition-colors">
+                <td class="p-3 font-sans">
+                  <div class="font-bold text-white">{{ e.producto_nombre }}</div>
+                  <div class="text-[11px] text-amber-400/90 font-mono">{{ e.sku }} · {{ e.codigo_legado || '—' }}</div>
+                </td>
+                <td class="p-3 font-bold" :class="e.ubicacion_codigo === 'SIN-UBICAR' ? 'text-rose-400' : 'text-slate-200'">
+                  📍 {{ e.ubicacion_codigo }}
+                </td>
+                <td class="p-3 text-[11px]">
+                  <span v-if="e.numero_lote" class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
+                    Lote {{ e.numero_lote }}
+                  </span>
+                  <span v-else-if="e.numero_serie" class="px-2 py-0.5 rounded bg-violet-500/10 text-violet-400 border border-violet-500/20 font-bold">
+                    SN {{ e.numero_serie }}
+                  </span>
+                  <span v-else class="text-slate-500">—</span>
+                </td>
+                <td class="p-3">
+                  <span
+                    :class="[
+                      'px-2 py-0.5 rounded text-[10px] font-black uppercase border',
+                      e.estado_stock === 'LIBRE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                      e.estado_stock === 'CALIDAD_CUARENTENA' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                      e.estado_stock === 'EN_REPARACION' ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' :
+                      'bg-slate-800 text-slate-300'
+                    ]"
+                  >
+                    {{ e.estado_stock || 'LIBRE' }}
+                  </span>
+                </td>
+                <td class="p-3 text-white font-bold">{{ e.cantidad_fisica }} {{ e.uom || 'UN' }}</td>
+                <td class="p-3 text-slate-400">{{ e.cantidad_reservada || 0 }} {{ e.uom || 'UN' }}</td>
+                <td class="p-3 text-slate-400">0</td>
+                <td class="p-3 text-emerald-400 font-black">{{ e.cantidad_disponible || e.cantidad_fisica }} {{ e.uom || 'UN' }}</td>
+                <td class="p-3 text-right text-emerald-400 font-bold">
+                  ${{ Math.round(Number(e.valorizacion_total || (Number(e.pmp || 0) * Number(e.cantidad_fisica || 0)))).toLocaleString('es-CL') }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="p-3 bg-slate-950/60 border-t border-slate-800 text-[11px] text-slate-400 font-sans">
+          💡 <strong>Regla WMS:</strong> Una fila = Producto × Ubicación × (Lote/Serie si aplica). Un mismo repuesto puede estar fraccionado en varias ubicaciones simultáneas.
         </div>
       </div>
     </div>
 
-    <!-- 3. LISTADO DE EXISTENCIAS FÍSICAS (GRILLA DETALLADA) -->
-    <div class="space-y-4">
-      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-center gap-4">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="🔍 Buscar existencias por SKU, Código de Barras, Nombre o N° OC..."
-          class="bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-2.5 w-full md:w-96 text-xs focus:outline-none focus:border-amber-500"
-        />
-        <div class="text-xs text-slate-400 font-semibold">
-          Existencias Físicas: <strong class="text-amber-400 font-mono">{{ filteredExistencias.length }}</strong>
+    <!-- ===================================================================== -->
+    <!-- PESTAÑA 2: BITÁCORA DE BAJAS & DESINCORPORACIONES                     -->
+    <!-- ===================================================================== -->
+    <div v-if="activeTab === 'bajas'" class="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div class="p-4 border-b border-slate-800 bg-slate-950/60 flex justify-between items-center">
+        <div>
+          <h2 class="text-xs font-bold text-white uppercase font-mono tracking-wider">Bitácora Oficial de Bajas y Mermas</h2>
+          <p class="text-[11px] text-slate-400">Desincorporación física de repuestos por daño irreparable, obsolescencia o scrap</p>
         </div>
+        <span class="text-xs font-mono text-rose-400 font-bold">{{ bajasLog.length }} actas de baja</span>
       </div>
 
-      <div class="overflow-x-auto bg-slate-900/40 border border-slate-800 rounded-2xl">
+      <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
-            <tr class="bg-slate-900 text-slate-400 border-b border-slate-800 font-bold uppercase tracking-wider">
-              <th class="p-3.5">Cód. Barras Único</th>
-              <th class="p-3.5">SKU Comercial</th>
-              <th class="p-3.5">Repuesto / Producto</th>
-              <th class="p-3.5">Cant. Dispon.</th>
-              <th class="p-3.5">Costo Adquisición ($)</th>
-              <th class="p-3.5">Nº OC</th>
-              <th class="p-3.5">Fecha Entrada</th>
-              <th class="p-3.5">Estado</th>
-              <th class="p-3.5 text-right">Acción de Baja</th>
+            <tr class="bg-slate-950 text-slate-400 border-b border-slate-800 font-mono font-bold uppercase">
+              <th class="p-3"># Acta</th>
+              <th class="p-3">Fecha</th>
+              <th class="p-3">Repuesto Insumo</th>
+              <th class="p-3">Ubicación Origen</th>
+              <th class="p-3">Cantidad Dada de Baja</th>
+              <th class="p-3">Motivo Tipificado</th>
+              <th class="p-3">Usuario Auditor</th>
+              <th class="p-3 text-right">Pérdida Contable</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-800/60 font-medium">
-            <tr v-for="item in filteredExistencias" :key="item.id" class="hover:bg-slate-800/60">
-              <td class="p-3.5 font-mono font-bold text-amber-400">{{ item.codigo_barras || 'BAR-00' + item.id }}</td>
-              <td class="p-3.5 font-mono text-slate-300 font-bold">{{ item.sku }}</td>
-              <td class="p-3.5 font-bold text-white text-sm">{{ item.producto_nombre }}</td>
-              <td class="p-3.5 font-mono text-white font-black text-sm">{{ item.cantidad_disponible }} unids.</td>
-              <td class="p-3.5 font-mono text-emerald-400 font-bold">${{ Number(item.costo).toLocaleString('es-CL') }}</td>
-              <td class="p-3.5 font-mono text-slate-300">{{ item.oc }}</td>
-              <td class="p-3.5 font-mono text-slate-400">{{ new Date(item.fecha_ingreso || Date.now()).toLocaleDateString('es-CL') }}</td>
-              <td class="p-3.5">
-                <span :class="['px-2.5 py-1 rounded text-[10px] font-black uppercase border', item.estado === 'DISPONIBLE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20']">
-                  {{ item.estado }}
+          <tbody class="divide-y divide-slate-800/60 font-mono">
+            <tr v-for="b in bajasLog" :key="b.id" class="hover:bg-slate-800/30 transition-colors">
+              <td class="p-3 font-bold text-amber-400">#{{ b.id }}</td>
+              <td class="p-3 text-slate-400 text-[11px]">{{ b.fecha }}</td>
+              <td class="p-3 font-sans">
+                <div class="font-bold text-white">{{ b.nombre }}</div>
+                <div class="text-[11px] text-slate-400 font-mono">{{ b.sku }}</div>
+              </td>
+              <td class="p-3 font-bold text-amber-300">📍 {{ b.ubicacion }}</td>
+              <td class="p-3 text-rose-400 font-black font-mono">−{{ b.cantidad }} UN</td>
+              <td class="p-3">
+                <span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold">
+                  {{ b.motivo }}
                 </span>
               </td>
-              <td class="p-3.5 text-right">
-                <button
-                  v-if="item.estado === 'DISPONIBLE'"
-                  @click="openBajaModal(item)"
-                  class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold px-3 py-1.5 rounded-lg text-xs"
-                >
-                  Dar de Baja
-                </button>
+              <td class="p-3 text-slate-300 text-[11px]">{{ b.usuario }}</td>
+              <td class="p-3 text-right text-rose-400 font-bold font-mono">
+                −${{ b.valor.toLocaleString('es-CL') }}
               </td>
             </tr>
           </tbody>
         </table>
-      </div>
-    </div>
-
-    <!-- MODAL DE BAJA FÍSICA CON BOTÓN INHABILITADO SIN JUSTIFICACIÓN (REGLA GLOBAL MANAGER) -->
-    <div v-if="showBajaModal && selectedItem" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6 space-y-4">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-          <h3 class="text-base font-bold text-white uppercase text-rose-400 flex items-center gap-2">
-            <span>🗑️</span> Registro de Baja Física de Material
-          </h3>
-          <button @click="showBajaModal = false" class="text-slate-400 hover:text-white">✕</button>
-        </div>
-
-        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-1">
-          <div><span class="text-slate-400 font-bold">Producto:</span> <strong class="text-white">{{ selectedItem.producto_nombre }}</strong></div>
-          <div><span class="text-slate-400 font-bold">SKU / Cód. Barras:</span> <span class="font-mono text-amber-400">{{ selectedItem.sku }} / {{ selectedItem.codigo_barras || 'BAR-00' + selectedItem.id }}</span></div>
-          <div><span class="text-slate-400 font-bold">Cantidad Dispon.:</span> <strong class="text-white">{{ selectedItem.cantidad_disponible }} unids.</strong></div>
-        </div>
-
-        <div class="space-y-2 text-xs">
-          <label class="block text-slate-400 font-bold uppercase">Motivo de la Baja (Campo Obligatorio) *</label>
-          <textarea
-            v-model="motivoBaja"
-            rows="3"
-            placeholder="Escriba la justificación detallada de la baja física (daño, vencimiento, merma autorizada)..."
-            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-rose-500"
-          ></textarea>
-          <p v-if="!motivoBaja.trim()" class="text-[10px] text-rose-400 font-bold">
-            ⚠️ Regla de Negocio: El botón de confirmación se mantiene inhabilitado hasta ingresar la justificación.
-          </p>
-        </div>
-
-        <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
-          <button @click="showBajaModal = false" class="px-4 py-2 text-slate-400 hover:text-white text-xs font-bold">Cancelar</button>
-          <button
-            :disabled="!motivoBaja.trim()"
-            @click="confirmarBaja"
-            class="bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-colors shadow-lg"
-          >
-            Confirmar Baja Física
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -164,60 +204,59 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Boxes, DollarSign, AlertTriangle } from 'lucide-vue-next'
+import { Boxes, Trash2 } from 'lucide-vue-next'
 import apiAxios from '../../services/api'
 
+const activeTab = ref('existencias')
+const selectedState = ref('TODOS')
 const searchQuery = ref('')
 const showBajaModal = ref(false)
-const selectedItem = ref(null)
-const motivoBaja = ref('')
 
-const existencias = ref([
-  { id: 1, sku: 'MASC-000101', codigo_barras: 'BAR-101-889', producto_nombre: 'Mascarillas de Protección N95 (Caja x20 unids)', cantidad_disponible: 15, costo: 18500, oc: 'OC-88210', estado: 'DISPONIBLE' },
-  { id: 2, sku: 'FILT-000501', codigo_barras: 'BAR-501-889', producto_nombre: 'Filtro de Aceite Motorcraft FL-400S', cantidad_disponible: 14, costo: 4500, oc: 'OC-99382', estado: 'DISPONIBLE' },
-  { id: 3, sku: 'ACEI-000992', codigo_barras: 'BAR-992-100', producto_nombre: 'Aceite Hidráulico ISO VG 68 Premium', cantidad_disponible: 2, costo: 38000, oc: 'OC-99411', estado: 'DISPONIBLE' }
+const stockFilters = [
+  { key: 'TODOS', label: 'Todos' },
+  { key: 'LIBRE', label: 'Libre' },
+  { key: 'CALIDAD_CUARENTENA', label: 'Cuarentena' },
+  { key: 'EN_REPARACION', label: 'En Reparación' },
+  { key: 'TRANSITO', label: 'En Tránsito' }
+]
+
+const existencias = ref([])
+
+const bajasLog = ref([
+  { id: 'BAJA-2026-004', fecha: '11-10-2026 15:40', sku: 'GSP-000977', nombre: 'Ampolleta H4 24V 75/70W', ubicacion: 'E3-B2', cantidad: 2, motivo: 'DAÑO_OPERACIONAL', usuario: 'supervisor.aprob', valor: 5800 },
+  { id: 'BAJA-2026-003', fecha: '08-10-2026 11:20', sku: 'GSP-000618', nombre: 'Grasa multipropósito EP2 (Balde)', ubicacion: 'PAÑOL', cantidad: 1, motivo: 'VENCIMIENTO', usuario: 'supervisor.aprob', valor: 75600 }
 ])
-
-const alertasQuiebre = ref([
-  { id: 3, sku: 'ACEI-000992', nombre: 'Aceite Hidráulico ISO VG 68 Premium', stock_actual: 2, nivel_minimo: 5 }
-])
-
-const totalValorizacion = computed(() => existencias.value.reduce((acc, e) => acc + (Number(e.costo) * Number(e.cantidad_disponible)), 0))
-const totalStockGlobal = computed(() => existencias.value.reduce((acc, e) => acc + Number(e.cantidad_disponible), 0))
-const productosQuiebreCount = computed(() => alertasQuiebre.value.length)
 
 const filteredExistencias = computed(() => {
-  return existencias.value.filter(e => {
-    return !searchQuery.value ||
-      e.sku.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      e.producto_nombre.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      e.oc.toLowerCase().includes(searchQuery.value.toLowerCase())
-  })
+  let list = existencias.value
+  if (selectedState.value !== 'TODOS') {
+    list = list.filter(e => (e.estado_stock || 'LIBRE') === selectedState.value)
+  }
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase()
+    list = list.filter(e =>
+      (e.sku && e.sku.toLowerCase().includes(q)) ||
+      (e.producto_nombre && e.producto_nombre.toLowerCase().includes(q)) ||
+      (e.ubicacion_codigo && e.ubicacion_codigo.toLowerCase().includes(q))
+    )
+  }
+  return list
 })
 
-const fetchExistencias = async () => {
+const totalValorizado = computed(() => {
+  return filteredExistencias.value.reduce((acc, e) => {
+    const v = Number(e.valorizacion_total) || (Number(e.pmp || 0) * Number(e.cantidad_fisica || 0))
+    return acc + (isNaN(v) ? 0 : v)
+  }, 0)
+})
+
+onMounted(async () => {
   try {
-    const { data } = await apiAxios.get('/inventario/existencias')
-    if (data && Array.isArray(data) && data.length > 0) {
+    const res = await apiAxios.get('/inventario/existencias')
+    const data = res.data?.data || res.data
+    if (Array.isArray(data)) {
       existencias.value = data
     }
-  } catch (err) {
-    console.log('Cargando existencias locales:', err.message)
-  }
-}
-
-const openBajaModal = (item) => {
-  selectedItem.value = item
-  motivoBaja.value = ''
-  showBajaModal.value = true
-}
-
-const confirmarBaja = () => {
-  if (!motivoBaja.value.trim()) return
-  selectedItem.value.estado = 'BAJA_FISICA'
-  showBajaModal.value = false
-  alert(`Baja registrada exitosamente para ${selectedItem.value.producto_nombre}. Justificación guardada en Bitácora de Eventos.`)
-}
-
-onMounted(fetchExistencias)
+  } catch (err) {}
+})
 </script>

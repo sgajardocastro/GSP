@@ -7,58 +7,9 @@
 
 const path = require('path');
 const fs = require('fs');
-
-let puppeteerInstance = null;
-
-async function getPuppeteer() {
-  if (puppeteerInstance) return puppeteerInstance;
-  try {
-    puppeteerInstance = require('puppeteer');
-    return puppeteerInstance;
-  } catch (e) {
-    try {
-      const mod = await import('puppeteer-core');
-      puppeteerInstance = mod.default || mod;
-      return puppeteerInstance;
-    } catch (e2) {
-      try {
-        const mod = await import(path.join(__dirname, '../../node_modules/puppeteer-core/lib/puppeteer/puppeteer-core.js'));
-        puppeteerInstance = mod.default || mod;
-        return puppeteerInstance;
-      } catch (e3) {
-        throw new Error('No se pudo inicializar puppeteer: ' + e3.message);
-      }
-    }
-  }
-}
-
-function getChromeExecutablePath() {
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    return process.env.PUPPETEER_EXECUTABLE_PATH;
-  }
-  if (process.platform === 'win32') {
-    const winPaths = [
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
-    ];
-    for (const p of winPaths) {
-      if (fs.existsSync(p)) return p;
-    }
-  } else {
-    const linuxPaths = [
-      '/usr/bin/google-chrome',
-      '/usr/bin/google-chrome-stable',
-      '/usr/bin/chromium',
-      '/usr/bin/chromium-browser'
-    ];
-    for (const p of linuxPaths) {
-      if (fs.existsSync(p)) return p;
-    }
-  }
-  return undefined;
-}
+const os = require('os');
+const { exec } = require('child_process');
+const { v4: uuidv4 } = require('uuid');
 
 const ITEMS_OFICIALES_19 = [
   'Alarma Traslación',
@@ -444,47 +395,37 @@ function buildActaPlataformaHtml(data) {
 }
 
 /**
- * Compila y genera el buffer del PDF oficial del Acta de Plataforma
+ * Compila y genera el buffer del PDF oficial del Acta de Plataforma con wkhtmltopdf (0% Puppeteer)
  */
 async function generarPdfActaPlataforma(data) {
-  const puppeteer = await getPuppeteer();
-  const chromePath = getChromeExecutablePath();
+  const htmlContent = buildActaPlataformaHtml(data);
+  const uuid = uuidv4();
+  const tmpDir = os.tmpdir();
+  const tempHtmlPath = path.join(tmpDir, `acta_${uuid}.html`);
+  const tempPdfPath = path.join(tmpDir, `acta_${uuid}.pdf`);
 
-  const launchOptions = {
-    headless: 'new',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu'
-    ]
-  };
+  fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
 
-  if (chromePath) {
-    launchOptions.executablePath = chromePath;
-  }
-
-  const browser = await puppeteer.launch(launchOptions);
   try {
-    const page = await browser.newPage();
-    const html = buildActaPlataformaHtml(data);
+    await new Promise((resolve, reject) => {
+      const isWin = process.platform === 'win32';
+      const cmd = isWin
+        ? `wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 8mm --margin-bottom 8mm --margin-left 8mm --margin-right 8mm "${tempHtmlPath}" "${tempPdfPath}"`
+        : `xvfb-run -a --server-args="-screen 0 794x1123x24" wkhtmltopdf --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 8mm --margin-bottom 8mm --margin-left 8mm --margin-right 8mm "${tempHtmlPath}" "${tempPdfPath}"`;
 
-    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 20000 });
-
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '8mm',
-        right: '8mm',
-        bottom: '8mm',
-        left: '8mm'
-      }
+      exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
+        if (error && !fs.existsSync(tempPdfPath)) {
+          console.error('[ActaPlataforma wkhtmltopdf] Error:', error.message, stderr);
+          return reject(new Error('Fallo al compilar Acta con wkhtmltopdf: ' + error.message));
+        }
+        resolve();
+      });
     });
 
-    return pdfBuffer;
+    return fs.readFileSync(tempPdfPath);
   } finally {
-    await browser.close();
+    try { if (fs.existsSync(tempHtmlPath)) fs.unlinkSync(tempHtmlPath); } catch (_) {}
+    try { if (fs.existsSync(tempPdfPath)) fs.unlinkSync(tempPdfPath); } catch (_) {}
   }
 }
 

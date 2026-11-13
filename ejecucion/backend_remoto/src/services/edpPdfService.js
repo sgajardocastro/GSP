@@ -162,6 +162,7 @@ function buildEdpHtml(data) {
   if (totalHorasFacturables === 0 && Number(edp?.horas_facturables_totales) > 0) {
     totalHorasFacturables = Number(edp.horas_facturables_totales);
   }
+  const totalHorasBase = Math.max(0, Number((totalHorasFacturables - totalSobretiempo).toFixed(1)));
 
   // Líneas de cobro en la tabla financiera
   const detallesLista = Array.isArray(detalles_adicionales) && detalles_adicionales.length > 0
@@ -521,19 +522,19 @@ function buildEdpHtml(data) {
   <!-- Resumen Operativo de Jornadas -->
   <table class="w-full" style="margin-bottom: 10px;">
     <tr>
-      <td class="kpi-card" style="width: 32%;">
+      <td class="kpi-card" style="width: 24%;">
         <div class="lbl-mini">Jornadas Respaldadas</div>
-        <div class="font-black font-mono text-dark" style="font-size: 15px;">${Math.max((reports || []).length, Number(edp?.dias_totales || 0))} DÍAS</div>
+        <div class="font-black font-mono text-dark" style="font-size: 14px;">${Math.max((reports || []).length, Number(edp?.dias_totales || 0))} DÍAS</div>
       </td>
       <td style="width: 2%;"></td>
-      <td class="kpi-card" style="width: 32%;">
-        <div class="lbl-mini">Horas Facturables</div>
-        <div class="font-black font-mono text-dark" style="font-size: 15px;">${totalHorasFacturables.toFixed(1)} HRS</div>
+      <td class="kpi-card" style="width: 40%;">
+        <div class="lbl-mini">Desglose Horas (Base + Sobretiempo)</div>
+        <div class="font-black font-mono text-dark" style="font-size: 13.5px;">${totalHorasBase.toFixed(1)} HRS BASE + ${totalSobretiempo.toFixed(1)} HRS EXTRA</div>
       </td>
       <td style="width: 2%;"></td>
       <td class="kpi-card-amber" style="width: 32%;">
-        <div class="lbl-mini" style="color: #b45309;">Sobretiempo Extra</div>
-        <div class="font-black font-mono text-amber" style="font-size: 15px;">+${totalSobretiempo.toFixed(1)} HRS</div>
+        <div class="lbl-mini" style="color: #b45309;">Total Horas Facturables</div>
+        <div class="font-black font-mono text-amber" style="font-size: 14.5px;">= ${totalHorasFacturables.toFixed(1)} HRS FACTURABLES</div>
       </td>
     </tr>
   </table>
@@ -598,17 +599,17 @@ function buildEdpHtml(data) {
         </td>
         <td style="width: 50%; text-align: center; vertical-align: bottom; padding: 6px 12px;">
           <div style="min-height: 44px; border-bottom: 1px solid #94a3b8; padding-bottom: 3px; margin-bottom: 3px;">
-            ${f3Comercial?.codigo_fes ? `
-              <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">✓ DESPACHO COMERCIAL FES</div>
-              <div style="font-size: 8.5px; color: #0f172a;"><strong>${f3Comercial.nombre_firmante}</strong></div>
-              <div class="font-mono text-muted" style="font-size: 7.5px;">${f3Comercial.codigo_fes}</div>
-              <div class="font-mono text-muted" style="font-size: 7.5px;">${formatDateCL(f3Comercial.fecha_firma)}</div>
+            ${f2Contabilidad?.codigo_fes ? `
+              <div class="font-mono font-bold text-emerald" style="font-size: 8.5px;">✓ FACTURACIÓN LAUDUS Y FIRMA FES</div>
+              <div style="font-size: 8.5px; color: #0f172a;"><strong>${f2Contabilidad.nombre_firmante}</strong>${f2Contabilidad.factura_numero ? ` · Fact. #${f2Contabilidad.factura_numero}` : ''}</div>
+              <div class="font-mono text-muted" style="font-size: 7.5px;">${f2Contabilidad.codigo_fes}</div>
+              <div class="font-mono text-muted" style="font-size: 7.5px;">${formatDateCL(f2Contabilidad.fecha_firma)}</div>
             ` : `
-              <div class="font-mono text-muted" style="line-height: 38px; font-size: 8.5px;">V°B° Comercial GSP</div>
+              <div class="font-mono text-muted" style="line-height: 38px; font-size: 8.5px;">Pendiente Facturación y Firma Contabilidad</div>
             `}
           </div>
-          <div class="font-bold text-dark" style="font-size: 9px;">2. Despacho Comercial</div>
-          <div class="text-muted" style="font-size: 7.5px;">V°B° y Envío Oficial a Mandante</div>
+          <div class="font-bold text-dark" style="font-size: 9px;">2. Contabilidad y Facturación</div>
+          <div class="text-muted" style="font-size: 7.5px;">Emisión Factura Laudus, Carga DTE y Firma FES</div>
         </td>
       </tr>
     </table>

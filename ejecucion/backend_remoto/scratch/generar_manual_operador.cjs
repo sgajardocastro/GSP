@@ -1,0 +1,1259 @@
+const fs = require('fs');
+const path = require('path');
+
+const targetPath = path.resolve(__dirname, '../../frontend/public/manual_operador_terreno_gsp.html');
+
+console.log('Generando manual actualizado en:', targetPath);
+
+const htmlContent = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual Visual de Operaciones en Terreno • Tu APP Móvil Grúas San Pablo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #030712;
+      color: #f3f4f6;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .phone-frame {
+      width: 350px;
+      height: 670px;
+      border: 11px solid #1e293b;
+      border-radius: 42px;
+      background: #050810;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 0 0 2px rgba(245, 158, 11, 0.25);
+      position: relative;
+    }
+    .phone-frame::-webkit-scrollbar {
+      width: 4px;
+    }
+    .phone-frame::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+    .notch {
+      width: 124px;
+      height: 20px;
+      background: #1e293b;
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
+      position: sticky;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .camera-dot {
+      width: 6px;
+      height: 6px;
+      background: #090d16;
+      border-radius: 50%;
+    }
+    .speaker-bar {
+      width: 32px;
+      height: 3px;
+      background: #090d16;
+      border-radius: 2px;
+    }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #94a3b8;
+      padding: 3px 14px 4px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .step-active {
+      border-color: #f59e0b !important;
+      background: rgba(245, 158, 11, 0.22) !important;
+      color: #fbbf24 !important;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
+    }
+    .pulse-amber {
+      animation: pulseAmber 2s infinite;
+    }
+    @keyframes pulseAmber {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+      50% { box-shadow: 0 0 0 12px rgba(245, 158, 11, 0); }
+    }
+    .pulse-emerald {
+      animation: pulseEmerald 2s infinite;
+    }
+    @keyframes pulseEmerald {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+      50% { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+    }
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .print-page {
+        page-break-after: always;
+        break-after: page;
+        color: #000000 !important;
+      }
+      .phone-frame {
+        border-color: #94a3b8 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        box-shadow: none !important;
+      }
+    }
+    .print-only {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-[#030712] min-h-screen text-slate-100 flex flex-col selection:bg-amber-500 selection:text-black">
+
+  <!-- ========================================================================= -->
+  <!-- BARRA SUPERIOR: ENCABEZADO Y CONTROLES                                    -->
+  <!-- ========================================================================= -->
+  <header class="bg-[#080d1a] border-b border-amber-500/30 px-3 md:px-5 py-3 sticky top-0 z-50 shadow-2xl backdrop-blur-md no-print">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+      
+      <!-- Logo y Título -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border-2 border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-xl shadow-inner">
+            🚜
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono font-black text-amber-400 uppercase tracking-wider">GRÚAS SAN PABLO</span>
+              <span class="text-[9px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/40 font-bold">MANUAL OFICIAL OPERADOR</span>
+            </div>
+            <h1 class="text-sm md:text-base font-black text-white tracking-tight">Manual Visual Paso a Paso • Tu APP en el Celular</h1>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="audioGlobalBtn" onclick="toggleAudio()" class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer">
+            <span id="audioIcon">🔊</span>
+            <span id="audioText" class="hidden sm:inline">Escuchar en Voz Alta (es-CL)</span>
+          </button>
+          <button onclick="window.print()" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-xs font-bold rounded-lg border border-white/20 text-white flex items-center gap-1 transition-all cursor-pointer">
+            <span>🖨️</span>
+            <span class="hidden sm:inline">Imprimir PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Navegación de los 7 Pasos -->
+      <div class="flex items-center gap-1 overflow-x-auto w-full md:w-auto py-1 text-xs">
+        <button onclick="goToSlide(1)" id="tab1" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">1</span> 📱 Inicio APP
+        </button>
+        <button onclick="goToSlide(2)" id="tab2" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">2</span> 🚛 Salida Base
+        </button>
+        <button onclick="goToSlide(3)" id="tab3" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">3</span> 📍 Llegada Faena = Inicio
+        </button>
+        <button onclick="goToSlide(4)" id="tab4" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">4</span> 🏕️ Multi-Día (Día > 1)
+        </button>
+        <button onclick="goToSlide(5)" id="tab5" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">5</span> 🔴 Fin de Faena
+        </button>
+        <button onclick="goToSlide(6)" id="tab6" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">6</span> ✍️ Firma Mandante
+        </button>
+        <button onclick="goToSlide(7)" id="tab7" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">7</span> 🏁 Retorno Base
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- RESUMEN DIDÁCTICO: LOS 3 GRANDES MOMENTOS DEL SERVICIO                     -->
+  <!-- ========================================================================= -->
+  <section class="max-w-7xl mx-auto w-full p-4 pt-5 no-print">
+    <div class="bg-gradient-to-r from-amber-500/10 via-slate-900 to-emerald-500/10 border border-amber-500/30 rounded-3xl p-5 md:p-6 shadow-2xl">
+      <div class="max-w-3xl">
+        <span class="text-[10px] font-mono uppercase bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2.5 py-0.5 rounded font-black tracking-wider">
+          ⭐ REGLA DE ORO DE TERRENO • SECUENCIA CANÓNICA
+        </span>
+        <h2 class="text-xl md:text-2xl font-black text-white mt-2 tracking-tight">
+          Tu servicio en la APP se resume en 3 momentos continuos:
+        </h2>
+        <p class="text-xs md:text-sm text-slate-300 mt-1 leading-relaxed">
+          Diseñado para que <strong>nunca te pierdas</strong> ni tengas pasos repetidos. En servicios de un día, <strong>tu llegada a faena marca directamente el inicio de la operación</strong>:
+        </p>
+      </div>
+
+      <!-- Tarjetas de los 3 Pasos -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-4">
+        
+        <!-- Tarjeta 1 -->
+        <div class="bg-black/60 border border-amber-500/30 rounded-2xl p-4 flex flex-col justify-between hover:border-amber-400 transition-all">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center font-mono font-black text-xs">1</span>
+              <span class="text-[10px] font-bold text-amber-400 uppercase font-mono">Mañana</span>
+            </div>
+            <h3 class="text-sm font-black text-white flex items-center gap-1.5">
+              <span>🚛</span> 1. Salida y Llegada a Faena
+            </h3>
+            <p class="text-xs text-slate-300">
+              Sales de Base con odómetro, horómetro del camión y PIN. <strong>Al llegar a la obra confirmas con el horómetro de la grúa y combustible: ¡Ese mismo acto inicia tu faena automáticamente!</strong>
+            </p>
+          </div>
+          <div class="mt-3 pt-2 border-t border-white/10 text-[11px] font-mono text-emerald-400 font-bold">
+            👉 En faena de 1 día: Llegada = Faena Iniciada.
+          </div>
+        </div>
+
+        <!-- Tarjeta 2 -->
+        <div class="bg-black/60 border border-emerald-500/30 rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-400 transition-all">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="w-7 h-7 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-mono font-black text-xs">2</span>
+              <span class="text-[10px] font-bold text-emerald-400 uppercase font-mono">Durante el Día</span>
+            </div>
+            <h3 class="text-sm font-black text-white flex items-center gap-1.5">
+              <span>📋</span> 2. Operación y Report Diario
+            </h3>
+            <p class="text-xs text-slate-300">
+              <strong>Multi-Día (Día > 1):</strong> Botón verde de inicio rápido en 1 toque.<br>
+              <strong>Fin de Faena:</strong> Horómetro final grúa, colación y maniobras.<br>
+              <strong>Firma:</strong> El cliente ITO firma con su dedo en la pantalla táctil.
+            </p>
+          </div>
+          <div class="mt-3 pt-2 border-t border-white/10 text-[11px] font-mono text-emerald-300 font-bold">
+            👉 Sin la firma del cliente mandante el día no puede cobrarse.
+          </div>
+        </div>
+
+        <!-- Tarjeta 3 -->
+        <div class="bg-black/60 border border-purple-500/30 rounded-2xl p-4 flex flex-col justify-between hover:border-purple-400 transition-all">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="w-7 h-7 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-400 flex items-center justify-center font-mono font-black text-xs">3</span>
+              <span class="text-[10px] font-bold text-purple-400 uppercase font-mono">Tarde / Último Día</span>
+            </div>
+            <h3 class="text-sm font-black text-white flex items-center gap-1.5">
+              <span>🏁</span> 3. Retorno a Base San Pablo
+            </h3>
+            <p class="text-xs text-slate-300">
+              Al sellar el último día contratado, se activa el retorno. Vuelves a Patio Central y confirmas llegada final con petróleo. La máquina queda disponible.
+            </p>
+          </div>
+          <div class="mt-3 pt-2 border-t border-white/10 text-[11px] font-mono text-purple-300 font-bold">
+            👉 Al entrar a Base: La grúa queda disponible y el servicio concluido.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- VISOR INTERACTIVO PASO A PASO (SPLIT VIEW: CELULAR REAL + EXPLICACIÓN)    -->
+  <!-- ========================================================================= -->
+  <main class="max-w-7xl mx-auto w-full p-4 flex-1">
+    
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- COLUMNA IZQUIERDA: SIMULADOR DE CELULAR -->
+      <div class="lg:col-span-5 flex flex-col items-center justify-center">
+        
+        <div class="phone-frame" id="phoneContainer">
+          <!-- Notch del Teléfono -->
+          <div class="notch">
+            <div class="camera-dot"></div>
+            <div class="speaker-bar"></div>
+          </div>
+
+          <!-- Barra de Estado del Celular (Hora, 4G, Batería) -->
+          <div class="status-bar">
+            <span>08:00</span>
+            <div class="flex items-center gap-1.5 text-[9px]">
+              <span>4G LTE</span>
+              <span>📶</span>
+              <span>🔋 100%</span>
+            </div>
+          </div>
+          
+          <!-- PANTALLA DEL CELULAR CON INYECCIÓN DINÁMICA -->
+          <div id="phoneScreen" class="p-3 text-slate-100 text-xs">
+            <!-- Inyectado dinámicamente vía Javascript -->
+          </div>
+        </div>
+
+        <!-- Controles Inferiores del Simulador -->
+        <div class="flex items-center gap-3 mt-4 no-print">
+          <button onclick="prevSlide()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-white/10 flex items-center gap-1 cursor-pointer transition-all">
+            ◀ Anterior
+          </button>
+          <span id="slideIndicator" class="text-xs font-mono font-black text-amber-400 px-3 py-1 bg-black/70 rounded-lg border border-white/10">
+            Paso 1 de 7
+          </span>
+          <button onclick="nextSlide()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl shadow-lg flex items-center gap-1 cursor-pointer transition-all">
+            Siguiente ▶
+          </button>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: EXPLICACIÓN DETALLADA DIDÁCTICA -->
+      <div class="lg:col-span-7 bg-[#0a0f1e] border border-amber-500/30 rounded-3xl p-6 shadow-2xl space-y-5" id="explanationPanel">
+        <!-- Inyectado dinámicamente vía Javascript -->
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- GUÍA DIDÁCTICA DE RELOJES Y MARCADORES EN TERRENO                          -->
+  <!-- ========================================================================= -->
+  <section class="max-w-7xl mx-auto w-full p-4 my-2 no-print">
+    <div class="bg-[#080d1a] border border-white/10 rounded-3xl p-5 md:p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🧭</span>
+          <div>
+            <h3 class="text-base md:text-lg font-black text-white">¿Dónde miro cada número en mi máquina? (Guía de Relojes)</h3>
+            <p class="text-xs text-slate-400">Para que no te confundas entre los kilómetros del camión y las horas de la grúa.</p>
+          </div>
+        </div>
+        <span class="text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/40 font-bold">
+          REGLA CANÓNICA
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+        
+        <div class="bg-black/50 border border-amber-500/30 rounded-2xl p-3.5 space-y-2">
+          <div class="flex items-center gap-2 text-amber-400 font-black">
+            <span>⏱️</span>
+            <span>1. Kilómetros (KM)</span>
+          </div>
+          <p class="text-slate-300 text-[11px] leading-relaxed">
+            <strong>¿Dónde está?</strong> En el tacógrafo del volante del camión.<br>
+            <strong>¿Cuándo se anota?</strong> Solo al salir de base y al llegar a faena (o al retornar).<br>
+            <span class="text-amber-300 font-bold">👉 En faena NO se pide odómetro.</span>
+          </p>
+        </div>
+
+        <div class="bg-black/50 border border-blue-500/30 rounded-2xl p-3.5 space-y-2">
+          <div class="flex items-center gap-2 text-blue-400 font-black">
+            <span>🚚</span>
+            <span>2. Horómetro Camión (HRS)</span>
+          </div>
+          <p class="text-slate-300 text-[11px] leading-relaxed">
+            <strong>¿Dónde está?</strong> En el tablero del motor chasis (horas de traslado).<br>
+            <strong>¿Cuándo se anota?</strong> Al salir de Base y al llegar a faena.<br>
+            <span class="text-blue-300 font-bold">👉 Mide el desgaste del camión en ruta.</span>
+          </p>
+        </div>
+
+        <div class="bg-black/50 border border-emerald-500/30 rounded-2xl p-3.5 space-y-2">
+          <div class="flex items-center gap-2 text-emerald-400 font-black">
+            <span>⚙️</span>
+            <span>3. Horómetro Grúa (HRS)</span>
+          </div>
+          <p class="text-slate-300 text-[11px] leading-relaxed">
+            <strong>¿Dónde está?</strong> En el computador de la cabina de izaje (superestructura).<br>
+            <strong>¿Cuándo se anota?</strong> Al llegar a faena y al terminar la jornada.<br>
+            <span class="text-emerald-300 font-bold">👉 ¡Es el número que se cobra al cliente!</span>
+          </p>
+        </div>
+
+        <div class="bg-black/50 border border-purple-500/30 rounded-2xl p-3.5 space-y-2">
+          <div class="flex items-center gap-2 text-purple-400 font-black">
+            <span>⛽</span>
+            <span>4. Nivel Petróleo (%)</span>
+          </div>
+          <p class="text-slate-300 text-[11px] leading-relaxed">
+            <strong>¿Dónde está?</strong> En el reloj medidor de combustible del estanque.<br>
+            <strong>¿Cuándo se anota?</strong> Al llegar a faena y al llegar a patio central.<br>
+            <span class="text-purple-300 font-bold">👉 Selecciona el % y toma foto clara.</span>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PREGUNTAS FRECUENTES Y CONTINGENCIAS DE TERRENO                            -->
+  <!-- ========================================================================= -->
+  <section class="max-w-7xl mx-auto w-full p-4 my-2 no-print">
+    <div class="bg-[#080d1a] border border-white/10 rounded-3xl p-5 md:p-6 space-y-4">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">💡</span>
+        <h3 class="text-base md:text-lg font-black text-white">Preguntas Frecuentes y Situaciones en Terreno</h3>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        
+        <div class="bg-black/40 border border-white/5 rounded-2xl p-4 space-y-2">
+          <h4 class="font-bold text-amber-400 text-sm flex items-center gap-1.5">
+            <span>📡</span> ¿Qué pasa si no tengo señal o internet en la faena?
+          </h4>
+          <p class="text-slate-300 leading-relaxed">
+            <strong>Tu APP funciona 100% sin señal (Modo Offline).</strong> Puedes registrar horómetros, tomar fotos y hacer que el cliente ITO firme con su dedo normalmente. Todo se guarda seguro en la memoria de tu teléfono y la APP lo enviará automáticamente apenas vuelvas a tener señal 4G o Wi-Fi.
+          </p>
+        </div>
+
+        <div class="bg-black/40 border border-white/5 rounded-2xl p-4 space-y-2">
+          <h4 class="font-bold text-emerald-400 text-sm flex items-center gap-1.5">
+            <span>🏕️</span> ¿Si la faena dura 3 días, tengo que hacer viaje todos los días?
+          </h4>
+          <p class="text-slate-300 leading-relaxed">
+            <strong>¡No! Solo haces viaje el Día 1 de ida y el Día 3 de regreso.</strong> En los días intermedios (Día 2), la grúa ya durmió en la obra. Abres tu APP a las 08:00 hrs y tocas directamente el botón verde <em>[▶️ Iniciar Jornada de Faena Día 2]</em>. En un solo toque comienzas tu faena sin registrar odómetros ni viajes.
+          </p>
+        </div>
+
+        <div class="bg-black/40 border border-white/5 rounded-2xl p-4 space-y-2">
+          <h4 class="font-bold text-cyan-400 text-sm flex items-center gap-1.5">
+            <span>✍️</span> ¿Por qué es obligatoria la firma del cliente mandante?
+          </h4>
+          <p class="text-slate-300 leading-relaxed">
+            La firma electrónica en pantalla del supervisor o ITO es el <strong>único documento legal</strong> con el que Grúas San Pablo cobra el arriendo de la máquina. Si te retiras de la faena sin la firma del cliente, el turno no puede facturarse y se generan reclamos de cobro.
+          </p>
+        </div>
+
+        <div class="bg-black/40 border border-white/5 rounded-2xl p-4 space-y-2">
+          <h4 class="font-bold text-purple-400 text-sm flex items-center gap-1.5">
+            <span>⏱️</span> ¿Qué hago si el cliente me pide trabajar un día extra?
+          </h4>
+          <p class="text-slate-300 leading-relaxed">
+            Si la faena estaba contratada por 2 días y el cliente te pide un 3er día en terreno, <strong>avisa de inmediato a Torre de Control (Yiara / Coordinación)</strong> antes de las 18:00 hrs. Ellos deben autorizar la ampliación en el sistema para que la APP te permita abrir el report del nuevo día.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- FORMATO IMPRIMIBLE / AFICHE DE CABINA (SOLO PRINT)                        -->
+  <!-- ========================================================================= -->
+  <section class="print-only p-6 print-page">
+    <div class="border-2 border-black p-4 rounded-xl space-y-3">
+      <div class="text-center border-b-2 border-black pb-2">
+        <h2 class="text-xl font-black uppercase">GRÚAS SAN PABLO • CARTILLA DE CABINA PARA OPERADORES</h2>
+        <p class="text-xs font-bold text-gray-700">Guía Oficial de Pasos en Terreno • APP Móvil en el Celular</p>
+      </div>
+
+      <table class="w-full text-xs border-collapse border border-gray-400">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="border border-gray-400 p-2 text-left w-14">Paso</th>
+            <th class="border border-gray-400 p-2 text-left">Momento del Día</th>
+            <th class="border border-gray-400 p-2 text-left">Qué Números Anotar</th>
+            <th class="border border-gray-400 p-2 text-left">Fotos Obligatorias</th>
+            <th class="border border-gray-400 p-2 text-left">Botón en la APP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="border border-gray-400 p-2 font-bold">1</td>
+            <td class="border border-gray-400 p-2">Salida Patio Base</td>
+            <td class="border border-gray-400 p-2">Odómetro Camión (KM) + Horómetro Camión (HRS) + PIN</td>
+            <td class="border border-gray-400 p-2">Foto Tablero Camión</td>
+            <td class="border border-gray-400 p-2 font-mono">[ Iniciar Viaje hacia Faena ]</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-400 p-2 font-bold">2</td>
+            <td class="border border-gray-400 p-2">Llegada a Faena = Inicio Faena</td>
+            <td class="border border-gray-400 p-2">Odómetro + Horómetro Camión + Horómetro Grúa Inicial + % Petróleo</td>
+            <td class="border border-gray-400 p-2">Foto Marcador Petróleo</td>
+            <td class="border border-gray-400 p-2 font-mono">[ Confirmar Llegada a Faena ]</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-400 p-2 font-bold">3</td>
+            <td class="border border-gray-400 p-2">Multi-Día (Día > 1)</td>
+            <td class="border border-gray-400 p-2">Solo hora (08:00) • Horómetro se hereda del cierre anterior</td>
+            <td class="border border-gray-400 p-2">Opcional</td>
+            <td class="border border-gray-400 p-2 font-mono">[ Iniciar Jornada Día N ] (1 Toque)</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-400 p-2 font-bold">4</td>
+            <td class="border border-gray-400 p-2">Término Faena</td>
+            <td class="border border-gray-400 p-2">Hora salida + Colación con 1 toque + Horómetro Grúa final</td>
+            <td class="border border-gray-400 p-2">Foto Horómetro Grúa Término</td>
+            <td class="border border-gray-400 p-2 font-mono">[ Proceder a Report Mandante ]</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-400 p-2 font-bold">5</td>
+            <td class="border border-gray-400 p-2">Firma Mandante</td>
+            <td class="border border-gray-400 p-2">Nombre ITO + RUT + Cargo ITO</td>
+            <td class="border border-gray-400 p-2">Firma ITO con el dedo en pantalla touch</td>
+            <td class="border border-gray-400 p-2 font-mono">[ Sellar y Transmitir Report ]</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-400 p-2 font-bold">6</td>
+            <td class="border border-gray-400 p-2">Retorno a Base (Último Día)</td>
+            <td class="border border-gray-400 p-2">Odómetro y Horómetro Camión + % Petróleo entrada + PIN</td>
+            <td class="border border-gray-400 p-2">Foto Tablero Entrada + Petróleo</td>
+            <td class="border border-gray-400 p-2 font-mono">[ Confirmar Llegada Patio Central ]</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="mt-4 p-3 bg-gray-100 border border-gray-300 rounded text-[11px] leading-normal">
+        <strong>CONTACTOS DE EMERGENCIA Y TORRE DE CONTROL:</strong><br>
+        • Torre de Control / Control de Gestión: Yiara (+56 9 8765 4321)<br>
+        • Coordinación de Operaciones Flota: (+56 9 1234 5678)<br>
+        • Taller Central y Asistencia Técnica: (+56 9 5555 4444)
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- FOOTER OFICIAL GSP                                                        -->
+  <!-- ========================================================================= -->
+  <footer class="bg-[#050810] border-t border-white/10 py-6 px-4 text-center text-xs text-slate-500 space-y-1 no-print">
+    <p class="font-mono text-slate-400">Grúas San Pablo SpA • Torre de Control de Operaciones y Flota</p>
+    <p>Manual oficial de inducción en terreno para operadores y choferes • APP Móvil v1.0.98</p>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- SCRIPT DIDÁCTICO, LOCUCIÓN DE VOZ es-CL Y CONTROLADOR DEL SIMULADOR       -->
+  <!-- ========================================================================= -->
+  <script>
+    const slides = [
+      {
+        id: 1,
+        titulo: "Paso 1: La Pantalla Principal en la APP (Mis Servicios)",
+        fase: "INICIO DEL DÍA",
+        badge: "PANTALLA DE INICIO",
+        badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+        audioPrompt: "Bienvenido a tu APP de terreno de Grúas San Pablo. Al abrir tu celular verás tu orden de trabajo del día y la grúa asignada. No tienes que buscar menús complicados: solo presiona el botón grande iluminado que dice 'Tu Próxima Acción'.",
+        resumen: "Al abrir la APP en tu celular, el sistema te muestra directamente tu orden de trabajo (OT) del día y el botón gigante iluminado con tu siguiente paso.",
+        puntosClave: [
+          "<strong>Ya no hay menús complicados:</strong> La APP te muestra arriba en grande el número de OT, la grúa que tienes asignada y la obra del cliente.",
+          "<strong>El Stepper 1-2-3 didáctico:</strong> Te muestra en qué parte del día estás: <em>1. Viaje a Faena</em>, <em>2. Report Faena</em>, o <em>3. Retorno Base</em>.",
+          "<strong>El Botón Gigante (TU PRÓXIMA ACCIÓN):</strong> Es el botón grande que palpita con luz propia. Solo debes tocarlo para avanzar a la tarea que te toca en ese momento."
+        ],
+        dondeMirar: "En la pantalla de tu celular: el botón amarillo grande que dice <strong>[ 🚀 1. INICIAR VIAJE A FAENA ➔ ]</strong>.",
+        reglaOro: "No tienes que buscar nada raro. Solo abre la APP y toca el botón grande que palpita.",
+        screenHtml: \`
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-white/10 pb-2">
+              <span class="font-black text-amber-400 font-mono text-[11px]">GSP OPERACIONES</span>
+              <span class="bg-emerald-500/20 text-emerald-400 font-mono text-[9px] px-2 py-0.5 rounded font-bold">🟢 CONECTADO</span>
+            </div>
+
+            <!-- Tarjeta Maestra -->
+            <div class="bg-gradient-to-br from-[#070d1e] to-[#0f1c3f] border-2 border-amber-500/50 rounded-2xl p-3 text-white space-y-2.5 shadow-xl">
+              <div class="flex justify-between items-start">
+                <div>
+                  <span class="text-[9px] font-mono uppercase bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-bold">OT GSP-2610-4853</span>
+                  <div class="text-sm font-black font-mono mt-1">🚜 BGDF.90-4</div>
+                  <div class="text-[10px] text-slate-300">Liebherr LTM-1220</div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[9px] text-slate-400 block font-mono">Faena Mandante</span>
+                  <span class="text-[10px] font-bold text-white">📍 Ceresita - Quilicura</span>
+                </div>
+              </div>
+
+              <!-- Stepper 3 Pasos -->
+              <div class="bg-black/50 border border-white/10 rounded-xl p-2 grid grid-cols-3 gap-1.5 text-center font-mono">
+                <div class="p-1 rounded bg-amber-950/80 border border-amber-500 text-amber-300 font-bold">
+                  <div class="text-xs">🚛</div>
+                  <div class="text-[8px] uppercase">1. Viaje</div>
+                  <div class="text-[7px]">Por salir</div>
+                </div>
+                <div class="p-1 rounded bg-black/40 border border-white/10 text-slate-500 opacity-60">
+                  <div class="text-xs">🔒</div>
+                  <div class="text-[8px] uppercase">2. Report</div>
+                  <div class="text-[7px]">En espera</div>
+                </div>
+                <div class="p-1 rounded bg-black/40 border border-white/10 text-slate-500 opacity-60">
+                  <div class="text-xs">🔒</div>
+                  <div class="text-[8px] uppercase">3. Retorno</div>
+                  <div class="text-[7px]">En espera</div>
+                </div>
+              </div>
+
+              <!-- BOTÓN MAESTRO -->
+              <div class="space-y-1 pt-1">
+                <div class="text-[8px] font-mono text-amber-300 font-black uppercase">👉 TU PRÓXIMA ACCIÓN:</div>
+                <button class="w-full py-3 bg-amber-500 text-slate-950 font-black text-xs uppercase rounded-xl shadow-lg flex items-center justify-center gap-1.5 pulse-amber cursor-pointer">
+                  <span>🚀</span>
+                  <span>1. INICIAR VIAJE A FAENA ➔</span>
+                </button>
+                <p class="text-[9px] text-center text-slate-300">Registra odómetro, horómetro y sal de patio.</p>
+              </div>
+            </div>
+
+            <!-- Acceso a Checklist de Portón -->
+            <div class="bg-slate-900 border border-white/10 rounded-xl p-2.5 flex items-center justify-between text-slate-300">
+              <div class="flex items-center gap-1.5">
+                <span>🚧</span>
+                <div>
+                  <div class="text-[10px] font-bold text-white">Checklist de Portón & Patio</div>
+                  <div class="text-[9px] text-slate-400">Inspección de salida de Base</div>
+                </div>
+              </div>
+              <span class="text-[10px] text-amber-400 font-bold">Realizar ➔</span>
+            </div>
+          </div>
+        \`
+      },
+      {
+        id: 2,
+        titulo: "Paso 2: Salida de Patio Base San Pablo",
+        fase: "VIAJE DE IDA",
+        badge: "PASO 1 VIAJE",
+        badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+        audioPrompt: "Antes de salir por el portón de Base San Pablo, revisa el tacógrafo y anota los kilómetros y el horómetro del motor del camión. Toma una foto clara del tablero encendido, ingresa tu clave de cuatro dígitos y presiona Iniciar Viaje. La APP comenzará a reportar tu viaje a faena automáticamente.",
+        resumen: "Antes de cruzar el portón de Base San Pablo rumbo a la obra, debes ingresar los datos de partida del camión.",
+        puntosClave: [
+          "<strong>1. Kilometraje inicial:</strong> Anotas el número que marca el tacógrafo del camión (número en KM).",
+          "<strong>2. Horómetro inicial del motor:</strong> Anotas las horas que marca el motor del camión (número en HRS).",
+          "<strong>3. Foto del tablero:</strong> Tomas una foto clara donde se lean nítidamente los números del tacógrafo.",
+          "<strong>4. Tu PIN secreto de 4 dígitos:</strong> Escribes tu clave de seguridad personal para firmar la salida."
+        ],
+        dondeMirar: "En el volante y tacógrafo del camión: reloj de kilómetros (KM) y horas de motor (HRS).",
+        reglaOro: "Al presionar [INICIAR VIAJE], el teléfono comenzará a emitir pings GPS en ruta hacia la faena automáticamente.",
+        screenHtml: \`
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-white/10 pb-2">
+              <span class="font-mono text-amber-400 font-bold text-[10px]">HOJA DE RUTA • SALIDA BASE</span>
+              <span class="text-slate-400 text-[10px]">OT GSP-2610-4853</span>
+            </div>
+
+            <div class="bg-slate-900 border border-amber-500/40 rounded-xl p-3 space-y-2.5">
+              <div class="flex items-center gap-1.5 text-amber-400 font-black text-xs">
+                <span>🚀</span> 1. Salida de Base (Patio Central)
+              </div>
+
+              <div>
+                <label class="text-[10px] font-bold text-slate-300 block mb-0.5">Odómetro Salida (KM) *</label>
+                <div class="bg-black/60 border border-white/20 rounded-lg p-2 font-mono text-xs font-bold text-white">
+                  145.820 km
+                </div>
+              </div>
+
+              <div>
+                <label class="text-[10px] font-bold text-slate-300 block mb-0.5">Horómetro Camión Salida (HRS) *</label>
+                <div class="bg-black/60 border border-white/20 rounded-lg p-2 font-mono text-xs font-bold text-white">
+                  3.240,2 hrs
+                </div>
+              </div>
+
+              <div class="border-2 border-dashed border-white/20 rounded-lg p-2 text-center bg-black/30">
+                <span class="text-base block mb-0.5">📸</span>
+                <span class="text-[10px] font-bold text-amber-400 block">Foto del Tablero en Base</span>
+                <span class="text-[8px] text-slate-400">Captura legible de tacógrafo y reloj</span>
+              </div>
+
+              <div>
+                <label class="text-[10px] font-bold text-emerald-400 block mb-0.5">PIN del Chofer (4 Dígitos) *</label>
+                <div class="bg-black/80 border border-emerald-500/50 rounded-lg p-2 text-center text-lg font-mono font-black tracking-widest text-white">
+                  ••••
+                </div>
+              </div>
+
+              <button class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase rounded-lg shadow-lg cursor-pointer">
+                🚀 INICIAR VIAJE HACIA FAENA
+              </button>
+            </div>
+          </div>
+        \`
+      },
+      {
+        id: 3,
+        titulo: "Paso 3: Llegada a la Faena (¡Inicio Automático de Faena!)",
+        fase: "LLEGADA = FAENA EN CURSO",
+        badge: "ARRIBO E INICIO AUTOMÁTICO",
+        badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+        audioPrompt: "Al llegar a la portería de la obra, presiona el botón verde Confirmar Llegada a Faena. Anota los kilómetros del camión, el horómetro del camión, el horómetro inicial de la grúa y el nivel de petróleo con su foto. Al confirmar, tu faena queda automáticamente iniciada. No tienes que hacer nada más: ya puedes comenzar a operar.",
+        resumen: "Para servicios de un día, la llegada a la obra es el inicio formal de tu faena. Al confirmar la llegada, el sistema registra el horómetro inicial de la grúa y tu jornada queda abierta de inmediato.",
+        puntosClave: [
+          "<strong>Carga de combustible en ruta:</strong> Si pasaste a cargar petróleo en Copec, tocas <em>⛽ Rendir Carga de Combustible</em> y subes la foto del voucher.",
+          "<strong>Confirmar Llegada a Faena:</strong> Al llegar a la portería de la obra, tocas el botón verde <em>[ 🏁 CONFIRMAR LLEGADA A FAENA ]</em>.",
+          "<strong>Anotar los marcadores:</strong> Odómetro de llegada, Horómetro del camión, <strong>Horómetro de la Grúa (Superestructura)</strong> y nivel de petróleo con su foto.",
+          "<strong>¡Faena iniciada sin pasos duplicados!:</strong> Con este único registro, la jornada de faena ya quedó iniciada. No tienes que entrar a otra pantalla ni tomar fotos repetidas. ¡A maniobrar!"
+        ],
+        dondeMirar: "El tacógrafo del camión, el horómetro del motor del camión, el horómetro de la cabina de la grúa y el medidor de petróleo.",
+        reglaOro: "Llegada = Inicio de Faena. Tu grúa ya está operando y Torre de Control lo sabe.",
+        screenHtml: \`
+          <div class="space-y-3">
+            <div class="bg-[#0a0f1e] border-2 border-emerald-500/50 rounded-2xl p-4 text-center space-y-2.5 shadow-xl">
+              <div class="w-12 h-12 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mx-auto text-2xl">
+                🏁
+              </div>
+              <span class="text-[9px] font-mono uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-black tracking-wider">
+                PASO 1 CUMPLIDO • FAENA EN CURSO
+              </span>
+              <h3 class="text-sm font-black text-white uppercase font-mono">
+                Llegada Arribada & Faena Iniciada
+              </h3>
+              <p class="text-[10px] text-slate-300">
+                El equipo <strong>BGDF.90-4</strong> ha llegado a <strong>Pinturas Ceresita</strong>. Tu jornada de faena ha comenzado oficialmente.
+              </p>
+
+              <div class="bg-black/50 border border-white/10 rounded-xl p-2.5 text-left font-mono text-[10px] space-y-1">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Odómetro Llegada:</span>
+                  <strong class="text-emerald-400">145.885 KM</strong>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Horómetro Camión:</span>
+                  <strong class="text-emerald-400">3.242,5 HRS</strong>
+                </div>
+                <div class="flex justify-between border-t border-white/10 pt-1">
+                  <span class="text-amber-300 font-bold">⚙️ Horómetro Grúa (Inicio):</span>
+                  <strong class="text-amber-400 font-black">1.850,0 HRS</strong>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Combustible Faena:</span>
+                  <strong class="text-emerald-400">80% (3/4)</strong>
+                </div>
+              </div>
+
+              <!-- BOTÓN DE CONFIRMACIÓN -->
+              <div class="pt-1">
+                <button class="w-full py-3 bg-emerald-500 text-slate-950 font-black text-xs uppercase rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-1.5 pulse-emerald cursor-pointer">
+                  <span>🚜</span>
+                  <span>FAENA EN CURSO • LISTO PARA OPERAR ➔</span>
+                </button>
+              </div>
+              <p class="text-[8px] text-slate-400">Al terminar tus izajes pasarás directamente al Fin de Faena.</p>
+            </div>
+          </div>
+        \`
+      },
+      {
+        id: 4,
+        titulo: "Paso 4: Faenas de Varios Días (Multi-Día: Día 2 en adelante)",
+        fase: "PERNOCTA EN FAENA",
+        badge: "INICIO RÁPIDO MATUTINO (1 TOQUE)",
+        badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+        audioPrompt: "Si tu faena dura dos o más días y la grúa se quedó en la obra, no tienes que hacer ningún viaje en la mañana. A las ocho de la mañana abre la APP, verás que el horómetro ya está puesto con el que cerraste ayer, y solo tocas el botón verde Iniciar Jornada Día dos. En un solo toque ya estás listo para trabajar.",
+        resumen: "Si la grúa pernoctó en la obra (servicios de 2 o más días), no hay viaje de salida en la mañana. A las 08:00 hrs abres la APP e inicias tu faena en un solo toque.",
+        puntosClave: [
+          "<strong>Sin viaje ni odómetros:</strong> Como el equipo ya durmió en la faena, no hay viaje de salida ni registros de tacógrafo.",
+          "<strong>Horómetro heredado automático:</strong> El horómetro inicial es exactamente el mismo con el que apagaste la grúa ayer.",
+          "<strong>Inicio Rápido en 1 Toque:</strong> Solo tocas el botón verde <em>[ ▶️ INICIAR JORNADA DÍA N (08:00) ]</em>.",
+          "<strong>Sin fotos obligatorias de inicio:</strong> La grúa ya está emplazada en la faena, por lo que comienzas de inmediato."
+        ],
+        dondeMirar: "Solo en tu celular: tocas directamente el botón verde de inicio rápido matutino.",
+        reglaOro: "En servicios multi-día no pierdes tiempo: 1 toque en la APP a las 08:00 y empiezas a operar.",
+        screenHtml: \`
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
+              <span class="font-mono text-emerald-400 font-bold text-[10px]">GSP OPERACIONES FAENA</span>
+              <span class="bg-emerald-500/20 text-emerald-300 text-[9px] px-2 py-0.5 rounded font-bold font-mono">DÍA 2</span>
+            </div>
+
+            <!-- Aviso Especial de Pernocta Multi-Día -->
+            <div class="bg-emerald-950/60 border-2 border-emerald-500/60 rounded-xl p-2.5 text-left space-y-1">
+              <div class="flex items-center gap-1.5 text-emerald-400 font-black text-[10px] uppercase">
+                <span>🏕️</span>
+                <span>Servicio Multi-Día • Jornada Día 2</span>
+              </div>
+              <p class="text-[9px] text-slate-300 leading-tight">
+                El equipo pernocta en obra y no registra traslado. Solo se estampa la hora de inicio (08:00). El horómetro se hereda del cierre previo.
+              </p>
+            </div>
+
+            <div class="bg-slate-900 border border-white/10 rounded-xl p-3 space-y-2.5">
+              <div>
+                <label class="text-[10px] font-bold text-slate-300 block mb-0.5">Hora Inicio Faena Día 2</label>
+                <div class="bg-black/60 border border-white/20 rounded-lg p-2 font-mono text-sm font-bold text-white text-center">
+                  08:00
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between items-center mb-0.5">
+                  <label class="text-[10px] font-bold text-amber-300">Horómetro Superestructura</label>
+                  <span class="text-[8px] text-emerald-400 bg-emerald-950 px-1 rounded border border-emerald-500/40">Heredado Día 1</span>
+                </div>
+                <div class="bg-black/60 border border-white/20 rounded-lg p-2 font-mono text-xs font-black text-amber-300 text-center">
+                  1.858,0 HRS
+                </div>
+              </div>
+
+              <!-- BOTÓN INICIO RÁPIDO 1 TOQUE -->
+              <button class="w-full py-3 bg-emerald-500 text-slate-950 font-black text-xs uppercase rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-1.5 pulse-emerald cursor-pointer">
+                <span>▶️</span>
+                <span>INICIAR JORNADA DÍA 2 (08:00)</span>
+              </button>
+              <p class="text-[8px] text-center text-slate-400">Sin fotos obligatorias • Inicio en 1 toque.</p>
+            </div>
+          </div>
+        \`
+      },
+      {
+        id: 5,
+        titulo: "Paso 5: Término de Faena del Día (Momento 2)",
+        fase: "CIERRE DE TURNO",
+        badge: "MOMENTO 2 FAENA",
+        badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+        audioPrompt: "Al terminar los izajes del día y apagar la grúa, abre Momento dos Fin Faena. Registra la hora de término, marca con un toque tus minutos de colación, revisa las horas efectivas calculadas, escribe el horómetro final de la grúa y toma la foto del marcador. Luego describe brevemente las maniobras realizadas y presiona Proceder a Report Mandante.",
+        resumen: "Al apagar la máquina al terminar los izajes del día, registras la hora de salida, tu colación, el horómetro final y tus maniobras.",
+        puntosClave: [
+          "<strong>Hora de término:</strong> Registras a qué hora finalizaron las maniobras del día.",
+          "<strong>Colación con 1 toque:</strong> Tocas un botón rápido para marcar tu colación: <em>0m, 30m, 45m, 60m o 90m</em>. La APP calcula tus horas efectivas automáticamente.",
+          "<strong>Horómetro final de grúa:</strong> Anotas las horas del motor de la grúa. La APP te ofrece un botón <em>💡 Usar Sugerido</em> si tienes dudas.",
+          "<strong>Foto obligatoria del horómetro final:</strong> Tomas la foto nítida al marcador.",
+          "<strong>Maniobras realizadas:</strong> Escribes en pocas palabras las cargas izadas (ej: <em>Montaje de 4 vigas de 15 ton</em>)."
+        ],
+        dondeMirar: "El computador de la cabina de la grúa al apagar el equipo.",
+        reglaOro: "Revisa que tus horas efectivas cuadren con tu piso mínimo pactado antes de pasar a la firma.",
+        screenHtml: \`
+          <div class="space-y-2.5">
+            <!-- Selector de Momentos -->
+            <div class="grid grid-cols-2 gap-2 text-center font-bold">
+              <div class="bg-slate-900 text-slate-400 p-2 rounded-xl border border-white/10 text-[11px]">
+                🟢 Momento 1: Inicio
+              </div>
+              <div class="bg-amber-500 text-slate-950 p-2 rounded-xl border border-amber-300 font-black text-[11px] shadow">
+                🔴 Momento 2: Fin Faena
+              </div>
+            </div>
+
+            <div class="bg-slate-900 border border-white/10 rounded-xl p-3 space-y-2">
+              <div class="flex justify-between items-center text-[10px]">
+                <span class="text-slate-400">Hora Término:</span>
+                <span class="font-mono font-bold text-white bg-black/60 px-2 py-0.5 rounded border border-white/10">18:00 hrs</span>
+              </div>
+
+              <!-- Botones Colación -->
+              <div>
+                <label class="text-[9px] font-bold text-slate-300 block mb-1">Colación del Día:</label>
+                <div class="grid grid-cols-5 gap-1 text-[9px] font-mono font-bold text-center">
+                  <div class="bg-black/40 border border-white/10 p-1 rounded text-slate-400">0m</div>
+                  <div class="bg-black/40 border border-white/10 p-1 rounded text-slate-400">30m</div>
+                  <div class="bg-black/40 border border-white/10 p-1 rounded text-slate-400">45m</div>
+                  <div class="bg-amber-500 text-slate-950 p-1 rounded font-black shadow">60m</div>
+                  <div class="bg-black/40 border border-white/10 p-1 rounded text-slate-400">90m</div>
+                </div>
+              </div>
+
+              <!-- Cálculo de Jornada -->
+              <div class="bg-emerald-950/50 border border-emerald-500/60 rounded-xl p-2 grid grid-cols-3 gap-1 text-center font-mono">
+                <div>
+                  <div class="text-[7px] text-slate-400 uppercase">Total</div>
+                  <div class="text-[11px] font-bold text-white">10,0h</div>
+                </div>
+                <div>
+                  <div class="text-[7px] text-slate-400 uppercase">Colac.</div>
+                  <div class="text-[11px] font-bold text-amber-300">1,0h</div>
+                </div>
+                <div class="bg-emerald-900/80 rounded p-0.5 border border-emerald-400">
+                  <div class="text-[7px] text-emerald-300 uppercase font-black">Efectivas</div>
+                  <div class="text-xs font-black text-emerald-200">9,0h</div>
+                </div>
+              </div>
+
+              <!-- Horómetro Término -->
+              <div>
+                <div class="flex justify-between items-center mb-0.5">
+                  <label class="text-[9px] font-bold text-amber-300">Horómetro Grúa (Término) *</label>
+                  <span class="text-[8px] text-amber-400 bg-amber-950 px-1 rounded">Δ +8,0 hrs</span>
+                </div>
+                <div class="bg-black/60 border border-amber-500/50 rounded-lg p-1.5 font-mono text-xs font-black text-amber-300 text-center">
+                  1.858,0 HRS
+                </div>
+              </div>
+
+              <div class="border border-dashed border-amber-500/40 rounded-lg p-1.5 text-center bg-black/30">
+                <span class="text-xs font-bold text-amber-400">📸 Foto Horómetro Término (Cargada ✅)</span>
+              </div>
+
+              <button class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase rounded-lg shadow-lg cursor-pointer">
+                PROCEDER A REPORT MANDANTE ➔
+              </button>
+            </div>
+          </div>
+        \`
+      },
+      {
+        id: 6,
+        titulo: "Paso 6: Firma con el Dedo del Cliente Mandante",
+        fase: "LIQUIDACIÓN OFICIAL",
+        badge: "MOMENTO 3 FIRMA",
+        badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+        audioPrompt: "Este paso es fundamental para el cobro del servicio. Pásale tu teléfono al supervisor o ITO del cliente. Él revisará el resumen de las horas trabajadas, ingresará su nombre, su RUT, su cargo y firmará con su dedo en la pantalla blanca. Presionas Sellar y Transmitir Report y el día queda legalmente aprobado.",
+        resumen: "Le pasas el teléfono al supervisor o ITO del cliente para que revise las horas trabajadas y firme directamente con su dedo en la pantalla táctil.",
+        puntosClave: [
+          "<strong>Voucher formal en pantalla:</strong> El cliente ve el resumen de la grúa, las horas facturables y las maniobras realizadas.",
+          "<strong>Datos del supervisor:</strong> El cliente anota su Nombre, RUT y Cargo en la faena.",
+          "<strong>Firma en el recuadro blanco:</strong> Firma con su propio dedo sobre el recuadro touch.",
+          "<strong>Sellar y Transmitir Report:</strong> Tocas el botón verde grande. El documento queda sellado con candado digital y viaja a la oficina central de San Pablo.",
+          "<strong>¿Y si la faena sigue mañana?:</strong> La APP te felicitará y te dejará automáticamente listo para iniciar el Día 2."
+        ],
+        dondeMirar: "El recuadro blanco de firma en la pantalla de tu celular.",
+        reglaOro: "¡Sin esta firma el servicio no se puede cobrar! Es tu máximo respaldo de trabajo realizado.",
+        screenHtml: \`
+          <div class="space-y-3">
+            <div class="bg-slate-900 border border-emerald-500/40 rounded-xl p-3 space-y-2">
+              <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
+                <span class="text-emerald-400 font-black text-xs flex items-center gap-1">
+                  <span>✍️</span> Aceptación del Mandante
+                </span>
+                <span class="text-[9px] font-mono text-slate-400">DÍA 1</span>
+              </div>
+
+              <!-- Voucher Horas Facturables -->
+              <div class="bg-black/60 border border-emerald-500/30 rounded-lg p-2 text-[10px] font-mono flex justify-between items-center">
+                <span class="text-slate-300">Horas Facturables Aprobadas:</span>
+                <strong class="text-emerald-300 text-xs">9,0 HRS (8h + 1h ST)</strong>
+              </div>
+
+              <div>
+                <label class="text-[9px] font-bold text-slate-300 block mb-0.5">Nombre Supervisor Mandante *</label>
+                <div class="bg-black/60 border border-white/20 rounded-lg p-1.5 text-xs font-bold text-white">
+                  Carlos Henríquez
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-1.5">
+                <div>
+                  <label class="text-[9px] font-bold text-slate-300 block mb-0.5">RUT Mandante *</label>
+                  <div class="bg-black/60 border border-white/20 rounded-lg p-1.5 font-mono text-xs text-white">
+                    14.892.341-2
+                  </div>
+                </div>
+                <div>
+                  <label class="text-[9px] font-bold text-slate-300 block mb-0.5">Cargo</label>
+                  <div class="bg-black/60 border border-white/20 rounded-lg p-1.5 text-xs text-white">
+                    ITO Faena
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recuadro Blanco de Firma -->
+              <div>
+                <label class="text-[9px] font-bold text-slate-300 block mb-0.5">Firma Touch con el Dedo *</label>
+                <div class="bg-white rounded-lg p-2 h-16 flex items-center justify-center border border-slate-300">
+                  <span class="text-xl text-slate-900 font-serif italic">✍️ Carlos H.</span>
+                </div>
+              </div>
+
+              <button class="w-full py-2.5 bg-emerald-500 text-slate-950 font-black text-xs uppercase rounded-lg shadow-lg flex items-center justify-center gap-1.5 cursor-pointer">
+                <span>🟢</span>
+                <span>SELLAR Y TRANSMITIR REPORT DÍA 1</span>
+              </button>
+            </div>
+          </div>
+        \`
+      },
+      {
+        id: 7,
+        titulo: "Paso 7: Viaje de Retorno a Base San Pablo y Cierre",
+        fase: "REGRESO & LIBERACIÓN",
+        badge: "SERVICIO CONCLUIDO",
+        badgeColor: "bg-purple-500/20 text-purple-300 border-purple-500/40",
+        audioPrompt: "Al sellar el último día contratado de faena se desbloqueará el botón Retorno a Base. Registra tu salida de la obra y viaja a Santiago. Al ingresar por el portón de Base San Pablo, presiona Confirmar Llegada a Patio Central, anota los kilómetros y el petróleo final y toma la foto del tablero. La grúa quedará disponible y tu servicio finalizado con éxito.",
+        resumen: "Al sellar el último día contratado de faena, se desbloquea el retorno hacia Santiago. Al entrar a Base San Pablo, la grúa queda disponible.",
+        puntosClave: [
+          "<strong>Se desbloquea el retorno:</strong> Al sellar el último report de la obra, la APP te muestra: <em>[ 🚀 INICIAR RETORNO A BASE ➔ ]</em>.",
+          "<strong>Salida de faena:</strong> Anotas el odómetro y horómetro del camión al salir de la obra con tu PIN.",
+          "<strong>Llegada a Base San Pablo:</strong> Al entrar a patio central, tocas <em>[ 🏁 CONFIRMAR LLEGADA A PATIO CENTRAL GSP ]</em>.",
+          "<strong>Recepción final:</strong> Anotas odómetro final, horómetro camión final, % de petróleo recibido con foto del marcador y tu PIN.",
+          "<strong>¡Servicio Concluido!:</strong> La máquina pasa automáticamente a estado <strong>DISPONIBLE</strong> para nuevos trabajos."
+        ],
+        dondeMirar: "El tacógrafo del camión y el medidor de petróleo al ingresar al portón de Base San Pablo.",
+        reglaOro: "Al confirmar llegada en Base, tocas [Volver a Mis Servicios] y tu turno queda finalizado con éxito.",
+        screenHtml: \`
+          <div class="space-y-3">
+            <div class="bg-[#0a0f1e] border-2 border-purple-500/50 rounded-2xl p-4 text-center space-y-2.5 shadow-xl">
+              <div class="w-12 h-12 rounded-full bg-purple-500/20 border-2 border-purple-500 flex items-center justify-center mx-auto text-2xl">
+                🏆
+              </div>
+              <span class="text-[9px] font-mono uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-bold">
+                SERVICIO OPERACIONAL CONCLUIDO
+              </span>
+              <h3 class="text-sm font-black text-white uppercase font-mono">
+                Retorno a Base Concluido
+              </h3>
+              <p class="text-[10px] text-slate-300">
+                La grúa <strong>BGDF.90-4</strong> ha ingresado a Patio Central San Pablo. El equipo queda <strong>DISPONIBLE</strong>.
+              </p>
+
+              <div class="bg-black/50 border border-white/10 rounded-xl p-2 text-left font-mono text-[10px] space-y-1">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Odómetro Final Base:</span>
+                  <strong class="text-purple-300">145.950 KM</strong>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Horómetro Camión Final:</span>
+                  <strong class="text-purple-300">3.253,0 HRS</strong>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Petróleo Recepción:</span>
+                  <strong class="text-emerald-400">100% (Lleno)</strong>
+                </div>
+              </div>
+
+              <!-- BOTÓN VOLVER A INICIO -->
+              <div class="pt-1">
+                <button class="w-full py-3 bg-emerald-500 text-slate-950 font-black text-xs uppercase rounded-xl shadow-lg flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span>🏠</span>
+                  <span>VOLVER A MIS SERVICIOS ➔</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        \`
+      }
+    ];
+
+    let currentSlide = 0;
+    let isSpeaking = false;
+    let synth = window.speechSynthesis;
+    let currentUtterance = null;
+    let cachedVoices = [];
+
+    function loadVoices() {
+      if (!('speechSynthesis' in window)) return;
+      cachedVoices = synth.getVoices();
+    }
+    if ('speechSynthesis' in window) {
+      loadVoices();
+      if (synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = loadVoices;
+      }
+    }
+
+    function getChileanVoice() {
+      if (!cachedVoices || cachedVoices.length === 0) {
+        cachedVoices = synth.getVoices();
+      }
+      // 1. Buscar voz explícita es-CL (Chile)
+      let voice = cachedVoices.find(v => v.lang === 'es-CL' || v.lang.replace('_', '-') === 'es-CL');
+      // 2. Si no hay es-CL exacta, buscar voz con 'Chile' o 'es-CL' en nombre
+      if (!voice) {
+        voice = cachedVoices.find(v => v.name.toLowerCase().includes('chile') || v.name.toLowerCase().includes('es-cl'));
+      }
+      // 3. Fallback a voz latinoamericana neutra (es-419, es-MX, es-US, es-AR)
+      if (!voice) {
+        voice = cachedVoices.find(v => v.lang.includes('419') || v.lang.includes('MX') || v.lang.includes('US') || v.name.toLowerCase().includes('latin'));
+      }
+      // 4. Fallback a cualquier voz en español que NO sea peninsular (es-ES) si es posible
+      if (!voice) {
+        voice = cachedVoices.find(v => v.lang.startsWith('es') && !v.lang.includes('ES'));
+      }
+      // 5. Último fallback
+      if (!voice) {
+        voice = cachedVoices.find(v => v.lang.startsWith('es'));
+      }
+      return voice;
+    }
+
+    function renderSlide(index) {
+      currentSlide = index;
+      const data = slides[index];
+
+      // Detener cualquier locución previa
+      if (synth && synth.speaking) {
+        synth.cancel();
+        isSpeaking = false;
+        updateAudioButtonUI(false);
+      }
+
+      // Actualizar Tabs
+      document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+        if (i === index) {
+          btn.className = "tab-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border border-amber-500/50 bg-amber-500/25 text-amber-300 shadow-md flex items-center gap-1 whitespace-nowrap cursor-pointer";
+        } else {
+          btn.className = "tab-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/10 bg-slate-900 text-slate-400 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer";
+        }
+      });
+
+      // Actualizar Pantalla del Celular
+      document.getElementById('phoneScreen').innerHTML = data.screenHtml;
+
+      // Actualizar Indicador
+      document.getElementById('slideIndicator').innerText = \`Paso \${data.id} de \${slides.length}\`;
+
+      // Actualizar Panel de Explicación
+      const puntosList = data.puntosClave.map(p => \`
+        <li class="flex items-start gap-2.5 bg-black/40 border border-white/5 p-3 rounded-xl">
+          <span class="text-amber-400 font-bold text-sm mt-0.5">✔</span>
+          <span class="text-slate-200 text-xs leading-relaxed">\${p}</span>
+        </li>
+      \`).join('');
+
+      document.getElementById('explanationPanel').innerHTML = \`
+        <div class="space-y-1">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono uppercase px-2 py-0.5 rounded font-black border \${data.badgeColor}">
+                \${data.fase}
+              </span>
+              <span class="text-xs text-slate-400 font-mono">Paso \${data.id} de \${slides.length}</span>
+            </div>
+
+            <!-- Botón de Audio en el Panel -->
+            <button onclick="toggleAudio()" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all">
+              <span>🔊</span>
+              <span>Escuchar Paso (es-CL)</span>
+            </button>
+          </div>
+
+          <h2 class="text-xl md:text-2xl font-black text-white tracking-tight mt-1">
+            \${data.titulo}
+          </h2>
+          <p class="text-xs md:text-sm text-slate-300 leading-relaxed pt-1">
+            \${data.resumen}
+          </p>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-white/10">
+          <h4 class="text-xs font-mono uppercase font-black text-amber-400 tracking-wider">
+            ¿Qué debes hacer en esta pantalla? (Paso a Paso)
+          </h4>
+          <ul class="space-y-2">
+            \${puntosList}
+          </ul>
+        </div>
+
+        <!-- Dónde Mirar en la Máquina -->
+        <div class="bg-blue-950/40 border border-blue-500/30 rounded-2xl p-3.5 flex items-start gap-3">
+          <span class="text-2xl">👀</span>
+          <div>
+            <span class="text-xs font-black text-blue-300 uppercase tracking-wider block font-mono">¿DÓNDE MIRO EN MI MÁQUINA?</span>
+            <p class="text-xs text-slate-200 mt-0.5 leading-relaxed">\${data.dondeMirar}</p>
+          </div>
+        </div>
+
+        <!-- Regla de Oro -->
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 flex items-start gap-3">
+          <span class="text-2xl">⚠️</span>
+          <div>
+            <span class="text-xs font-black text-amber-400 uppercase tracking-wider block font-mono">REGLA DE ORO</span>
+            <p class="text-xs text-slate-200 mt-0.5 leading-relaxed">\${data.reglaOro}</p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-3 border-t border-white/10 text-xs">
+          <button onclick="prevSlide()" class="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl border border-white/10 cursor-pointer">
+            ◀ Anterior
+          </button>
+          <span class="text-slate-400 font-mono hidden sm:inline">Navega con los botones o flechas</span>
+          <button onclick="nextSlide()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl cursor-pointer">
+            Siguiente Paso ▶
+          </button>
+        </div>
+      \`;
+    }
+
+    function goToSlide(id) {
+      renderSlide(id - 1);
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        renderSlide(currentSlide + 1);
+      } else {
+        renderSlide(0);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        renderSlide(currentSlide - 1);
+      } else {
+        renderSlide(slides.length - 1);
+      }
+    }
+
+    // =========================================================================
+    // LOCUCIÓN DE VOZ CONTEXTUAL es-CL (Web Speech API)
+    // =========================================================================
+    function toggleAudio() {
+      if (!('speechSynthesis' in window)) {
+        alert("Tu navegador no soporta lectura de voz en audio.");
+        return;
+      }
+
+      if (synth.speaking && isSpeaking) {
+        synth.cancel();
+        isSpeaking = false;
+        updateAudioButtonUI(false);
+        return;
+      }
+
+      const textToRead = slides[currentSlide].audioPrompt || slides[currentSlide].resumen;
+      currentUtterance = new SpeechSynthesisUtterance(textToRead);
+      currentUtterance.lang = 'es-CL'; // Español de Chile
+      
+      const chileanVoice = getChileanVoice();
+      if (chileanVoice) {
+        currentUtterance.voice = chileanVoice;
+      }
+      
+      currentUtterance.rate = 0.93; // Pausado, claro y natural
+      currentUtterance.pitch = 1.0;
+
+      currentUtterance.onstart = () => {
+        isSpeaking = true;
+        updateAudioButtonUI(true);
+      };
+
+      currentUtterance.onend = () => {
+        isSpeaking = false;
+        updateAudioButtonUI(false);
+      };
+
+      currentUtterance.onerror = () => {
+        isSpeaking = false;
+        updateAudioButtonUI(false);
+      };
+
+      synth.speak(currentUtterance);
+    }
+
+    function updateAudioButtonUI(speaking) {
+      const icon = document.getElementById('audioIcon');
+      const text = document.getElementById('audioText');
+      if (speaking) {
+        if (icon) icon.innerText = '⏸️';
+        if (text) text.innerText = 'Pausar Voz';
+      } else {
+        if (icon) icon.innerText = '🔊';
+        if (text) text.innerText = 'Escuchar en Voz Alta (es-CL)';
+      }
+    }
+
+    // Teclado flechas izquierda/derecha para cambiar paso
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    // Iniciar en Slide 0 (Paso 1)
+    renderSlide(0);
+  </script>
+
+</body>
+</html>
+`;
+
+fs.writeFileSync(targetPath, htmlContent, 'utf8');
+console.log('Manual generado exitosamente. Tamaño:', htmlContent.length, 'bytes');

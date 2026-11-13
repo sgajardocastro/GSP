@@ -213,3 +213,45 @@ flowchart TD
 Archivo preparado en: `ejecucion/bd/seed_plan_de_izaje_gsp.sql`
 * **Id Empresa:** 9 (Grúas San Pablo)
 * **Id Flujo:** 1 (FES Directa)
+
+---
+
+## 📱 6. Arquitectura Definitiva Validada por Cliente (Mobile PWA + PDF Oficial A4)
+
+> **Referencia Visual Canónica:** `SST-maquetas-20261019.html` (`/var/www/html/pptas/GSP/reuniones/SST-maquetas-20261019.html`)
+
+### 6.1. Interfaz Mobile Reactiva en PWA (`Surveys.vue`)
+La tarjeta **"Plan de Izaje & Rigging"** en el Panel Operativo de Campo abre un modal dedicado con precarga automática desde la OT activa y 4 bloques interactivos:
+1. **Configuración Geométrica de Grúa:**
+   * `radio_max_m` (Radio Máximo en metros).
+   * `largo_pluma_m` (Largo de Pluma en metros).
+   * `angulo_deg` (Ángulo de Pluma en grados).
+   * `elemento_izar` (Descripción de la carga a levantar) y `viento_kmh` (Velocidad del viento actual, límite $32\text{ km/h}$).
+2. **Calculadora Reactiva de Carga y Compuerta Dura del 85%:**
+   * Desglose numérico en vivo: `peso_neto_kg`, `peso_gancho_kg`, `peso_yugo_kg`, `peso_aparejos_kg`.
+   * Cálculo automático de `peso_bruto_total_kg` y contraste contra `capacidad_tabla_kg`.
+   * Semáforo reactivo con barra de progreso:
+     * $\le 75.0\%$: 🟢 `IZAJE ESTÁNDAR SEGURO (≤ 75%)` — Habilita emisión y firma.
+     * $75.1\% - 85.0\%$: 🟡 `CONDICIÓN LÍMITE (75% - 85%) • EXIGE DOBLE CHECK` — Habilita firma bajo precaución.
+     * $> 85.0\%$: 🔴 `⛔ BLOQUEO MANDATORIO (> 85% CAPACIDAD TABLA)` — **Bloquea el botón de firma en la PWA**.
+3. **Especificación de Aparejos y Soporte:**
+   * Eslingas Sintéticas (Factor $7:1$), Grilletes Lira Certificados (Factor $5:1$) y Estabilidad/Outriggers ($100\%$ + almohadillas).
+4. **Suscripción FES (Rigger + Operador):**
+   * Validación mediante PIN FES de 4 dígitos, generando el PDF A4 en el servidor y habilitando el botón `📄 Ver Plan de Izaje Oficial (PDF)`.
+
+### 6.2. Documento PDF Oficial A4 (`planIzajePdfService.js`)
+Generado mediante **Puppeteer** en formato A4 vertical con la estructura exacta validada:
+* **Encabezado Corporativo GSP:** Logo de la empresa emisora, título `PLAN DE IZAJE Y CÁLCULO DE CAPACIDAD`, código `SGI-OP-PIZ-02`, Folio correlativo `#PIZ-YYYY-XXXX`, código de OT y estado (`AUTORIZADO` / `CON PRECAUCIÓN`).
+* **Sección 1:** Tabla de identificación de equipo, patente, elemento a levantar, operador, rigger y velocidad de viento.
+* **Sección 2 (Izquierda) — Croquis de Geometría de Operación (SVG Dinámico):** Esquema vectorial de la grúa renderizando las cotas reales `Radio = X m`, `Pluma = Y m` y `Ángulo = Z°`.
+* **Sección 3 (Derecha) — Memoria de Cálculo y Box de Dictamen:** Tabla desglosada de los 4 pesos, `PESO BRUTO TOTAL A IZAR`, `Capacidad Nominal según Tabla` y recuadro de dictamen con el `% de Utilización` frente al máximo permitido del $85.0\%$.
+* **Sección 4:** Tabla de elementos de estrobado y condiciones de soporte con factores de seguridad.
+* **Sección 5 — Pie de Firmas FES con Trazabilidad DT:** Recuadros de firma electrónica de Rigger, Operador y V°B° Prevención HSE con RUT, fecha/hora, Hash SHA-256, sello TSA RFC 3161 y código QR.
+
+### 6.3. Persistencia Relacional (`tope_plan_izaje`) y Endpoints REST
+* **Tabla PostgreSQL (`tope_plan_izaje`):** Almacena `id_plan_izaje`, `folio_plan`, `id_proyecto`, `id_equipo`, parámetros geométricos, desglose de pesos, porcentaje de utilización, dictamen, aparejos JSONB, datos de firmantes, `id_file_pdf` (FK lógica a `tfmg_file`) y timestamps.
+* **Almacenamiento Canónico:** `buildStoragePath('GSP', 'surveys', env)`.
+* **Endpoints (`/api/operaciones/plan-izaje`):**
+  * `GET /proyecto/:id_proyecto`: Obtiene los planes de izaje de la OT y sus URLs de PDF.
+  * `GET /`: Lista todos los planes de izaje para indexación documental.
+  * `POST /emitir`: Valida la regla $\le 85\%$, persiste el registro, compila el PDF A4 con Puppeteer, registra en `tfmg_file` y retorna la URL del documento.

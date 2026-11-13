@@ -100,11 +100,11 @@ async function run() {
     });
     console.log('✅ Conexión SSH establecida.');
 
-    console.log('🏗️ Creando directorio remoto de documentos si no existe...');
+    console.log('📁 Creando directorio remoto de documentos si no existe...');
     await ssh.execCommand('mkdir -p /u05/LeanDocs/personal');
     await ssh.execCommand('chown -R nodeadmin:nodeadmin /u05/LeanDocs/personal');
 
-    console.log('🏗️ 1. Verificando/Creando tablas de personal...');
+    console.log('⚙️ 1. Verificando/Creando tablas de personal...');
     await client.query(`
       CREATE TABLE IF NOT EXISTS tsec_tipos_certificado_persona (
           id_tipo_certificado_persona SERIAL PRIMARY KEY,

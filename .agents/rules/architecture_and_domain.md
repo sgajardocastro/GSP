@@ -43,5 +43,8 @@
 - **Umbrales Semafóricos de Acreditación (Regla 30 Días):**
   - `🟢 VIG (Vigente):` El documento tiene más de 30 días de vigencia antes de su expiración.
   - `🟡 VNC (Por Vencer):` El documento expira en 30 días o menos (ventana de alerta preventiva).
-  - `🔴 VNC (Vencido / Bloqueado):` La fecha de expiración ya fue superada (días < 0) o el documento no existe. Impide el despacho de la OT.
+- **Prohibición Absoluta de Grúas Torre / Edificación:**
+  - Grúas San Pablo (GSP) opera **EXCLUSIVAMENTE** grúas móviles telescópicas (AT/RT) y camiones pluma para izaje industrial, minería y logística pesada.
+  - **PROHIBIDO TERMINANTEMENTE** el emoji `🏗️` (grúa torre de construcción de edificios) y cualquier alusión a grúas torre o edificación en respuestas, código, markdown o maquetas.
+
 

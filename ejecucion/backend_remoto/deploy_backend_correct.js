@@ -11,7 +11,7 @@ const filesToUpload = [
     remote: '/home/nodeadmin/proyectos/lean-services-gsp/src/controllers/tequEquipoController.js'
   },
   {
-    local: 'd:/SGaja|rdo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/ejecucion/backend_remoto/src/routes/tequEquipoRoutes.js',
+    local: 'd:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta Gestión Operación Grúas/ejecucion/backend_remoto/src/routes/tequEquipoRoutes.js',
     remote: '/home/nodeadmin/proyectos/lean-services-gsp/src/routes/tequEquipoRoutes.js'
   }
 ];

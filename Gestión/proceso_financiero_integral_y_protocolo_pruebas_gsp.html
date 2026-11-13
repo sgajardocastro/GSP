@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Descripción Funcional y Matriz de Pruebas — Grúas San Pablo | LeanGlobal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-dark: #0f172a;
+      --primary-light: #3b82f6;
+      --accent: #d97706;
+      --accent-light: #fef3c7;
+      --accent-dark: #b45309;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--slate-50);
+      color: var(--slate-800);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* Barra Superior de Acciones */
+    .top-action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+    }
+
+    .top-action-bar .brand-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--slate-700);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-print {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-print:hover {
+      background: #1d4ed8;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+
+    /* Portada / Header */
+    .header-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 40px 36px;
+      margin-bottom: 32px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header-card::after {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(217, 119, 6, 0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-amber {
+      background: #d97706;
+      color: #ffffff;
+    }
+
+    .badge-blue {
+      background: rgba(59, 130, 246, 0.25);
+      color: #93c5fd;
+      border: 1px solid rgba(147, 197, 253, 0.3);
+    }
+
+    .header-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.1rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+
+    .header-subtitle {
+      font-size: 1.1rem;
+      color: #cbd5e1;
+      font-weight: 400;
+      margin-bottom: 24px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+
+    .meta-item .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #94a3b8;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .meta-item .value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    /* Secciones Principales */
+    .section-card {
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-radius: 14px;
+      padding: 32px;
+      margin-bottom: 28px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--slate-100);
+    }
+
+    .section-num {
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: #ffffff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .section-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--slate-900);
+    }
+
+    /* Diagrama Visual de Flujo (Cards con Flechas) */
+    .flow-pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin: 24px 0 16px 0;
+    }
+
+    @media (max-width: 900px) {
+      .flow-pipeline {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .flow-step {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 16px 14px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .flow-step.active {
+      border-top: 4px solid var(--accent);
+      background: #ffffff;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+    }
+
+    .flow-step-num {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--accent-dark);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .flow-step-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--slate-800);
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+
+    .flow-step-desc {
+      font-size: 0.78rem;
+      color: var(--slate-600);
+      line-height: 1.4;
+    }
+
+    .flow-step-badge {
+      margin-top: 10px;
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background: var(--slate-200);
+      color: var(--slate-700);
+    }
+
+    /* Detalle de Fases */
+    .phase-block {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .phase-block-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .phase-block p {
+      font-size: 0.92rem;
+      color: var(--slate-700);
+      margin-bottom: 10px;
+    }
+
+    .phase-block ul {
+      margin-left: 20px;
+      font-size: 0.88rem;
+      color: var(--slate-700);
+    }
+
+    .phase-block li {
+      margin-bottom: 6px;
+    }
+
+    .callout-box {
+      background: #eff6ff;
+      border-left: 4px solid var(--primary-light);
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 12px;
+      font-size: 0.86rem;
+      color: #1e40af;
+    }
+
+    .callout-box.amber {
+      background: #fffbeb;
+      border-left-color: var(--accent);
+      color: #92400e;
+    }
+
+    .callout-box.green {
+      background: #f0fdf4;
+      border-left-color: var(--success);
+      color: #166534;
+    }
+
+    /* Tabla de Casos de Prueba (QA) */
+    .table-responsive {
+      overflow-x: auto;
+      margin-top: 16px;
+    }
+
+    .qa-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.86rem;
+    }
+
+    .qa-table th {
+      background: var(--slate-100);
+      color: var(--slate-700);
+      font-weight: 700;
+      padding: 12px 10px;
+      text-align: left;
+      border-top: 1px solid var(--slate-200);
+      border-bottom: 2px solid var(--slate-300);
+    }
+
+    .qa-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--slate-200);
+      vertical-align: middle;
+      color: var(--slate-700);
+    }
+
+    .qa-table tr:hover td {
+      background: #f8fafc;
+    }
+
+    .qa-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--primary);
+      white-space: nowrap;
+    }
+
+    .actor-tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: var(--slate-200);
+      color: var(--slate-700);
+    }
+
+    .actor-tag.op { background: #e0e7ff; color: #3730a3; }
+    .actor-tag.pmo { background: #fef3c7; color: #92400e; }
+    .actor-tag.jef { background: #dbeafe; color: #1e40af; }
+    .actor-tag.tes { background: #fce7f3; color: #9d174d; }
+    .actor-tag.sys { background: #f1f5f9; color: #475569; }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: var(--success-light);
+      color: var(--success);
+    }
+
+    .code-endpoint {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      background: var(--slate-100);
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: var(--slate-800);
+    }
+
+    /* Estilos de Impresión (PDF) */
+    @media print {
+      body {
+        background: #ffffff;
+        color: #000000;
+        font-size: 10pt;
+      }
+
+      .container {
+        max-width: 100%;
+        padding: 0;
+      }
+
+      .top-action-bar {
+        display: none !important;
+      }
+
+      .header-card {
+        background: #0f172a !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 24px;
+        margin-bottom: 20px;
+        page-break-after: avoid;
+      }
+
+      .section-card {
+        border: 1px solid #cbd5e1;
+        box-shadow: none;
+        padding: 20px;
+        margin-bottom: 18px;
+        page-break-inside: avoid;
+      }
+
+      .page-break {
+        page-break-before: always;
+      }
+
+      .flow-pipeline {
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 6px;
+      }
+
+      .flow-step {
+        padding: 8px;
+        font-size: 8pt;
+      }
+
+      .qa-table th, .qa-table td {
+        padding: 6px 4px;
+        font-size: 7.5pt;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Barra Superior de Navegación e Impresión -->
+    <div class="top-action-bar">
+      <div class="brand-text">
+        <span>🚚</span>
+        <span>Grúas San Pablo S.A. | LeanGlobal Platform</span>
+      </div>
+      <button class="btn-print" onclick="window.print()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+          <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+        </svg>
+        <span>Imprimir o Guardar en PDF</span>
+      </button>
+    </div>
+
+    <!-- Encabezado / Portada -->
+    <div class="header-card">
+      <div class="header-badges">
+        <span class="badge badge-amber">Estándar Spec 57</span>
+        <span class="badge badge-blue">Versión 1.1 Oficial</span>
+        <span class="badge badge-blue">Revisión Conjunta</span>
+      </div>
+      <h1 class="header-title">Circuito Integral Operacional y Financiero</h1>
+      <p class="header-subtitle">Descripción Funcional de Procesos y Guía de Casos de Prueba (QA)</p>
+
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span class="label">Cliente Mandante</span>
+          <span class="value">Grúas San Pablo S.A.</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Plataforma</span>
+          <span class="value">LeanGlobal Platform</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Fecha</span>
+          <span class="value">Octubre 2026</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Estado de Pruebas</span>
+          <span class="value" style="color: #4ade80;">14 / 14 Conformidades</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección 1: Introducción -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <h2 class="section-title">Objetivo y Contexto de Negocio</h2>
+      </div>
+      <p style="font-size: 0.95rem; color: var(--slate-700); margin-bottom: 16px;">
+        En las operaciones de izaje de alto tonelaje, el ciclo de cobro suele sufrir retrasos debido a la desconexión entre la faena física en terreno y la oficina contable: reportes diarios en papel extraviados, horas mínimas contractuales no conciliadas oportunamente, gastos directos (combustible, peajes y viáticos) que no se imputan a tiempo y autorizaciones comerciales dispersas.
+      </p>
+      <p style="font-size: 0.95rem; color: var(--slate-700);">
+        El <strong>Circuito Integral (Spec 57)</strong> unifica y protege digitalmente este flujo de extremo a extremo, asegurando que ninguna factura se emita sin respaldo técnico verificado ni autorizaciones financieras correspondientes.
+      </p>
+
+      <!-- Pipeline de 5 Pasos -->
+      <div class="flow-pipeline">
+        <div class="flow-step active">
+          <div>
+            <div class="flow-step-num">Fase 01</div>
+            <div class="flow-step-title">PWA Terreno</div>
+            <div class="flow-step-desc">Apertura y cierre de jornada, fotos tablero, firma digital supervisor mandante y GPS.</div>
+          </div>
+          <span class="flow-step-badge">Candado 403</span>
+        </div>
+        <div class="flow-step active">
+          <div>
+            <div class="flow-step-num">Fase 02</div>
+            <div class="flow-step-title">Torre de Control</div>
+            <div class="flow-step-desc">Conciliación matutina de horas reales vs pactadas y alarma SLA 13:00 hrs.</div>
+          </div>
+          <span class="flow-step-badge">Alerta WhatsApp/Mail</span>
+        </div>
+        <div class="flow-step active">
+          <div>
+            <div class="flow-step-num">Fase 03</div>
+            <div class="flow-step-title">Liquidación ITS</div>
+            <div class="flow-step-desc">Consolidación de jornales, costos reales (Copec, peajes, viáticos) y doble firma FES.</div>
+          </div>
+          <span class="flow-step-badge">PIN SHA-256</span>
+        </div>
+        <div class="flow-step active">
+          <div>
+            <div class="flow-step-num">Fase 04</div>
+            <div class="flow-step-title">EDP & Tesorería</div>
+            <div class="flow-step-desc">Tarifas y descuentos exclusivos para Pamela. Despacho condicional inteligente.</div>
+          </div>
+          <span class="flow-step-badge">Expediente Interno / CC</span>
+        </div>
+        <div class="flow-step active">
+          <div>
+            <div class="flow-step-num">Fase 05</div>
+            <div class="flow-step-title">Facturación SII</div>
+            <div class="flow-step-desc">Opción "Cliente Sin OC" asumiendo EDP. Folio DTE en Laudus ERP y Estado 7.</div>
+          </div>
+          <span class="flow-step-badge">Estado 7 Conforme</span>
+        </div>
+      </div>
+    </div>
+
+    
+      
+      <!-- Diagrama de Flujo Visual Integral -->
+      <div style="background: #ffffff; border: 1px solid var(--slate-200); border-radius: 12px; padding: 24px; margin: 28px 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: center;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid var(--slate-100); padding-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.4rem;">🗺️</span>
+            <div style="text-align: left;">
+              <div style="font-weight: 700; color: var(--navy-900); font-size: 1.05rem;">Mapa de Navegación del Circuito Completo (Fase 1 a Fase 5)</div>
+              <div style="font-size: 0.8rem; color: var(--slate-500);">Secuencia lógica operacional, validaciones técnicas, filtros SLA y candados duros</div>
+            </div>
+          </div>
+          <span style="font-size: 0.75rem; background: var(--blue-50); color: var(--blue-700); font-weight: 600; padding: 4px 12px; border-radius: 9999px; border: 1px solid var(--blue-200);">Diagrama Oficial</span>
+        </div>
+        <div style="width: 100%; overflow-x: auto; display: flex; justify-content: center; padding: 10px 0;">
+          <img src="diagrama_flujo_financiero_gsp.svg" alt="Diagrama de Flujo Integral" style="max-width: 100%; width: 920px; height: auto; display: block; margin: 0 auto;" />
+        </div>
+      </div>
+    
+
+    <!-- Sección 2: Descripción Funcional por Fases -->
+    <div class="section-card page-break">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <h2 class="section-title">Descripción Funcional del Circuito</h2>
+      </div>
+
+      <!-- Fase 1 -->
+      <div class="phase-block">
+        <div class="phase-block-title">
+          <span>📱</span>
+          <span>Fase 1: Terreno (PWA Móvil de Operadores)</span>
+        </div>
+        <p>Garantiza la captura fidedigna de información directamente en la grúa o camión de apoyo:</p>
+        <ul>
+          <li><strong>Momento 1 — Apertura y Cómputo de Inicio de Servicio (Regla Urbano vs. Rural):</strong>
+            <ul style="margin-top: 4px; margin-bottom: 6px;">
+              <li><em>Servicio Urbano (≤ 30 km desde Base GSP):</em> El cómputo de horas facturables y el horómetro inicial corren <strong>desde que el equipo sale de la base de Grúas San Pablo</strong> (cómputo base a base). El flete se cobra y factura de acuerdo a lo estipulado en la cotización comercial (p. ej. movilización de contrapesos, traslado en cama baja o flete urbano acordado).</li>
+              <li><em>Servicio Rural (> 30 km desde Base GSP):</em> El cómputo de horas corre <strong>exclusivamente en faena (portón a portón)</strong>: inicia cuando la grúa arriba y se posiciona en obra/faena, y concluye al terminar la maniobra. Los traslados de ida y vuelta se tarifican y facturan como flete / movilización según cotización (cama baja o traslado de apoyo).</li>
+              <li>En ambos regímenes, el operador o rigger registra en la PWA la fecha, hora de salida de base, hora de arribo a faena, horómetro inicial y odómetro del equipo con respaldo fotográfico del tablero.</li>
+            </ul>
+          </li>
+          <li><strong>Momento 2 (Término de Jornada):</strong> Se ingresan los horómetros finales, tiempos de colación, horas de traslado y notas mecánicas preventivas.</li>
+          <li><strong>Firma Digital del Mandante (Canvas Táctil):</strong> El supervisor del cliente firma directamente en la pantalla. El sistema guarda la firma manuscrita vectorial, su nombre, RUT, cargo y la <strong>geolocalización satelital exacta (coordenadas GPS y radio de precisión en metros)</strong>.</li>
+        </ul>
+        <div class="callout-box amber">
+          <strong>Candado Duro de Faena Concluida (Hard Gate):</strong> Si una orden de trabajo fue cotizada por una cuota fija de días (ej. 1 día) y ya cuenta con su reporte emitido, el sistema <strong>bloquea de forma inmediata cualquier nuevo reporte (HTTP 403)</strong>. Esto previene que una cuadrilla continúe reportando jornadas fuera del alcance comercial sin una adenda formal.
+        </div>
+      </div>
+
+      <!-- Fase 2 -->
+      <div class="phase-block">
+        <div class="phase-block-title">
+          <span>🏢</span>
+          <span>Fase 2: Torre de Control y Validación de Reportes (PMO — 13:00 hrs)</span>
+        </div>
+        <p>Supervisa que las faenas del día anterior queden conciliadas antes del mediodía:</p>
+        <ul>
+          <li><strong>Revisión Matutina:</strong> El Analista PMO coteja en su bandeja de entrada las horas registradas en faena contra las condiciones contractuales (piso mínimo de 8 hrs, 4 hrs o tarifa diaria pactada).</li>
+          <li><strong>Alarma Automática de SLA (13:00 hrs Chile):</strong> Un servicio robot inspecciona automáticamente a las 13:00 horas los reportes pendientes de validación. Si existen faenas sin conciliar, despacha alertas directas a:
+            <ul style="margin-top: 4px;">
+              <li><strong>Yiara Mendoza</strong> (Control de Flota y Programación): Notificación vía WhatsApp y Correo.</li>
+              <li><strong>Jorge Ponce</strong>: Notificación vía WhatsApp y Correo.</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Fase 3 -->
+      <div class="phase-block">
+        <div class="phase-block-title">
+          <span>📋</span>
+          <span>Fase 3: Informe de Término de Servicio (ITS) — Liquidación Técnico-Económica</span>
+        </div>
+        <p>Documento central que consolida los ingresos facturables y los costos reales para calcular el margen de la faena:</p>
+        <ul>
+          <li><strong>Guardado Incremental:</strong> Permite registrar avances progresivos sin perder información mientras se reúnen los respaldos.</li>
+          <li><strong>Integración de Costos Directos:</strong> Cargas de combustible Copec (con número de guía, litros y foto del voucher), peajes, traslados en cama baja y viáticos de cuadrilla.</li>
+          <li><strong>Anexo Técnico Vinculante (Sección 7 del PDF):</strong> El informe exporta automáticamente las firmas manuscritas del mandante y las coordenadas GPS de cada día, otorgando respaldo inobjetable ante reclamos de cobro.</li>
+          <li><strong>Doble Firma Electrónica Simple (FES):</strong>
+            <ul style="margin-top: 4px;">
+              <li><em>Paso 1:</em> Analista PMO firma con su PIN FES (cifrado SHA-256). El ITS pasa a <code>EN_REVISION_OPERACIONES</code>.</li>
+              <li><em>Paso 2 (2do Validador Técnico):</em> <strong>Jorge Ponce</strong> otorga el visto bueno técnico con su PIN FES. El ITS avanza a <code>EN_REVISION_CONTABILIDAD</code>.</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Fase 4 -->
+      <div class="phase-block">
+        <div class="phase-block-title">
+          <span>💼</span>
+          <span>Fase 4: Gobernanza Financiera de Estados de Pago (EDP & Tesorería)</span>
+        </div>
+        <p>Control estricto de las condiciones comerciales antes de despachar el cobro:</p>
+        <ul>
+          <li><strong>Privilegio Exclusivo de Tesorería:</strong> La modificación de tarifas unitarias, la aplicación de descuentos o las notas de crédito están restringidas <strong>exclusivamente a Pamela (Gerente de Tesorería)</strong>. Operadores o técnicos que intenten alterar valores reciben rechazo inmediato (HTTP 403).</li>
+          <li><strong>Despacho Condicional Inteligente:</strong>
+            <ul style="margin-top: 4px;">
+              <li><em>Cliente con Pago Previo / Contado:</em> Se genera la carátula como <strong>Expediente Interno</strong> para la carpeta contable, <strong>sin enviar cobro al cliente</strong>, evitando reclamos por duplicidad.</li>
+              <li><em>Cliente a Crédito:</em> Se despacha formalmente al mandante por correo con <strong>copia obligatoria (CC) a Gerencia General (Omar Ghiselini), Contabilidad y Operaciones</strong>.</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Fase 5 -->
+      <div class="phase-block">
+        <div class="phase-block-title">
+          <span>🧾</span>
+          <span>Fase 5: Facturación SII y Cierre de Proyecto</span>
+        </div>
+        <p>Vinculación final con el sistema contable ERP Laudus:</p>
+        <ul>
+          <li><strong>Cliente con Orden de Compra:</strong> Se registra el número de OC o HES y se adjunta el documento.</li>
+          <li><strong>Opción "Cliente Sin OC (Asumir EDP)":</strong> Para servicios de emergencia o clientes sin OC formal, permite asumir el 100% del valor devengado en el EDP oficial (dejando registro <code>hes_oc_numero = 'S/OC - ASUME EDP'</code>) para no paralizar la facturación.</li>
+          <li><strong>Cierre en Estado 7:</strong> Se ingresa el número de Factura Electrónica emitido por Laudus ERP y la OT pasa a <strong>Estado 7 (FACTURADO_CONFORME)</strong>.</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Sección 3: Matriz de Pruebas QA -->
+    <div class="section-card page-break">
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <h2 class="section-title">Matriz de Casos de Prueba (QA / Verificación de Flujo)</h2>
+      </div>
+      <p style="font-size: 0.92rem; color: var(--slate-700); margin-bottom: 12px;">
+        Esta matriz resume los 14 escenarios de prueba ejecutados para certificar el funcionamiento de las reglas de negocio y los candados de seguridad:
+      </p>
+
+      <div class="table-responsive">
+        <table class="qa-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">N°</th>
+              <th>Escenario Evaluado</th>
+              <th style="width: 100px;">Actor</th>
+              <th>Acción Realizada</th>
+              <th>Regla de Negocio / Candado</th>
+              <th>Resultado del Sistema</th>
+              <th style="width: 90px; text-align: center;">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="qa-id">TC-01</td>
+              <td><strong>Bandeja Móvil</strong></td>
+              <td><span class="actor-tag op">Operador</span></td>
+              <td>Consulta OTs pendientes en PWA</td>
+              <td>Separar faenas en curso de servicios ya concluidos</td>
+              <td>Despliega contador exacto de OTs pendientes y terminadas</td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-02</td>
+              <td><strong>Candado Cuota</strong></td>
+              <td><span class="actor-tag op">Operador</span></td>
+              <td>Intenta 2° report en OT de 1 día</td>
+              <td>Hard Gate de bloqueo si la cuota de días pactada está agotada</td>
+              <td>Rechazo <span class="code-endpoint">HTTP 403</span>: <em>"Operación bloqueada por término de faena"</em></td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-03</td>
+              <td><strong>Auditoría SLA</strong></td>
+              <td><span class="actor-tag sys">Sistema</span></td>
+              <td>Auditoría a las 13:00 hrs Santiago</td>
+              <td>Identificar reportes del día previo sin validación</td>
+              <td>Identifica con precisión OTs en mora de revisión</td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-04</td>
+              <td><strong>Alerta Omnicanal</strong></td>
+              <td><span class="actor-tag sys">Sistema</span></td>
+              <td>Disparo de notificaciones de mora</td>
+              <td>Alertar a los responsables de flota y operaciones</td>
+              <td>WhatsApp y Correos enviados a Yiara Mendoza y Jorge Ponce</td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-05</td>
+              <td><strong>Contexto ITS</strong></td>
+              <td><span class="actor-tag pmo">Analista</span></td>
+              <td>Abre pantalla de liquidación ITS</td>
+              <td>Precargar grúa asignada, jornales y tarifas de cotización</td>
+              <td>Pantalla con jornales, horas reales y tarifas cargadas</td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-06</td>
+              <td><strong>Guardado ITS</strong></td>
+              <td><span class="actor-tag pmo">Analista</span></td>
+              <td>Guarda jornadas y combustible Copec</td>
+              <td>Persistencia relacional atómica en base de datos</td>
+              <td>ITS guardado exitosamente con ID y folio formal</td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-07</td>
+              <td><strong>FES Paso 1</strong></td>
+              <td><span class="actor-tag pmo">Analista</span></td>
+              <td>Firma de elaboración con PIN FES</td>
+              <td>Cifrado SHA-256 de PIN y avance del flujo de firmas</td>
+              <td>Firma registrada; ITS pasa a <code>EN_REVISION_OPERACIONES</code></td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-08</td>
+              <td><strong>FES Paso 2</strong></td>
+              <td><span class="actor-tag jef">Jorge Ponce</span></td>
+              <td>V°B° técnico con PIN FES</td>
+              <td>Validación técnica previa a traspaso contable</td>
+              <td>Firma registrada; ITS pasa a <code>EN_REVISION_CONTABILIDAD</code></td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-09</td>
+              <td><strong>PDF con Anexo</strong></td>
+              <td><span class="actor-tag jef">Operaciones</span></td>
+              <td>Descarga documento PDF de ITS</td>
+              <td>Sección 7 obligatoria con firmas canvas y GPS de terreno</td>
+              <td>PDF compilado con logos GSP, detalle económico y firmas</td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-10</td>
+              <td><strong>Seguridad Rol</strong></td>
+              <td><span class="actor-tag op">Operador</span></td>
+              <td>Intenta alterar tarifas o descuentos en EDP</td>
+              <td>Segregación de roles: Exclusivo Pamela / Tesorería</td>
+              <td>Rechazo <span class="code-endpoint">HTTP 403</span>: <em>"Acceso Denegado: Solo Tesorería"</em></td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-11</td>
+              <td><strong>Ajuste Tesorería</strong></td>
+              <td><span class="actor-tag tes">Pamela</span></td>
+              <td>Aplica descuento comercial pactado</td>
+              <td>Recálculo automático de netos, IVA y total de EDP</td>
+              <td>Ajuste guardado con justificación y carátula actualizada</td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-12</td>
+              <td><strong>Despacho Contado</strong></td>
+              <td><span class="actor-tag tes">Tesorería</span></td>
+              <td>Firma comercial para cliente Pago Previo</td>
+              <td>Evitar cobro erróneo a clientes que ya pagaron</td>
+              <td>Despacho clasificado como <strong>Expediente Interno</strong></td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-13</td>
+              <td><strong>Despacho Crédito</strong></td>
+              <td><span class="actor-tag tes">Tesorería</span></td>
+              <td>Firma comercial para cliente a Crédito</td>
+              <td>Despacho respaldado con copia a jefaturas internas</td>
+              <td>Correo formal despachado con <strong>CC a Omar Ghiselini, Contabilidad y Operaciones</strong></td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+            <tr>
+              <td class="qa-id">TC-14</td>
+              <td><strong>Cierre Facturación</strong></td>
+              <td><span class="actor-tag tes">Facturación</span></td>
+              <td>Cierra con opción "S/OC - Asume EDP"</td>
+              <td>Asumir valor devengado y actualizar estado</td>
+              <td>OT actualizada a <strong>Estado 7 (FACTURADO_CONFORME)</strong></td>
+              <td style="text-align: center;"><span class="status-pill">✔ Conforme</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sección 4: Próximos Pasos -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-num">4</div>
+        <h2 class="section-title">Pautas de Revisión y Próximos Pasos</h2>
+      </div>
+      <p style="font-size: 0.95rem; color: var(--slate-700); margin-bottom: 14px;">
+        Para avanzar en la puesta en marcha coordinada entre Grúas San Pablo y LeanGlobal, se sugieren los siguientes pasos:
+      </p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+        <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 10px; padding: 18px;">
+          <h4 style="font-size: 0.95rem; color: var(--primary); margin-bottom: 6px;">1. Recorrido en Ambiente de Pruebas</h4>
+          <p style="font-size: 0.85rem; color: var(--slate-600);">
+            La contraparte de Grúas San Pablo (Jorge Ponce, Yiara Mendoza, Pamela) puede recorrer las pantallas para validar la fluidez del circuito con datos de faenas reales.
+          </p>
+        </div>
+        <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 10px; padding: 18px;">
+          <h4 style="font-size: 0.95rem; color: var(--primary); margin-bottom: 6px;">2. Verificación de Contactos de Alerta</h4>
+          <p style="font-size: 0.85rem; color: var(--slate-600);">
+            Confirmar los teléfonos móviles y correos corporativos configurados para la auditoría de las 13:00 hrs y evaluar si se requiere incorporar destinatarios adicionales por turno.
+          </p>
+        </div>
+        <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 10px; padding: 18px;">
+          <h4 style="font-size: 0.95rem; color: var(--primary); margin-bottom: 6px;">3. Despliegue en Operación Real</h4>
+          <p style="font-size: 0.85rem; color: var(--slate-600);">
+            Con la conformidad de los 14 casos verificados, el sistema está listo para respaldar la emisión de reportes diarios, ITS y carátulas EDP en la operación diaria.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

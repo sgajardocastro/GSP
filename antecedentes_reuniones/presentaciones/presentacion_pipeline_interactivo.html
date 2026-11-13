@@ -519,7 +519,7 @@
         </div>
         <div>
           <div class="node-title">1. Requerimiento Registrado</div>
-          <div class="node-desc">Oportunidad CRM, Visita Terreno Preventa, Matriz 4U, Cotización PDF y Adjudicación.</div>
+          <div class="node-desc">Oportunidad CRM, Visita Terreno Preventa, Matriz 4U, Cotizador por Distancia, Cotización PDF y Adjudicación.</div>
         </div>
         <div class="node-footer">
           <span class="node-tag">PREVENTA & REQUERIMIENTO</span>
@@ -549,7 +549,7 @@
         </div>
         <div>
           <div class="node-title">3. En Asignación Recursos</div>
-          <div class="node-desc">Grúa Principal, Tripulación Humana, Apoyo, Matriz Aparejos Master y OT Inmutable.</div>
+          <div class="node-desc">Grúa Principal (Chequeo Horómetro Spec 48), Tripulación Humana, Apoyo, Matriz Aparejos Master y OT Inmutable.</div>
         </div>
         <div class="node-footer">
           <span class="node-tag">CONVOY OT</span>
@@ -564,7 +564,7 @@
         </div>
         <div>
           <div class="node-title">4. En Preparación Operaciones</div>
-          <div class="node-desc">Dossier Acreditación B2B, Checklist 360° Patio, Trincaje, Odómetro y Token PIN.</div>
+          <div class="node-desc">Dossier Acreditación B2B, Inspección Patio 2-Step (T-79), Despacho Conductor/GPS y Salida Escalonada (Spec 35).</div>
         </div>
         <div class="node-footer">
           <span class="node-tag">ACREDITACIÓN + PATIO</span>
@@ -594,7 +594,7 @@
         </div>
         <div>
           <div class="node-title">6. Finalizado / Devengado</div>
-          <div class="node-desc">Check-In Retorno, Manifiesto Inverso Aparejos, ITS Triple Firma FES, EDP y ERP.</div>
+          <div class="node-desc">Check-In Retorno con Alerta Horómetro, Manifiesto Inverso, ITS Triple Firma FES, Repositorio OCs (Spec 38) y Laudus ERP.</div>
         </div>
         <div class="node-footer">
           <span class="node-tag">ITS FES + EDP + LAUDUS</span>
@@ -639,6 +639,11 @@
               <i data-lucide="table" class="node-glyph"></i>
               <span class="node-label">Matriz Servicios 4U</span>
               <span class="node-chip">4U</span>
+            </div>
+            <div class="schematic-node" id="snode-1-4b" onclick="toggleEtapa(1)">
+              <i data-lucide="map-pin" class="node-glyph"></i>
+              <span class="node-label">Cotizador por Distancia (D×2)</span>
+              <span class="node-chip" style="color: #10b981; background: rgba(16,185,129,0.15);">KM TARIFA</span>
             </div>
             <div class="schematic-node" id="snode-1-5" onclick="toggleEtapa(1)">
               <i data-lucide="bed-double" class="node-glyph"></i>
@@ -721,6 +726,23 @@
                   <div class="grid-row-item"><span style="color:#94a3b8;">Horas Día Mínimas:</span> <span class="mono" style="color:#10b981;">8 hrs</span></div>
                   <div class="grid-row-item"><span style="color:#94a3b8;">Horas Mes Mínimas:</span> <span class="mono" style="color:#10b981;">180 hrs</span></div>
                   <div class="grid-row-item"><span style="color:#94a3b8;">Traslado / Valor Fijo:</span> <span class="mono" style="color:#38bdf8;">Pactado</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-1-4b" onclick="abrirDetalleEtapa(1)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="map-pin" style="color: #10b981;"></i> Cotizador por Distancia &amp; Cláusula Faena</div>
+                <span class="mono" style="font-size: 9px; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 6px; border-radius: 4px;">DISTANCIA D×2</span>
+              </div>
+              <div class="mockup-container-box">
+                <div class="datagrid-mini">
+                  <div class="grid-row-item"><span style="color:#94a3b8;">Distancia Ida/Vuelta:</span> <span class="mono" style="color:#10b981;">D × 2 km</span></div>
+                  <div class="grid-row-item"><span style="color:#94a3b8;">Régimen / Ámbito:</span> <span class="mono" style="color:#38bdf8;">Urbano / Rural</span></div>
+                  <div class="grid-row-item"><span style="color:#94a3b8;">Cláusula Operación:</span> <span class="mono" style="color:#fbbf24;">Faena Pactada</span></div>
+                </div>
+                <div>
+                  <div class="card-desc-text">Reemplaza flete fijo $500k por cálculo dinámico de distancia y factor de escolta según zona de operación.</div>
                 </div>
               </div>
             </div>
@@ -930,10 +952,10 @@
           <div class="expanded-thumbnails-list">
             <div class="expanded-item-card" id="ecard-3-1" onclick="abrirDetalleEtapa(3)">
               <div class="card-top-row">
-                <div class="card-title-text"><i data-lucide="truck" style="color: #6366f1;"></i> Asignación Grúa Principal</div>
-                <span class="mono" style="font-size: 9px; color: #6366f1; background: rgba(99,102,241,0.12); padding: 2px 6px; border-radius: 4px;">FLOTA</span>
+                <div class="card-title-text"><i data-lucide="truck" style="color: #6366f1;"></i> Asignación Grúa Principal &amp; Salud Flota</div>
+                <span class="mono" style="font-size: 9px; color: #6366f1; background: rgba(99,102,241,0.12); padding: 2px 6px; border-radius: 4px;">FLOTA + SPEC 48</span>
               </div>
-              <div class="card-desc-text">Liebherr LTM 1070 [GR-9921] asignada según tonelaje y disponibilidad en taller.</div>
+              <div class="card-desc-text">Liebherr LTM 1070 [GR-9921] asignada tras validación automática de no estar en pana/detenida, con certificación BV vigente y control de horómetro (250h/500h/1000h).</div>
             </div>
 
             <div class="expanded-item-card" id="ecard-3-2" onclick="abrirDetalleEtapa(3)">
@@ -1055,10 +1077,10 @@
 
             <div class="expanded-item-card" id="ecard-4-3" onclick="abrirDetalleEtapa(4)">
               <div class="card-top-row">
-                <div class="card-title-text"><i data-lucide="smartphone" style="color: #38bdf8;"></i> Inspección 360° de Portón (PWA Survey 76)</div>
-                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 6px; border-radius: 4px;">PWA PATIO</span>
+                <div class="card-title-text"><i data-lucide="smartphone" style="color: #38bdf8;"></i> Inspección Patio 2-Step &amp; Salida Escalonada (Spec 35)</div>
+                <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 6px; border-radius: 4px;">T-79 PATIO</span>
               </div>
-              <div class="card-desc-text">Auditoría física de neumáticos, luces, frenos, fugas y niveles antes de abrir la reja.</div>
+              <div class="card-desc-text">Flujo simplificado de 2 pasos: 1. Inspección 360° Patio (Template 79) y 2. Despacho Conductor/GPS con salida asíncrona escalonada de equipos.</div>
             </div>
 
             <div class="expanded-item-card" id="ecard-4-4" onclick="abrirDetalleEtapa(4)">
@@ -1229,6 +1251,11 @@
               <span class="node-label" style="color: #38bdf8; font-weight: 700;">Triple Firma FES ITS</span>
               <span class="node-chip" style="color: #38bdf8; background: rgba(56,189,248,0.15);">SPEC 47</span>
             </div>
+            <div class="schematic-node" id="snode-6-4b" onclick="toggleEtapa(6)">
+              <i data-lucide="folder-check" class="node-glyph"></i>
+              <span class="node-label">Repositorio OCs Clientes</span>
+              <span class="node-chip" style="color: #a855f7; background: rgba(168,85,247,0.15);">SPEC 38</span>
+            </div>
             <div class="schematic-node" id="snode-6-5" onclick="toggleEtapa(6)">
               <i data-lucide="file-spreadsheet" class="node-glyph"></i>
               <span class="node-label">Carátula EDP Formal (HES/OC)</span>
@@ -1245,10 +1272,10 @@
           <div class="expanded-thumbnails-list">
             <div class="expanded-item-card" id="ecard-6-1" onclick="abrirDetalleEtapa(6)">
               <div class="card-top-row">
-                <div class="card-title-text"><i data-lucide="truck" style="color: #6366f1;"></i> Check-In Retorno en Patio &amp; Horómetro Final</div>
-                <span class="mono" style="font-size: 9px; color: #6366f1; background: rgba(99,102,241,0.12); padding: 2px 6px; border-radius: 4px;">RECEPCIÓN</span>
+                <div class="card-title-text"><i data-lucide="truck" style="color: #6366f1;"></i> Check-In Retorno Patio &amp; Alerta Mantenimiento</div>
+                <span class="mono" style="font-size: 9px; color: #6366f1; background: rgba(99,102,241,0.12); padding: 2px 6px; border-radius: 4px;">RECEPCIÓN + SPEC 48</span>
               </div>
-              <div class="card-desc-text">Registro de fecha/hora de llegada, odómetro final con foto y estado general del convoy.</div>
+              <div class="card-desc-text">Registro de llegada y lectura de horómetro. Si supera el umbral de pauta (250h/500h/1000h), gatilla automáticamente OT Preventiva en Mantenimiento.</div>
             </div>
 
             <div class="expanded-item-card" id="ecard-6-2" onclick="abrirDetalleEtapa(6)">
@@ -1279,6 +1306,14 @@
                 <span class="mono" style="font-size: 9px; color: #38bdf8; background: rgba(56,189,248,0.2); padding: 2px 6px; border-radius: 4px;">TSA RFC 3161</span>
               </div>
               <div class="card-desc-text">Firma electrónica FES secuencial: 1. Analista Elabora ➔ 2. Jefe Operaciones Aprueba ➔ 3. Contabilidad Cierra, con estampado visual y sellado de tiempo.</div>
+            </div>
+
+            <div class="expanded-item-card" id="ecard-6-4b" onclick="abrirDetalleEtapa(6)">
+              <div class="card-top-row">
+                <div class="card-title-text"><i data-lucide="folder-check" style="color: #a855f7;"></i> Repositorio de OCs Clientes &amp; Candado Criptográfico (Spec 38/47)</div>
+                <span class="mono" style="font-size: 9px; color: #a855f7; background: rgba(168,85,247,0.12); padding: 2px 6px; border-radius: 4px;">CONTROL OC</span>
+              </div>
+              <div class="card-desc-text">Vinculación de la Orden de Compra del mandante con validación de saldo disponible. Candado criptográfico FES que bloquea la emisión del EDP si el ITS no está 100% firmado.</div>
             </div>
 
             <div class="expanded-item-card" id="ecard-6-5" onclick="abrirDetalleEtapa(6)">
@@ -1324,6 +1359,58 @@
       </div>
     </section>
 
+    <!-- ========================================================================= -->
+    <!-- 🌐 4. CAPAS TRANSVERSALES DEL ECOSISTEMA LEANGLOBAL / GSP                -->
+    <!-- ========================================================================= -->
+    <section class="transversal-ecosystem-section" style="margin-top: 36px; padding: 28px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; backdrop-filter: blur(12px);">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
+        <i data-lucide="network" style="width: 22px; height: 22px; color: #38bdf8;"></i>
+        <h3 style="font-size: 18px; font-weight: 700; color: #f8fafc; margin: 0;">Capas Transversales de Soporte Operacional Continuo</h3>
+      </div>
+      <p style="font-size: 13px; color: #94a3b8; line-height: 1.5; margin-bottom: 20px;">
+        Dos motores de arquitectura transversal operan permanentemente bajo las 6 estaciones del pipeline, asegurando la trazabilidad documental y la disponibilidad física de los activos:
+      </p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;">
+        
+        <!-- Capa 1: Gestor Documental -->
+        <div style="padding: 20px; background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 12px; border-left: 4px solid #38bdf8;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #38bdf8; font-size: 14px;">
+              <i data-lucide="folder-tree" style="width: 18px; height: 18px;"></i> Gestor Documental Dimensional Multi-Eje
+            </div>
+            <span class="mono" style="font-size: 10px; color: #38bdf8; background: rgba(56,189,248,0.12); padding: 2px 8px; border-radius: 4px;">SPEC 44</span>
+          </div>
+          <p style="font-size: 12px; color: #cbd5e1; line-height: 1.5; margin: 0 0 10px 0;">
+            Indexación y resolución instantánea de expedientes por múltiple dimensión: <strong>Cliente</strong>, <strong>Faena</strong>, <strong>Cotización</strong>, <strong>OT</strong> y <strong>Equipo</strong>.
+          </p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span class="mono" style="font-size: 10px; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px;">📁 Expediente Único</span>
+            <span class="mono" style="font-size: 10px; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px;">🔍 Búsqueda Cruzada</span>
+            <span class="mono" style="font-size: 10px; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px;">🔒 Acceso RBAC</span>
+          </div>
+        </div>
+
+        <!-- Capa 2: WMS-Lite & Mantenimiento -->
+        <div style="padding: 20px; background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; border-left: 4px solid #10b981;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #10b981; font-size: 14px;">
+              <i data-lucide="boxes" style="width: 18px; height: 18px;"></i> Inventario WMS-Lite &amp; Mantenimiento Flota
+            </div>
+            <span class="mono" style="font-size: 10px; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 8px; border-radius: 4px;">SPEC 48</span>
+          </div>
+          <p style="font-size: 12px; color: #cbd5e1; line-height: 1.5; margin: 0 0 10px 0;">
+            Control de bodegas con <strong>Etiqueta Térmica QR (50x30mm)</strong>, SKU estructurado (<code>FAM-MAR-0000</code>), trazabilidad por unidad (N/S), matriz de quiebres 2x2, y OTs preventivas por horómetro (250h/500h/1000h) con avisos de avería desde terreno.
+          </p>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span class="mono" style="font-size: 10px; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px;">🏷️ QR Térmico Zebra</span>
+            <span class="mono" style="font-size: 10px; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px;">⏱️ Pautas 250h / 500h</span>
+            <span class="mono" style="font-size: 10px; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px;">⚠️ Matriz Quiebres 2x2</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
   </main>
 
   <script>
@@ -1333,7 +1420,8 @@
       { from: '1-1', to: '1-2', stage: 1 },
       { from: '1-2', to: '1-3', stage: 1 },
       { from: '1-3', to: '1-4', stage: 1 },
-      { from: '1-4', to: '1-5', stage: 1 },
+      { from: '1-4', to: '1-4b', stage: 1 },
+      { from: '1-4b', to: '1-5', stage: 1 },
       { from: '1-5', to: '1-6', stage: 1 },
       { from: '1-6', to: '1-7', stage: 1 },
       { from: '1-7', to: '1-8', stage: 1 },
@@ -1378,7 +1466,8 @@
       { from: '6-1', to: '6-2', stage: 6 },
       { from: '6-2', to: '6-3', stage: 6 },
       { from: '6-3', to: '6-4', stage: 6 }, // ITS ➔ Triple Firma FES
-      { from: '6-4', to: '6-5', stage: 6 }, // Triple Firma ➔ Carátula EDP
+      { from: '6-4', to: '6-4b', stage: 6 }, // Triple Firma ➔ Repositorio OCs & Candado FES
+      { from: '6-4b', to: '6-5', stage: 6 }, // Repositorio OCs ➔ Carátula EDP
       { from: '6-5', to: '6-6', stage: 6 }  // EDP ➔ Facturación Laudus
     ];
 
@@ -1420,6 +1509,14 @@
             tipoColor: "#10b981",
             desc: "Horas Día Mínimas (piso 8h), Horas Mes Mínimas (piso 180h), Traslado / Montaje y Valor Fijo pactado.",
             impacto: "Define la regla matemática con la que se liquida la facturación real."
+          },
+          {
+            id: "deliv_1_4b",
+            titulo: "Cotizador por Distancia & Cláusula Faena (D×2)",
+            tipo: "Cálculo Logístico",
+            tipoColor: "#10b981",
+            desc: "Cálculo paramétrico de flete por distancia recorrida (ida y vuelta D×2) y recargo según régimen Urbano/Rural pactado.",
+            impacto: "Reemplaza flete plano $500k por cálculo dinámico exacto de traslado."
           },
           {
             id: "deliv_1_5",
@@ -1535,11 +1632,11 @@
         deliverables: [
           {
             id: "deliv_3_1",
-            titulo: "Asignación Grúa Principal",
+            titulo: "Asignación Grúa Principal & Salud Flota",
             tipo: "Asignación Flota",
             tipoColor: "#6366f1",
-            desc: "Liebherr LTM 1070 asignada según capacidad técnica y mantenimiento en taller.",
-            impacto: "Reserva física del equipo principal."
+            desc: "Liebherr LTM 1070 asignada con validación de no pana/detención (Spec 48), certificación BV vigente y control de pautas horómetro (250h/500h/1000h).",
+            impacto: "Garantiza operatividad mecánica antes de comprometer la grúa en la OT."
           },
           {
             id: "deliv_3_2",
@@ -1607,11 +1704,11 @@
           },
           {
             id: "deliv_4_3",
-            titulo: "Inspección 360° Pre-Salida Patio (PWA 76)",
-            tipo: "PWA Inspección 360°",
+            titulo: "Inspección Patio 2-Step & Salida Escalonada (Spec 35)",
+            tipo: "PWA Inspección",
             tipoColor: "#38bdf8",
-            desc: "Revisión física del equipo (luces, neumáticos, frenos, fugas y niveles) con fotos de evidencia.",
-            impacto: "Garantiza operatividad 100% segura antes de ingresar a la vía pública."
+            desc: "Flujo simplificado de 2 pasos: 1. Inspección 360° Patio (Template 79) y 2. Despacho Conductor/GPS con salida asíncrona escalonada de convoy.",
+            impacto: "Agiliza la salida a ruta sin cuellos de botella en portería."
           },
           {
             id: "deliv_4_4",
@@ -1703,11 +1800,11 @@
         deliverables: [
           {
             id: "deliv_6_1",
-            titulo: "Check-In Retorno en Patio & Horómetro Final",
+            titulo: "Check-In Retorno en Patio & Alerta Mantenimiento (Spec 48)",
             tipo: "Recepción Flota",
             tipoColor: "#6366f1",
-            desc: "Registro de fecha/hora de llegada, odómetro final con foto y estado general del convoy.",
-            impacto: "Cierra el desplazamiento en ruta de los equipos."
+            desc: "Registro de llegada y lectura de horómetro final. Si supera el umbral de pauta (250h/500h/1000h), gatilla automáticamente OT Preventiva en Mantenimiento.",
+            impacto: "Mantiene la flota en régimen preventivo estricto al concluir cada faena."
           },
           {
             id: "deliv_6_2",
@@ -1732,6 +1829,14 @@
             tipoColor: "#38bdf8",
             desc: "Firma electrónica secuencial: Analista Elabora ➔ Jefe Operaciones Aprueba ➔ Contabilidad Cierra con sello TSA.",
             impacto: "Validación tributaria y legal inmutable con RFC 3161."
+          },
+          {
+            id: "deliv_6_4b",
+            titulo: "Repositorio de OCs Clientes & Candado Criptográfico (Spec 38/47)",
+            tipo: "Control Financiero",
+            tipoColor: "#a855f7",
+            desc: "Validación de saldo disponible de la Orden de Compra del mandante y candado criptográfico que impide emitir EDP si falta firma FES en ITS.",
+            impacto: "Blindaje de cobranza y consistencia contable inalterable."
           },
           {
             id: "deliv_6_5",

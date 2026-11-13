@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-[#0F172A] text-slate-100 p-6 font-sans">
-    <!-- Header Principal Módulo WMS-Lite (Estilo GSP Amber/Slate) -->
+    <!-- Header Principal Módulo WMS (Estilo GSP Amber/Slate) -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-slate-800 pb-5">
       <div class="flex items-center gap-3">
         <div class="p-3 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20 shadow-lg shadow-amber-500/5">
@@ -8,7 +8,7 @@
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-2xl font-black tracking-wide text-white uppercase">Gestión de Inventario WMS-Lite</h1>
+            <h1 class="text-2xl font-black tracking-wide text-white uppercase font-mono">Gestión de Inventario & WMS</h1>
             <span class="text-xs bg-amber-500/10 text-amber-400 font-bold px-2 py-0.5 rounded border border-amber-500/20">GSP ENTERPRISE</span>
           </div>
           <p class="text-slate-400 text-xs mt-0.5">Control de bodegas, traspasos inter-bodega, existencias por barcode e impresión térmica de etiquetas</p>

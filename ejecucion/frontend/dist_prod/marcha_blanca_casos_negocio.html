@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marcha Blanca Operativa: Casos de Negocio GSP</title>
+  <style>
+    :root {
+      --bg-main: #070b14;
+      --bg-card: rgba(15, 23, 42, 0.90);
+      --bg-card-hover: rgba(30, 41, 59, 0.98);
+      --border-card: rgba(255, 255, 255, 0.12);
+      --primary: #f59e0b;
+      --primary-light: #fbbf24;
+      --primary-glow: rgba(245, 158, 11, 0.3);
+      --accent-blue: #38bdf8;
+      --accent-emerald: #10b981;
+      --accent-purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-muted: #cbd5e1;
+      --text-dim: #94a3b8;
+      --danger: #ef4444;
+      --warning: #eab308;
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.10) 0px, transparent 55%),
+        radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.10) 0px, transparent 55%),
+        radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.06) 0px, transparent 55%);
+      color: var(--text-main);
+      font-family: var(--font-stack);
+      line-height: 1.55;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Bar Navigation */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 11, 20, 0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-card);
+      padding: 14px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-logo-badge {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      font-weight: 900;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 16px;
+      letter-spacing: 1.2px;
+    }
+
+    .brand-text h1 {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+    }
+
+    .brand-text p {
+      font-size: 12.5px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--text-main);
+      border: 1px solid var(--border-card);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 14.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      border: none;
+      font-weight: 800;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+    }
+
+    .slide-counter {
+      font-size: 15px;
+      color: var(--text-dim);
+      font-weight: 700;
+      padding: 0 10px;
+    }
+
+    /* Main Deck Container - Scaled to fill viewport */
+    .deck-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 36px;
+      max-width: 1580px;
+      width: 95vw;
+      margin: 0 auto;
+    }
+
+    /* Slide Card - Presentation Scale */
+    .slide {
+      display: none;
+      width: 100%;
+      min-height: calc(100vh - 165px);
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 24px;
+      padding: 44px 58px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(20px);
+      animation: fadeIn 0.3s ease-out;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.99); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Slide Header */
+    .slide-header {
+      margin-bottom: 24px;
+    }
+
+    .slide-tag {
+      display: inline-block;
+      font-size: 12.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.8px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+
+    .tag-amber { background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .tag-blue { background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
+    .tag-emerald { background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .tag-purple { background: rgba(168, 85, 247, 0.18); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); }
+
+    .slide-title {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.6px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      line-height: 1.25;
+    }
+
+    .slide-subtitle {
+      font-size: 18px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    /* Slide Content Elements */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 18px;
+      padding: 26px 30px;
+      transition: all 0.25s ease;
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-3px);
+    }
+
+    .card-accent-amber { border-top: 5px solid var(--primary); }
+    .card-accent-blue { border-top: 5px solid var(--accent-blue); }
+    .card-accent-emerald { border-top: 5px solid var(--accent-emerald); }
+    .card-accent-purple { border-top: 5px solid var(--accent-purple); }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-desc {
+      font-size: 15.5px;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    .bullet-list {
+      list-style: none;
+      margin-top: 12px;
+    }
+
+    .bullet-list li {
+      position: relative;
+      padding-left: 24px;
+      margin-bottom: 12px;
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .bullet-list li::before {
+      content: "•";
+      color: var(--primary);
+      font-weight: bold;
+      font-size: 22px;
+      position: absolute;
+      left: 4px;
+      top: -4px;
+    }
+
+    /* Highlight Banner */
+    .banner {
+      background: rgba(245, 158, 11, 0.10);
+      border-left: 5px solid var(--primary);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 22px 0 10px 0;
+      font-size: 16.5px;
+      color: #fef3c7;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      line-height: 1.6;
+    }
+
+    .banner strong {
+      color: #fbbf24;
+      font-weight: 800;
+    }
+
+    /* Timeline Stepper (4 Hitos) */
+    .timeline {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin: 24px 0 16px 0;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 30px;
+      left: 40px;
+      right: 40px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.12);
+      z-index: 1;
+    }
+
+    .timeline-step {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 23%;
+      text-align: center;
+    }
+
+    .step-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 3.5px solid var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 20px;
+      color: var(--primary);
+      margin-bottom: 12px;
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .step-icon.go-live {
+      border-color: var(--accent-emerald);
+      color: var(--accent-emerald);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+    }
+
+    .step-date {
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+
+    .step-date.go-live {
+      color: var(--accent-emerald);
+    }
+
+    .step-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .step-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Footer of Slide */
+    .slide-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 18px;
+      margin-top: 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 6px 14px;
+      border-radius: 14px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .tag-status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .status-green { background: rgba(16, 185, 129, 0.22); color: #34d399; }
+    .status-amber { background: rgba(245, 158, 11, 0.22); color: #fbbf24; }
+    .status-blue { background: rgba(56, 189, 248, 0.22); color: #38bdf8; }
+
+    /* Bottom Navigator Bar */
+    .bottom-nav {
+      position: sticky;
+      bottom: 0;
+      background: rgba(7, 11, 20, 0.94);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--border-card);
+      padding: 14px 36px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      z-index: 90;
+    }
+
+    .dot-indicators {
+      display: flex;
+      gap: 10px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .dot.active {
+      background: var(--primary);
+      width: 28px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background: #0f172a !important;
+        color: #f8fafc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .top-bar, .bottom-nav {
+        display: none !important;
+      }
+      .deck-container {
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+      .slide {
+        display: flex !important;
+        page-break-after: always;
+        break-after: page;
+        min-height: 98vh;
+        margin-bottom: 20px;
+        box-shadow: none !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <div class="brand-container">
+      <div class="brand-logo-badge">GSP</div>
+      <div class="brand-text">
+        <h1>Grúas San Pablo • Plan de Marcha Blanca</h1>
+        <p>Gobernanza Operativa & Control de Margen • LeanGlobal Platform</p>
+      </div>
+    </div>
+    <div class="nav-controls">
+      <button class="btn" onclick="prevSlide()">◀ Anterior</button>
+      <span class="slide-counter" id="counter">1 / 4</span>
+      <button class="btn btn-primary" onclick="nextSlide()">Siguiente ▶</button>
+      <button class="btn" onclick="window.print()" title="Imprimir o exportar PDF">🖨️ PDF</button>
+    </div>
+  </header>
+
+  <!-- DECK CONTAINER -->
+  <main class="deck-container">
+
+    <!-- SLIDE 1: PORTADA -->
+    <section class="slide active" id="slide-1">
+      <div class="slide-header">
+        <span class="slide-tag tag-amber">Estrategia de Salida a Producción</span>
+        <h2 class="slide-title" style="font-size: 44px; line-height: 1.2;">
+          Marcha Blanca Operativa:<br>
+          <span style="color: var(--primary);">Casos de Negocio GSP</span>
+        </h2>
+        <p class="slide-subtitle" style="font-size: 20px; margin-top: 10px;">
+          Validación integral de la cadena de valor: Comercial ➔ Coordinación ➔ Terreno ➔ Auditoría de Cierre.
+        </p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-3" style="margin-top: 14px;">
+          <div class="card card-accent-amber">
+            <div class="card-title" style="color: var(--primary);">🎯 El Objetivo</div>
+            <p class="card-desc">
+              Asegurar que cada servicio facturado coincida al 100% con lo cotizado y lo ejecutado, eliminando descalces de cobro y fugas de costo antes del Go-Live.
+            </p>
+          </div>
+          <div class="card card-accent-emerald">
+            <div class="card-title" style="color: var(--accent-emerald);">⚖️ Rol del Analista</div>
+            <p class="card-desc">
+              Liderazgo auditor de operaciones: verificación rigurosa de trazabilidad contable, control de viáticos, combustible y adicionales (rigger / prevención).
+            </p>
+          </div>
+          <div class="card card-accent-blue">
+            <div class="card-title" style="color: var(--accent-blue);">📅 El Hito Final</div>
+            <p class="card-desc">
+              Actividades martes, miércoles y jueves con informe formal de 1 página a Gerencia. <strong>Viernes 02 de Octubre Go-Live Oficial</strong> (Régimen pleno 05 Oct).
+            </p>
+          </div>
+        </div>
+
+        <div class="banner">
+          <span style="font-size: 28px;">💡</span>
+          <div>
+            <strong>Cambio de enfoque fundamental:</strong> No estamos "testeando software". Estamos simulando la operación de la empresa en condiciones reales y controladas para proteger el flujo de caja y la reputación operativa de GSP.
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div>Participantes: Gerencia General • Rol del Analista (Auditoría) • Dirección Técnica</div>
+        <div class="badge-pill">Slide 1 / 4</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: EL CAMBIO DE PARADIGMA -->
+    <section class="slide" id="slide-2">
+      <div class="slide-header">
+        <span class="slide-tag tag-blue">Diagnóstico & Metodología</span>
+        <h2 class="slide-title">De "Ver qué negocios cargamos" a una Simulación Controlada</h2>
+        <p class="slide-subtitle">Por qué cargar servicios al azar genera dispersión y cómo este plan garantiza una salida limpia y ordenada.</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2">
+          <!-- Columna Riesgo -->
+          <div class="card" style="border-left: 5px solid var(--danger);">
+            <div class="card-title" style="color: var(--danger);">
+              <span>⚠️</span> El Riesgo de "Ver qué negocios cargamos"
+            </div>
+            <ul class="bullet-list">
+              <li><strong>Desgaste operativo:</strong> Cargar datos dispersos sin orden no valida la consistencia del flujo completo.</li>
+              <li><strong>Fugas silenciosas de dinero:</strong> Combustibles pagados por GSP que debió costear el cliente, o riggers no cobrados.</li>
+              <li><strong>Facturas observadas:</strong> Horas de espera (stand-by) sin respaldo firmado que el cliente descuenta al pagar.</li>
+              <li><strong>Falta de foco directivo:</strong> Se diluye el tiempo del equipo intentando resolver imprevistos no controlados.</li>
+            </ul>
+          </div>
+
+          <!-- Columna Solución -->
+          <div class="card" style="border-left: 5px solid var(--accent-emerald);">
+            <div class="card-title" style="color: var(--accent-emerald);">
+              <span>🛡️</span> El Blindaje de la Simulación Controlada
+            </div>
+            <ul class="bullet-list">
+              <li><strong>Flujo guiado de punta a punta:</strong> 4 casos emblemáticos que recorren toda la empresa sin riesgos en faena.</li>
+              <li><strong>Filtro de entrada limpio (GIGO):</strong> Si Comercial cotiza con precisión, el Coordinador despacha con certeza.</li>
+              <li><strong>Cuadratura contable garantizada:</strong> El Analista emite su visto bueno de auditoría antes de liberar el sistema masivamente.</li>
+              <li><strong>Backlog priorizado por impacto:</strong> Solo se corrigen bloqueantes de facturación antes del Go-Live.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card card-accent-amber" style="margin-top: 22px;">
+          <div class="card-title" style="color: var(--primary);">Principio Rector</div>
+          <p class="card-desc" style="font-size: 16px;">
+            <em>"El camión no sale del patio sin una OT clara; el chofer no entrega el equipo sin la firma del cliente; y la empresa no factura sin el respaldo digital de horas, odómetro y adicionales auditado por el Analista de Operaciones."</em>
+          </p>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div>GSP Ecosistema • Estándar de Gestión del Cambio</div>
+        <div class="badge-pill">Slide 2 / 4</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: LOS 4 CASOS MAESTROS -->
+    <section class="slide" id="slide-3">
+      <div class="slide-header">
+        <span class="slide-tag tag-amber">Alcance de Simulación</span>
+        <h2 class="slide-title">Los 4 Casos Maestros de Negocio GSP</h2>
+        <p class="slide-subtitle">Escenarios reales diseñados para poner a prueba el 100% de las variables críticas de la empresa.</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2" style="gap: 22px;">
+          <!-- Caso 1 -->
+          <div class="card card-accent-blue">
+            <div class="card-title" style="color: var(--accent-blue);">
+              <span>🏙️</span> Caso 1: "El Pan de Cada Día" (Urbano Spot)
+            </div>
+            <p class="card-desc">
+              <strong>Escenario:</strong> Cliente local (Chillán/Temuco) solicita pluma 30t para descarga de 4 horas.<br>
+              <strong>Condiciones:</strong> Sin rigger, sin prevencionista, combustible GSP, sin pernocte.<br>
+              <strong>Foco Auditor (Analista):</strong> Aplicación estricta de horas mínimas y firma digital del mandante al finalizar la jornada.
+            </p>
+          </div>
+
+          <!-- Caso 2 -->
+          <div class="card card-accent-amber">
+            <div class="card-title" style="color: var(--primary);">
+              <span>🛣️</span> Caso 2: "La Grúa Viajera" (Carretero / Interurbano)
+            </div>
+            <p class="card-desc">
+              <strong>Escenario:</strong> Traslado de grúa 70t a faena en Valdivia o Los Ángeles.<br>
+              <strong>Condiciones:</strong> Visita previa, combustible de traslado GSP, viático/pernocte chofer.<br>
+              <strong>Foco Auditor (Analista):</strong> Trazabilidad del odómetro, cálculo de flete vs. diésel real y control de viáticos.
+            </p>
+          </div>
+
+          <!-- Caso 3 -->
+          <div class="card card-accent-emerald">
+            <div class="card-title" style="color: var(--accent-emerald);">
+              <span>🏭</span> Caso 3: "Faena Industrial / Parada de Planta"
+            </div>
+            <p class="card-desc">
+              <strong>Escenario:</strong> Servicio multi-día en Celulosa / Minería / Energía.<br>
+              <strong>Condiciones:</strong> Rigger certificado + Prevencionista APR, combustible en faena, estadía cliente.<br>
+              <strong>Foco Auditor (Analista):</strong> Cobro íntegro de adicionales (rigger/APR) y costo $0 de diésel/pensión para GSP.
+            </p>
+          </div>
+
+          <!-- Caso 4 -->
+          <div class="card card-accent-purple">
+            <div class="card-title" style="color: var(--accent-purple);">
+              <span>⏱️</span> Caso 4: "El Imprevisto / Stand-By" (Tiempo Muerto)
+            </div>
+            <p class="card-desc">
+              <strong>Escenario:</strong> Grúa llega a faena pero el cliente tiene el área obstruida. 3 horas de espera.<br>
+              <strong>Condiciones:</strong> Registro de contingencia en terreno y validación con supervisor cliente.<br>
+              <strong>Foco Auditor (Analista):</strong> Respaldo probatorio legal de las horas de espera para cobro sin objeción de factura.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div>Matriz Operativa de Alta Fidelidad</div>
+        <div class="badge-pill">Slide 3 / 4</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: EL CRONOGRAMA DE TRABAJO -->
+    <section class="slide" id="slide-4">
+      <div class="slide-header">
+        <span class="slide-tag tag-emerald">Cronograma Ejecutivo</span>
+        <h2 class="slide-title">Plan de Trabajo: Martes 29 Sep a Lunes 05 Oct</h2>
+        <p class="slide-subtitle">3 jornadas de actividad estructurada para llegar al Go-Live Oficial y régimen normal de operaciones.</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="timeline">
+          <!-- Sesion 1 -->
+          <div class="timeline-step">
+            <div class="step-icon">1</div>
+            <div class="step-date">Martes 29 Sep</div>
+            <div class="step-title">Comercial & Despacho</div>
+            <div class="step-desc">
+              <strong>Gabinete:</strong> Carga de los 4 casos por Comercial y asignación de grúas/recursos por Coordinación.
+            </div>
+            <div style="margin-top: 10px;">
+              <span class="tag-status status-blue">Informe #1 a Jorge</span>
+            </div>
+          </div>
+
+          <!-- Sesion 2 -->
+          <div class="timeline-step">
+            <div class="step-icon">2</div>
+            <div class="step-date">Miércoles 30 Sep</div>
+            <div class="step-title">Terreno & Firma Móvil</div>
+            <div class="step-desc">
+              <strong>Operación:</strong> Chofer en app móvil registra salida, ruta, horas motor, stand-by y firma digital.
+            </div>
+            <div style="margin-top: 10px;">
+              <span class="tag-status status-amber">Informe #2 a Jorge</span>
+            </div>
+          </div>
+
+          <!-- Sesion 3 -->
+          <div class="timeline-step">
+            <div class="step-icon">3</div>
+            <div class="step-date">Jueves 01 Oct</div>
+            <div class="step-title">Mesa de Cierre & Auditoría</div>
+            <div class="step-desc">
+              <strong>Cierre & Conciliación:</strong> Auditoría de cuadratura de carpetas, liquidación y consolidación de backlog.
+            </div>
+            <div style="margin-top: 10px;">
+              <span class="tag-status status-blue">Informe #3 de Cierre</span>
+            </div>
+          </div>
+
+          <!-- Hito Go Live -->
+          <div class="timeline-step">
+            <div class="step-icon go-live">🚀</div>
+            <div class="step-date go-live">Viernes 02 Oct</div>
+            <div class="step-title" style="color: var(--accent-emerald);">GO-LIVE OFICIAL</div>
+            <div class="step-desc">
+              <strong>Producción:</strong> Firma de acta directiva, paso a régimen normal y uso oficial de la plataforma.
+            </div>
+            <div style="margin-top: 10px;">
+              <span class="tag-status status-green">Salida a Producción</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-3" style="margin-top: 20px;">
+          <div class="card">
+            <div class="card-title" style="font-size: 15px;">Entregable Martes</div>
+            <p class="card-desc">Validación de tarifas, horas mínimas y consistencia en el traspaso de Comercial a Operaciones.</p>
+          </div>
+          <div class="card">
+            <div class="card-title" style="font-size: 15px;">Entregable Miércoles</div>
+            <p class="card-desc">Evaluación de usabilidad móvil en choferes, estabilidad de odómetro y firma conforme del mandante.</p>
+          </div>
+          <div class="card">
+            <div class="card-title" style="font-size: 15px;">Entregable Jueves</div>
+            <p class="card-desc">Conciliación de números para facturación inmediata y lista oficial de mejoras no bloqueantes (Fase 2).</p>
+          </div>
+        </div>
+
+        <!-- Banner de Imagen Adjunta -->
+        <div style="margin-top: 24px; text-align: center;">
+          <img src="compromiso_banner.png" alt="Compromiso LeanGlobal & GSP: Transformar la adopción tecnológica en una ventaja competitiva rentable, ordenada y respaldada contablemente desde el primer día." style="width: 100%; max-height: 88px; object-fit: contain; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.35); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);" />
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <div>Meta Inamovible: Go-Live Oficial y Régimen Pleno Operativo</div>
+        <div class="badge-pill">Slide 4 / 4</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAV BAR -->
+  <nav class="bottom-nav">
+    <button class="btn" onclick="prevSlide()">◀ Anterior</button>
+    <div class="dot-indicators" id="dots">
+      <div class="dot active" onclick="goToSlide(1)"></div>
+      <div class="dot" onclick="goToSlide(2)"></div>
+      <div class="dot" onclick="goToSlide(3)"></div>
+      <div class="dot" onclick="goToSlide(4)"></div>
+    </div>
+    <button class="btn btn-primary" onclick="nextSlide()">Siguiente ▶</button>
+  </nav>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 4;
+
+    function updateView() {
+      for (let i = 1; i <= totalSlides; i++) {
+        const slide = document.getElementById('slide-' + i);
+        if (slide) {
+          slide.classList.toggle('active', i === currentSlide);
+        }
+      }
+
+      const counter = document.getElementById('counter');
+      if (counter) {
+        counter.textContent = currentSlide + ' / ' + totalSlides;
+      }
+
+      const dots = document.querySelectorAll('.dot');
+      dots.forEach((dot, idx) => {
+        dot.classList.toggle('active', idx + 1 === currentSlide);
+      });
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        updateView();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        updateView();
+      }
+    }
+
+    function goToSlide(n) {
+      if (n >= 1 && n <= totalSlides) {
+        currentSlide = n;
+        updateView();
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    });
+  </script>
+</body>
+</html>

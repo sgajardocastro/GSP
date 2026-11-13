@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const proyectoController = require('../controllers/proyectosController.js');
+const itsController = require('../controllers/itsController.js');
 const cotizacionExpressController = require('../controllers/cotizacionExpressController.js');
 const contactoController = require('../controllers/contactoController.js');
 const asignacionRecursosRoutes = require('./asignacionRecursosRoutes.js');
@@ -39,9 +40,12 @@ router.delete('/:id', proyectoController.deleteProyecto);
 
 router.post('/crearEquipoProyecto', proyectoController.crearEquipoProyecto);
 router.post('/:id/generar-cotizacion', proyectoController.generarCotizacion);
+router.post('/:id/cotizaciones', proyectoController.generarCotizacion);
 router.post('/:id/generar-ot', proyectoController.generarOT);
+router.post('/:id/ot', proyectoController.generarOT);
 router.post('/:id/enviar-ot', proyectoController.enviarOT);
 router.post('/:id/reversar-a-cotizacion', proyectoController.reversarACotizacion);
+router.get('/:id_proyecto/its', itsController.getITS);
 
 // Spec 87: Solicitar V°B° Móvil de Gerencia (Omar - Web Token 1 Solo Uso)
 router.post('/:id/solicitar-vb-gerencia', proyectoController.solicitarVbGerencia);

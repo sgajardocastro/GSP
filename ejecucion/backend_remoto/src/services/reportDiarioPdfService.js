@@ -12,7 +12,42 @@ const { exec } = require('child_process');
 const { v4: uuidv4 } = require('uuid');
 const { PDFDocument } = require('pdf-lib');
 const db = require('../config/dbConfig');
-const { STORAGE_ROOT } = require('../config/storageConfig');
+const { STORAGE_ROOT, resolveStoragePath } = require('../config/storageConfig');
+
+async function resolverFotoComoDataUri(fotoRaw) {
+  if (!fotoRaw) return null;
+  const str = String(fotoRaw).trim();
+  if (str.startsWith('data:image/')) return str;
+
+  const matchId = str.match(/\/storage\/(?:view|download)\/(\d+)/i) || (str.match(/^\d+$/) ? [null, str] : null);
+  if (matchId && matchId[1]) {
+    try {
+      const idDoc = parseInt(matchId[1], 10);
+      const fRes = await db.query('SELECT id_doc, mimetype, name_doc_orig, name_doc_interno, path_doc FROM tfmg_file WHERE id_doc = $1', [idDoc]);
+      if (fRes.rows.length > 0) {
+        const fRow = fRes.rows[0];
+        const diskPath = resolveStoragePath(fRow.path_doc || '', fRow.name_doc_interno);
+        if (diskPath && fs.existsSync(diskPath)) {
+          const buf = fs.readFileSync(diskPath);
+          const mime = String(fRow.mimetype || fRow.mime_type || '').toLowerCase();
+          const ext = path.extname(fRow.name_doc_interno || fRow.name_doc_orig || '').toLowerCase();
+          const imgMime = mime.startsWith('image/') ? mime : (ext === '.png' ? 'image/png' : 'image/jpeg');
+          return `data:${imgMime};base64,${buf.toString('base64')}`;
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (fs.existsSync(str) && fs.statSync(str).isFile()) {
+    try {
+      const buf = fs.readFileSync(str);
+      const ext = path.extname(str).toLowerCase();
+      const imgMime = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
+      return `data:${imgMime};base64,${buf.toString('base64')}`;
+    } catch (_) {}
+  }
+  return null;
+}
 
 function formatDateCL(dateStr) {
   if (!dateStr) return 'N/A';
@@ -80,12 +115,23 @@ function buildReportDiarioHtml(data) {
   const horasColacion = Number(report.horas_colacion !== undefined && report.horas_colacion !== null ? report.horas_colacion : 1.0).toFixed(1);
   const colacionTexto = Number(horasColacion) > 0 ? `${horasColacion} hrs` : '0 hrs';
   const horasOperadas = Number(report.horas_operadas || 0).toFixed(1);
+  const jfProy = proyecto?.json_field ? (typeof proyecto.json_field === 'string' ? JSON.parse(proyecto.json_field) : proyecto.json_field) : {};
+  const crmV1 = jfProy.crm_v1 || {};
+  const lineasCrm = crmV1.lineas_operativas_vigentes || crmV1.lineas_servicio || [];
+  const lineaMensual = lineasCrm.find(l => String(l?.unidad || '').toUpperCase().includes('MES'));
+  const esContratoMensual = Boolean(lineaMensual) || String(report.unidad_cobro || '').toUpperCase().includes('MES');
+  const horasMinimasMes = lineaMensual ? Number(lineaMensual.cantidad_horas || lineaMensual.pisoMinimo || 180) : 180;
+
   const rawMinimas = (report.horas_minimas !== undefined && report.horas_minimas !== null && String(report.horas_minimas).trim() !== '' && !Number.isNaN(Number(report.horas_minimas)))
     ? Number(report.horas_minimas)
     : 8.0;
-  const esSinMinimoDiario = rawMinimas <= 0;
+  const esSinMinimoDiario = rawMinimas <= 0 || esContratoMensual;
   const horasMinimas = rawMinimas.toFixed(1);
-  const horasFacturables = Number(report.horas_facturables || horasOperadas).toFixed(1);
+  const ajHFact = report.ajustes_analista?.valores_ajustados?.horas_facturables ?? report.horas_facturables;
+  const tieneFacturablesManual = ajHFact !== undefined && ajHFact !== null && String(ajHFact).trim() !== '' && !Number.isNaN(Number(ajHFact));
+  const horasFacturables = tieneFacturablesManual
+    ? Number(ajHFact).toFixed(1)
+    : (esSinMinimoDiario ? horasOperadas : Number(report.horas_facturables || horasOperadas).toFixed(1));
   const horasSobretiempo = esSinMinimoDiario ? '0.0' : Number(report.horas_sobretiempo || 0).toFixed(1);
 
   const horoIni = Number(report.horometro_inicio || 0).toFixed(1);
@@ -112,6 +158,9 @@ function buildReportDiarioHtml(data) {
   const nombreAnalista = `${validador?.name_frst || report.val_nombre || 'Analista'} ${validador?.apellido_pat || report.val_apellido || 'Control de Gestión'}`.trim();
   const rutAnalista = validador?.rut || report.val_rut || '16.890.123-K';
 
+  const obsClienteRaw = report.observaciones_cliente || report.obs_cliente || report.ajustes_analista?.observaciones_cliente || report.ajustes_analista?.valores_ajustados?.observaciones_cliente || '';
+  const obsCliente = typeof obsClienteRaw === 'string' ? obsClienteRaw.trim() : '';
+
   // Buscar logo de GSP
   let logoBase64 = '';
   try {
@@ -129,53 +178,8 @@ function buildReportDiarioHtml(data) {
     }
   } catch (e) {}
 
-  // Auditoría si hubo ajustes
-  const ajustes = report.ajustes_analista;
-  const huboAjustes = Boolean(ajustes && ajustes.modificado);
-  let tablaAuditoriaHtml = '';
-  if (huboAjustes && ajustes.valores_originales && ajustes.valores_ajustados) {
-    const orig = ajustes.valores_originales;
-    const ajus = ajustes.valores_ajustados;
-    tablaAuditoriaHtml = `
-      <div class="audit-box">
-        <div class="audit-title">⚠️ REGISTRO DE AUDITORÍA & AJUSTES DE CONTROL DE GESTIÓN</div>
-        <table class="audit-table">
-          <thead>
-            <tr>
-              <th>Parámetro Operativo</th>
-              <th style="text-align: center;">Reportado en Terreno</th>
-              <th style="text-align: center;">Validado por Analista</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Horario de Faena</td>
-              <td style="text-align: center;"><span class="strikethrough">${orig.hora_inicio || '08:00'} a ${orig.hora_termino || '18:00'}</span></td>
-              <td style="text-align: center;"><strong>${ajus.hora_inicio || '08:00'} a ${ajus.hora_termino || '18:00'}</strong></td>
-            </tr>
-            <tr>
-              <td>Horas Facturables</td>
-              <td style="text-align: center;"><span class="strikethrough">${orig.horas_facturables} hrs</span></td>
-              <td style="text-align: center;"><strong class="text-emerald">${ajus.horas_facturables} hrs</strong></td>
-            </tr>
-            <tr>
-              <td>Horas Efectivas Operadas</td>
-              <td style="text-align: center;"><span class="strikethrough">${orig.horas_operadas} hrs</span></td>
-              <td style="text-align: center;"><strong>${ajus.horas_operadas} hrs</strong></td>
-            </tr>
-            <tr>
-              <td>Colación</td>
-              <td style="text-align: center;"><span class="strikethrough">${orig.horas_colacion} hrs</span></td>
-              <td style="text-align: center;"><strong>${ajus.horas_colacion} hrs</strong></td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="audit-obs">
-          <strong>Justificación del Analista:</strong> "${ajustes.observacion_ajuste || 'Ajustes validados conforme a telemetría GPS y hoja de faena.'}"
-        </div>
-      </div>
-    `;
-  }
+  // Tabla de auditoría interna suprimida del PDF oficial del cliente
+  const tablaAuditoriaHtml = '';
 
   // Firma Mandante Canvas
   const firmaMandanteImg = report.cliente_firma_canvas_base64
@@ -524,10 +528,10 @@ function buildReportDiarioHtml(data) {
         <td class="lbl">Rigger / Asistente:</td>
         <td class="val">${riggerNombre}</td>
         <td class="lbl">Piso Mínimo Contractual:</td>
-        <td class="val">${esSinMinimoDiario ? '<strong style="color: #047857;">Sin mínimo diario (Modalidad Mensual)</strong>' : `<strong style="color: #047857;">${horasMinimas} hrs base</strong> (según OT formal)`}</td>
+        <td class="val">${esSinMinimoDiario ? `<strong style="color: #047857;">Sin mínimo diario (Modalidad Mensual ${esContratoMensual ? `— ${horasMinimasMes} hrs/mes pactadas en OT` : ''})</strong>` : `<strong style="color: #047857;">${horasMinimas} hrs base</strong> (según OT formal)`}</td>
         ` : `
         <td class="lbl">Piso Mínimo Contractual:</td>
-        <td class="val" colspan="3">${esSinMinimoDiario ? '<strong style="color: #047857;">Sin mínimo diario (Modalidad Mensual — Acumula horas reales al mes)</strong>' : `<strong style="color: #047857;">${horasMinimas} hrs base</strong> (según OT formal)`}</td>
+        <td class="val" colspan="3">${esSinMinimoDiario ? `<strong style="color: #047857;">Sin mínimo diario (Modalidad Mensual ${esContratoMensual ? `— ${horasMinimasMes} hrs/mes pactadas en OT` : ''})</strong>` : `<strong style="color: #047857;">${horasMinimas} hrs base</strong> (según OT formal)`}</td>
         `}
       </tr>
     </table>
@@ -540,7 +544,6 @@ function buildReportDiarioHtml(data) {
           <th>Horario Inicio Faena</th>
           <th>Horario Término Faena</th>
           <th>Colación</th>
-          <th>Horas Efectivas</th>
           <th>Piso Mínimo OT</th>
           <th style="background: #047857;">Total Facturable</th>
           <th>Sobretiempo</th>
@@ -551,7 +554,6 @@ function buildReportDiarioHtml(data) {
           <td><strong>${horaInicio}</strong></td>
           <td><strong>${horaTermino}</strong></td>
           <td><strong>${colacionTexto}</strong><span class="metric-sub">${Number(horasColacion) > 0 ? `${horasColacion} hrs colación` : 'Sin colación'}</span></td>
-          <td><strong>${horasOperadas} hrs</strong><span class="metric-sub">Efectivas izaje</span></td>
           <td>${esSinMinimoDiario ? '<strong>Sin mín. diario</strong><span class="metric-sub">Acumula mensual</span>' : `${horasMinimas} hrs<span class="metric-sub">Base pactada</span>`}</td>
           <td style="background: #ecfdf5;"><span class="metric-highlight">${horasFacturables} hrs</span><span class="metric-sub">Para Estado Pago</span></td>
           <td>${horasSobretiempo > 0 ? `<strong style="color:#b45309;">+${horasSobretiempo} hrs</strong>` : '0.0 hrs'}<span class="metric-sub">Excedente base</span></td>
@@ -564,13 +566,11 @@ function buildReportDiarioHtml(data) {
     <div class="obs-box">
       <strong>Maniobras Realizadas en Faena:</strong><br>
       ${report.observacion_trabajo || 'Servicio de izaje y maniobras operacionales de grúa móvil según plan de trabajo convenido.'}
+      ${obsCliente ? `<div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1;"><strong style="color: #0369a1;">Observaciones para el Mandante / Control de Gestión:</strong><br>${obsCliente.replace(/\n/g, '<br>')}</div>` : ''}
       ${report.notas_mecanicas_gsp ? `<br><br><span style="color:#b45309;"><strong>Notas Mecánicas / Taller GSP:</strong> ${report.notas_mecanicas_gsp}</span>` : ''}
     </div>
 
-    <!-- 6. TABLA DE AUDITORÍA (SI APLICA) -->
-    ${tablaAuditoriaHtml}
-
-    <!-- 7. DOBLE FIRMA: MANDANTE EN TERRENO + FES ANALISTA CON PIN -->
+    <!-- 6. DOBLE FIRMA: MANDANTE EN TERRENO + FES ANALISTA CON PIN -->
     <table class="signatures-table">
       <tr>
         <!-- FIRMA MANDANTE -->
@@ -643,49 +643,73 @@ async function resolverAnexosDelReporte(data) {
   const anexosPdfs = Array.isArray(data.anexosPdfs) ? [...data.anexosPdfs] : [];
   const rep = data.report || {};
 
-  // 1. Fotos capturadas en terreno (inicio / término de horómetro o tablero)
-  const fotoIni = rep.foto_tablero_inicio || rep.foto_horometro_inicio || null;
-  if (typeof fotoIni === 'string' && fotoIni.startsWith('data:image/')) {
-    anexosImagenes.push({ titulo: 'FOTOGRAFÍA TABLERO / HORÓMETRO INICIO EN TERRENO', dataUri: fotoIni });
-  }
-  const fotoFin = rep.foto_tablero_termino || rep.foto_horometro || null;
-  if (typeof fotoFin === 'string' && fotoFin.startsWith('data:image/') && fotoFin !== fotoIni) {
-    anexosImagenes.push({ titulo: 'FOTOGRAFÍA TABLERO / HORÓMETRO TÉRMINO EN TERRENO', dataUri: fotoFin });
-  }
-
-  // 2. Documento o foto adjunta como respaldo físico (id_doc_evidencia)
+  // SPEC-098 v1.1.0 / REQ-1147: Leer configuración de privacidad del analista (Control de Gestión)
   const ajustes = typeof rep.ajustes_analista === 'string'
     ? (() => { try { return JSON.parse(rep.ajustes_analista); } catch (_) { return {}; } })()
     : (rep.ajustes_analista || {});
-  const idDocEvidencia = data.idDocEvidencia || ajustes.id_doc_evidencia || null;
+  const privacidad = data.privacidad_pdf || ajustes.privacidad_pdf || {};
 
-  if (idDocEvidencia) {
+  // 1. Fotos capturadas en terreno (inicio / término de horómetro o tablero)
+  // INV-PRIV-01: Por defecto excluidas del PDF del mandante; solo se incluyen si el analista lo autoriza explícitamente (true)
+  const incluirFotoIni = privacidad.incluir_foto_inicio === true;
+  const incluirFotoFin = privacidad.incluir_foto_termino === true;
+
+  if (incluirFotoIni) {
+    const fotoIniRaw = rep.foto_tablero_inicio || rep.foto_horometro_inicio || rep.foto_horometro || null;
+    const fotoIni = await resolverFotoComoDataUri(fotoIniRaw);
+    if (fotoIni) {
+      anexosImagenes.push({ titulo: 'FOTOGRAFÍA TABLERO / HORÓMETRO INICIO EN TERRENO', dataUri: fotoIni });
+    }
+  }
+
+  if (incluirFotoFin) {
+    const fotoFinRaw = rep.foto_tablero_termino || rep.foto_horometro || null;
+    const fotoFin = await resolverFotoComoDataUri(fotoFinRaw);
+    if (fotoFin) {
+      anexosImagenes.push({ titulo: 'FOTOGRAFÍA TABLERO / HORÓMETRO TÉRMINO EN TERRENO', dataUri: fotoFin });
+    }
+  }
+
+  // 2. Documentos y fotografías autorizadas por el analista en docs_incluidos_pdf
+  const idsAProcesar = new Set();
+  if (Array.isArray(privacidad.docs_incluidos_pdf)) {
+    privacidad.docs_incluidos_pdf.forEach(id => {
+      const num = Number(id);
+      if (num && !isNaN(num)) idsAProcesar.add(num);
+    });
+  }
+  if (data.idDocEvidencia) {
+    const num = Number(data.idDocEvidencia);
+    if (num && !isNaN(num)) idsAProcesar.add(num);
+  }
+  if (ajustes.id_doc_evidencia) {
+    const num = Number(ajustes.id_doc_evidencia);
+    if (num && !isNaN(num)) idsAProcesar.add(num);
+  }
+
+  for (const idDoc of idsAProcesar) {
     try {
-      const fRes = await db.query('SELECT id_doc, mime_type, name_doc_orig, name_doc_save, path_doc FROM tfmg_file WHERE id_doc = $1', [idDocEvidencia]);
+      const fRes = await db.query('SELECT id_doc, mimetype, name_doc_orig, name_doc_interno, path_doc FROM tfmg_file WHERE id_doc = $1', [idDoc]);
       if (fRes.rows.length > 0) {
         const fRow = fRes.rows[0];
-        const candidates = [
-          path.join(STORAGE_ROOT, fRow.path_doc || '', fRow.name_doc_save || ''),
-          path.join(STORAGE_ROOT, fRow.path_doc || '')
-        ];
-        const diskPath = candidates.find(c => fs.existsSync(c) && fs.statSync(c).isFile());
-        if (diskPath) {
+        const diskPath = resolveStoragePath(fRow.path_doc || '', fRow.name_doc_interno);
+        if (diskPath && fs.existsSync(diskPath) && fs.statSync(diskPath).isFile()) {
           const buf = fs.readFileSync(diskPath);
-          const mime = String(fRow.mime_type || '').toLowerCase();
-          const ext = path.extname(fRow.name_doc_save || fRow.name_doc_orig || '').toLowerCase();
+          const mime = String(fRow.mimetype || fRow.mime_type || '').toLowerCase();
+          const ext = path.extname(fRow.name_doc_interno || fRow.name_doc_orig || '').toLowerCase();
           if (mime.includes('pdf') || ext === '.pdf') {
             anexosPdfs.push(buf);
           } else if (mime.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
             const imgMime = mime.startsWith('image/') ? mime : (ext === '.png' ? 'image/png' : 'image/jpeg');
             anexosImagenes.push({
-              titulo: `RESPALDO FÍSICO ADJUNTO (${fRow.name_doc_orig || fRow.name_doc_save || 'Documento'})`,
+              titulo: `DOCUMENTO ADJUNTO (${fRow.name_doc_orig || fRow.name_doc_interno || 'Anexo'})`,
               dataUri: `data:${imgMime};base64,${buf.toString('base64')}`
             });
           }
         }
       }
     } catch (errAnx) {
-      console.warn('[REQ-1107] Aviso resolviendo anexo de reporte:', errAnx.message);
+      console.warn(`[REQ-1107] Aviso resolviendo anexo de reporte ID ${idDoc}:`, errAnx.message);
     }
   }
 

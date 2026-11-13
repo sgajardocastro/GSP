@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grúas San Pablo — Precierre de Proyecto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #F5F5F7;
+      --bg-card: #FFFFFF;
+      --bg-tray: rgba(255, 255, 255, 0.62);
+      --text-primary: #1D1D1F;
+      --text-secondary: #86868B;
+      --text-tertiary: #A1A1A6;
+      --apple-blue: #0071E3;
+      --apple-blue-hover: #0077ED;
+      --apple-green: #28CD41;
+      --apple-green-ink: #1D7A2B;
+      --apple-green-bg: rgba(40, 205, 65, 0.12);
+      --apple-orange: #FF9500;
+      --apple-orange-ink: #C93400;
+      --apple-orange-bg: rgba(255, 149, 0, 0.14);
+      --apple-Blue-bg: rgba(0, 113, 227, 0.10);
+      --border-hairline: rgba(0, 0, 0, 0.06);
+      --shadow-card: 0 12px 32px -8px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03);
+      --shadow-card-hover: 0 24px 48px -12px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 113, 227, 0.08);
+      --shadow-bento: 0 20px 44px -14px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.02);
+      --radius-xl: 32px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --transition-apple: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      line-height: 1.45;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ─── APPLE FROSTED TOP NAV ─── */
+    .global-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 64px;
+      background: rgba(245, 245, 247, 0.82);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--border-hairline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--apple-blue);
+    }
+
+    .brand span {
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    .segmented-control {
+      display: inline-flex;
+      background: rgba(0, 0, 0, 0.06);
+      padding: 4px;
+      border-radius: 999px;
+      gap: 4px;
+    }
+
+    .seg-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      padding: 8px 24px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition-apple);
+    }
+
+    .seg-btn.active {
+      background: #FFFFFF;
+      color: var(--text-primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .nav-meta {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* ─── MAIN CONTAINER & SLIDES ─── */
+    .stage-container {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 56px 48px 80px;
+    }
+
+    .view-section {
+      display: none;
+      animation: appleFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .view-section.active {
+      display: block;
+    }
+
+    @keyframes appleFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ─── APPLE HERO TYPOGRAPHY ─── */
+    .hero-header {
+      text-align: center;
+      max-width: 880px;
+      margin: 0 auto 56px;
+    }
+
+    .hero-eyebrow {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--apple-blue);
+      margin-bottom: 12px;
+    }
+
+    .hero-title {
+      font-size: clamp(38px, 4.2vw, 56px);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+      color: var(--text-primary);
+      margin-bottom: 18px;
+    }
+
+    .hero-subtitle {
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    /* ─── VIEW 1: APPLE BENTO GRID (ALCANCE) ─── */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .bento-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      padding: 44px 40px;
+      box-shadow: var(--shadow-bento);
+      border: 1px solid var(--border-hairline);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: var(--transition-apple);
+    }
+
+    .bento-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-card-hover);
+    }
+
+    .bento-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 24px;
+      width: fit-content;
+    }
+
+    .pill-green {
+      background: var(--apple-green-bg);
+      color: var(--apple-green-ink);
+    }
+
+    .pill-orange {
+      background: var(--apple-orange-bg);
+      color: var(--apple-orange-ink);
+    }
+
+    .pill-blue {
+      background: var(--apple-Blue-bg);
+      color: var(--apple-blue);
+    }
+
+    .bento-title {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .bento-desc {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 32px;
+    }
+
+    .clean-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-top: auto;
+    }
+
+    .clean-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-primary);
+      padding-top: 16px;
+      border-top: 1px solid var(--border-hairline);
+    }
+
+    .clean-item:first-child {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .item-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .icon-done {
+      background: var(--apple-green-bg);
+      color: var(--apple-green-ink);
+    }
+
+    .icon-early {
+      background: var(--apple-orange-bg);
+      color: var(--apple-orange-ink);
+    }
+
+    .icon-next {
+      background: var(--apple-Blue-bg);
+      color: var(--apple-blue);
+    }
+
+    .icon-out {
+      background: rgba(0, 0, 0, 0.06);
+      color: var(--text-secondary);
+    }
+
+    .item-sub {
+      display: block;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    .cta-banner {
+      margin-top: 40px;
+      text-align: center;
+    }
+
+    .apple-primary-btn {
+      appearance: none;
+      border: none;
+      background: var(--apple-blue);
+      color: #FFFFFF;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      padding: 16px 34px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: var(--transition-apple);
+      box-shadow: 0 8px 20px rgba(0, 113, 227, 0.25);
+    }
+
+    .apple-primary-btn:hover {
+      background: var(--apple-blue-hover);
+      transform: scale(1.02);
+    }
+
+    .apple-secondary-btn {
+      appearance: none;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+      padding: 12px 22px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition-apple);
+    }
+
+    .apple-secondary-btn:hover {
+      background: #FFFFFF;
+      color: var(--text-primary);
+      border-color: rgba(0, 113, 227, 0.28);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    /* ─── VIEW 2: PURE APPLE KANBAN BOARD ─── */
+    .kanban-board {
+      display: grid;
+      grid-template-columns: 1fr 0.78fr 1fr 1fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .kanban-column {
+      background: var(--bg-tray);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: var(--radius-xl);
+      padding: 28px 22px;
+      border: 1px solid var(--border-hairline);
+      display: flex;
+      flex-direction: column;
+      min-height: 490px;
+    }
+
+    .kanban-column.col-muted {
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .col-header {
+      margin-bottom: 28px;
+      padding: 0 6px;
+    }
+
+    .col-step {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--apple-blue);
+      margin-bottom: 6px;
+    }
+
+    .col-muted .col-step {
+      color: var(--text-secondary);
+    }
+
+    .col-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .col-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    /* ─── MONUMENTAL APPLE KANBAN CARD (1 CLICK -> PDF) ─── */
+    .apple-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 32px 26px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-hairline);
+      cursor: pointer;
+      transition: var(--transition-apple);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 220px;
+      position: relative;
+      overflow: hidden;
+      text-align: left;
+    }
+
+    .apple-card.compact {
+      min-height: 180px;
+      padding: 26px 24px;
+    }
+
+    .apple-card.mini {
+      min-height: 112px;
+      padding: 18px 20px;
+      border-radius: 20px;
+    }
+
+    .apple-card.mini .card-top-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .apple-card.mini .card-icon-wrap {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      margin-bottom: 0;
+      flex-shrink: 0;
+    }
+
+    .apple-card.mini .card-name {
+      font-size: 18px;
+      margin-bottom: 0;
+    }
+
+    .apple-card.mini .card-caption {
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .apple-card.mini .card-footer {
+      padding-top: 10px;
+    }
+
+    .apple-card:hover {
+      transform: translateY(-6px) scale(1.015);
+      box-shadow: var(--shadow-card-hover);
+      border-color: rgba(0, 113, 227, 0.25);
+    }
+
+    .apple-card:hover .card-action-circle {
+      background: var(--apple-blue);
+      color: #FFFFFF;
+      transform: scale(1.08);
+    }
+
+    .apple-card.passive {
+      background: rgba(255, 255, 255, 0.75);
+      box-shadow: none;
+      border-style: dashed;
+      border-color: rgba(0, 0, 0, 0.12);
+    }
+
+    .card-icon-wrap {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: var(--bg-canvas);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      color: var(--apple-blue);
+    }
+
+    .apple-card.compact .card-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+    }
+
+    .apple-card.passive .card-icon-wrap {
+      color: var(--text-secondary);
+    }
+
+    .card-name {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .apple-card.compact .card-name {
+      font-size: 21px;
+    }
+
+    .card-caption {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin-bottom: 24px;
+    }
+
+    .apple-card.compact .card-caption {
+      margin-bottom: 16px;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-hairline);
+    }
+
+    .pdf-tag {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--apple-blue);
+      letter-spacing: -0.01em;
+    }
+
+    .apple-card.passive .pdf-tag {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .card-action-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-apple);
+    }
+
+    /* ─── APPLE QUICKLOOK PDF MODAL ─── */
+    .quicklook-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: rgba(29, 29, 31, 0.48);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .quicklook-backdrop.open {
+      display: flex;
+      opacity: 1;
+    }
+
+    .quicklook-window {
+      width: 100%;
+      max-width: 1480px;
+      height: 92vh;
+      background: #FFFFFF;
+      border-radius: 24px;
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.30);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .quicklook-toolbar {
+      height: 60px;
+      background: rgba(245, 245, 247, 0.92);
+      border-bottom: 1px solid var(--border-hairline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .ql-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .ql-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0, 0, 0, 0.08);
+      color: var(--text-primary);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-apple);
+    }
+
+    .ql-close:hover {
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .ql-title-group {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .ql-stage {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--apple-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .ql-doc-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .ql-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ql-switcher {
+      display: flex;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.06);
+      padding: 3px;
+      border-radius: 999px;
+    }
+
+    .ql-chip {
+      border: none;
+      background: transparent;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition-apple);
+    }
+
+    .ql-chip.active {
+      background: #FFFFFF;
+      color: var(--text-primary);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .ql-external {
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--apple-blue);
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--apple-Blue-bg);
+      transition: var(--transition-apple);
+    }
+
+    .ql-external:hover {
+      background: var(--apple-blue);
+      color: #FFFFFF;
+    }
+
+    .quicklook-frame {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: #E5E5EA;
+    }
+
+    @media (max-width: 1200px) {
+      .bento-grid {
+        grid-template-columns: 1fr;
+      }
+      .kanban-board {
+        grid-template-columns: 1fr;
+      }
+      .kanban-column {
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA SUPERIOR ESTILO APPLE -->
+  <nav class="global-nav">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      Grúas San Pablo <span>· Precierre Ejecutivo</span>
+    </div>
+
+    <div class="segmented-control">
+      <button class="seg-btn active" id="btn-alcance" onclick="switchView('alcance')">01. Alcance del Proyecto</button>
+      <button class="seg-btn" id="btn-kanban" onclick="switchView('kanban')">02. Kanban Operativo</button>
+    </div>
+
+    <div class="nav-meta">Directorio &amp; Gerencia General</div>
+  </nav>
+
+  <main class="stage-container">
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- VISTA 01: ALCANCE DEL PROYECTO (APPLE BENTO GRID)                   -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <section id="view-alcance" class="view-section active">
+      <header class="hero-header">
+        <div class="hero-eyebrow">Contextualización del Proyecto</div>
+        <h1 class="hero-title">Lo comprometido, lo adelantado y el cierre.</h1>
+        <p class="hero-subtitle">
+          El ciclo de negocio operativo de las grúas se encuentra 100% concluido y en producción, sumado a la entrega anticipada de los módulos del quinto mes.
+        </p>
+      </header>
+
+      <div class="bento-grid">
+        <!-- TARJETA 1: COMPROMETIDO Y OPERATIVO -->
+        <article class="bento-card">
+          <div>
+            <div class="bento-pill pill-green">● 100% Operativo Hoy</div>
+            <h2 class="bento-title">Ciclo Core de Grúas</h2>
+            <p class="bento-desc">
+              El proceso central del negocio ofertado al inicio del proyecto ya se encuentra concluido y operando de punta a punta.
+            </p>
+          </div>
+          <ul class="clean-list">
+            <li class="clean-item">
+              <span class="item-icon icon-done">✓</span>
+              <div>
+                Comercial y Cotizaciones
+                <span class="item-sub">Propuestas formales y contratos digitales</span>
+              </div>
+            </li>
+            <li class="clean-item">
+              <span class="item-icon icon-done">✓</span>
+              <div>
+                Asignación y Orden de Trabajo
+                <span class="item-sub">Programación de equipos, operadores y acreditaciones</span>
+              </div>
+            </li>
+            <li class="clean-item">
+              <span class="item-icon icon-done">✓</span>
+              <div>
+                Ejecución, Viaje y Telemetría
+                <span class="item-sub">Bitácora de traslado, horómetros y reports diarios en terreno</span>
+              </div>
+            </li>
+            <li class="clean-item">
+              <span class="item-icon icon-done">✓</span>
+              <div>
+                Gestión de ITS y Estados de Pago
+                <span class="item-sub">Consolidación técnica y carátula oficial de liquidación</span>
+              </div>
+            </li>
+          </ul>
+        </article>
+
+        <!-- TARJETA 2: ADELANTADO DEL MES 5 -->
+        <article class="bento-card">
+          <div>
+            <div class="bento-pill pill-orange">★ Adelantado del 5° Mes</div>
+            <h2 class="bento-title">Inventario, Taller y Compras</h2>
+            <p class="bento-desc">
+              Módulos pronosticados originalmente para el quinto mes que ejecutamos y pusimos en marcha de forma anticipada.
+            </p>
+          </div>
+          <ul class="clean-list">
+            <li class="clean-item">
+              <span class="item-icon icon-early">✓</span>
+              <div>
+                Inventario y Bodegas (WMS)
+                <span class="item-sub">2.854 SKUs, ubicaciones con QR, recepciones y despachos</span>
+              </div>
+            </li>
+            <li class="clean-item">
+              <span class="item-icon icon-early">✓</span>
+              <div>
+                Mantenimiento de Flota
+                <span class="item-sub">Órdenes de trabajo de taller, pautas preventivas y foso</span>
+              </div>
+            </li>
+            <li class="clean-item">
+              <span class="item-icon icon-early">✓</span>
+              <div>
+                Compras y Abastecimiento
+                <span class="item-sub">Solicitudes de pedido, órdenes de compra y aprobación móvil</span>
+              </div>
+            </li>
+          </ul>
+        </article>
+
+        <!-- TARJETA 3: PENDIENTE Y FUERA DE ALCANCE -->
+        <article class="bento-card">
+          <div>
+            <div class="bento-pill pill-blue">→ Última Milla de Cierre</div>
+            <h2 class="bento-title">Facturación Odoo y Contabilidad</h2>
+            <p class="bento-desc">
+              Frontera clara para el cierre definitivo del proyecto sin friccionar la operación administrativa actual.
+            </p>
+          </div>
+          <ul class="clean-list">
+            <li class="clean-item">
+              <span class="item-icon icon-next">→</span>
+              <div>
+                Pendiente: Integración Facturación con Odoo
+                <span class="item-sub">Conectar el Estado de Pago aprobado directamente con Odoo para emitir la factura electrónica</span>
+              </div>
+            </li>
+            <li class="clean-item">
+              <span class="item-icon icon-next">→</span>
+              <div>
+                Integración Contabilidad
+                <span class="item-sub">Sincronización de movimientos hacia el módulo contable de Odoo, manteniendo la continuidad operativa del área contable</span>
+              </div>
+            </li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="cta-banner" style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+        <button class="apple-primary-btn" onclick="switchView('kanban')">
+          Explorar Kanban Operativo en Vivo
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+        <button class="apple-secondary-btn" onclick="openStageModal('evidencia_propuesta')" title="Respaldo contractual de Hitos y Roadmap Diferido (Hojas 32 a 36)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Ver Anexo: Cronograma Original Propuesta (Julio 2026)
+        </button>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- VISTA 02: KANBAN OPERATIVO PURO (1 ETAPA = 1 CLIC = 1 PDF REAL)     -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <section id="view-kanban" class="view-section">
+      <header class="hero-header">
+        <div class="hero-eyebrow">Flujo Operativo de Negocio</div>
+        <h1 class="hero-title">Un clic por etapa. El documento real.</h1>
+        <p class="hero-subtitle">
+          Selecciona cualquier etapa del flujo para abrir inmediatamente el documento oficial generado en producción.
+        </p>
+      </header>
+
+      <div class="kanban-board">
+
+        <!-- ETAPA 1: COMERCIAL -->
+        <div class="kanban-column">
+          <div class="col-header">
+            <div class="col-step">Etapa 01</div>
+            <div class="col-title">Comercial</div>
+          </div>
+          <div class="col-cards">
+            <div class="apple-card" onclick="openStageModal('comercial')">
+              <div>
+                <div class="card-icon-wrap">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <div class="card-name">Cotización</div>
+                <div class="card-caption">Propuesta técnico-comercial formal emitida al cliente.</div>
+              </div>
+              <div class="card-footer">
+                <span class="pdf-tag">Abrir PDF Oficial</span>
+                <div class="card-action-circle">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ETAPA 2: VERIFICACIÓN (PASO RÁPIDO) -->
+        <div class="kanban-column col-muted">
+          <div class="col-header">
+            <div class="col-step">Etapa 02</div>
+            <div class="col-title">Verificación</div>
+          </div>
+          <div class="col-cards">
+            <div class="apple-card passive" onclick="openStageModal('verificacion')">
+              <div>
+                <div class="card-icon-wrap">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <div class="card-name">Aprobación</div>
+                <div class="card-caption">Validación comercial e inicio del servicio.</div>
+              </div>
+              <div class="card-footer">
+                <span class="pdf-tag">Hito de validación</span>
+                <div class="card-action-circle">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ETAPA 3: ASIGNACIÓN -->
+        <div class="kanban-column">
+          <div class="col-header">
+            <div class="col-step">Etapa 03</div>
+            <div class="col-title">Asignación</div>
+          </div>
+          <div class="col-cards">
+            <div class="apple-card" onclick="openStageModal('asignacion')">
+              <div>
+                <div class="card-icon-wrap">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <div class="card-name">Orden de Trabajo</div>
+                <div class="card-caption">Asignación de grúa, operador y acreditaciones de faena.</div>
+              </div>
+              <div class="card-footer">
+                <span class="pdf-tag">Abrir PDF Oficial</span>
+                <div class="card-action-circle">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ETAPA 4: OPERACIÓN -->
+        <div class="kanban-column">
+          <div class="col-header">
+            <div class="col-step">Etapa 04</div>
+            <div class="col-title">Operación</div>
+          </div>
+          <div class="col-cards">
+            <div class="apple-card mini" onclick="openStageModal('viaje')">
+              <div>
+                <div class="card-top-row">
+                  <div class="card-icon-wrap">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg>
+                  </div>
+                  <div class="card-name">Registro de Viaje</div>
+                </div>
+                <div class="card-caption">Hoja de ruta GPS, odómetro, horómetro y arribo a faena.</div>
+              </div>
+              <div class="card-footer">
+                <span class="pdf-tag">Abrir Vista Web GPS</span>
+                <div class="card-action-circle">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="apple-card mini" onclick="openStageModal('ast')">
+              <div>
+                <div class="card-top-row">
+                  <div class="card-icon-wrap">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                  </div>
+                  <div class="card-name">AST &amp; Plan de Izaje</div>
+                </div>
+                <div class="card-caption">Análisis Seguro de Trabajo y controles críticos en terreno.</div>
+              </div>
+              <div class="card-footer">
+                <span class="pdf-tag">Abrir PDF Oficial</span>
+                <div class="card-action-circle">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="apple-card mini" onclick="openStageModal('acta')">
+              <div>
+                <div class="card-top-row">
+                  <div class="card-icon-wrap">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  </div>
+                  <div class="card-name">Acta Entrega Plataforma</div>
+                </div>
+                <div class="card-caption">Inspección 360° de entrega y retiro de equipo con fotos.</div>
+              </div>
+              <div class="card-footer">
+                <span class="pdf-tag">Abrir PDF Oficial</span>
+                <div class="card-action-circle">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="apple-card mini" onclick="openStageModal('reports')">
+              <div>
+                <div class="card-top-row">
+                  <div class="card-icon-wrap">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  </div>
+                  <div class="card-name">Reports Diarios</div>
+                </div>
+                <div class="card-caption">Bitácora de horas de operación firmada por el cliente.</div>
+              </div>
+              <div class="card-footer">
+                <span class="pdf-tag">Abrir PDF Oficial</span>
+                <div class="card-action-circle">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ETAPA 5: CONTROL DE GESTIÓN -->
+        <div class="kanban-column">
+          <div class="col-header">
+            <div class="col-step">Etapa 05</div>
+            <div class="col-title">Control de Gestión</div>
+          </div>
+          <div class="col-cards">
+            <div class="apple-card compact" onclick="openStageModal('its')">
+              <div>
+                <div class="card-icon-wrap">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </div>
+                <div class="card-name">Gestión del ITS</div>
+                <div class="card-caption">Informe Técnico de Servicio con margen y costos reales.</div>
+              </div>
+              <div class="card-footer">
+                <span class="pdf-tag">Abrir PDF Oficial</span>
+                <div class="card-action-circle">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="apple-card compact" onclick="openStageModal('edp')">
+              <div>
+                <div class="card-icon-wrap">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                </div>
+                <div class="card-name">Estado de Pago</div>
+                <div class="card-caption">Carátula oficial de cobro lista para facturación en Odoo.</div>
+              </div>
+              <div class="card-footer">
+                <span class="pdf-tag">Abrir PDF Oficial</span>
+                <div class="card-action-circle">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- MODAL VISOR PDF ESTILO APPLE QUICKLOOK                              -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="quicklook-backdrop" id="pdf-modal" onclick="handleBackdropClick(event)">
+    <div class="quicklook-window">
+      <div class="quicklook-toolbar">
+        <div class="ql-left">
+          <button class="ql-close" onclick="closeModal()" title="Cerrar (Esc)">✕</button>
+          <div class="ql-title-group">
+            <span class="ql-stage" id="ql-stage-label">Etapa</span>
+            <span class="ql-doc-title" id="ql-doc-label">Documento</span>
+          </div>
+        </div>
+        <div class="ql-right">
+          <div class="ql-switcher" id="ql-tabs"></div>
+          <a class="ql-external" id="ql-open-new" href="#" target="_blank" rel="noopener">Abrir en pestaña ↗</a>
+        </div>
+      </div>
+      <iframe class="quicklook-frame" id="ql-iframe" src=""></iframe>
+    </div>
+  </div>
+
+  <script>
+    function switchView(view) {
+      document.getElementById('view-alcance').classList.toggle('active', view === 'alcance');
+      document.getElementById('view-kanban').classList.toggle('active', view === 'kanban');
+      document.getElementById('btn-alcance').classList.toggle('active', view === 'alcance');
+      document.getElementById('btn-kanban').classList.toggle('active', view === 'kanban');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    const STAGE_DOCS = {
+      evidencia_propuesta: {
+        stage: 'Anexo Contractual',
+        title: 'Evidencia Propuesta Original (Julio 2026 — Hojas 32 a 36)',
+        files: [
+          { label: 'Resumen Ejecutivo (Hojas 32–36)', url: './showcase_docs/anexo_evidencia_propuesta_jul2026.html' },
+          { label: 'PDF Original · Hoja 32 (Hitos 1–3)', url: './showcase_docs/Propuesta_Final_GSP_Jul2026.pdf#page=32' },
+          { label: 'PDF Original · Hoja 34 (Gantt 6 Meses)', url: './showcase_docs/Propuesta_Final_GSP_Jul2026.pdf#page=34' },
+          { label: 'PDF Original · Hoja 36 (Forma de Pago)', url: './showcase_docs/Propuesta_Final_GSP_Jul2026.pdf#page=36' }
+        ]
+      },
+      comercial: {
+        stage: '01 · Comercial',
+        title: 'Cotización Oficial (GSP-2610-3-020)',
+        files: [
+          { label: 'Cotización Oficial #1198', url: './showcase_docs/Cotizacion_Oficial_1198.pdf' }
+        ]
+      },
+      verificacion: {
+        stage: '02 · Verificación',
+        title: 'Orden Interna Validada',
+        files: [
+          { label: 'OT Interna Aprobada', url: './showcase_docs/OT_Interna_INT-2610-004.pdf' }
+        ]
+      },
+      asignacion: {
+        stage: '03 · Asignación',
+        title: 'Orden de Trabajo (OT)',
+        files: [
+          { label: 'Tensacon S.A.', url: './showcase_docs/OT_Tensacon_GSP-2610-233-004.pdf?v=4' },
+          { label: 'Finning Chile', url: './showcase_docs/OT_Finning_GSP-2610-766-003.pdf?v=4' },
+          { label: 'Altumaq S.A.', url: './showcase_docs/OT_Altumaq_GSP-2610-4671-002.pdf?v=4' }
+        ]
+      },
+      viaje: {
+        stage: '04 · Operación',
+        title: 'Registro de Viaje & Telemetría GPS (Vista Web)',
+        files: [
+          { label: 'Hoja de Ruta & GPS (Web)', url: './showcase_docs/registro_viaje_web.html' }
+        ]
+      },
+      ast: {
+        stage: '04 · Operación',
+        title: 'AST Grúa Móvil & Plan de Izaje Digital (App Móvil + PDF Oficial)',
+        files: [
+          { label: '1. AST Grúa Móvil (App + PDF)', url: './showcase_docs/maqueta_dayana_sst.html?doc=ast' },
+          { label: '2. Plan de Izaje (App + PDF)', url: './showcase_docs/maqueta_dayana_sst.html?doc=plan' }
+        ]
+      },
+      acta: {
+        stage: '04 · Operación',
+        title: 'Acta 360° Entrega y Retiro de Plataforma',
+        files: [
+          { label: 'Acta Entrega Terreno', url: './showcase_docs/Acta_360_Entrega_Plataforma_ACT-2610-111.pdf' },
+          { label: 'Acta Retiro Terreno', url: './showcase_docs/Acta_360_Retiro_Plataforma_ACT-2610-111.pdf' }
+        ]
+      },
+      reports: {
+        stage: '04 · Operación',
+        title: 'Report Diario Firmado en Terreno',
+        files: [
+          { label: 'Report Día 1', url: './showcase_docs/Report_D1_Tensacon_GSP-2610-233-004.pdf' },
+          { label: 'Report Día 2', url: './showcase_docs/Report_D2_Tensacon_GSP-2610-233-004.pdf' },
+          { label: 'Report Día 3', url: './showcase_docs/Report_D3_Tensacon_GSP-2610-233-004.pdf' },
+          { label: 'Report Día 4', url: './showcase_docs/Report_D4_Tensacon_GSP-2610-233-004.pdf' }
+        ]
+      },
+      its: {
+        stage: '05 · Control de Gestión',
+        title: 'Informe Técnico de Servicio (ITS)',
+        files: [
+          { label: 'Tensacon S.A.', url: './showcase_docs/ITS_Tensacon_GSP-2610-233-004.pdf?v=3' },
+          { label: 'Finning Chile', url: './showcase_docs/ITS_Finning_GSP-2610-766-003.pdf?v=3' },
+          { label: 'Altumaq S.A.', url: './showcase_docs/ITS_Altumaq_GSP-2610-4671-002.pdf?v=3' }
+        ]
+      },
+      edp: {
+        stage: '05 · Control de Gestión',
+        title: 'Carátula Oficial Estado de Pago (EDP)',
+        files: [
+          { label: 'Tensacon S.A.', url: './showcase_docs/EDP_Tensacon_GSP-2610-233-004.pdf' },
+          { label: 'Finning Chile', url: './showcase_docs/EDP_Finning_GSP-2610-766-003.pdf' },
+          { label: 'Altumaq S.A.', url: './showcase_docs/EDP_Altumaq_GSP-2610-4671-002.pdf' }
+        ]
+      }
+    };
+
+    function openStageModal(key) {
+      const cfg = STAGE_DOCS[key];
+      if (!cfg) return;
+
+      document.getElementById('ql-stage-label').textContent = cfg.stage;
+      document.getElementById('ql-doc-label').textContent = cfg.title;
+
+      const tabsContainer = document.getElementById('ql-tabs');
+      tabsContainer.innerHTML = '';
+
+      cfg.files.forEach((file, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'ql-chip' + (idx === 0 ? ' active' : '');
+        btn.textContent = file.label;
+        btn.onclick = () => selectPdfFile(file.url, btn);
+        tabsContainer.appendChild(btn);
+      });
+
+      selectPdfFile(cfg.files[0].url, tabsContainer.firstChild);
+      document.getElementById('pdf-modal').classList.add('open');
+    }
+
+    function selectPdfFile(url, activeBtn) {
+      document.querySelectorAll('#ql-tabs .ql-chip').forEach(b => b.classList.remove('active'));
+      if (activeBtn) activeBtn.classList.add('active');
+      document.getElementById('ql-iframe').src = url;
+      document.getElementById('ql-open-new').href = url;
+    }
+
+    function closeModal() {
+      document.getElementById('pdf-modal').classList.remove('open');
+      document.getElementById('ql-iframe').src = '';
+    }
+
+    function handleBackdropClick(e) {
+      if (e.target.id === 'pdf-modal') closeModal();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+  </script>
+</body>
+</html>

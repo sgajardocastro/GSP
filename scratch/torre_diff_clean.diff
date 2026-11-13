@@ -1,0 +1,938 @@
+diff --git a/ejecucion/frontend/src/views/Torre.vue b/ejecucion/frontend/src/views/Torre.vue
+index b98c642..cb3649d 100644
+--- a/ejecucion/frontend/src/views/Torre.vue
++++ b/ejecucion/frontend/src/views/Torre.vue
+@@ -1568,36 +1568,144 @@
+ 
+     <!-- Vista 3: Perspectiva Temporal de Flota (Gantt Operacional & Productividad) -->
+     <div v-else-if="activeView === 'gantt'" class="space-y-4">
++      <!-- Tarjetas de Indicadores Superiores (KPIs Flota Gantt) -->
++      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
++        <div class="bg-[#0f1629] border border-cyan-500/25 rounded-xl p-3 shadow-sm">
++          <div class="text-[10px] font-mono uppercase text-slate-400">Equipos con Movimiento</div>
++          <div class="mt-1 flex items-baseline gap-2">
++            <span class="text-xl font-black font-mono text-cyan-400">{{ kpisGantt.conMovimiento }}</span>
++            <span class="text-xs font-mono text-slate-400">/ {{ kpisGantt.totalFlota }} ({{ kpisGantt.utilizacionPct }}%)</span>
++          </div>
++        </div>
++        <div class="bg-[#0f1629] border border-white/10 rounded-xl p-3 shadow-sm">
++          <div class="text-[10px] font-mono uppercase text-slate-400">Sin Movimiento en Período</div>
++          <div class="mt-1 flex items-baseline gap-2">
++            <span class="text-xl font-black font-mono text-amber-400">{{ kpisGantt.sinMovimiento }}</span>
++            <span class="text-[10px] font-mono text-slate-500">{{ ocultarSinMovimientoGantt ? '(Ocultos)' : '(Visibles)' }}</span>
++          </div>
++        </div>
++        <div class="bg-[#0f1629] border border-blue-500/25 rounded-xl p-3 shadow-sm">
++          <div class="text-[10px] font-mono uppercase text-slate-400">OTs Activas en Período</div>
++          <div class="mt-1 flex items-baseline gap-2">
++            <span class="text-xl font-black font-mono text-blue-400">{{ kpisGantt.totalOtsPeriodo }}</span>
++            <span class="text-[10px] font-mono text-slate-400">servicios</span>
++          </div>
++        </div>
++        <div class="bg-[#0f1629] border border-purple-500/25 rounded-xl p-3 shadow-sm">
++          <div class="text-[10px] font-mono uppercase text-slate-400">Horas Registradas (Reports)</div>
++          <div class="mt-1 flex items-baseline gap-2">
++            <span class="text-xl font-black font-mono text-purple-300">{{ kpisGantt.totalHorasReports }}</span>
++            <span class="text-[10px] font-mono text-slate-400">hrs</span>
++          </div>
++        </div>
++        <div class="bg-[#0f1629] border border-emerald-500/30 rounded-xl p-3 shadow-sm">
++          <div class="text-[10px] font-mono uppercase text-slate-400">Total Devengado (Reports)</div>
++          <div class="mt-1 flex items-baseline gap-2">
++            <span class="text-xl font-black font-mono text-emerald-400">{{ formatMoneda(kpisGantt.totalDevengado) }}</span>
++          </div>
++        </div>
++      </div>
++
+       <!-- Controles del Gantt -->
+-      <div class="bg-[#0f1629] border border-white/5 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+-        <div class="flex flex-wrap items-center gap-3">
+-          <div class="flex items-center gap-2">
+-            <span class="text-xs font-bold text-slate-400">Ventana:</span>
+-            <div class="flex items-center bg-[#070b14] p-0.5 rounded-lg border border-white/10">
+-              <button 
+-                v-for="dias in [7, 15, 30, 45]" 
+-                :key="dias"
+-                @click="rangoDiasGantt = dias" 
+-                class="px-2.5 py-1 rounded text-xs font-bold transition-all"
+-                :class="rangoDiasGantt === dias ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+-              >
+-                {{ dias }} Días
+-              </button>
++      <div class="bg-[#0f1629] border border-white/5 rounded-xl p-3 flex flex-col gap-2.5 shadow-sm">
++        <div class="flex flex-wrap items-center justify-between gap-3">
++          <div class="flex flex-wrap items-center gap-2.5">
++            <div class="flex items-center gap-1.5">
++              <span class="text-xs font-bold text-slate-400">Ventana:</span>
++              <div class="flex items-center bg-[#070b14] p-0.5 rounded-lg border border-white/10">
++                <button 
++                  v-for="dias in [7, 15, 30, 45]" 
++                  :key="dias"
++                  @click="seleccionarVentanaDiasGantt(dias)" 
++                  class="px-2.5 py-1 rounded text-xs font-bold transition-all cursor-pointer"
++                  :class="rangoDiasGantt === dias && !modoRangoCustomGantt ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'"
++                >
++                  {{ dias }} Días
++                </button>
++              </div>
++            </div>
++
++            <!-- Filtro por Fechas Desde / Hasta -->
++            <div class="flex items-center gap-1.5 bg-[#070b14] px-2.5 py-1 rounded-lg border border-white/10 text-[11px]">
++              <span class="text-slate-400 font-bold">Desde:</span>
++              <input
++                v-model="fechaDesdeGantt"
++                @change="onChangeFechasCustomGantt"
++                type="date"
++                class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
++              />
++              <span class="text-slate-600">➔</span>
++              <span class="text-slate-400 font-bold">Hasta:</span>
++              <input
++                v-model="fechaHastaGantt"
++                @change="onChangeFechasCustomGantt"
++                type="date"
++                class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
++              />
+             </div>
++
++            <!-- Toggle Ocultar Sin Movimiento -->
++            <button
++              type="button"
++              @click="ocultarSinMovimientoGantt = !ocultarSinMovimientoGantt"
++              class="px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5"
++              :class="ocultarSinMovimientoGantt
++                ? 'bg-cyan-600/20 text-cyan-300 border-cyan-500/40 shadow-sm'
++                : 'bg-[#070b14] text-slate-400 border-white/10 hover:text-white'"
++              title="Ocultar o mostrar equipos que no tienen OTs ni Reports en el rango de fechas"
++            >
++              <span>{{ ocultarSinMovimientoGantt ? '👁️ Ocultando sin movimiento' : '👁️ Mostrar todos' }}</span>
++              <span class="px-1.5 py-0.2 rounded bg-black/30 font-mono text-[10px]">
++                {{ ocultarSinMovimientoGantt ? kpisGantt.conMovimiento : kpisGantt.totalFlota }}
++              </span>
++            </button>
++
++            <!-- Expandir / Colapsar Categorías -->
++            <button
++              type="button"
++              @click="toggleTodasCategoriasGantt"
++              class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-[#070b14] hover:bg-white/5 text-slate-300 border border-white/10 transition-all cursor-pointer"
++            >
++              {{ todasCategoriasAbiertasGantt ? '🔼 Colapsar categorías' : '🔽 Expandir categorías' }}
++            </button>
++
++            <!-- Botón Actualizar Sólo Ícono -->
++            <button 
++              @click="cargarProyectos" 
++              :disabled="cargandoProyectos"
++              title="Actualizar cronograma de flota"
++              class="p-2 bg-slate-800/80 hover:bg-blue-600/30 text-blue-400 hover:text-white rounded-lg border border-blue-500/30 flex items-center justify-center transition-all shadow-sm cursor-pointer"
++            >
++              <span :class="{'animate-spin': cargandoProyectos}">🔄</span>
++            </button>
+           </div>
+ 
+-          <!-- Botón Actualizar Sólo Ícono -->
+-          <button 
+-            @click="cargarProyectos" 
+-            :disabled="cargandoProyectos"
+-            title="Actualizar cronograma de flota"
+-            class="p-2 bg-slate-800/80 hover:bg-blue-600/30 text-blue-400 hover:text-white rounded-lg border border-blue-500/30 flex items-center justify-center transition-all shadow-sm"
+-          >
+-            <span :class="{'animate-spin': cargandoProyectos}">🔄</span>
+-          </button>
++          <div class="flex flex-wrap items-center gap-2.5">
++            <!-- Filtro Categoría -->
++            <select 
++              v-model="filtroCategoriaGantt" 
++              class="bg-[#070b14] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
++            >
++              <option value="TODOS">Todas las Categorías</option>
++              <option value="GRUA">Grúas Telescópicas</option>
++              <option value="CAMION_PLUMA">Camiones Pluma</option>
++              <option value="TRANSPORTE">Camas Bajas / Tractos</option>
++              <option value="MANIPULADOR">Horquillas / Manipuladores</option>
++              <option value="ESCOLTA">Camionetas y Apoyo</option>
++            </select>
++            <!-- Buscador -->
++            <input 
++              v-model="busquedaGantt" 
++              type="text" 
++              placeholder="Buscar patente o modelo..." 
++              class="bg-[#070b14] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 w-52 focus:outline-none focus:border-blue-500 transition-colors"
++            />
++          </div>
++        </div>
+ 
+-          <!-- Leyenda de Estados Semántica y Contrastada -->
+-          <div class="hidden xl:flex items-center gap-3 text-[10px] text-slate-300 bg-[#070b14] px-3 py-1.5 rounded-lg border border-white/10">
++        <!-- Leyenda de Estados Semántica y Contrastada -->
++        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/5">
++          <div class="flex flex-wrap items-center gap-3 text-[10px] text-slate-300">
+             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-blue-600 border border-blue-400"></span> Reservado / Prog.</span>
+             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-cyan-600 border border-cyan-400"></span> En Faena</span>
+             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-emerald-600 border border-emerald-400"></span> Ya Ejecutado</span>
+@@ -1605,40 +1713,23 @@
+             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-amber-600 border border-amber-400"></span> Mantenimiento</span>
+             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-red-600 border border-red-400 animate-pulse"></span> Colisión</span>
+           </div>
+-        </div>
+-
+-        <div class="flex items-center gap-3">
+-          <!-- Filtro Categoría -->
+-          <select 
+-            v-model="filtroCategoriaGantt" 
+-            class="bg-[#070b14] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+-          >
+-            <option value="TODOS">Todas las Categorías</option>
+-            <option value="GRUA">Grúas Telescópicas</option>
+-            <option value="CAMION_PLUMA">Camiones Pluma</option>
+-            <option value="TRANSPORTE">Camas Bajas / Fletes</option>
+-            <option value="ESCOLTA">Escoltas y Apoyo</option>
+-          </select>
+-          <!-- Buscador -->
+-          <input 
+-            v-model="busquedaGantt" 
+-            type="text" 
+-            placeholder="Buscar patente o modelo..." 
+-            class="bg-[#070b14] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 w-52 focus:outline-none focus:border-blue-500 transition-colors"
+-          />
++          <div class="text-[11px] font-mono text-slate-400">
++            Rango activo: <strong class="text-white">{{ diasGantt[0]?.fechaStr || '—' }}</strong> ➔ <strong class="text-white">{{ diasGantt[diasGantt.length - 1]?.fechaStr || '—' }}</strong> ({{ diasGantt.length }} días)
++          </div>
+         </div>
+       </div>
+ 
+-      <!-- Tabla Gantt -->
++      <!-- Tabla Gantt Agrupada por Categoría con Apertura a Demanda (Chevron) -->
+       <div class="bg-[#0f1629] border border-white/5 rounded-xl overflow-hidden shadow-xl">
+-        <div class="overflow-x-auto max-h-[calc(100vh-270px)]">
++        <div class="overflow-x-auto max-h-[calc(100vh-310px)]">
+           <table class="w-full text-left text-xs border-collapse">
+             <thead class="bg-[#070b14] text-slate-400 text-[10px] tracking-wider uppercase font-bold border-b border-white/10 sticky top-0 z-20 select-none">
+               <tr>
+                 <th class="py-2.5 px-3 w-48 min-w-[192px] sticky left-0 bg-[#070b14] z-30 border-r border-white/10">Equipo / Flota</th>
+-                <th class="py-2.5 px-2 w-20 min-w-[80px] text-center sticky left-[192px] bg-[#070b14] z-30 border-r border-white/10">Inspecc.</th>
+-                <th class="py-2.5 px-2 w-28 min-w-[112px] text-right sticky left-[272px] bg-[#070b14] z-30 border-r border-white/10">Producido ($)</th>
+-                <th class="py-2.5 px-2 w-20 min-w-[80px] text-center sticky left-[384px] bg-[#070b14] z-30 border-r border-white/10">OEE %</th>
++                <th class="py-2.5 px-2 w-32 min-w-[128px] text-left sticky left-[192px] bg-[#070b14] z-30 border-r border-white/10">Últ. Mantenimiento</th>
++                <th class="py-2.5 px-2 w-20 min-w-[80px] text-center sticky left-[320px] bg-[#070b14] z-30 border-r border-white/10">Inspecc.</th>
++                <th class="py-2.5 px-2 w-28 min-w-[112px] text-right sticky left-[400px] bg-[#070b14] z-30 border-r border-white/10">Devengado ($)</th>
++                <th class="py-2.5 px-2 w-20 min-w-[80px] text-center sticky left-[512px] bg-[#070b14] z-30 border-r border-white/10">OEE %</th>
+                 <!-- Días del Cronograma -->
+                 <th 
+                   v-for="dia in diasGantt" 
+@@ -1652,78 +1743,128 @@
+               </tr>
+             </thead>
+             <tbody class="divide-y divide-white/5 text-slate-300">
+-              <tr v-for="eq in flotaFiltradaGantt" :key="eq.id_equipo" class="hover:bg-white/5 transition-colors">
+-                <!-- Columna 1: Equipo Info (Sticky Left 0) -->
+-                <td class="py-2 px-3 w-48 min-w-[192px] sticky left-0 bg-[#0f1629] z-10 border-r border-white/10">
+-                  <div class="flex items-center gap-1.5">
+-                    <span class="w-2 h-2 rounded-full" :class="eq.estado === 'MANTENCION' ? 'bg-amber-500' : 'bg-emerald-500'"></span>
+-                    <span class="font-mono font-bold text-white text-xs">{{ eq.patente || 'S/P' }}</span>
+-                  </div>
+-                  <div class="text-[10px] text-slate-400 truncate max-w-[180px]">{{ eq.nombre_equipo || eq.modelo }}</div>
+-                  <div class="text-[9px] text-slate-500">{{ eq.nombre_categoria || 'Maquinaria' }}</div>
+-                </td>
++              <template v-for="grupo in gruposCategoriaGantt" :key="grupo.id">
++                <!-- Fila Cabecera de Categoría (Acordeón con Chevron) -->
++                <tr
++                  @click="toggleCategoriaGantt(grupo.id)"
++                  class="bg-[#090e1d] hover:bg-[#111a33] cursor-pointer select-none border-y border-cyan-500/20 transition-colors"
++                >
++                  <td :colspan="diasGantt.length + 5" class="py-2 px-3 sticky left-0 z-20">
++                    <div class="flex flex-wrap items-center justify-between gap-4">
++                      <div class="flex items-center gap-2">
++                        <span
++                          class="text-cyan-400 font-mono text-xs transition-transform duration-200 inline-block"
++                          :class="esCategoriaAbiertaGantt(grupo.id) ? 'rotate-90' : ''"
++                        >
++                          ▶
++                        </span>
++                        <span class="font-black text-white uppercase tracking-wider text-xs">{{ grupo.nombre }}</span>
++                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
++                          {{ grupo.equipos.length }} equipos · {{ grupo.conMovimientoCount }} con mov.
++                        </span>
++                      </div>
++                      <div class="flex items-center gap-4 text-[11px] font-mono">
++                        <span class="text-slate-400">Inspecc.: <strong class="text-blue-400">{{ grupo.totalInspecciones }}</strong></span>
++                        <span class="text-slate-400">Hrs Reports: <strong class="text-purple-300">{{ grupo.horasReports }}h</strong></span>
++                        <span class="text-slate-400">Devengado: <strong class="text-emerald-400">{{ formatMoneda(grupo.totalDevengado) }}</strong></span>
++                        <span class="text-slate-400">OEE Prom.: <strong class="text-cyan-300">{{ grupo.oeePromedio }}%</strong></span>
++                      </div>
++                    </div>
++                  </td>
++                </tr>
+ 
+-                <!-- Columna 2: Inspecciones Realizadas (Sticky Left 192px) -->
+-                <td class="py-2 px-2 w-20 min-w-[80px] text-center sticky left-[192px] bg-[#0f1629] z-10 border-r border-white/10">
+-                  <span 
+-                    v-if="eq.cantInspecciones > 0"
+-                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-sm"
+-                    :title="`${eq.cantInspecciones} inspección(es) o checklist(s) registrados`"
+-                  >
+-                    <span>📋</span> {{ eq.cantInspecciones }}
+-                  </span>
+-                  <span v-else class="text-slate-600 text-[10px] font-mono">0</span>
+-                </td>
++                <!-- Filas de Equipos de la Categoría (se abren a demanda con el chevron) -->
++                <tr
++                  v-for="eq in (esCategoriaAbiertaGantt(grupo.id) ? grupo.equipos : [])"
++                  :key="eq.id_equipo"
++                  class="hover:bg-white/5 transition-colors"
++                >
++                  <!-- Columna 1: Equipo Info (Sticky Left 0) -->
++                  <td class="py-2 px-3 w-48 min-w-[192px] sticky left-0 bg-[#0f1629] z-10 border-r border-white/10">
++                    <div class="flex items-center gap-1.5">
++                      <span class="w-2 h-2 rounded-full" :class="eq.estado === 'MANTENCION' ? 'bg-amber-500' : (eq.tieneMovimiento ? 'bg-cyan-400' : 'bg-emerald-500')"></span>
++                      <span class="font-mono font-bold text-white text-xs">{{ eq.patente || 'S/P' }}</span>
++                    </div>
++                    <div class="text-[10px] text-slate-400 truncate max-w-[180px]" :title="eq.nombre_equipo || eq.modelo">{{ eq.nombre_equipo || eq.modelo }}</div>
++                    <div class="text-[9px] text-slate-500 truncate max-w-[180px]">{{ eq.nombre_categoria || 'Maquinaria' }}</div>
++                  </td>
+ 
+-                <!-- Columna 3: Total Producido Económicamente (Sticky Left 272px) -->
+-                <td class="py-2 px-2 w-28 min-w-[112px] text-right sticky left-[272px] bg-[#0f1629] z-10 border-r border-white/10">
+-                  <div 
+-                    v-if="eq.totalProducido > 0" 
+-                    class="font-mono font-bold text-xs text-emerald-400"
+-                    :title="`Total económico producido: ${formatMoneda(eq.totalProducido)}`"
+-                  >
+-                    {{ formatMoneda(eq.totalProducido) }}
+-                  </div>
+-                  <div v-else class="text-slate-600 text-[10px] font-mono">$0</div>
+-                </td>
++                  <!-- Columna 2: Último Mantenimiento (Sticky Left 192px) -->
++                  <td class="py-2 px-2 w-32 min-w-[128px] sticky left-[192px] bg-[#0f1629] z-10 border-r border-white/10">
++                    <div class="text-[10px] font-mono font-bold truncate" :class="eq.ultimoMantenimientoClass" :title="eq.ultimoMantenimientoTooltip">
++                      {{ eq.ultimoMantenimientoLabel }}
++                    </div>
++                    <div v-if="eq.ultimoMantenimientoSub" class="text-[9px] text-slate-500 font-mono truncate">
++                      {{ eq.ultimoMantenimientoSub }}
++                    </div>
++                  </td>
+ 
+-                <!-- Columna 4: OEE % / Ocupación (Sticky Left 384px) -->
+-                <td class="py-2 px-2 w-20 min-w-[80px] text-center sticky left-[384px] bg-[#0f1629] z-10 border-r border-white/10">
+-                  <div class="text-[11px] font-black font-mono" :class="getProductividadColor(eq.productividadPct)">
+-                    {{ eq.productividadPct }}%
+-                  </div>
+-                  <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
++                  <!-- Columna 3: Inspecciones Realizadas (Sticky Left 320px) -->
++                  <td class="py-2 px-2 w-20 min-w-[80px] text-center sticky left-[320px] bg-[#0f1629] z-10 border-r border-white/10">
++                    <span 
++                      v-if="eq.cantInspecciones > 0"
++                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-sm"
++                      :title="`${eq.cantInspecciones} inspección(es) o checklist(s) registrados`"
++                    >
++                      <span>📋</span> {{ eq.cantInspecciones }}
++                    </span>
++                    <span v-else class="text-slate-600 text-[10px] font-mono">0</span>
++                  </td>
++
++                  <!-- Columna 4: Devengado por Reports ($) (Sticky Left 400px) -->
++                  <td class="py-2 px-2 w-28 min-w-[112px] text-right sticky left-[400px] bg-[#0f1629] z-10 border-r border-white/10">
+                     <div 
+-                      class="h-full rounded-full transition-all"
+-                      :class="getProductividadBarClass(eq.productividadPct)"
+-                      :style="{ width: `${eq.productividadPct}%` }"
+-                    ></div>
+-                  </div>
+-                </td>
++                      v-if="eq.totalDevengado > 0" 
++                      class="font-mono font-bold text-xs text-emerald-400"
++                      :title="`Devengado según Reports (${eq.reportsCount} report(s), ${eq.horasReports} hrs): ${formatMoneda(eq.totalDevengado)}`"
++                    >
++                      {{ formatMoneda(eq.totalDevengado) }}
++                    </div>
++                    <div v-else class="text-slate-600 text-[10px] font-mono">$0</div>
++                    <div v-if="eq.horasReports > 0" class="text-[9px] text-purple-300 font-mono">
++                      {{ eq.horasReports }} hrs ({{ eq.reportsCount }} rep)
++                    </div>
++                  </td>
+ 
+-                <!-- Celdas de Días del Cronograma -->
+-                <td 
+-                  v-for="dia in diasGantt" 
+-                  :key="dia.fechaStr" 
+-                  class="p-0.5 text-center border-r border-white/5 relative"
+-                  :class="dia.esHoy ? 'bg-blue-950/20' : (dia.esFDS ? 'bg-white/[0.01]' : '')"
+-                >
+-                  <div 
+-                    v-if="getEventoEquipoEnDia(eq, dia.fechaStr)"
+-                    @click="onClicEventoGantt(getEventoEquipoEnDia(eq, dia.fechaStr))"
+-                    class="h-10 w-full rounded flex flex-col items-center justify-center text-[9px] font-bold p-0.5 cursor-pointer hover:scale-105 hover:brightness-110 transition-all select-none"
+-                    :class="getEventoEquipoEnDia(eq, dia.fechaStr).classes"
+-                    :title="getEventoEquipoEnDia(eq, dia.fechaStr).tooltip"
++                  <!-- Columna 5: OEE % / Ocupación (Sticky Left 512px) -->
++                  <td class="py-2 px-2 w-20 min-w-[80px] text-center sticky left-[512px] bg-[#0f1629] z-10 border-r border-white/10">
++                    <div class="text-[11px] font-black font-mono" :class="getProductividadColor(eq.productividadPct)">
++                      {{ eq.productividadPct }}%
++                    </div>
++                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
++                      <div 
++                        class="h-full rounded-full transition-all"
++                        :class="getProductividadBarClass(eq.productividadPct)"
++                        :style="{ width: `${eq.productividadPct}%` }"
++                      ></div>
++                    </div>
++                  </td>
++
++                  <!-- Celdas de Días del Cronograma -->
++                  <td 
++                    v-for="dia in diasGantt" 
++                    :key="dia.fechaStr" 
++                    class="p-0.5 text-center border-r border-white/5 relative"
++                    :class="dia.esHoy ? 'bg-blue-950/20' : (dia.esFDS ? 'bg-white/[0.01]' : '')"
+                   >
+-                    <span class="truncate max-w-[48px]">{{ getEventoEquipoEnDia(eq, dia.fechaStr).label }}</span>
+-                    <span v-if="getEventoEquipoEnDia(eq, dia.fechaStr).subLabel" class="text-[7.5px] opacity-85 leading-none truncate max-w-[48px]">{{ getEventoEquipoEnDia(eq, dia.fechaStr).subLabel }}</span>
+-                    <span v-if="getEventoEquipoEnDia(eq, dia.fechaStr).esColision" class="text-[7.5px] animate-pulse">⚠️ Colisión</span>
+-                  </div>
+-                </td>
+-              </tr>
+-              <tr v-if="flotaFiltradaGantt.length === 0">
+-                <td :colspan="diasGantt.length + 4" class="text-center py-12 text-slate-500 italic">
+-                  No se encontraron equipos para el filtro seleccionado.
++                    <div 
++                      v-if="getEventoEquipoEnDia(eq, dia.fechaStr)"
++                      @click="onClicEventoGantt(getEventoEquipoEnDia(eq, dia.fechaStr))"
++                      class="h-10 w-full rounded flex flex-col items-center justify-center text-[9px] font-bold p-0.5 cursor-pointer hover:scale-105 hover:brightness-110 transition-all select-none"
++                      :class="getEventoEquipoEnDia(eq, dia.fechaStr).classes"
++                      :title="getEventoEquipoEnDia(eq, dia.fechaStr).tooltip"
++                    >
++                      <span class="truncate max-w-[48px]">{{ getEventoEquipoEnDia(eq, dia.fechaStr).label }}</span>
++                      <span v-if="getEventoEquipoEnDia(eq, dia.fechaStr).subLabel" class="text-[7.5px] opacity-85 leading-none truncate max-w-[48px]">{{ getEventoEquipoEnDia(eq, dia.fechaStr).subLabel }}</span>
++                      <span v-if="getEventoEquipoEnDia(eq, dia.fechaStr).esColision" class="text-[7.5px] animate-pulse">⚠️ Colisión</span>
++                    </div>
++                  </td>
++                </tr>
++              </template>
++
++              <tr v-if="gruposCategoriaGantt.length === 0">
++                <td :colspan="diasGantt.length + 5" class="text-center py-12 text-slate-500 italic">
++                  No se encontraron equipos con movimiento para el rango y filtros seleccionados.
+                 </td>
+               </tr>
+             </tbody>
+@@ -2153,19 +2294,39 @@ const cargarProyectos = async () => {
+ 
+ const cargarFlotaMaster = async () => {
+   try {
+-    const { data: res } = await apiAxios.get('/tequ-equipos')
++    const [resEqSettled, resMntSettled] = await Promise.allSettled([
++      apiAxios.get('/tequ-equipos'),
++      apiAxios.get('/mantenimiento/flota')
++    ])
++    const res = resEqSettled.status === 'fulfilled' ? resEqSettled.value?.data : null
+     const raw = res?.data || res || []
++
++    const resMnt = resMntSettled.status === 'fulfilled' ? resMntSettled.value?.data : null
++    const rawMnt = resMnt?.data || resMnt?.equipos || resMnt || []
++    const mntMap = new Map()
++    if (Array.isArray(rawMnt)) {
++      rawMnt.forEach(m => {
++        if (m.id_equipo) mntMap.set(Number(m.id_equipo), m)
++      })
++    }
++
+     if (Array.isArray(raw) && raw.length > 0) {
+-      flotaEquiposMaster.value = raw.map(e => ({
+-        ...e,
+-        id_equipo: e.id_equipo || e.id,
+-        patente: e.patente || e.ppu || 'S/P',
+-        nombre_equipo: e.nombre_equipo || `${e.marca || ''} ${e.modelo || ''}`.trim() || e.tipo_equipo || 'Equipo',
+-        modelo: e.modelo || '',
+-        nombre_categoria: e.nombre_categoria || e.tipo_equipo || e.tipo || 'Maquinaria',
+-        estado: e.estado || 'DISPONIBLE',
+-        cant_inspecciones: Number(e.cant_inspecciones || 0)
+-      }))
++      flotaEquiposMaster.value = raw.map(e => {
++        const idEq = Number(e.id_equipo || e.id)
++        const mnt = mntMap.get(idEq) || {}
++        return {
++          ...mnt,
++          ...e,
++          id_equipo: idEq,
++          patente: e.patente || e.ppu || 'S/P',
++          nombre_equipo: e.nombre_equipo || `${e.marca || ''} ${e.modelo || ''}`.trim() || e.tipo_equipo || 'Equipo',
++          modelo: e.modelo || '',
++          nombre_categoria: e.nombre_categoria || e.tipo_equipo || e.tipo || 'Maquinaria',
++          estado: e.estado || mnt.estado_operativo || 'DISPONIBLE',
++          cant_inspecciones: Number(e.cant_inspecciones || 0),
++          mnt_info: mnt
++        }
++      })
+     }
+   } catch (err) {
+     console.warn('Error cargando flota de equipos:', err)
+@@ -2410,7 +2571,7 @@ const getEstadoItsBadge = (estado) => {
+ }
+ 
+ watch(() => activeView.value, (newView) => {
+-  if (newView === 'pmo') {
++  if (newView === 'pmo' || newView === 'gantt') {
+     cargarPendientesAnalista()
+   }
+ })
+@@ -3001,31 +3162,70 @@ const pendientesFacturacion = computed(() => {
+ // LÓGICA DE LA PERSPECTIVA TEMPORAL DE FLOTA (GANTT & PRODUCTIVIDAD)
+ // -------------------------------------------------------------
+ const rangoDiasGantt = ref(15)
++const modoRangoCustomGantt = ref(false)
+ const filtroCategoriaGantt = ref('TODOS')
+ const busquedaGantt = ref('')
++const ocultarSinMovimientoGantt = ref(true)
++
++const formatDateIsoLocal = (d) => {
++  const yyyy = d.getFullYear()
++  const mm = String(d.getMonth() + 1).padStart(2, '0')
++  const dd = String(d.getDate()).padStart(2, '0')
++  return `${yyyy}-${mm}-${dd}`
++}
++
++const calcularRangoInicialGantt = (diasTotal) => {
++  const hoy = new Date()
++  hoy.setHours(0, 0, 0, 0)
++  const diasAtras = Math.min(6, Math.floor(diasTotal * 0.3))
++  const ini = new Date(hoy)
++  ini.setDate(hoy.getDate() - diasAtras)
++  const fin = new Date(ini)
++  fin.setDate(ini.getDate() + diasTotal - 1)
++  return { desde: formatDateIsoLocal(ini), hasta: formatDateIsoLocal(fin) }
++}
++
++const rangoDefaultGantt = calcularRangoInicialGantt(15)
++const fechaDesdeGantt = ref(rangoDefaultGantt.desde)
++const fechaHastaGantt = ref(rangoDefaultGantt.hasta)
++
++const seleccionarVentanaDiasGantt = (dias) => {
++  rangoDiasGantt.value = dias
++  modoRangoCustomGantt.value = false
++  const r = calcularRangoInicialGantt(dias)
++  fechaDesdeGantt.value = r.desde
++  fechaHastaGantt.value = r.hasta
++}
++
++const onChangeFechasCustomGantt = () => {
++  if (fechaDesdeGantt.value && fechaHastaGantt.value && fechaDesdeGantt.value > fechaHastaGantt.value) {
++    const tmp = fechaDesdeGantt.value
++    fechaDesdeGantt.value = fechaHastaGantt.value
++    fechaHastaGantt.value = tmp
++  }
++  modoRangoCustomGantt.value = true
++}
+ 
+ const diasGantt = computed(() => {
+-  const total = rangoDiasGantt.value
+   const dias = []
+   const hoy = new Date()
+   hoy.setHours(0, 0, 0, 0)
+-  
+-  // Días hacia el pasado para que los servicios ya ejecutados recientes sean visibles
+-  const diasAtras = Math.min(6, Math.floor(total * 0.3))
+-  const inicio = new Date(hoy)
+-  inicio.setDate(hoy.getDate() - diasAtras)
+-
+   const diasSemanaNombres = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB']
+ 
+-  for (let i = 0; i < total; i++) {
++  let inicio = fechaDesdeGantt.value ? new Date(fechaDesdeGantt.value + 'T00:00:00') : new Date(hoy)
++  let fin = fechaHastaGantt.value ? new Date(fechaHastaGantt.value + 'T00:00:00') : new Date(hoy)
++  if (isNaN(inicio.getTime()) || isNaN(fin.getTime()) || inicio > fin) {
++    const r = calcularRangoInicialGantt(rangoDiasGantt.value)
++    inicio = new Date(r.desde + 'T00:00:00')
++    fin = new Date(r.hasta + 'T00:00:00')
++  }
++
++  const diffDays = Math.min(60, Math.max(1, Math.round((fin - inicio) / (1000 * 60 * 60 * 24)) + 1))
++
++  for (let i = 0; i < diffDays; i++) {
+     const d = new Date(inicio)
+     d.setDate(inicio.getDate() + i)
+-    
+-    const yyyy = d.getFullYear()
+-    const mm = String(d.getMonth() + 1).padStart(2, '0')
+-    const dd = String(d.getDate()).padStart(2, '0')
+-    const fechaStr = `${yyyy}-${mm}-${dd}`
+-
++    const fechaStr = formatDateIsoLocal(d)
+     const esHoy = d.getTime() === hoy.getTime()
+     const diaNumSemana = d.getDay()
+     const esFDS = diaNumSemana === 0 || diaNumSemana === 6
+@@ -3041,49 +3241,142 @@ const diasGantt = computed(() => {
+   return dias
+ })
+ 
+-// Cálculo de producción económica ($ devengado / facturado) por equipo
+-const calcularProduccionEquipo = (eq) => {
++// Resolver columna de Último Mantenimiento para cada equipo
++const resolverUltimoMantenimientoEquipo = (eq) => {
++  const mnt = eq.mnt_info || {}
++  const fechaRaw = mnt.fecha_ultima_mantencion || eq.fecha_ultima_mantencion || mnt.ultima_fecha_ot || eq.fecha_ultima_lectura || null
++  const fechaFmt = fechaRaw ? formatIsoToDdMmYyyy(String(fechaRaw).slice(0, 10)) : null
++  const pauta = mnt.ultima_pauta_ejecutada || eq.ultima_pauta_ejecutada || mnt.ultimo_tipo_mantencion || null
++  const horoService = Number(mnt.ultimo_horometro_service || eq.ultimo_horometro_service || 0)
++  const horoActual = Number(eq.horometro_grua_acumulado || eq.horometro_chasis_acumulado || mnt.horometro_actual || 0)
++  const odoActual = Number(eq.odometro_acumulado || mnt.odometro_actual || 0)
++
++  if (eq.estado === 'MANTENCION' || mnt.ot_activa) {
++    const folioOt = mnt.ot_activa?.numero_ot || mnt.numero_ot_activa || 'En Taller'
++    return {
++      label: `🔧 ${folioOt}`,
++      sub: pauta || (fechaFmt ? `Ingreso: ${fechaFmt}` : 'Mantención activa'),
++      classes: 'text-amber-400',
++      tooltip: `Equipo actualmente en mantención (${folioOt})`
++    }
++  }
++
++  if (pauta || fechaFmt || horoService > 0) {
++    const labelPrincipal = fechaFmt || (pauta ? String(pauta) : `${horoService.toLocaleString('es-CL')} hrs`)
++    const subParts = []
++    if (pauta && fechaFmt) subParts.push(pauta)
++    if (horoService > 0) subParts.push(`@${horoService.toLocaleString('es-CL')}h`)
++    else if (horoActual > 0) subParts.push(`${horoActual.toLocaleString('es-CL')}h acum.`)
++    else if (odoActual > 0) subParts.push(`${odoActual.toLocaleString('es-CL')}km`)
++    return {
++      label: labelPrincipal,
++      sub: subParts.join(' · ') || 'Al día',
++      classes: 'text-emerald-300',
++      tooltip: `Último mantenimiento: ${labelPrincipal} ${subParts.join(' ')}`
++    }
++  }
++
++  if (horoActual > 0 || odoActual > 0) {
++    return {
++      label: 'Sin OTM previa',
++      sub: horoActual > 0 ? `Horo: ${horoActual.toLocaleString('es-CL')}h` : `Odo: ${odoActual.toLocaleString('es-CL')}km`,
++      classes: 'text-slate-400',
++      tooltip: 'Sin orden de mantenimiento cerrada registrada en sistema'
++    }
++  }
++
++  return {
++    label: 'Sin registro',
++    sub: 'Preventivo al día',
++    classes: 'text-slate-500',
++    tooltip: 'Sin mantenciones registradas en el historial'
++  }
++}
++
++// Cálculo de Devengado ($) basado estrictamente en el registro de los Reports Diarios del equipo en el rango
++const calcularDevengadoReportsEquipo = (eq, diasVentana) => {
+   const idEq = Number(eq.id_equipo)
+   const patEq = (eq.patente || '').toUpperCase().trim()
+-  let total = 0
++  const desdeStr = diasVentana[0]?.fechaStr || '0000-01-01'
++  const hastaStr = diasVentana[diasVentana.length - 1]?.fechaStr || '9999-12-31'
++
++  const todosReps = datosAnalistaPMO.value?.reports || []
++  const repsEquipo = todosReps.filter(r => {
++    const rIdEq = Number(r.id_equipo || 0)
++    const rPat = String(r.equipo_patente || r.patente || '').toUpperCase().trim()
++    const matchEquipo = (idEq && rIdEq === idEq) || (patEq && patEq !== 'S/P' && rPat === patEq)
++    if (!matchEquipo) return false
++    const fRep = String(r.fecha_reporte_fmt || r.fecha_reporte || '').slice(0, 10)
++    if (fRep && (fRep < desdeStr || fRep > hastaStr)) return false
++    return true
++  })
+ 
+-  for (const p of todosLosProyectos.value) {
+-    const st = Number(p.id_proyecto_estado)
+-    // Excluir cancelados o desestimados de la producción
+-    if (st >= 99 || (st === 6 && p.motivo_desestimacion)) continue
++  if (repsEquipo.length === 0) {
++    return { totalDevengado: 0, horasReports: 0, reportsCount: 0 }
++  }
+ 
+-    const ej = p.json_field?.ejecucion_v1 || {}
+-    const crm = p.json_field?.crm_v1 || {}
+-    const patGrua = (ej.patente_grua || '').toUpperCase().trim()
++  let horasTotales = 0
++  const repsPorProyecto = new Map()
++  for (const r of repsEquipo) {
++    const hrs = Number(r.horas_facturables || r.horas_operadas || 0)
++    horasTotales += hrs
++    const idP = Number(r.id_proyecto)
++    if (!repsPorProyecto.has(idP)) {
++      repsPorProyecto.set(idP, { count: 0, horas: 0 })
++    }
++    const item = repsPorProyecto.get(idP)
++    item.count += 1
++    item.horas += hrs
++  }
++
++  let totalDevengado = 0
++  for (const [idP, infoRep] of repsPorProyecto.entries()) {
++    const proy = todosLosProyectos.value.find(p => Number(p.id_proyecto) === idP)
++    if (!proy) continue
++    const crm = proy.json_field?.crm_v1 || {}
++    const ej = proy.json_field?.ejecucion_v1 || {}
+     const lineas = crm.lineas_servicio || ej.snapshot_comercial?.lines || []
+ 
+-    let lineMatched = false
+-    if (Array.isArray(lineas) && lineas.length > 0) {
+-      for (const l of lineas) {
+-        const lId = Number(l.id_equipo || l.equipo_asignado_id)
+-        const lPat = (l.patente || '').toUpperCase().trim()
+-        if ((lId && lId === idEq) || (lPat && lPat === patEq)) {
+-          total += calcularSubtotalLinea(l)
+-          lineMatched = true
+-        }
+-      }
++    let montoComprometidoPry = 0
++    for (const l of lineas) {
++      montoComprometidoPry += calcularSubtotalLinea(l)
++    }
++    if (montoComprometidoPry <= 0) {
++      montoComprometidoPry = Number(crm.totales?.neto || proy.monto_neto || 0)
+     }
+ 
+-    // Si no hubo líneas con ID/patente explícita, pero la grúa es la principal del proyecto
+-    if (!lineMatched && patEq && (patGrua === patEq)) {
+-      const craneLines = lineas.filter(l => {
+-        const desc = (l.descripcion || l.item || '').toLowerCase()
+-        return desc.includes('grúa') || desc.includes('grua') || desc.includes('telescópica') || desc.includes('faena')
+-      })
+-      if (craneLines.length > 0) {
+-        total += craneLines.reduce((s, l) => s + calcularSubtotalLinea(l), 0)
+-      } else if (p.monto_neto) {
+-        total += Number(p.monto_neto)
++    let devPry = 0
++    const lineasGrua = lineas.filter(l => {
++      const t = String(l.tipo || '').toUpperCase()
++      return ['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA', 'ALZAHOMBRES / PLATAFORMAS'].includes(t)
++    })
++
++    if (lineasGrua.length > 0) {
++      const l = lineasGrua[0]
++      const valUnit = Number(l.valorUnitario || l.precio_unitario || l.tarifa || 0)
++      const unidadLower = String(l.unidad || '').trim().toLowerCase()
++      if (['diario', 'dia', 'día', 'jornada'].includes(unidadLower)) {
++        devPry = valUnit * infoRep.count
++      } else if (['hora', 'horas', 'hr', 'hrs'].includes(unidadLower) && valUnit > 0 && valUnit < 350000) {
++        devPry = valUnit * infoRep.horas
++      } else {
++        devPry = calcularSubtotalLinea(l)
+       }
++    } else if (montoComprometidoPry > 0) {
++      devPry = montoComprometidoPry
+     }
++
++    if (montoComprometidoPry > 0 && devPry > montoComprometidoPry) {
++      devPry = montoComprometidoPry
++    }
++    totalDevengado += Math.round(devPry)
+   }
+ 
+-  return total
++  return {
++    totalDevengado: Math.round(totalDevengado),
++    horasReports: Number(horasTotales.toFixed(1)),
++    reportsCount: repsEquipo.length
++  }
+ }
+ 
+ // Conteo de inspecciones / checklists preoperacionales y de patio del equipo
+@@ -3114,20 +3407,33 @@ const calcularProductividadEquipo = (eq, diasVentana) => {
+   return Math.min(100, Math.round((diasOcupados / diasVentana.length) * 100))
+ }
+ 
+-const flotaFiltradaGantt = computed(() => {
++const resolverGrupoCategoriaEquipo = (eq) => {
++  const c = `${eq.nombre_categoria || ''} ${eq.tipo_equipo || ''} ${eq.nombre_equipo || ''} ${eq.modelo || ''}`.toUpperCase()
++  if (c.includes('PLUMA')) {
++    return { id: 'CAMION_PLUMA', nombre: 'Camiones Pluma', orden: 2 }
++  }
++  if (c.includes('HORQUILLA') || c.includes('MANIPULADOR') || c.includes('MANITOU') || c.includes('ALZAHOMBRE') || c.includes('PLATAFORMA')) {
++    return { id: 'MANIPULADOR', nombre: 'Horquillas, Manipuladores y Plataformas', orden: 4 }
++  }
++  if (c.includes('GRÚA') || c.includes('GRUA') || c.includes('TELESCOPICA') || c.includes('LIEBHERR') || c.includes('GROVE') || c.includes('TADANO') || c.includes('XCMG') || c.includes('SANY')) {
++    return { id: 'GRUA', nombre: 'Grúas Telescópicas', orden: 1 }
++  }
++  if (c.includes('TRACTO') || c.includes('CAMA') || c.includes('BAJA') || c.includes('RAMPLA') || c.includes('SEMI') || c.includes('FLETE') || c.includes('CAMIÓN') || c.includes('CAMION')) {
++    return { id: 'TRANSPORTE', nombre: 'Tractocamiones y Camas Bajas', orden: 3 }
++  }
++  if (c.includes('CAMIONETA') || c.includes('ESCOLTA') || c.includes('VEHÍCULO') || c.includes('VEHICULO') || c.includes('APOYO') || c.includes('FURGON')) {
++    return { id: 'ESCOLTA', nombre: 'Camionetas, Escoltas y Vehículos de Apoyo', orden: 5 }
++  }
++  return { id: 'OTROS', nombre: 'Otros Equipos y Maquinaria', orden: 6 }
++}
++
++const flotaEnriquecidaGantt = computed(() => {
+   let list = [...flotaEquiposMaster.value]
+   const cat = filtroCategoriaGantt.value
+   const q = (busquedaGantt.value || '').trim().toLowerCase()
+ 
+   if (cat !== 'TODOS') {
+-    list = list.filter(e => {
+-      const c = (e.nombre_categoria || '').toUpperCase()
+-      if (cat === 'GRUA') return c.includes('GRÚA') || c.includes('GRUA') || c.includes('TELESCOPICA')
+-      if (cat === 'CAMION_PLUMA') return c.includes('PLUMA') || c.includes('CAMIÓN') || c.includes('CAMION')
+-      if (cat === 'TRANSPORTE') return c.includes('CAMA') || c.includes('BAJA') || c.includes('FLETE') || c.includes('TRASLADO')
+-      if (cat === 'ESCOLTA') return c.includes('ESCOLTA') || c.includes('VEHÍCULO') || c.includes('VEHICULO') || c.includes('APOYO')
+-      return true
+-    })
++    list = list.filter(e => resolverGrupoCategoriaEquipo(e).id === cat)
+   }
+ 
+   if (q) {
+@@ -3140,14 +3446,138 @@ const flotaFiltradaGantt = computed(() => {
+   }
+ 
+   const dias = diasGantt.value
+-  return list.map(e => ({
+-    ...e,
+-    cantInspecciones: calcularInspeccionesEquipo(e),
+-    totalProducido: calcularProduccionEquipo(e),
+-    productividadPct: calcularProductividadEquipo(e, dias)
+-  }))
++  return list.map(e => {
++    const mnt = resolverUltimoMantenimientoEquipo(e)
++    const dev = calcularDevengadoReportsEquipo(e, dias)
++    const prodPct = calcularProductividadEquipo(e, dias)
++    const tieneEventoEnVentana = dias.some(d => {
++      const ev = getEventoEquipoEnDia(e, d.fechaStr)
++      return Boolean(ev && ev.tipo !== 'cancelado' && ev.tipo !== 'mantenimiento')
++    })
++    const tieneMovimiento = Boolean(tieneEventoEnVentana || dev.reportsCount > 0 || prodPct > 0)
++    const grupoCat = resolverGrupoCategoriaEquipo(e)
++
++    return {
++      ...e,
++      grupoCatId: grupoCat.id,
++      grupoCatNombre: grupoCat.nombre,
++      grupoCatOrden: grupoCat.orden,
++      ultimoMantenimientoLabel: mnt.label,
++      ultimoMantenimientoSub: mnt.sub,
++      ultimoMantenimientoClass: mnt.classes,
++      ultimoMantenimientoTooltip: mnt.tooltip,
++      cantInspecciones: calcularInspeccionesEquipo(e),
++      totalDevengado: dev.totalDevengado,
++      horasReports: dev.horasReports,
++      reportsCount: dev.reportsCount,
++      productividadPct: prodPct,
++      tieneMovimiento
++    }
++  })
++})
++
++const flotaFiltradaGantt = computed(() => {
++  if (!ocultarSinMovimientoGantt.value) return flotaEnriquecidaGantt.value
++  return flotaEnriquecidaGantt.value.filter(e => e.tieneMovimiento)
++})
++
++const kpisGantt = computed(() => {
++  const todos = flotaEnriquecidaGantt.value
++  const totalFlota = todos.length
++  const conMovimiento = todos.filter(e => e.tieneMovimiento).length
++  const sinMovimiento = Math.max(0, totalFlota - conMovimiento)
++  const utilizacionPct = totalFlota > 0 ? Math.round((conMovimiento / totalFlota) * 100) : 0
++
++  let totalHorasReports = 0
++  let totalDevengado = 0
++  for (const e of todos) {
++    totalHorasReports += Number(e.horasReports || 0)
++    totalDevengado += Number(e.totalDevengado || 0)
++  }
++
++  // Contar OTs activas que se solapan con el rango de diasGantt
++  const dias = diasGantt.value
++  const desdeStr = dias[0]?.fechaStr || '0000-01-01'
++  const hastaStr = dias[dias.length - 1]?.fechaStr || '9999-12-31'
++  const otsSet = new Set()
++  for (const p of todosLosProyectos.value) {
++    const st = Number(p.id_proyecto_estado)
++    if (st >= 99 || (st === 6 && p.motivo_desestimacion) || st < 3) continue
++    const rawIni = (p.fecha_plan_ini || p.fecha_real_ini || p.fecha_creacion || '').slice(0, 10)
++    const rawFin = (p.fecha_plan_fin || p.fecha_real_fin || rawIni || '').slice(0, 10)
++    if (rawIni && rawFin >= desdeStr && rawIni <= hastaStr) {
++      otsSet.add(p.id_proyecto)
++    }
++  }
++
++  return {
++    totalFlota,
++    conMovimiento,
++    sinMovimiento,
++    utilizacionPct,
++    totalOtsPeriodo: otsSet.size,
++    totalHorasReports: Number(totalHorasReports.toFixed(1)),
++    totalDevengado: Math.round(totalDevengado)
++  }
+ })
+ 
++const categoriasAbiertasGantt = ref(new Set(['GRUA', 'CAMION_PLUMA', 'TRANSPORTE', 'MANIPULADOR', 'ESCOLTA', 'OTROS']))
++
++const gruposCategoriaGantt = computed(() => {
++  const mapa = new Map()
++  for (const eq of flotaFiltradaGantt.value) {
++    if (!mapa.has(eq.grupoCatId)) {
++      mapa.set(eq.grupoCatId, {
++        id: eq.grupoCatId,
++        nombre: eq.grupoCatNombre,
++        orden: eq.grupoCatOrden,
++        equipos: [],
++        conMovimientoCount: 0,
++        totalInspecciones: 0,
++        horasReports: 0,
++        totalDevengado: 0,
++        sumaOee: 0
++      })
++    }
++    const g = mapa.get(eq.grupoCatId)
++    g.equipos.push(eq)
++    if (eq.tieneMovimiento) g.conMovimientoCount += 1
++    g.totalInspecciones += Number(eq.cantInspecciones || 0)
++    g.horasReports = Number((g.horasReports + Number(eq.horasReports || 0)).toFixed(1))
++    g.totalDevengado += Number(eq.totalDevengado || 0)
++    g.sumaOee += Number(eq.productividadPct || 0)
++  }
++
++  return Array.from(mapa.values())
++    .sort((a, b) => a.orden - b.orden)
++    .map(g => ({
++      ...g,
++      oeePromedio: g.equipos.length > 0 ? Math.round(g.sumaOee / g.equipos.length) : 0
++    }))
++})
++
++const esCategoriaAbiertaGantt = (id) => categoriasAbiertasGantt.value.has(id)
++
++const toggleCategoriaGantt = (id) => {
++  const next = new Set(categoriasAbiertasGantt.value)
++  if (next.has(id)) next.delete(id)
++  else next.add(id)
++  categoriasAbiertasGantt.value = next
++}
++
++const todasCategoriasAbiertasGantt = computed(() => {
++  if (gruposCategoriaGantt.value.length === 0) return false
++  return gruposCategoriaGantt.value.every(g => categoriasAbiertasGantt.value.has(g.id))
++})
++
++const toggleTodasCategoriasGantt = () => {
++  if (todasCategoriasAbiertasGantt.value) {
++    categoriasAbiertasGantt.value = new Set()
++  } else {
++    categoriasAbiertasGantt.value = new Set(gruposCategoriaGantt.value.map(g => g.id))
++  }
++}
++
+ const getEventoEquipoEnDia = (eq, fechaStr) => {
+   const targetDate = new Date(fechaStr + 'T00:00:00')
+   const patEq = (eq.patente || '').toUpperCase().trim()
+@@ -3411,10 +3841,7 @@ const formatMonto = (p) => {
+ }
+ 
+ onMounted(async () => {
+-  await cargarProyectos()
+-  if (activeView.value === 'pmo') {
+-    await cargarPendientesAnalista()
+-  }
++  await Promise.allSettled([cargarProyectos(), cargarPendientesAnalista()])
+   if (route.query.id_proyecto) {
+     abrirProyecto(route.query.id_proyecto, route.query.subtab)
+   }

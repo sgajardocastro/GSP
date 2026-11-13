@@ -1,0 +1,124 @@
+Created At: 2026-11-08T21:08:34-03:00
+Completed At: 2026-11-08T21:08:35-03:00
+Showing lines 1055-1175 of 4611
+1055:     <!-- VISTA 1C: CARDEX 3D — MUEBLE TARJETERO INDEXADO CON ELEVACIÓN DE FICHAS   -->
+1056:     <!-- ========================================================================= -->
+1057:     <div v-else-if="activeView === 'kardex'" class="space-y-3 animate-fadeIn">
+1058:       <!-- Panel de Control del Mueble Tarjetero Cardex 3D -->
+1059:       <div class="bg-gradient-to-r from-[#0d1326] via-[#11182d] to-[#0d1326] border border-amber-500/35 rounded-xl p-3.5 space-y-3 shadow-xl">
+1060:         <div class="flex flex-wrap items-center justify-between gap-3">
+1061:           <div class="flex items-center gap-2.5">
+1062:             <div class="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-lg shadow-inner">
+1063:               🗄️
+1064:             </div>
+1065:             <div>
+1066:               <div class="flex items-center gap-2">
+1067:                 <h3 class="text-xs font-black uppercase tracking-wider text-amber-300">Mueble Tarjetero Cardex 3D</h3>
+1068:                 <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30 font-mono font-bold">
+1069:                   {{ totalLevantadasKardex }} fichas levantadas de {{ totalProyectosTablero }}
+1070:                 </span>
+1071:               </div>
+1072:               <p class="text-[11px] text-slate-400">
+1073:                 En reposo solo se asoma el <strong class="text-white">N° de Negocio y el Cliente</strong>. Selecciona criterios por <strong class="text-amber-300">Fecha, Operador o Rigger</strong> (o toca una pestaña) para que las tarjetas se levanten en 3D.
+1074:               </p>
+1075:             </div>
+1076:           </div>
+1077: 
+1078:           <!-- Botones de Acción Rápida del Tarjetero -->
+1079:           <div class="flex flex-wrap items-center gap-2">
+1080:             <label class="inline-flex items-center gap-1.5 text-[11px] text-slate-300 bg-[#070b14] px-2.5 py-1.5 rounded-lg border border-white/10 cursor-pointer select-none">
+1081:               <input type="checkbox" v-model="kardexSoloLevantadas" class="accent-amber-500 rounded cursor-pointer" />
+1082:               <span>Ocultar fichas guardadas</span>
+1083:             </label>
+1084:             <button
+1085:               type="button"
+1086:               @click="kardexLevantarTodas = !kardexLevantarTodas"
+1087:               class="px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer"
+1088:               :class="kardexLevantarTodas ? 'bg-amber-500 text-slate-950 border-amber-400 font-black' : 'bg-[#070b14] text-amber-300 border-amber-500/30 hover:bg-amber-500/10'"
+1089:             >
+1090:               {{ kardexLevantarTodas ? '🔽 Guardar todas en el cajón' : '🔼 Levantar todas las fichas' }}
+1091:             </button>
+1092:             <button
+1093:               v-if="tieneCriterioActivoKardex"
+1094:               type="button"
+1095:               @click="limpiarFiltrosKanbanPro"
+1096:               class="px-2.5 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-bold text-[11px] transition-all cursor-pointer"
+1097:             >
+1098:               ✕ Bajar Fichas (Reset)
+1099:             </button>
+1100:           </div>
+1101:         </div>
+1102: 
+1103:         <!-- Tira Interactiva de Fechas ("Teclado del Tarjetero") -->
+1104:         <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
+1105:           <!-- Selector Modo Fecha: Ejecución vs Venta -->
+1106:           <div class="flex items-center bg-[#060a12] p-0.5 rounded-lg border border-white/10 text-[11px] shrink-0">
+1107:             <button
+1108:               type="button"
+1109:               @click="tipoFechaKanbanPro = 'EJECUCION'"
+1110:               class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer"
+1111:               :class="tipoFechaKanbanPro === 'EJECUCION' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'"
+1112:             >
+1113:               📅 Por Fecha Ejecución
+1114:             </button>
+1115:             <button
+1116:               type="button"
+1117:               @click="tipoFechaKanbanPro = 'VENTA'"
+1118:               class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer"
+1119:               :class="tipoFechaKanbanPro === 'VENTA' ? 'bg-indigo-500 text-white font-black' : 'text-slate-400 hover:text-white'"
+1120:             >
+1121:               🏷️ Por Fecha Venta
+1122:             </button>
+1123:           </div>
+1124: 
+1125:           <!-- Presets de Elevación por Fecha -->
+1126:           <div class="flex items-center gap-1 flex-wrap">
+1127:             <button
+1128:               v-for="preset in [
+1129:                 { id: 'TODOS', label: '🔽 Cajón en Reposo' },
+1130:                 { id: 'HOY', label: '⚡ Hoy' },
+1131:                 { id: 'MANANA', label: 'Mañana' },
+1132:                 { id: 'SEMANA', label: 'Esta Semana' },
+1133:                 { id: 'MES', label: 'Este Mes' }
+1134:               ]"
+1135:               :key="preset.id"
+1136:               type="button"
+1137:               @click="seleccionarPresetFechaPro(preset.id)"
+1138:               class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer"
+1139:               :class="presetFechaKanbanPro === preset.id && !fechaPuntualKardex
+1140:                 ? 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-md shadow-amber-500/20'
+1141:                 : 'bg-[#070b14] text-slate-300 border-white/10 hover:border-amber-400/50'"
+1142:             >
+1143:               {{ preset.label }}
+1144:             </button>
+1145:           </div>
+1146: 
+1147:           <!-- Píldoras de Fechas Específicas detectadas en las fichas -->
+1148:           <div class="flex items-center gap-1 overflow-x-auto py-0.5 max-w-full">
+1149:             <span class="text-[10px] text-slate-400 font-bold uppercase px-1 shrink-0">Fechas con fichas:</span>
+1150:             <button
+1151:               v-for="itemFecha in fechasDisponiblesKardex"
+1152:               :key="itemFecha.iso"
+1153:               type="button"
+1154:               @click="seleccionarFechaPuntualKardex(itemFecha.iso)"
+1155:               class="px-2 py-1 rounded-lg text-[10px] font-mono font-bold border transition-all shrink-0 cursor-pointer flex items-center gap-1"
+1156:               :class="fechaPuntualKardex === itemFecha.iso
+1157:                 ? 'bg-cyan-500 text-slate-950 border-cyan-300 font-black scale-105 shadow-md shadow-cyan-500/30'
+1158:                 : 'bg-[#070b14] text-cyan-300 border-cyan-500/25 hover:border-cyan-400'"
+1159:             >
+1160:               <span>{{ itemFecha.label }}</span>
+1161:               <span class="px-1 rounded bg-black/30 text-[9px]" :class="fechaPuntualKardex === itemFecha.iso ? 'text-white' : 'text-amber-300'">
+1162:                 {{ itemFecha.count }}
+1163:               </span>
+1164:             </button>
+1165:           </div>
+1166:         </div>
+1167: 
+1168:         <!-- Selectores de Elevación por Operador, Rigger, Equipo, Cliente y Rango -->
+1169:         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 pt-1 border-t border-white/5">
+1170:           <div class="flex items-center gap-1.5 bg-[#060a12] px-2.5 py-1.5 rounded-lg border border-white/10">
+1171:             <span class="text-xs">👷</span>
+1172:             <select v-model="filtroOperadorKanbanPro" class="w-full bg-[#060a12] text-xs text-white focus:outline-none cursor-pointer">
+1173:               <option value="">Levantar por Operador...</option>
+1174:               <option value="__SIN_OPERADOR__">⚠️ Sin Operador Asignado</option>
+1175:               <option v-for="op in opcionesOperadoresKanban" :key="op" :value="op">{{ op }}</option>

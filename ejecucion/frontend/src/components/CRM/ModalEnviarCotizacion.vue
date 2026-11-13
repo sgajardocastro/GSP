@@ -66,31 +66,39 @@
             </div>
           </div>
 
-          <!-- Columna Derecha: Copia Interna Usuarios GSP Enrolados Reales del Backend -->
+          <!-- Columna Derecha: Copia Obligatoria (CC) Parametrizada: Emisor + COORD + Admin -->
           <div class="space-y-2">
             <div class="flex justify-between items-center mb-1">
-              <label class="block text-xs text-slate-300 font-black uppercase tracking-wider">Copia Interna Usuarios GSP (Enrolados)</label>
-              <span class="text-xs text-amber-400 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{{ equipoGSP.length }} Usuarios</span>
+              <div>
+                <label class="block text-xs text-slate-300 font-black uppercase tracking-wider">Copia Conforme (CC) — Parametrizada *</label>
+                <p class="text-[10px] text-slate-400">Emisor Comercial + Rol COORD + Rol Admin</p>
+              </div>
+              <span class="text-xs text-amber-400 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{{ destinatariosGSP.length }} seleccionados</span>
             </div>
 
-            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 max-h-44 overflow-y-auto space-y-2 scrollbar-hide min-h-[100px]">
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 max-h-48 overflow-y-auto space-y-1.5 scrollbar-hide min-h-[100px]">
               <label
                 v-for="user in equipoGSP"
                 :key="user.email"
-                class="flex items-center justify-between p-2 hover:bg-slate-900 rounded-xl text-slate-200 cursor-pointer transition-colors border border-transparent hover:border-slate-800"
+                class="flex items-center justify-between p-2 hover:bg-slate-900/80 rounded-xl text-slate-200 cursor-pointer transition-colors border border-slate-800/50"
               >
                 <div class="flex items-center gap-2.5 truncate">
                   <input type="checkbox" :value="user.email" v-model="destinatariosGSP" class="w-4 h-4 accent-amber-500 rounded cursor-pointer" />
-                  <span class="font-bold text-white text-xs truncate">{{ user.nombre }}</span>
+                  <div class="flex flex-col truncate">
+                    <span class="font-bold text-white text-xs truncate">{{ user.nombre }}</span>
+                    <span class="text-[10px] text-slate-400 font-mono truncate">{{ user.email }}</span>
+                  </div>
                 </div>
-                <span class="text-xs text-amber-400 font-mono ml-2 flex-shrink-0 font-semibold">{{ user.email }}</span>
+                <span :class="['text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider flex-shrink-0 ml-2', user.badgeColor]">
+                  {{ user.rolTipo }}
+                </span>
               </label>
 
               <div v-if="loadingUsers" class="text-slate-400 italic text-xs text-center py-3">
-                ⏳ Cargando usuarios enrolados desde el servidor...
+                ⏳ Parametrizando destinatarios por roles desde el servidor...
               </div>
               <div v-else-if="equipoGSP.length === 0" class="text-slate-500 italic text-xs text-center py-3">
-                Sin usuarios activos enrolados en la base de datos.
+                Sin destinatarios CC parametrizados.
               </div>
             </div>
           </div>
@@ -163,32 +171,140 @@ const asunto = ref('')
 const cuerpoMensaje = ref('')
 const equipoGSP = ref([])
 
-const fetchEnrolledUsers = async () => {
+const fetchDestinatariosParametrizados = async () => {
   loadingUsers.value = true
   try {
-    const { data } = await apiAxios.get('/servicio/leanglobal/obtenerUsuarios')
-    const rawList = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : (data?.usuarios || []))
+    const [resUsers, resRoles, resUserRoles] = await Promise.all([
+      apiAxios.get('/servicio/leanglobal/obtenerUsuarios'),
+      apiAxios.get('/servicio/leanglobal/obtenerRoles'),
+      apiAxios.get('/servicio/leanglobal/obtenerUsuariosRoles')
+    ])
 
-    if (rawList && rawList.length > 0) {
-      let enrolled = rawList.filter(u => u.activo !== false && u.email && u.pass_hash_fes !== null && u.pass_hash_fes !== '')
+    const rawUsers = Array.isArray(resUsers.data) ? resUsers.data : (Array.isArray(resUsers.data?.data) ? resUsers.data.data : (resUsers.data?.usuarios || []))
+    const rawRoles = Array.isArray(resRoles.data) ? resRoles.data : (Array.isArray(resRoles.data?.data) ? resRoles.data.data : (resRoles.data?.roles || []))
+    const rawUserRoles = Array.isArray(resUserRoles.data) ? resUserRoles.data : (Array.isArray(resUserRoles.data?.data) ? resUserRoles.data.data : (resUserRoles.data?.usuariosRoles || []))
 
-      if (enrolled.length === 0) {
-        enrolled = rawList.filter(u => u.activo !== false && u.email && u.flag_proc_enrol === false)
-      }
+    // Identificar IDs de roles Admin y COORD
+    const adminRoleIds = rawRoles.filter(r => (r.name_rol || '').toLowerCase() === 'admin').map(r => r.id_rol)
+    const coordRoleIds = rawRoles.filter(r => (r.name_rol || '').toUpperCase() === 'COORD').map(r => r.id_rol)
 
-      const mapped = enrolled.map(u => ({
-        nombre: u.nombre_user || `${u.name_frst || ''} ${u.apellido_pat || ''}`.trim() || u.email,
-        email: u.email.trim(),
-        hasFesPin: !!u.pass_hash_fes
-      }))
+    // Identificar user IDs con esos roles
+    const adminUserIds = new Set(rawUserRoles.filter(ur => adminRoleIds.includes(ur.id_rol)).map(ur => ur.id_user))
+    const coordUserIds = new Set(rawUserRoles.filter(ur => coordRoleIds.includes(ur.id_rol)).map(ur => ur.id_user))
 
-      if (mapped.length > 0) {
-        equipoGSP.value = mapped
-        destinatariosGSP.value = mapped.map(u => u.email)
-      }
+    // Usuario actual (Comercial emisor)
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+    const currentEmail = currentUser.email ? currentUser.email.trim().toLowerCase() : ''
+
+    const list = []
+    const emailsAgregados = new Set()
+
+    // 1. Agregar Comercial Emisor si existe
+    if (currentEmail) {
+      list.push({
+        id: currentUser.id_user || 'emisor',
+        nombre: currentUser.nombre_user || `${currentUser.name_frst || ''} ${currentUser.apellido_pat || ''}`.trim() || 'Comercial Emisor',
+        email: currentEmail,
+        rolTipo: 'EMISOR',
+        rolLabel: 'Ejecutivo Comercial Emisor',
+        badgeColor: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10'
+      })
+      emailsAgregados.add(currentEmail)
     }
+
+    // 2. Agregar Coordinadores (COORD)
+    const esElegibleCC = (u) => {
+      if (!u || !u.email || u.activo === false || u.flag_activo === false) return false
+      const email = String(u.email || '').trim().toLowerCase()
+      if (!email.includes('@') || email.startsWith('rigger.ext.')) return false
+      const jd = typeof u.json_data === 'string' ? (() => { try { return JSON.parse(u.json_data) } catch { return {} } })() : (u.json_data || {})
+      if (u.is_externo === true || jd.is_externo === true || String(jd.is_externo) === 'true') return false
+      const cargo = String(jd.cargo || u.cargo || '').toLowerCase()
+      if (cargo.includes('operador') || cargo.includes('rigger') || cargo.includes('chofer') || cargo.includes('técnico') || cargo.includes('tecnico') || cargo.includes('mecanico') || cargo.includes('mecánico')) return false
+      return true
+    }
+    const coordUsers = rawUsers.filter(u => coordUserIds.has(u.id_user) && esElegibleCC(u))
+    if (coordUsers.length === 0) {
+      const fallbackCoord = 'logistica@arriendosanpablo.cl'
+      if (!emailsAgregados.has(fallbackCoord)) {
+        list.push({
+          id: 'coord_fallback',
+          nombre: 'Richard Jara (Coordinación)',
+          email: fallbackCoord,
+          rolTipo: 'COORD',
+          rolLabel: 'Coordinador Operaciones',
+          badgeColor: 'border-amber-500/30 text-amber-400 bg-amber-500/10'
+        })
+        emailsAgregados.add(fallbackCoord)
+      }
+    } else {
+      coordUsers.forEach(u => {
+        const email = u.email.trim().toLowerCase()
+        if (!emailsAgregados.has(email)) {
+          list.push({
+            id: u.id_user,
+            nombre: u.nombre_user || `${u.name_frst || ''} ${u.apellido_pat || ''}`.trim() || email,
+            email: email,
+            rolTipo: 'COORD',
+            rolLabel: 'Coordinador Operaciones',
+            badgeColor: 'border-amber-500/30 text-amber-400 bg-amber-500/10'
+          })
+          emailsAgregados.add(email)
+        }
+      })
+    }
+
+    // 3. Agregar Administradores (Admin)
+    const adminUsers = rawUsers.filter(u => adminUserIds.has(u.id_user) && esElegibleCC(u))
+    if (adminUsers.length === 0) {
+      const fallbackAdmins = [
+        { nombre: 'Sergio Gajardo (Admin)', email: 'sgajardoc@gmail.com' },
+        { nombre: 'Jorge Ponce (Admin)', email: 'j.poncenavarrete@gmail.com' },
+        { nombre: 'Omar Ghiselini (Director)', email: 'omar.ghiselini@arriendosanpablo.cl' }
+      ]
+      fallbackAdmins.forEach(adm => {
+        if (!emailsAgregados.has(adm.email)) {
+          list.push({
+            id: adm.email,
+            nombre: adm.nombre,
+            email: adm.email,
+            rolTipo: 'ADMIN',
+            rolLabel: 'Administrador',
+            badgeColor: 'border-purple-500/30 text-purple-400 bg-purple-500/10'
+          })
+          emailsAgregados.add(adm.email)
+        }
+      })
+    } else {
+      adminUsers.forEach(u => {
+        const email = u.email.trim().toLowerCase()
+        if (!emailsAgregados.has(email)) {
+          list.push({
+            id: u.id_user,
+            nombre: u.nombre_user || `${u.name_frst || ''} ${u.apellido_pat || ''}`.trim() || email,
+            email: email,
+            rolTipo: 'ADMIN',
+            rolLabel: 'Administrador',
+            badgeColor: 'border-purple-500/30 text-purple-400 bg-purple-500/10'
+          })
+          emailsAgregados.add(email)
+        }
+      })
+    }
+
+    equipoGSP.value = list
+    destinatariosGSP.value = list.map(u => u.email)
   } catch (err) {
-    console.error('Error fetching enrolled users with FES PIN:', err)
+    console.error('Error cargando distribución parametrizada de destinatarios:', err)
+    const fallbackList = [
+      { id: '1', nombre: 'Comercial Emisor', email: JSON.parse(localStorage.getItem('user') || '{}').email || 'natalia.gonzalez@arriendosanpablo.cl', rolTipo: 'EMISOR', rolLabel: 'Ejecutivo Comercial', badgeColor: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10' },
+      { id: '2', nombre: 'Richard Jara', email: 'logistica@arriendosanpablo.cl', rolTipo: 'COORD', rolLabel: 'Coordinador Operaciones', badgeColor: 'border-amber-500/30 text-amber-400 bg-amber-500/10' },
+      { id: '3', nombre: 'Sergio Gajardo', email: 'sgajardoc@gmail.com', rolTipo: 'ADMIN', rolLabel: 'Administrador', badgeColor: 'border-purple-500/30 text-purple-400 bg-purple-500/10' },
+      { id: '4', nombre: 'Jorge Ponce', email: 'j.poncenavarrete@gmail.com', rolTipo: 'ADMIN', rolLabel: 'Administrador', badgeColor: 'border-purple-500/30 text-purple-400 bg-purple-500/10' },
+      { id: '5', nombre: 'Omar Ghiselini', email: 'omar.ghiselini@arriendosanpablo.cl', rolTipo: 'ADMIN', rolLabel: 'Director General', badgeColor: 'border-purple-500/30 text-purple-400 bg-purple-500/10' }
+    ]
+    equipoGSP.value = fallbackList
+    destinatariosGSP.value = fallbackList.map(u => u.email)
   } finally {
     loadingUsers.value = false
   }
@@ -198,7 +314,7 @@ watch(() => props.show, (newVal) => {
   if (newVal) {
     errorMessage.value = ''
     newEmailInput.value = ''
-    fetchEnrolledUsers()
+    fetchDestinatariosParametrizados()
 
     // Auto-cargar correo del cliente
     const emailContacto = props.cliente?.email || props.proyecto?.email_contacto || props.proyecto?.cliente_email || 'sgajardoc@gmail.com'
@@ -236,7 +352,7 @@ const close = () => {
 const generateCommercialHtmlEmail = ({ clienteNombre, codProyecto, verCodigo, obraNombre, cuerpoTexto, pdfUrl }) => {
   const formattedBody = (cuerpoTexto || '').replace(/\n/g, '<br>')
 
-  return `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f1116; border: 1px solid #f59e0b; border-radius: 16px; overflow: hidden; padding: 25px; color: #e2e8f0;"><div style="text-align: center; border-bottom: 2px solid #f59e0b; padding-bottom: 15px; margin-bottom: 20px;"><h2 style="color: #f59e0b; margin: 0; font-size: 20px;">🏗️ GRÚAS SAN PABLO S.A.</h2><p style="color: #94a3b8; font-size: 12px; margin: 5px 0 0 0;">COTIZACIÓN OFICIAL DE SERVICIOS DE IZAJE</p></div><div style="font-size: 14px; line-height: 1.6;"><div style="margin: 15px 0;">${formattedBody}</div><div style="background-color: #14171f; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0;"><div style="color: #f59e0b; font-weight: bold; margin-bottom: 5px;">📋 FICHA RESUMEN DE LA COTIZACIÓN</div><div>Código Proyecto: <strong>${codProyecto || 'GSP-2607-001'}</strong></div><div>Versión Documento: <strong>${verCodigo || 'v1.0'}</strong></div><div>Obra / Destino: <strong>${obraNombre || 'Obra Principal'}</strong></div></div>${pdfUrl ? `<div style="text-align: center; margin: 25px 0;"><a href="${pdfUrl}" target="_blank" style="background-color: #f59e0b; color: #020617; font-weight: bold; text-decoration: none; padding: 12px 26px; border-radius: 8px; font-size: 13px; display: inline-block;">📄 DESCARGAR PROPUESTA PDF (${verCodigo || 'v1.0'})</a></div>` : ''}</div><div style="border-top: 1px solid #1e293b; padding-top: 15px; text-align: center; font-size: 11px; color: #64748b; margin-top: 20px;">Grúas San Pablo S.A. | notificaciones.gsp@leanglobal.cl</div></div>`
+  return `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f1116; border: 1px solid #f59e0b; border-radius: 16px; overflow: hidden; padding: 25px; color: #e2e8f0;"><div style="text-align: center; border-bottom: 2px solid #f59e0b; padding-bottom: 15px; margin-bottom: 20px;"><h2 style="color: #f59e0b; margin: 0; font-size: 20px;">GRÚAS SAN PABLO S.A.</h2><p style="color: #94a3b8; font-size: 12px; margin: 5px 0 0 0;">COTIZACIÓN OFICIAL DE SERVICIOS DE IZAJE</p></div><div style="font-size: 14px; line-height: 1.6;"><div style="margin: 15px 0;">${formattedBody}</div><div style="background-color: #14171f; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0;"><div style="color: #f59e0b; font-weight: bold; margin-bottom: 5px;">📋 FICHA RESUMEN DE LA COTIZACIÓN</div><div>Código Proyecto: <strong>${codProyecto || 'GSP-2607-001'}</strong></div><div>Versión Documento: <strong>${verCodigo || 'v1.0'}</strong></div><div>Obra / Destino: <strong>${obraNombre || 'Obra Principal'}</strong></div></div>${pdfUrl ? `<div style="text-align: center; margin: 25px 0;"><a href="${pdfUrl}" target="_blank" style="background-color: #f59e0b; color: #020617; font-weight: bold; text-decoration: none; padding: 12px 26px; border-radius: 8px; font-size: 13px; display: inline-block;">📄 DESCARGAR PROPUESTA PDF (${verCodigo || 'v1.0'})</a></div>` : ''}</div><div style="border-top: 1px solid #1e293b; padding-top: 15px; text-align: center; font-size: 11px; color: #64748b; margin-top: 20px;">Grúas San Pablo S.A. | notificaciones.gsp@leanglobal.cl</div></div>`
 }
 
 const sendEmail = async () => {
@@ -255,8 +371,20 @@ const sendEmail = async () => {
       if (rawPdfUrl.startsWith('http')) {
         pdfUrl = rawPdfUrl
       } else {
-        const cleanPath = rawPdfUrl.startsWith('/lg-gsp') ? rawPdfUrl.replace(/^\/lg-gsp/, '') : rawPdfUrl
-        pdfUrl = `https://servidor.leanglobal.cl/lg-gsp${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`
+        let apiBase = String(apiAxios.defaults.baseURL || '').replace(/\/$/, '')
+        if (!apiBase || apiBase.includes('localhost')) {
+          const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+          apiBase = isProd 
+            ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api'
+            : 'https://servidor.leanglobal.cl/lg-gsp-dev/api'
+        }
+        const cleanPath = rawPdfUrl.startsWith('/') ? rawPdfUrl : `/${rawPdfUrl}`
+        if (cleanPath.startsWith('/api/')) {
+          const domainAndPrefix = apiBase.replace(/\/api$/, '')
+          pdfUrl = `${domainAndPrefix}${cleanPath}`
+        } else {
+          pdfUrl = `${apiBase}${cleanPath}`
+        }
       }
     }
     const codProj = props.proyecto?.codigo_maestro || props.proyecto?.codigo_proyecto || props.proyecto?.codi_proyecto || 'GSP-2607-001'
@@ -284,9 +412,12 @@ const sendEmail = async () => {
       cuerpo: htmlContent
     })
 
+    const activeUser = JSON.parse(localStorage.getItem('user') || '{}')
+    const nombreRemitente = activeUser.nombre_user || `${activeUser.name_frst || ''} ${activeUser.apellido_pat || ''}`.trim() || activeUser.email || 'Comercial GSP'
+
     const eventoEnvio = {
       fecha_envio: new Date().toISOString(),
-      usuario_envio: 'Sergio Gajardo',
+      usuario_envio: nombreRemitente,
       destinatarios_cliente: [...destinatariosCliente.value],
       destinatarios_cc: [...destinatariosGSP.value]
     }

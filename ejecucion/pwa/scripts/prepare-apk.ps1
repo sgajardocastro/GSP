@@ -5,7 +5,7 @@ $pkgPath = Join-Path $root 'package.json'
 $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
 $version = $pkg.version
 
-$twaDir = Join-Path $root 'terracon-twa'
+$twaDir = Join-Path $root 'gsp-twa'
 $publicDir = Join-Path $root 'public'
 
 $signedCandidates = @(
@@ -16,7 +16,7 @@ $signedCandidates = @(
 
 $signedSource = $signedCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $signedSource) {
-  throw "No se encontro APK firmado. Genera/ubica app-release-signed.apk en terracon-twa antes de continuar."
+  throw "No se encontro APK firmado. Genera/ubica app-release-signed.apk en gsp-twa antes de continuar."
 }
 
 New-Item -ItemType Directory -Path $publicDir -Force | Out-Null

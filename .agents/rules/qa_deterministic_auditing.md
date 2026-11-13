@@ -12,3 +12,9 @@ El ecosistema de agentes de IA tiene una tendencia natural a sufrir "Ceguera de 
 Cuando el usuario o el agente arquitecto asigne una tarea de refactorización que abarque múltiples archivos (ej. 28 puntos de contacto):
 - El prompt de delegación DEBE incluir la lista exacta de las rutas de los archivos a modificar.
 - Si no se tiene la lista, el primer paso del agente debe ser usar `grep_search` para mapear y guardar la lista de archivos en un artefacto temporal (Task List), y no detenerse hasta que todos los elementos de la lista hayan sido procesados.
+
+## 🔬 Metodología Oficial y Suite Canónica de Pruebas
+Para la arquitectura integral de pruebas, personas de prueba, fórmulas matemáticas de izaje/standby, generación documental Puppeteer y candado Hard Gate de salida, consúltese el estándar canónico en:
+- [metodologia_pruebas_qa_determinista.md](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/rules/metodologia_pruebas_qa_determinista.md)
+- **Suite Canónica Reusable:** Ejecutar `node scripts/qa_test_suite_standard.cjs` para verificación integral determinista antes de cualquier pase a producción.
+

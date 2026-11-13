@@ -1,0 +1,81 @@
+### ✅ Compilación Vite y Auditoría `git diff` de [`Torre.vue`](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/ejecucion/frontend/src/views/Torre.vue) (Reglas #7 y #13)
+
+- **Compilación Frontend (`npx vite build`):** `✓ 1628 modules transformed · built in 1m 13s` (**0 errores**).
+
+#### Salida de cambios aplicados en [`Torre.vue`](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/ejecucion/frontend/src/views/Torre.vue):
+```diff
+--- a/ejecucion/frontend/src/views/Torre.vue
++++ b/ejecucion/frontend/src/views/Torre.vue
+@@ -87,31 +87,22 @@
+-      <!-- Selector de Vistas (Incluye 3 Vistas Comparativas Kanban - REQ-1096) -->
++      <!-- Selector de Vistas -->
+       <div class="flex flex-wrap items-center bg-[#070b14] p-1 rounded-xl border border-white/10 shrink-0 gap-0.5">
+         <button 
+           @click="activeView = 'kanban'" 
+           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+-          :class="activeView === 'kanban' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'"
++          :class="activeView === 'kanban' ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/20' : 'text-slate-400 hover:text-white'"
++          title="Tablero Kanban con Filtros por Fecha (Venta/Ejecución), Fechas con Fichas, Operador, Rigger y Tarjetas Operativas"
+         >
+           <span>🗂️</span>
+-          <span>Tablero Kanban</span>
+-        </button>
+-        <button 
+-          @click="activeView = 'kanban_filtros'" 
+-          ...
+-          <span>Kanban + Filtros</span>
++          <span>Kanban</span>
+         </button>
+         <button 
+           @click="activeView = 'kardex'" 
+           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+           :class="activeView === 'kardex' ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20' : 'text-amber-400/90 hover:text-amber-300'"
+-          title="Vista 3: Mueble Tarjetero Cardex 3D con elevación dinámica de fichas por criterio"
++          title="Vista Cardex con elevación dinámica de fichas por criterio"
+         >
+           <span>🗄️</span>
+-          <span>Cardex 3D</span>
++          <span>Vista Cardex</span>
+         </button>
+@@ -136,582 +136,24 @@
+-    <!-- Kanban Columns (6 Columnas Operativas) -->
+-    <div v-if="activeView === 'kanban'" ...> (eliminado Kanban antiguo sin filtros)
+-    <div v-else-if="activeView === 'kanban_filtros'" class="space-y-3 animate-fadeIn">
++    <!-- VISTA 1: KANBAN CON FILTROS MULTICRITERIO Y FECHAS CON FICHAS -->
++    <div v-if="activeView === 'kanban'" class="space-y-3 animate-fadeIn">
++      ...
++        <!-- Tira Interactiva de Fechas con Fichas (incorporada desde Vista Cardex) -->
++        <div v-if="fechasDisponiblesKardex.length > 0" class="flex items-center gap-1 overflow-x-auto py-1 border-t border-white/5 max-w-full">
++          <span class="text-[10px] text-slate-400 font-bold uppercase px-1 shrink-0">Fechas con fichas:</span>
++          <button v-for="itemFecha in fechasDisponiblesKardex" :key="itemFecha.iso" @click="seleccionarFechaPuntualKardex(itemFecha.iso)" ...>
++            <span>{{ itemFecha.label }}</span>
++            <span>{{ itemFecha.count }}</span>
++          </button>
++        </div>
+@@ -486,18 +486,18 @@
+-    <!-- VISTA 1C: CARDEX 3D — MUEBLE TARJETERO INDEXADO CON ELEVACIÓN DE FICHAS -->
++    <!-- VISTA 2: VISTA CARDEX — TARJETERO INDEXADO CON ELEVACIÓN DE FICHAS -->
+     <div v-else-if="activeView === 'kardex'" class="space-y-3 animate-fadeIn">
+-                <h3 class="text-xs font-black uppercase tracking-wider text-amber-300">Mueble Tarjetero Cardex 3D</h3>
++                <h3 class="text-xs font-black uppercase tracking-wider text-amber-300">Vista Cardex — Tarjetero Indexado</h3>
+@@ -1593,164 +1593,305 @@
+     <!-- Vista 3: Perspectiva Temporal de Flota (Gantt Operacional & Productividad) -->
+     <div v-else-if="activeView === 'gantt'" class="space-y-4">
++      <!-- Tarjetas de Indicadores Superiores (KPIs Flota Gantt) -->
++      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
++        <!-- Equipos con Movimiento, Sin Movimiento, OTs Activas, Horas Reports, Total Devengado -->
++      </div>
++      <!-- Controles con Desde/Hasta, Toggle Ocultar sin movimiento, Expandir/Colapsar Categorías -->
++      <!-- Tabla Gantt Agrupada por Categoría con Chevron a Demanda + Columnas Últ. Mantenimiento y Devengado ($) -->
+```
+
+---
+
+### 🚀 Siguiente Paso
+
+Los 3 puntos están implementados y compilados sin errores:
+1. **`Kanban` unificado + filtros de Cardex (`Fechas con fichas`) + renombrado a `Vista Cardex`** en [`Torre.vue`](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/ejecucion/frontend/src/views/Torre.vue).
+2. **Rediseño UX de `Flota Gantt`** (KPIs arriba, filtros `Desde`/`Hasta`, ocultar sin movimiento, agrupación por categoría con `chevron` a demanda, columna `Últ. Mantenimiento` y columna `Devengado ($)` desde Reports) en [`Torre.vue`](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/ejecucion/frontend/src/views/Torre.vue).
+3. **Corrección de la anomalía contable (`Devengado <= Comprometido`)** en [`estadoPagoController.js`](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/ejecucion/backend_remoto/src/controllers/estadoPagoController.js).
+
+¿Tenías algún otro punto funcional que agregar ("Sigo"), o autorizas desplegar estos cambios en **DEV** (y/o **PROD**) para que los revises en pantalla?

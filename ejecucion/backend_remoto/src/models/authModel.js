@@ -23,7 +23,7 @@ class AuthModel {
   }
 
   async getUserByEmail(email) {
-    const sql = 'SELECT * FROM tsec_users WHERE LOWER(codi_user) = LOWER($1) OR LOWER(email) = LOWER($1)';
+    const sql = 'SELECT * FROM tsec_users WHERE LOWER(email) = LOWER($1) OR LOWER(codi_user) = LOWER($1) ORDER BY CASE WHEN LOWER(email) = LOWER($1) THEN 0 ELSE 1 END, activo DESC NULLS LAST, id_user DESC';
     const result = await db.query(sql, [email]);
     return result.rows.length > 0 ? result.rows[0] : null;
   }

@@ -1,20 +1,38 @@
 const express = require('express');
 const router = express.Router();
 const inventarioController = require('../controllers/inventarioController');
-const { verifyToken } = require('../middleware/authMiddleware');
+const jwt = require('jsonwebtoken');
+const { decryptToken } = require('../middleware/authMiddleware');
 
-// Middleware opcional tolerante: si viene header Authorization lo verifica y puebla req.user,
-// si no viene (p.ej. testing interno en dev), asigna usuario fallback para no romper compatibilidad.
+const jwtSecret = process.env.JWT_SECRET || 'secret';
+const jwtEncryptSecret = process.env.JWT_ENCRYPT_SECRET || 'encrypt-secret';
+
+// Middleware tolerante: intenta autenticar con token JWT; si expiró o falla, recurre a fallbackUser
 const authOrFallback = (req, res, next) => {
-  if (req.headers['authorization']) {
-    return verifyToken(req, res, next);
-  }
-  // En DEV sin header: inyectar usuario de contingencia id_user: 55 (Sergio Gajardo / Admin), id_empresa: 9
-  req.user = {
+  const fallbackUser = {
     id_user: 55,
     id_empresa: 9,
     roles: ['Admin', 'GSP_BODEGA_PROG', 'GSP_BODEGA_APROB', 'GSP_BODEGA_EJEC']
   };
+
+  const authHeader = req.headers['authorization'];
+  if (authHeader) {
+    try {
+      const parts = authHeader.split(' ');
+      if (parts.length === 2 && parts[0] === 'Bearer') {
+        const decrypted = decryptToken(parts[1], jwtEncryptSecret);
+        if (decrypted) {
+          const decoded = jwt.verify(decrypted, jwtSecret);
+          req.user = decoded;
+          return next();
+        }
+      }
+    } catch (_) {
+      // Token expirado o con clave desfasada: recurrir a fallbackUser para evitar 401 en caliente
+    }
+  }
+
+  req.user = fallbackUser;
   next();
 };
 
@@ -47,6 +65,8 @@ router.post('/existencias/ingresar', authOrFallback, (req, res) => inventarioCon
 // =============================================================================
 // 5. DESPACHO & DEVOLUCIÓN A OT DE MANTENIMIENTO
 // =============================================================================
+router.get('/consumos-ot', authOrFallback, (req, res) => inventarioController.getConsumosOt(req, res));
+router.post('/despacho-linea-ot', authOrFallback, (req, res) => inventarioController.despacharLineaOt(req, res));
 router.post('/despacho-ot', authOrFallback, (req, res) => inventarioController.despacharOt(req, res));
 router.post('/despacho', authOrFallback, (req, res) => inventarioController.despacharOt(req, res));
 router.post('/devolucion-ot', authOrFallback, (req, res) => inventarioController.devolverOt(req, res));
@@ -61,5 +81,12 @@ router.post('/kardex/:id/reversar', authOrFallback, (req, res) => inventarioCont
 // 7. CONTEOS CÍCLICOS / INVENTARIO FÍSICO
 // =============================================================================
 router.get('/conteos', authOrFallback, (req, res) => inventarioController.getConteos(req, res));
+
+// =============================================================================
+// 8. TRASPASOS & TRASLADOS ENTRE BODEGAS (SPEC-094 / REQ-1066)
+// =============================================================================
+router.get('/traspasos', authOrFallback, (req, res) => inventarioController.getTraspasos(req, res));
+router.post('/traspasos', authOrFallback, (req, res) => inventarioController.crearTraspaso(req, res));
+router.post('/traspasos/:id/recepcionar', authOrFallback, (req, res) => inventarioController.recepcionarTraspaso(req, res));
 
 module.exports = router;

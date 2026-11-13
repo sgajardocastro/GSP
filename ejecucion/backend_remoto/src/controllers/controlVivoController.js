@@ -1474,8 +1474,7 @@ const controlVivoController = {
           const updRep = await pool.query(
             `UPDATE ${SCHEMA}.tedp_reporte_avance
              SET obs_validador = $1,
-                 id_user_validador = COALESCE($2, id_user_validador),
-                 updated_at = NOW()
+                 id_user_validador = COALESCE($2, id_user_validador)
              WHERE id_reporte_avance = $3
              RETURNING id_reporte_avance`,
             [textoObs || null, userIdVal, id_reporte_avance]
@@ -1485,8 +1484,7 @@ const controlVivoController = {
           const updRep = await pool.query(
             `UPDATE ${SCHEMA}.tedp_reporte_avance
              SET obs_validador = $1,
-                 id_user_validador = COALESCE($2, id_user_validador),
-                 updated_at = NOW()
+                 id_user_validador = COALESCE($2, id_user_validador)
              WHERE id_proyecto = $3
                AND to_char(fecha_reporte, 'YYYY-MM-DD') = $4
                AND ($5 = 0 OR id_equipo = $5 OR id_equipo IS NULL)

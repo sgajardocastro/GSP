@@ -51,6 +51,7 @@ function routerApi(app) {
     app.use('/api/viajes', require('./viajeRoutes.js'));
     app.use('/api/operaciones/viaje', require('./viajeRoutes.js'));
     app.use('/api/operaciones/report', require('./reportDiarioRoutes.js'));
+    app.use('/api/operaciones/reports', require('./reportDiarioRoutes.js'));
     app.use('/api/reports', require('./reportDiarioRoutes.js'));
     app.use('/api/operaciones/patio', require('./patioRoutes.js'));
     app.use('/api/patio', require('./patioRoutes.js'));
@@ -63,6 +64,8 @@ function routerApi(app) {
     app.use('/api/inventario', require('./inventarioRoutes.js'));
     app.use('/api/operaciones/acta-plataforma', require('./actaPlataformaRoutes.js'));
     app.use('/api/actas-plataforma', require('./actaPlataformaRoutes.js'));
+    app.use('/api/operaciones/plan-izaje', require('./planIzajeRoutes.js'));
+    app.use('/api/planes-izaje', require('./planIzajeRoutes.js'));
 
     // Spec 87: Aprobador Móvil Gerencia (Web Token 1 Solo Uso)
     app.use('/api/aprobaciones-gerencia', aprobacionGerenciaRouter);

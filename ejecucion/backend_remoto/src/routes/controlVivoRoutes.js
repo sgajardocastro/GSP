@@ -13,5 +13,9 @@ router.post('/notificaciones/marcar-todas', controlVivoController.marcarTodasLei
 // 3. REQ-997 / Caso 2: Carga Manual / Corrección de Horas de Hitos por Control de Gestión (Yiara / Adm)
 router.post('/override-hito', controlVivoController.overrideHitoActividad);
 
+// 4. REQ-1099: Adjuntar cualquier documento o fotografía asociada a un día de servicio (PMO / Report Día X)
+router.post('/adjuntar-documento-dia', controlVivoController.adjuntarDocumentoDia);
+router.delete('/documento-dia/:id_doc', controlVivoController.eliminarDocumentoDia);
+
 module.exports = router;
 

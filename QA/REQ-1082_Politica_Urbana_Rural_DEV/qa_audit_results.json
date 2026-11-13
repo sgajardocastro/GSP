@@ -1,0 +1,1050 @@
+{
+  "timestamp": "2026-10-30T21:03:40.320Z",
+  "environment": "https://servidor.leanglobal.cl/lg-gsp-dev/api",
+  "database_schema": "sch_leangsp",
+  "assertions": [
+    {
+      "code": "P1-CREATE",
+      "description": "Creación de Proyecto Testigo 1 en Preventa (estado 2) con distancia_km=22 y estructurador libre",
+      "passed": true,
+      "details": {
+        "id_proyecto": 158,
+        "status": 201
+      }
+    },
+    {
+      "code": "P1-COT-PDF",
+      "description": "Emisión de cotización formal en PDF con condiciones_pdf y distancia_km=22",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "cotizacion": {
+          "id_cotizacion": 213,
+          "version": 1,
+          "nombre_archivo": "PRY-2610-13-019V1-213.pdf",
+          "monto": 0,
+          "fecha": "2026-10-30T21:03:53.385Z",
+          "url": "/api/archivo/ver/1597"
+        }
+      }
+    },
+    {
+      "code": "P1-STATE-3",
+      "description": "Avance de Proyecto Testigo 1 a estado 3 (VERIFICACIÓN OPERACIONES) sin preselección de política",
+      "passed": true,
+      "details": {
+        "status": 200
+      }
+    },
+    {
+      "code": "P1-DB-STATE3-PENDING",
+      "description": "En estado 3 el proyecto exige selección manual (regimen_operacional=\"\" y confirmado=false)",
+      "passed": true,
+      "details": {
+        "id_proyecto": 158,
+        "id_proyecto_estado": 3,
+        "distancia_km": "22",
+        "regimen_ejec": "",
+        "confirmado_ejec": false
+      }
+    },
+    {
+      "code": "P1-REVERSO-400",
+      "description": "Rechazo HTTP 400 al intentar devolver a Preventa Comercial con motivo < 5 caracteres",
+      "passed": true,
+      "details": {
+        "status": 400,
+        "error": "El motivo de la devolución es obligatorio (mínimo 5 caracteres)."
+      }
+    },
+    {
+      "code": "P1-REVERSO-200",
+      "description": "Devolución exitosa de Proyecto Testigo 1 a Preventa Comercial (HTTP 200 -> id_proyecto_estado=2)",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "id_proyecto_estado": 2
+      }
+    },
+    {
+      "code": "P1-DB-REVERSO-AUDIT",
+      "description": "Auditoría BD post-reverso en tpry_proyecto (estado=2, motivo, fecha ISO, usuario, historial>=1 y reset de política)",
+      "passed": true,
+      "details": {
+        "id_proyecto": 158,
+        "codi_proyecto": "PRY-2610-13-019",
+        "nombre_proyecto": "[QA-REQ1082-DEVUELTO] Montaje Industrial Planta Osorno",
+        "id_proyecto_estado": 2,
+        "crm_motivo": "Rechazado por Operaciones: Se requiere agregar flete de contrapesos adicionales y ajustar ventana horaria de ingreso a planta.",
+        "crm_fecha": "2026-10-30T21:03:58.796Z",
+        "crm_usuario": "{\"nombre\": \"Operaciones\", \"id_user\": null}",
+        "crm_hist_len": 1,
+        "crm_regimen": "",
+        "crm_confirmado": false,
+        "ejec_motivo": null,
+        "ejec_fecha": null,
+        "ejec_usuario": null,
+        "ejec_regimen": "",
+        "ejec_confirmado": false
+      }
+    },
+    {
+      "code": "P1-DB-NOTIF-LOG",
+      "description": "Auditoría BD en sch_leangsp.tnot_notification_log para evento PROYECTO_REVERSADO_A_COMERCIAL",
+      "passed": true,
+      "details": {
+        "count": 18,
+        "sample": [
+          {
+            "id_log": 789,
+            "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+            "canal": "WHATSAPP",
+            "destinatario": "+56968320225",
+            "fecha_registro": "2026-10-30T18:03:59.841951"
+          },
+          {
+            "id_log": 788,
+            "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+            "canal": "EMAIL",
+            "destinatario": "controlflota@arriendosanpablo.cl",
+            "fecha_registro": "2026-10-30T18:03:59.638642"
+          },
+          {
+            "id_log": 787,
+            "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+            "canal": "WHATSAPP",
+            "destinatario": "+56994437725",
+            "fecha_registro": "2026-10-30T18:03:59.512205"
+          },
+          {
+            "id_log": 786,
+            "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+            "canal": "EMAIL",
+            "destinatario": "omar.ghiselini@arriendosanpablo.cl",
+            "fecha_registro": "2026-10-30T18:03:59.334651"
+          },
+          {
+            "id_log": 785,
+            "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+            "canal": "WHATSAPP",
+            "destinatario": "+56977501322",
+            "fecha_registro": "2026-10-30T18:03:59.220895"
+          },
+          {
+            "id_log": 784,
+            "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+            "canal": "EMAIL",
+            "destinatario": "j.poncenavarrete@gmail.com",
+            "fecha_registro": "2026-10-30T18:03:59.008803"
+          }
+        ]
+      }
+    },
+    {
+      "code": "P2-CREATE",
+      "description": "Creación de Proyecto Testigo 2 (URBANO, distancia_km=15, 6h mínimas a $85.000/hr)",
+      "passed": true,
+      "details": {
+        "id_proyecto": 159
+      }
+    },
+    {
+      "code": "P2-COT-PDF",
+      "description": "Emisión de cotización PDF para Proyecto Testigo 2",
+      "passed": true,
+      "details": {
+        "cotizacion": {
+          "id_cotizacion": 214,
+          "version": 1,
+          "nombre_archivo": "PRY-2610-13-020V1-214.pdf",
+          "monto": 0,
+          "fecha": "2026-10-30T21:04:03.382Z",
+          "url": "/api/archivo/ver/1598"
+        }
+      }
+    },
+    {
+      "code": "P2-REVERSO-1",
+      "description": "Devolución de Proyecto Testigo 2 a Preventa Comercial con motivo \"Ajustar descripción de maniobra urbana\"",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "id_proyecto_estado": 2
+      }
+    },
+    {
+      "code": "P2-RESEND-STATE3",
+      "description": "Re-envío de Proyecto Testigo 2 a estado 3 preservando historial_reversos_verificacion y exigiendo política manual",
+      "passed": true,
+      "details": {
+        "histLen": 1
+      }
+    },
+    {
+      "code": "P3-CREATE",
+      "description": "Creación de Proyecto Testigo 3 (RURAL, distancia_km=55, 8h mínimas a $95.000/hr + Traslado $350.000)",
+      "passed": true,
+      "details": {
+        "id_proyecto": 160
+      }
+    },
+    {
+      "code": "P3-COT-PDF",
+      "description": "Emisión de cotización PDF para Proyecto Testigo 3",
+      "passed": true,
+      "details": {
+        "cotizacion": {
+          "id_cotizacion": 215,
+          "version": 1,
+          "nombre_archivo": "PRY-2610-13-021V1-215.pdf",
+          "monto": 0,
+          "fecha": "2026-10-30T21:04:08.431Z",
+          "url": "/api/archivo/ver/1599"
+        }
+      }
+    },
+    {
+      "code": "P3-DB-STATE3-PENDING",
+      "description": "En estado 3 a pesar de tener 55 km el proyecto NO preselecciona RURAL automáticamente",
+      "passed": true,
+      "details": {
+        "id_proyecto": 160,
+        "id_proyecto_estado": 3,
+        "distancia_km": "55",
+        "regimen_ejec": "",
+        "confirmado_ejec": false
+      }
+    },
+    {
+      "code": "P2-REPORT-SAVE",
+      "description": "Guardado de Report Diario en Proyecto Testigo 2 (URBANO: 08:00 base -> 17:00 término - 1.0h colación = 8.0h facturables)",
+      "passed": true,
+      "details": {
+        "id_reporte_avance": "74",
+        "horas_minimas": "6.00",
+        "horas_facturables": "8.00",
+        "horas_sobretiempo": "2.00"
+      }
+    },
+    {
+      "code": "P2-REPORT-VALIDAR-FES",
+      "description": "Validación FES de Report Diario Urbano y cálculo de liquidación RRHH (horas_flete_pagar=0, monto_flete_total=0, horas_faena_pagar=8.0)",
+      "passed": true,
+      "details": {
+        "regimen": "URBANO",
+        "distancia_km": 15,
+        "glosa_comercial": "70 TON",
+        "toneladas_comercial": 70,
+        "hora_salida": "08:00",
+        "hora_llegada": "08:45",
+        "hora_inicio": "08:45",
+        "hora_termino": "17:00",
+        "hora_retorno": "17:45",
+        "colacion_horas": 1,
+        "condicion_dia": "IDA_Y_REGRESO",
+        "condicion_label": "Ida y Regreso en el Día",
+        "desde_viatico": "08:00",
+        "hasta_viatico": "17:45",
+        "horas_efectivas_viatico": 8.75,
+        "horas_redondeadas_viatico": 9,
+        "horas_faena_sugeridas": 8,
+        "horas_flete_sugeridas": 0,
+        "horas_totales_sugeridas": 8,
+        "tarifa_sugerida": 6000,
+        "viatico_sugerido": 8000,
+        "horas_faena_pagar": 8,
+        "horas_flete_pagar": 0,
+        "horas_totales_pagar": 8,
+        "precio_unitario": 6000,
+        "monto_faena_total": 48000,
+        "monto_flete_total": 0,
+        "monto_total_hora_operador": 48000,
+        "monto_viatico_operador": 8000,
+        "total_dia_operador": 56000,
+        "tiene_rigger": false,
+        "horas_totales_rigger": 0,
+        "monto_viatico_rigger": 0,
+        "tarifa_modificada": false,
+        "horas_modificadas": false,
+        "viatico_modificado": false,
+        "validado_rrhh": true,
+        "modificado_por": null,
+        "fecha_validacion_rrhh": "2026-10-30T21:05:01.937Z",
+        "id_user_operador": 66,
+        "operador_nombre": "Omar Ghiselini",
+        "id_user_rigger": null,
+        "rigger_nombre": null,
+        "monto_viatico_sugerido_operador": 8000,
+        "monto_viatico_sugerido_rigger": 0,
+        "viatico_rigger_modificado": false,
+        "id_user_validador_rrhh": 55,
+        "nombre_validador_rrhh": "Sergio Gajardo"
+      }
+    },
+    {
+      "code": "P2-ITS-CONCILIACION",
+      "description": "Conciliación ITS Proyecto Testigo 2 (URBANO): Cliente 8.0 hrs ($680.000) y Operador 8.0 hrs faena + 0 hrs flete ($48.000)",
+      "passed": true,
+      "details": {
+        "its_cabecera": {
+          "id_its": null,
+          "id_proyecto": 159,
+          "folio_its": "ITS-PRY-2610-13-020-001",
+          "version": 1,
+          "tipo_contexto": "URBANO",
+          "horas_minimas_pactadas": 6,
+          "valor_hora_pactado": 85000,
+          "valor_flete_pactado": 0,
+          "total_horas_report": 8,
+          "total_ingresos_horas": 680000,
+          "total_ingresos_fletes": 0,
+          "total_ingresos_facturables": 680000,
+          "total_costos_operacionales": 56000,
+          "utilidad_bruta": 624000,
+          "margen_porcentaje": 91.76470588235294,
+          "plantilla_tipo": "URBANO",
+          "observaciones": "",
+          "categorias_sin_costo": {},
+          "estado_its": "BORRADOR"
+        },
+        "costo_hora_operador": {
+          "id_costo_item": null,
+          "id_its": null,
+          "id_reporte_avance": "74",
+          "report_validado": true,
+          "categoria": "COSTO_HORA_OPERADOR",
+          "fecha": "2026-10-30",
+          "id_personal": 66,
+          "nombre_personal": "OMAR GHISELINI",
+          "rol_personal": "OPERADOR",
+          "id_equipo": 38,
+          "patente": "STDD.68-4",
+          "equipo_modelo": "LTM-1070",
+          "glosa_comercial": "70 TON",
+          "toneladas_comercial": 70,
+          "numero_oc": null,
+          "concepto_detalle": "Liquidación Diaria Operador (2026-10-30) — Cotizado: 70 TON",
+          "tipo_calculo": "HORA_OPERADOR",
+          "hora_salida": "08:00",
+          "hora_llegada": "08:45",
+          "hora_termino": "17:00",
+          "hora_retorno": "17:45",
+          "colacion_minutos": 60,
+          "colacion_horas": 1,
+          "horas_reales_equipo": 8,
+          "horas_standby_gsp": 0,
+          "horas_standby_cliente": 0,
+          "horas_faena_pagar": 8,
+          "horas_flete_pagar": 0,
+          "cantidad_unidades": 8,
+          "precio_unitario": 6000,
+          "monto_total": 48000,
+          "tarifa_sugerida": 6000,
+          "tarifa_no_aplica": false,
+          "tarifa_modificada": false,
+          "modificado_por": null,
+          "vb_validado": true,
+          "monto_desayuno": 0,
+          "monto_almuerzo": 0,
+          "monto_cena": 0,
+          "monto_alojamiento": 0,
+          "monto_traslado": 0,
+          "tipo_estanque": null,
+          "archivo_comprobante_url": null
+        }
+      }
+    },
+    {
+      "code": "P2-SUBCASO-URBANO-MENOR-MIN",
+      "description": "Subcaso URBANO (4.0 hrs < 6.0 hrs mín): Cliente paga piso mínimo (6.0 hrs) y Operador recibe 0 hrs flete y 4.0 hrs reportadas",
+      "passed": true,
+      "details": {
+        "cobro_cliente_horas": 6,
+        "liquidacion_operador": {
+          "horas_reales_equipo": 4,
+          "horas_faena_pagar": 4,
+          "horas_flete_pagar": 0,
+          "horas_totales_pagar": 4,
+          "monto_flete_total": 0,
+          "colacion_horas": 0
+        }
+      }
+    },
+    {
+      "code": "P3-REPORT-SAVE",
+      "description": "Guardado de Report Diario en Proyecto Testigo 3 (RURAL: 6.0h reales en obra -> aplica piso mínimo 8.0h facturables al cliente)",
+      "passed": true,
+      "details": {
+        "id_reporte_avance": "75",
+        "horas_operadas": "6.00",
+        "horas_minimas": "8.00",
+        "horas_facturables": "8.00",
+        "horas_sobretiempo": "0.00"
+      }
+    },
+    {
+      "code": "P3-REPORT-VALIDAR-FES",
+      "description": "Validación FES de Report Diario Rural y regla de absorción de brecha: horas_faena_pagar=8.0, horas_flete_pagar=(6.0+3.0)-8.0=1.0 hr",
+      "passed": true,
+      "details": {
+        "regimen": "RURAL",
+        "distancia_km": 55,
+        "glosa_comercial": "90 TON",
+        "toneladas_comercial": 90,
+        "hora_salida": "07:00",
+        "hora_llegada": "08:30",
+        "hora_inicio": "08:30",
+        "hora_termino": "14:30",
+        "hora_retorno": "16:00",
+        "colacion_horas": 0,
+        "condicion_dia": "IDA_Y_REGRESO",
+        "condicion_label": "Ida y Regreso en el Día",
+        "desde_viatico": "07:00",
+        "hasta_viatico": "16:00",
+        "horas_efectivas_viatico": 9,
+        "horas_redondeadas_viatico": 9,
+        "horas_faena_sugeridas": 8,
+        "horas_flete_sugeridas": 1,
+        "horas_totales_sugeridas": 9,
+        "tarifa_sugerida": 6000,
+        "viatico_sugerido": 8000,
+        "horas_faena_pagar": 8,
+        "horas_flete_pagar": 1,
+        "horas_totales_pagar": 9,
+        "precio_unitario": 6000,
+        "monto_faena_total": 48000,
+        "monto_flete_total": 6000,
+        "monto_total_hora_operador": 54000,
+        "monto_viatico_operador": 8000,
+        "total_dia_operador": 62000,
+        "tiene_rigger": false,
+        "horas_totales_rigger": 0,
+        "monto_viatico_rigger": 0,
+        "tarifa_modificada": false,
+        "horas_modificadas": false,
+        "viatico_modificado": false,
+        "validado_rrhh": true,
+        "modificado_por": null,
+        "fecha_validacion_rrhh": "2026-10-30T21:05:15.794Z",
+        "id_user_operador": 66,
+        "operador_nombre": "Omar Ghiselini",
+        "id_user_rigger": null,
+        "rigger_nombre": null,
+        "monto_viatico_sugerido_operador": 8000,
+        "monto_viatico_sugerido_rigger": 0,
+        "viatico_rigger_modificado": false,
+        "id_user_validador_rrhh": 55,
+        "nombre_validador_rrhh": "Sergio Gajardo"
+      }
+    },
+    {
+      "code": "P3-ITS-CONCILIACION",
+      "description": "Conciliación ITS Proyecto Testigo 3 (RURAL): Cliente 8.0h ($760.000) + Flete ($350.000) = $1.110.000 y Operador 8.0h faena + 1.0h flete = 9.0h ($54.000)",
+      "passed": true,
+      "details": {
+        "its_cabecera": {
+          "id_its": null,
+          "id_proyecto": 160,
+          "folio_its": "ITS-PRY-2610-13-021-001",
+          "version": 1,
+          "tipo_contexto": "RURAL",
+          "horas_minimas_pactadas": 8,
+          "valor_hora_pactado": 95000,
+          "valor_flete_pactado": 350000,
+          "total_horas_report": 8,
+          "total_ingresos_horas": 760000,
+          "total_ingresos_fletes": 350000,
+          "total_ingresos_facturables": 1110000,
+          "total_costos_operacionales": 62000,
+          "utilidad_bruta": 1048000,
+          "margen_porcentaje": 94.41441441441441,
+          "plantilla_tipo": "RURAL",
+          "observaciones": "",
+          "categorias_sin_costo": {},
+          "estado_its": "BORRADOR"
+        },
+        "costo_hora_operador": {
+          "id_costo_item": null,
+          "id_its": null,
+          "id_reporte_avance": "75",
+          "report_validado": true,
+          "categoria": "COSTO_HORA_OPERADOR",
+          "fecha": "2026-10-30",
+          "id_personal": 66,
+          "nombre_personal": "OMAR GHISELINI",
+          "rol_personal": "OPERADOR",
+          "id_equipo": 44,
+          "patente": "DZXL.25-3",
+          "equipo_modelo": "LTM-1090",
+          "glosa_comercial": "90 TON",
+          "toneladas_comercial": 90,
+          "numero_oc": null,
+          "concepto_detalle": "Liquidación Diaria Operador (2026-10-30) — Cotizado: 90 TON",
+          "tipo_calculo": "HORA_OPERADOR",
+          "hora_salida": "07:00",
+          "hora_llegada": "08:30",
+          "hora_termino": "14:30",
+          "hora_retorno": "16:00",
+          "colacion_minutos": 0,
+          "colacion_horas": 0,
+          "horas_reales_equipo": 6,
+          "horas_standby_gsp": 0,
+          "horas_standby_cliente": 0,
+          "horas_faena_pagar": 8,
+          "horas_flete_pagar": 1,
+          "cantidad_unidades": 9,
+          "precio_unitario": 6000,
+          "monto_total": 54000,
+          "tarifa_sugerida": 6000,
+          "tarifa_no_aplica": false,
+          "tarifa_modificada": false,
+          "modificado_por": null,
+          "vb_validado": true,
+          "monto_desayuno": 0,
+          "monto_almuerzo": 0,
+          "monto_cena": 0,
+          "monto_alojamiento": 0,
+          "monto_traslado": 0,
+          "tipo_estanque": null,
+          "archivo_comprobante_url": null
+        }
+      }
+    },
+    {
+      "code": "P3-SUBCASO-RURAL-A",
+      "description": "Subcaso RURAL A (4.0h reales + 2.5h flete = 6.5h <= 8.0h mín): horas_faena_pagar=8.0, horas_flete_pagar=0",
+      "passed": true,
+      "details": {
+        "horas_reales_equipo": 4,
+        "horas_faena_pagar": 8,
+        "horas_flete_pagar": 0,
+        "horas_totales_pagar": 8,
+        "colacion_horas": 0
+      }
+    },
+    {
+      "code": "P3-SUBCASO-RURAL-B",
+      "description": "Subcaso RURAL B (9.0h reales >= 8.0h mín + 3.0h flete): horas_faena_pagar=9.0, horas_flete_pagar=3.0, totales=12.0",
+      "passed": true,
+      "details": {
+        "horas_reales_equipo": 9,
+        "horas_faena_pagar": 9,
+        "horas_flete_pagar": 3,
+        "horas_totales_pagar": 12,
+        "colacion_horas": 0
+      }
+    },
+    {
+      "code": "FINAL-3-WITNESSES-ALIVE",
+      "description": "Los 3 Proyectos Testigo permanecen vivos en sch_leangsp (DEV) en sus estados objetivo (2, 6 y 6)",
+      "passed": true,
+      "details": [
+        {
+          "id_proyecto": 158,
+          "codi_proyecto": "PRY-2610-13-019",
+          "nombre_proyecto": "[QA-REQ1082-DEVUELTO] Montaje Industrial Planta Osorno",
+          "id_proyecto_estado": 2,
+          "distancia_km": "22",
+          "regimen_operacional": "",
+          "confirmado": false
+        },
+        {
+          "id_proyecto": 159,
+          "codi_proyecto": "PRY-2610-13-020",
+          "nombre_proyecto": "[QA-REQ1082-URBANO] Izaje Urbano Parque Industrial Temuco",
+          "id_proyecto_estado": 6,
+          "distancia_km": "15",
+          "regimen_operacional": "URBANO",
+          "confirmado": true
+        },
+        {
+          "id_proyecto": 160,
+          "codi_proyecto": "PRY-2610-13-021",
+          "nombre_proyecto": "[QA-REQ1082-RURAL] Montaje Estructural Faena Rural Loncoche",
+          "id_proyecto_estado": 6,
+          "distancia_km": "55",
+          "regimen_operacional": "RURAL",
+          "confirmado": true
+        }
+      ]
+    }
+  ],
+  "proyectos_testigo": {
+    "proyecto_1_devuelto": {
+      "id_proyecto": 158,
+      "codi_proyecto": "PRY-2610-13-019",
+      "nombre_proyecto": "[QA-REQ1082-DEVUELTO] Montaje Industrial Planta Osorno",
+      "estado_final_bd": 2,
+      "distancia_km": 22,
+      "motivo_reverso_verificacion": "Rechazado por Operaciones: Se requiere agregar flete de contrapesos adicionales y ajustar ventana horaria de ingreso a planta.",
+      "fecha_reverso_verificacion": "2026-10-30T21:03:58.796Z",
+      "usuario_reverso_verificacion": "{\"nombre\": \"Operaciones\", \"id_user\": null}",
+      "historial_reversos_len": 1,
+      "notificaciones_registradas": [
+        {
+          "id_log": 789,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "WHATSAPP",
+          "destinatario": "+56968320225",
+          "fecha_registro": "2026-10-30T18:03:59.841951"
+        },
+        {
+          "id_log": 788,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "EMAIL",
+          "destinatario": "controlflota@arriendosanpablo.cl",
+          "fecha_registro": "2026-10-30T18:03:59.638642"
+        },
+        {
+          "id_log": 787,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "WHATSAPP",
+          "destinatario": "+56994437725",
+          "fecha_registro": "2026-10-30T18:03:59.512205"
+        },
+        {
+          "id_log": 786,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "EMAIL",
+          "destinatario": "omar.ghiselini@arriendosanpablo.cl",
+          "fecha_registro": "2026-10-30T18:03:59.334651"
+        },
+        {
+          "id_log": 785,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "WHATSAPP",
+          "destinatario": "+56977501322",
+          "fecha_registro": "2026-10-30T18:03:59.220895"
+        },
+        {
+          "id_log": 784,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "EMAIL",
+          "destinatario": "j.poncenavarrete@gmail.com",
+          "fecha_registro": "2026-10-30T18:03:59.008803"
+        },
+        {
+          "id_log": 783,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "WHATSAPP",
+          "destinatario": "+56968320225",
+          "fecha_registro": "2026-10-30T17:55:10.608629"
+        },
+        {
+          "id_log": 782,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "EMAIL",
+          "destinatario": "controlflota@arriendosanpablo.cl",
+          "fecha_registro": "2026-10-30T17:55:10.586386"
+        },
+        {
+          "id_log": 781,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "WHATSAPP",
+          "destinatario": "+56994437725",
+          "fecha_registro": "2026-10-30T17:55:10.475398"
+        },
+        {
+          "id_log": 780,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "EMAIL",
+          "destinatario": "omar.ghiselini@arriendosanpablo.cl",
+          "fecha_registro": "2026-10-30T17:55:10.295441"
+        },
+        {
+          "id_log": 779,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "WHATSAPP",
+          "destinatario": "+56977501322",
+          "fecha_registro": "2026-10-30T17:55:10.166595"
+        },
+        {
+          "id_log": 778,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "EMAIL",
+          "destinatario": "j.poncenavarrete@gmail.com",
+          "fecha_registro": "2026-10-30T17:55:10.144096"
+        },
+        {
+          "id_log": 777,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "WHATSAPP",
+          "destinatario": "+56968320225",
+          "fecha_registro": "2026-10-30T17:55:03.061016"
+        },
+        {
+          "id_log": 776,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "EMAIL",
+          "destinatario": "controlflota@arriendosanpablo.cl",
+          "fecha_registro": "2026-10-30T17:55:02.850488"
+        },
+        {
+          "id_log": 775,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "WHATSAPP",
+          "destinatario": "+56994437725",
+          "fecha_registro": "2026-10-30T17:55:02.713114"
+        },
+        {
+          "id_log": 774,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "EMAIL",
+          "destinatario": "omar.ghiselini@arriendosanpablo.cl",
+          "fecha_registro": "2026-10-30T17:55:02.536906"
+        },
+        {
+          "id_log": 773,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "WHATSAPP",
+          "destinatario": "+56977501322",
+          "fecha_registro": "2026-10-30T17:55:02.39874"
+        },
+        {
+          "id_log": 772,
+          "evento": "PROYECTO_REVERSADO_A_COMERCIAL",
+          "canal": "EMAIL",
+          "destinatario": "j.poncenavarrete@gmail.com",
+          "fecha_registro": "2026-10-30T17:55:02.186645"
+        }
+      ]
+    },
+    "proyecto_2_urbano": {
+      "id_proyecto": 159,
+      "codi_proyecto": "OT-159",
+      "nombre_proyecto": "[QA-REQ1082-URBANO] Izaje Urbano Parque Industrial Temuco",
+      "estado_final_bd": 6,
+      "regimen_operacional": "URBANO",
+      "regimen_operacional_confirmado": true,
+      "distancia_km": 15,
+      "id_reporte_avance": "74",
+      "codigo_validacion_fes": "FES-REP-74-MVVGNVN5",
+      "cobro_cliente": {
+        "horas_minimas_pactadas": 6,
+        "horas_reales_base_a_termino": 8,
+        "horas_sobretiempo": 2,
+        "horas_facturables": 8,
+        "tarifa_hora_cliente": 85000,
+        "total_ingresos_horas": 680000,
+        "total_ingresos_fletes": 0,
+        "total_ingresos_facturables": 680000
+      },
+      "incentivo_trabajador_rrhh": {
+        "regimen": "URBANO",
+        "distancia_km": 15,
+        "glosa_comercial": "70 TON",
+        "toneladas_comercial": 70,
+        "hora_salida": "08:00",
+        "hora_llegada": "08:45",
+        "hora_inicio": "08:45",
+        "hora_termino": "17:00",
+        "hora_retorno": "17:45",
+        "colacion_horas": 1,
+        "condicion_dia": "IDA_Y_REGRESO",
+        "condicion_label": "Ida y Regreso en el Día",
+        "desde_viatico": "08:00",
+        "hasta_viatico": "17:45",
+        "horas_efectivas_viatico": 8.75,
+        "horas_redondeadas_viatico": 9,
+        "horas_faena_sugeridas": 8,
+        "horas_flete_sugeridas": 0,
+        "horas_totales_sugeridas": 8,
+        "tarifa_sugerida": 6000,
+        "viatico_sugerido": 8000,
+        "horas_faena_pagar": 8,
+        "horas_flete_pagar": 0,
+        "horas_totales_pagar": 8,
+        "precio_unitario": 6000,
+        "monto_faena_total": 48000,
+        "monto_flete_total": 0,
+        "monto_total_hora_operador": 48000,
+        "monto_viatico_operador": 8000,
+        "total_dia_operador": 56000,
+        "tiene_rigger": false,
+        "horas_totales_rigger": 0,
+        "monto_viatico_rigger": 0,
+        "tarifa_modificada": false,
+        "horas_modificadas": false,
+        "viatico_modificado": false,
+        "validado_rrhh": true,
+        "modificado_por": null,
+        "fecha_validacion_rrhh": "2026-10-30T21:05:01.937Z",
+        "id_user_operador": 66,
+        "operador_nombre": "Omar Ghiselini",
+        "id_user_rigger": null,
+        "rigger_nombre": null,
+        "monto_viatico_sugerido_operador": 8000,
+        "monto_viatico_sugerido_rigger": 0,
+        "viatico_rigger_modificado": false,
+        "id_user_validador_rrhh": 55,
+        "nombre_validador_rrhh": "Sergio Gajardo"
+      },
+      "its_costo_hora_operador": {
+        "id_costo_item": null,
+        "id_its": null,
+        "id_reporte_avance": "74",
+        "report_validado": true,
+        "categoria": "COSTO_HORA_OPERADOR",
+        "fecha": "2026-10-30",
+        "id_personal": 66,
+        "nombre_personal": "OMAR GHISELINI",
+        "rol_personal": "OPERADOR",
+        "id_equipo": 38,
+        "patente": "STDD.68-4",
+        "equipo_modelo": "LTM-1070",
+        "glosa_comercial": "70 TON",
+        "toneladas_comercial": 70,
+        "numero_oc": null,
+        "concepto_detalle": "Liquidación Diaria Operador (2026-10-30) — Cotizado: 70 TON",
+        "tipo_calculo": "HORA_OPERADOR",
+        "hora_salida": "08:00",
+        "hora_llegada": "08:45",
+        "hora_termino": "17:00",
+        "hora_retorno": "17:45",
+        "colacion_minutos": 60,
+        "colacion_horas": 1,
+        "horas_reales_equipo": 8,
+        "horas_standby_gsp": 0,
+        "horas_standby_cliente": 0,
+        "horas_faena_pagar": 8,
+        "horas_flete_pagar": 0,
+        "cantidad_unidades": 8,
+        "precio_unitario": 6000,
+        "monto_total": 48000,
+        "tarifa_sugerida": 6000,
+        "tarifa_no_aplica": false,
+        "tarifa_modificada": false,
+        "modificado_por": null,
+        "vb_validado": true,
+        "monto_desayuno": 0,
+        "monto_almuerzo": 0,
+        "monto_cena": 0,
+        "monto_alojamiento": 0,
+        "monto_traslado": 0,
+        "tipo_estanque": null,
+        "archivo_comprobante_url": null
+      }
+    },
+    "proyecto_3_rural": {
+      "id_proyecto": 160,
+      "codi_proyecto": "OT-160",
+      "nombre_proyecto": "[QA-REQ1082-RURAL] Montaje Estructural Faena Rural Loncoche",
+      "estado_final_bd": 6,
+      "regimen_operacional": "RURAL",
+      "regimen_operacional_confirmado": true,
+      "distancia_km": 55,
+      "id_reporte_avance": "75",
+      "codigo_validacion_fes": "FES-REP-75-MVVGO6C2",
+      "cobro_cliente": {
+        "horas_minimas_pactadas": 8,
+        "horas_reales_en_obra": 6,
+        "horas_sobretiempo": 0,
+        "horas_facturables": 8,
+        "tarifa_hora_cliente": 95000,
+        "total_ingresos_horas": 760000,
+        "total_ingresos_fletes": 350000,
+        "total_ingresos_facturables": 1110000
+      },
+      "incentivo_trabajador_rrhh": {
+        "regimen": "RURAL",
+        "distancia_km": 55,
+        "glosa_comercial": "90 TON",
+        "toneladas_comercial": 90,
+        "hora_salida": "07:00",
+        "hora_llegada": "08:30",
+        "hora_inicio": "08:30",
+        "hora_termino": "14:30",
+        "hora_retorno": "16:00",
+        "colacion_horas": 0,
+        "condicion_dia": "IDA_Y_REGRESO",
+        "condicion_label": "Ida y Regreso en el Día",
+        "desde_viatico": "07:00",
+        "hasta_viatico": "16:00",
+        "horas_efectivas_viatico": 9,
+        "horas_redondeadas_viatico": 9,
+        "horas_faena_sugeridas": 8,
+        "horas_flete_sugeridas": 1,
+        "horas_totales_sugeridas": 9,
+        "tarifa_sugerida": 6000,
+        "viatico_sugerido": 8000,
+        "horas_faena_pagar": 8,
+        "horas_flete_pagar": 1,
+        "horas_totales_pagar": 9,
+        "precio_unitario": 6000,
+        "monto_faena_total": 48000,
+        "monto_flete_total": 6000,
+        "monto_total_hora_operador": 54000,
+        "monto_viatico_operador": 8000,
+        "total_dia_operador": 62000,
+        "tiene_rigger": false,
+        "horas_totales_rigger": 0,
+        "monto_viatico_rigger": 0,
+        "tarifa_modificada": false,
+        "horas_modificadas": false,
+        "viatico_modificado": false,
+        "validado_rrhh": true,
+        "modificado_por": null,
+        "fecha_validacion_rrhh": "2026-10-30T21:05:15.794Z",
+        "id_user_operador": 66,
+        "operador_nombre": "Omar Ghiselini",
+        "id_user_rigger": null,
+        "rigger_nombre": null,
+        "monto_viatico_sugerido_operador": 8000,
+        "monto_viatico_sugerido_rigger": 0,
+        "viatico_rigger_modificado": false,
+        "id_user_validador_rrhh": 55,
+        "nombre_validador_rrhh": "Sergio Gajardo"
+      },
+      "its_costo_hora_operador": {
+        "id_costo_item": null,
+        "id_its": null,
+        "id_reporte_avance": "75",
+        "report_validado": true,
+        "categoria": "COSTO_HORA_OPERADOR",
+        "fecha": "2026-10-30",
+        "id_personal": 66,
+        "nombre_personal": "OMAR GHISELINI",
+        "rol_personal": "OPERADOR",
+        "id_equipo": 44,
+        "patente": "DZXL.25-3",
+        "equipo_modelo": "LTM-1090",
+        "glosa_comercial": "90 TON",
+        "toneladas_comercial": 90,
+        "numero_oc": null,
+        "concepto_detalle": "Liquidación Diaria Operador (2026-10-30) — Cotizado: 90 TON",
+        "tipo_calculo": "HORA_OPERADOR",
+        "hora_salida": "07:00",
+        "hora_llegada": "08:30",
+        "hora_termino": "14:30",
+        "hora_retorno": "16:00",
+        "colacion_minutos": 0,
+        "colacion_horas": 0,
+        "horas_reales_equipo": 6,
+        "horas_standby_gsp": 0,
+        "horas_standby_cliente": 0,
+        "horas_faena_pagar": 8,
+        "horas_flete_pagar": 1,
+        "cantidad_unidades": 9,
+        "precio_unitario": 6000,
+        "monto_total": 54000,
+        "tarifa_sugerida": 6000,
+        "tarifa_no_aplica": false,
+        "tarifa_modificada": false,
+        "modificado_por": null,
+        "vb_validado": true,
+        "monto_desayuno": 0,
+        "monto_almuerzo": 0,
+        "monto_cena": 0,
+        "monto_alojamiento": 0,
+        "monto_traslado": 0,
+        "tipo_estanque": null,
+        "archivo_comprobante_url": null
+      }
+    }
+  },
+  "subcasos_matematicos": {
+    "urbano_menor_al_minimo": {
+      "horas_base_a_termino": 4,
+      "horas_minimas_pactadas": 6,
+      "horas_facturables_cliente": 6,
+      "liquidacion_operador": {
+        "horas_reales_equipo": 4,
+        "horas_faena_pagar": 4,
+        "horas_flete_pagar": 0,
+        "horas_totales_pagar": 4,
+        "monto_flete_total": 0,
+        "colacion_horas": 0
+      }
+    },
+    "rural_absorcion_total_sin_exceso": {
+      "horas_reales_equipo": 4,
+      "horas_faena_pagar": 8,
+      "horas_flete_pagar": 0,
+      "horas_totales_pagar": 8,
+      "colacion_horas": 0
+    },
+    "rural_sobre_minimo_flete_integro": {
+      "horas_reales_equipo": 9,
+      "horas_faena_pagar": 9,
+      "horas_flete_pagar": 3,
+      "horas_totales_pagar": 12,
+      "colacion_horas": 0
+    }
+  },
+  "screenshots": [
+    {
+      "fileName": "05_preventa_banner_rechazo_operaciones.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1082_Politica_Urbana_Rural_DEV\\evidencia\\05_preventa_banner_rechazo_operaciones.png",
+      "description": "Banner de alerta en Preventa Comercial mostrando Proyecto Devuelto por Operaciones, fecha/hora, usuario y motivo"
+    },
+    {
+      "fileName": "01_preventa_estructurador_libre_distancia.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1082_Politica_Urbana_Rural_DEV\\evidencia\\01_preventa_estructurador_libre_distancia.png",
+      "description": "Preventa Comercial con Estructurador de Servicios libre y sin tarjetas de 4 casos guiados"
+    },
+    {
+      "fileName": "02_preventa_datos_servicio_distancia.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1082_Politica_Urbana_Rural_DEV\\evidencia\\02_preventa_datos_servicio_distancia.png",
+      "description": "Sección de requerimientos comerciales con el campo Distancia Vial de Ida (km) como antecedente"
+    },
+    {
+      "fileName": "03_operaciones_politica_obligatoria_pendiente.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1082_Politica_Urbana_Rural_DEV\\evidencia\\03_operaciones_politica_obligatoria_pendiente.png",
+      "description": "Etapa 2 (Verificación Operaciones) con bloque ámbar PENDIENTE DE DEFINICIÓN y botón Aprobar bloqueado"
+    },
+    {
+      "fileName": "04_operaciones_modal_rechazo_motivo_y_fecha.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1082_Politica_Urbana_Rural_DEV\\evidencia\\04_operaciones_modal_rechazo_motivo_y_fecha.png",
+      "description": "Modal Devolver Requerimiento a Preventa Comercial mostrando Fecha de Devolución y Motivo de Rechazo"
+    },
+    {
+      "fileName": "06_operaciones_politica_urbana_confirmada.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1082_Politica_Urbana_Rural_DEV\\evidencia\\06_operaciones_politica_urbana_confirmada.png",
+      "description": "Etapa 2 de Proyecto Testigo 2 con Política Urbana (URBANO) confirmada y botón Aprobar habilitado"
+    },
+    {
+      "fileName": "07_operaciones_politica_rural_confirmada.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1082_Politica_Urbana_Rural_DEV\\evidencia\\07_operaciones_politica_rural_confirmada.png",
+      "description": "Etapa 2 de Proyecto Testigo 3 con Política Rural (RURAL) confirmada y botón Aprobar habilitado"
+    },
+    {
+      "fileName": "08_ejecucion_report_e_its_urbano.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1082_Politica_Urbana_Rural_DEV\\evidencia\\08_ejecucion_report_e_its_urbano.png",
+      "description": "Liquidación / ITS de Proyecto Testigo 2 (URBANO): Cobro cliente 8.0 hrs ($680.000) e incentivo operador con 0 hrs flete"
+    },
+    {
+      "fileName": "09_ejecucion_report_e_its_rural.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1082_Politica_Urbana_Rural_DEV\\evidencia\\09_ejecucion_report_e_its_rural.png",
+      "description": "Liquidación / ITS de Proyecto Testigo 3 (RURAL): Cobro cliente piso mínimo 8.0 hrs + traslado ($1.110.000) y operador 8.0h faena + 1.0h flete"
+    }
+  ],
+  "proyectos_vivos_verificacion_final": [
+    {
+      "id_proyecto": 158,
+      "codi_proyecto": "PRY-2610-13-019",
+      "nombre_proyecto": "[QA-REQ1082-DEVUELTO] Montaje Industrial Planta Osorno",
+      "id_proyecto_estado": 2,
+      "distancia_km": "22",
+      "regimen_operacional": "",
+      "confirmado": false
+    },
+    {
+      "id_proyecto": 159,
+      "codi_proyecto": "PRY-2610-13-020",
+      "nombre_proyecto": "[QA-REQ1082-URBANO] Izaje Urbano Parque Industrial Temuco",
+      "id_proyecto_estado": 6,
+      "distancia_km": "15",
+      "regimen_operacional": "URBANO",
+      "confirmado": true
+    },
+    {
+      "id_proyecto": 160,
+      "codi_proyecto": "PRY-2610-13-021",
+      "nombre_proyecto": "[QA-REQ1082-RURAL] Montaje Estructural Faena Rural Loncoche",
+      "id_proyecto_estado": 6,
+      "distancia_km": "55",
+      "regimen_operacional": "RURAL",
+      "confirmado": true
+    }
+  ]
+}

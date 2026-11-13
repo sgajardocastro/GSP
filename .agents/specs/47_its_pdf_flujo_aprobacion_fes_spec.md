@@ -217,3 +217,10 @@ Para garantizar que ningún servicio sea facturado al mandante sin auditoría pr
 3. **UI Reactiva en Subpestaña 7:**
    - **Banner Dorado Informativo:** Si el candado está activo, se despliega alerta visual de candado FES indicando el estado del ITS y proveyendo un botón de acceso directo `[ 🔏 Ir a Visar ITS con PIN FES ]`.
    - **Botón Protegido:** El botón `[ Ver Carátula Oficial de EDP ]` se inhabilita con icono de candado (`🔒`) y opacidad 50%, imposibilitando la emisión de documentos de cobro sin firma de operaciones.
+
+## 9. 🔒 Restricción de Resumen Financiero del ITS para Perfil `SECRETARIA` y Notificación Automática de Visita a Terreno (`REQ-1122` / `REQ-1123`)
+
+1. **Ocultamiento del Balance Financiero (P&L) exclusivamente para el Rol `SECRETARIA` (`REQ-1122`):**
+   - En `ModalITS.vue` e `ItsTransicionView.vue`, la restricción de visibilidad del Balance Financiero del Servicio (Ingresos Totales, Costos Consolidados, Utilidad Bruta y Margen %) aplica **única y exclusivamente al perfil `SECRETARIA`** (sin restringir a `OPERACIONES_EJEC` ni a otros roles operativos). El perfil `SECRETARIA` conserva acceso completo a las jornadas, pestañas de costos operativos y observaciones, pudiendo guardar y firmar con su PIN FES el Paso 1 (`Elaboración`), lo que dispara notificación automática a **Yiara Mendoza** (`ymendoza@arriendosanpablo.cl`, `id_user = 65`) y a Jefatura de Operaciones.
+2. **Notificación Automática al Emitir PDF Firmado de Visita a Terreno (`id_template = 80`, `REQ-1123`):**
+   - En `signatureController.postSignature3`, al completarse la firma FES y el sellado del PDF de una encuesta con `id_template = 80` (Visita a Terreno), el backend actualiza el estado de la visita en `tpry_proyecto` y despacha automáticamente un correo electrónico con enlace directo al PDF firmado (`/api/v1/storage/view/:id_doc`) al Ejecutivo Comercial (Vendedor), Operaciones y Gerencia.

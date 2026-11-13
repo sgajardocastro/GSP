@@ -1,0 +1,2015 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GSP · Maqueta BI &amp; ERP | Perspectiva Contabilidad en Torre de Control</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+    body {
+      background-color: #050810;
+      color: #f1f5f9;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #070b14; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+      50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.45); }
+    }
+    .glow-parser {
+      animation: pulseGlow 2.5s infinite;
+    }
+  </style>
+</head>
+<body class="h-screen flex overflow-hidden select-none">
+
+  <!-- ===================================================================== -->
+  <!-- SIDEBAR IZQUIERDO (RÉPLICA FIEL DE SIDEBAR.VUE)                       -->
+  <!-- ===================================================================== -->
+  <aside class="w-56 bg-[#080d1a] border-r border-white/5 flex flex-col justify-between shrink-0 hidden lg:flex">
+    <div>
+      <div class="h-16 px-5 flex items-center gap-3 border-b border-white/5">
+        <div class="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-sm shadow">
+          GSP
+        </div>
+        <div>
+          <div class="text-xs font-black tracking-wider text-white uppercase">Grúas San Pablo</div>
+          <div class="text-[10px] text-amber-500 font-mono font-bold">ERP · OPERACIONES</div>
+        </div>
+      </div>
+
+      <nav class="p-3 space-y-1 text-xs">
+        <div class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Operaciones &amp; Control</div>
+        <a href="#" class="flex items-center justify-between px-3 py-2.5 rounded-xl bg-blue-600/15 text-blue-400 border border-blue-500/30 font-bold">
+          <span>Torre de Control</span>
+          <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+        </a>
+        <a href="#" class="flex items-center px-3 py-2 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-colors">
+          <span>Comercial &amp; Cotizaciones</span>
+        </a>
+        <a href="#" class="flex items-center px-3 py-2 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-colors">
+          <span>Flota &amp; Mantenimiento</span>
+        </a>
+        <a href="#" class="flex items-center px-3 py-2 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-colors">
+          <span>Compras &amp; OCs Proveedor</span>
+        </a>
+        <a href="#" class="flex items-center px-3 py-2 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-colors">
+          <span>Repositorio Documental</span>
+        </a>
+      </nav>
+    </div>
+
+    <div class="p-3 border-t border-white/5 text-[10px] text-slate-500 font-mono">
+      <div>Maqueta Interactiva v3</div>
+      <div class="text-slate-400 font-bold mt-0.5">Perspectiva Contabilidad BI</div>
+      <div class="text-emerald-400 text-[9px] mt-1 font-semibold">✔ Parser Facturas Laudus &amp; SII</div>
+    </div>
+  </aside>
+
+  <!-- ===================================================================== -->
+  <!-- CONTENEDOR PRINCIPAL (APP.VUE + TORRE.VUE)                            -->
+  <!-- ===================================================================== -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+    <!-- TOPBAR SUPERIOR GLOBAL (ÚNICO SELECTOR DE EMPRESA) -->
+    <header class="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0f1e]/90 backdrop-blur-sm shrink-0">
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-black uppercase tracking-widest text-amber-500">TORRE DE CONTROL OPERATIVA</span>
+        <span id="pillPeriodoActivo" class="text-[10px] font-mono px-2.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+          Periodo Activo: Octubre 2026
+        </span>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-slate-400 uppercase font-bold hidden sm:inline">Empresa:</span>
+          <select
+            id="globalEmpresaSelect"
+            onchange="cambiarEmpresaGlobal(this.value)"
+            class="bg-[#050810] border border-amber-500/40 text-amber-400 text-[11px] font-bold px-3 py-1.5 rounded-lg outline-none uppercase tracking-wider cursor-pointer"
+          >
+            <option value="TODAS">Todas las Empresas (Holding)</option>
+            <option value="Grúas San Pablo" selected>Grúas San Pablo</option>
+            <option value="Bestmaq">Bestmaq Arriendos</option>
+            <option value="Logística del Sur">Logística del Sur</option>
+            <option value="Royal Rental">Royal Rental</option>
+          </select>
+        </div>
+
+        <div class="h-6 w-[1px] bg-white/10"></div>
+
+        <div class="flex items-center gap-2.5">
+          <div class="text-right hidden sm:block">
+            <p class="text-xs font-bold leading-none text-white">Maritza / Control Gestión</p>
+            <p class="text-[9px] font-semibold uppercase tracking-wider text-amber-500 mt-0.5">CONTABILIDAD &amp; BI</p>
+          </div>
+          <div class="w-8 h-8 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">
+            MC
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ÁREA DE CONTENIDO PRINCIPAL -->
+    <main class="flex-1 overflow-y-auto p-5 space-y-4">
+
+      <!-- CABECERA DE TORRE.VUE CON LAS 4 PERSPECTIVAS -->
+      <div class="bg-[#0a0f1e]/60 p-3.5 border border-white/5 rounded-xl flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2.5">
+            <h2 class="text-base font-black text-white uppercase tracking-wider">Torre de Control Operativa</h2>
+            <span id="badgeEmpresaActiva" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-400 border-amber-500/20 uppercase">
+              Grúas San Pablo
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
+              ⚡ Multi-DTE &amp; Parser Facturas SII / Laudus Activo
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Cuadratura financiera E2E: Cotizaciones Ganadas ➔ Devengado en Reports ➔ Cerrado en ITS ➔ Emitido en EDP (FE) ➔ Facturación DTE (1 OT → N Facturas)
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center bg-[#070b14] p-1 rounded-xl border border-white/10 shrink-0 gap-1">
+          <button type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all cursor-pointer">
+            <span>🗂️</span>
+            <span>Tablero Kanban</span>
+          </button>
+          <button type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all cursor-pointer">
+            <span>📊</span>
+            <span>Matriz PMO</span>
+          </button>
+          <button type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all cursor-pointer">
+            <span>📅</span>
+            <span>Flota Gantt</span>
+          </button>
+          <button type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-md transition-all cursor-pointer">
+            <span>💼</span>
+            <span>Perspectiva Contabilidad</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- FILA 1: LOS 5 INDICADORES FINANCIEROS DEL PERIODO ACTIVO          -->
+      <!-- ================================================================= -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <!-- 1. COMPROMETIDO -->
+        <div class="bg-[#0f1629] border border-white/5 hover:border-blue-500/30 rounded-xl p-3.5 flex flex-col justify-between transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-blue-400">1. Comprometido (Ganadas)</span>
+            <span id="kpi1Count" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">6 OTs</span>
+          </div>
+          <div class="my-2">
+            <div id="kpi1Monto" class="text-xl font-black text-white font-mono">$48.650.000</div>
+            <div id="kpi1Sub" class="text-[10px] text-slate-400 mt-0.5">5 con OC adjunta · 1 pendiente OC</div>
+          </div>
+          <div class="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
+            <div class="bg-blue-500 h-full w-full"></div>
+          </div>
+        </div>
+
+        <!-- 2. DEVENGADO EN REPORTS -->
+        <div class="bg-[#0f1629] border border-white/5 hover:border-cyan-500/30 rounded-xl p-3.5 flex flex-col justify-between transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-400">2. Devengado (Reports)</span>
+            <span id="kpi2Count" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">28 Rep · 248h</span>
+          </div>
+          <div class="my-2">
+            <div id="kpi2Monto" class="text-xl font-black text-cyan-300 font-mono">$47.280.000</div>
+            <div id="kpi2Sub" class="text-[10px] text-slate-400 mt-0.5">97,2% ejecutado sobre lo cotizado</div>
+          </div>
+          <div class="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
+            <div id="kpi2Bar" class="bg-cyan-400 h-full" style="width: 97%"></div>
+          </div>
+        </div>
+
+        <!-- 3. CERRADO EN ITS -->
+        <div class="bg-[#0f1629] border border-white/5 hover:border-indigo-500/30 rounded-xl p-3.5 flex flex-col justify-between transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400">3. Cerrado en ITS</span>
+            <span id="kpi3Count" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">4 ITS</span>
+          </div>
+          <div class="my-2">
+            <div id="kpi3Monto" class="text-xl font-black text-indigo-300 font-mono">$35.880.000</div>
+            <div id="kpi3Sub" class="text-[10px] text-slate-400 mt-0.5">Costos ITS: <span class="text-slate-200 font-mono">$7.190.000</span> (Margen 80%)</div>
+          </div>
+          <div class="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
+            <div id="kpi3Bar" class="bg-indigo-400 h-full" style="width: 74%"></div>
+          </div>
+        </div>
+
+        <!-- 4. EMITIDO EN EDP (FE) -->
+        <div class="bg-[#0f1629] border border-white/5 hover:border-amber-500/40 rounded-xl p-3.5 flex flex-col justify-between transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400">4. Emitido en EDP (FE)</span>
+            <span id="kpi4Count" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">5 EDP</span>
+          </div>
+          <div class="my-2">
+            <div id="kpi4Monto" class="text-xl font-black text-amber-300 font-mono">$41.280.000</div>
+            <div id="kpi4Sub" class="text-[10px] text-emerald-400 font-semibold mt-0.5">🟢 2 Listos Facturar ($16.450.000)</div>
+          </div>
+          <div class="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
+            <div id="kpi4Bar" class="bg-amber-400 h-full" style="width: 85%"></div>
+          </div>
+        </div>
+
+        <!-- 5. FACTURADO DTE (MULTI-DTE) -->
+        <div class="bg-[#0f1629] border border-white/5 hover:border-emerald-500/40 rounded-xl p-3.5 flex flex-col justify-between transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">5. Facturado DTE (Multi-DTE)</span>
+            <span id="kpi5Count" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">4 DTEs</span>
+          </div>
+          <div class="my-2">
+            <div id="kpi5Monto" class="text-xl font-black text-emerald-400 font-mono">$18.600.000</div>
+            <div id="kpi5Sub" class="text-[10px] text-slate-400 mt-0.5">Saldo por Facturar: <span id="kpi5Saldo" class="text-amber-300 font-mono font-bold">$28.680.000</span></div>
+          </div>
+          <div class="w-full bg-slate-800/80 h-1 rounded-full overflow-hidden">
+            <div id="kpi5Bar" class="bg-emerald-500 h-full" style="width: 39%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- FILA 2: GRÁFICO BI FULL-WIDTH CON LAS 3 DIMENSIONES TEMPORALES    -->
+      <!-- ================================================================= -->
+      <div class="bg-[#0f1629] border border-white/5 rounded-xl p-4 shadow-lg">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-3 pb-3 border-b border-white/5">
+          <div>
+            <div class="flex items-center gap-2.5">
+              <h3 id="tituloGraficoBI" class="text-xs font-black uppercase tracking-wider text-white">
+                Comparativa de las 5 Variables Financieras — Últimos 6 Meses (Mayo a Octubre 2026)
+              </h3>
+              <span id="subBadgeDrill" class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                Haz clic en una columna para hacer drill-down
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-0.5">
+              Simetría 1 a 1 con los indicadores superiores: <span class="text-blue-400 font-semibold">1. Comprometido</span> · <span class="text-cyan-300 font-semibold">2. Devengado Reports</span> · <span class="text-indigo-300 font-semibold">3. Cerrado ITS</span> · <span class="text-amber-300 font-semibold">4. Emitido EDP</span> · <span class="text-emerald-400 font-semibold">5. Facturado DTE</span>
+            </p>
+          </div>
+
+          <!-- SELECTOR DE LAS OPCIONES DE AGRUPACIÓN DEL GRÁFICO -->
+          <div class="flex flex-wrap items-center gap-2">
+            <div id="selectorMesContainer" class="flex items-center gap-1.5 bg-[#070b14] px-2.5 py-1 rounded-lg border border-white/10 text-xs">
+              <span class="text-[10px] font-mono text-slate-400 uppercase">Periodo:</span>
+              <select
+                id="selectMesFiltro"
+                onchange="cambiarMesFiltro(this.value)"
+                class="bg-transparent text-amber-400 font-mono font-bold text-xs outline-none cursor-pointer"
+              >
+                <option value="ALL_6M">Últimos 6 Meses (May-Oct)</option>
+                <option value="2026-10" selected>Octubre 2026 (Mes en Curso)</option>
+                <option value="2026-09">Septiembre 2026</option>
+                <option value="2026-08">Agosto 2026</option>
+                <option value="2026-07">Julio 2026</option>
+                <option value="2026-06">Junio 2026</option>
+                <option value="2026-05">Mayo 2026</option>
+              </select>
+            </div>
+
+            <div class="flex items-center bg-[#070b14] p-1 rounded-lg border border-white/10 text-xs gap-1">
+              <button
+                id="btnDim6Meses"
+                onclick="cambiarDimensionGrafico('6meses')"
+                class="px-3 py-1 rounded font-bold transition-all cursor-pointer bg-blue-600 text-white shadow"
+              >
+                📅 1. Últimos 6 Meses (Mensual)
+              </button>
+              <button
+                id="btnDimSemanal"
+                onclick="cambiarDimensionGrafico('semanal')"
+                class="px-3 py-1 rounded font-bold transition-all cursor-pointer text-slate-400 hover:text-white"
+              >
+                📆 2. Mes en Curso (Semanal)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contenedor Highcharts 100% Ancho -->
+        <div id="highchartsMainContainer" class="w-full h-72"></div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- FILA 3: BARRA DE LOS 3 SUBMENÚS OPERATIVOS + FILTROS RÁPIDOS      -->
+      <!-- ================================================================= -->
+      <div class="bg-[#0f1629] border border-white/5 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-3">
+        <!-- 3 Submenús -->
+        <div class="flex flex-wrap items-center bg-[#070b14] p-1 rounded-lg border border-white/10 gap-1">
+          <button
+            id="subBtn1"
+            onclick="cambiarSubmenu('procesos')"
+            class="px-3 py-1.5 rounded-md text-xs font-bold bg-blue-600 text-white shadow transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <span>1. Avance y Calce por Proceso (OC · ITS · EDP · FE · Multi-DTE)</span>
+            <span id="badgeCountProcesos" class="px-1.5 py-0.2 rounded bg-black/30 font-mono text-[10px]">6</span>
+          </button>
+          <button
+            id="subBtn2"
+            onclick="cambiarSubmenu('operadores')"
+            class="px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <span>2. Reporte de Horas de Operadores / Riggers</span>
+            <span id="badgeCountPersonal" class="px-1.5 py-0.2 rounded bg-white/5 font-mono text-[10px]">5</span>
+          </button>
+          <button
+            id="subBtn3"
+            onclick="cambiarSubmenu('equipos')"
+            class="px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <span>3. Reporte de Ventas por Grúa / Equipo</span>
+            <span id="badgeCountEquipos" class="px-1.5 py-0.2 rounded bg-white/5 font-mono text-[10px]">3</span>
+          </button>
+        </div>
+
+        <!-- Filtros rápidos documentales + Buscador + Exportar Excel -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div id="filtrosRapidosDoc" class="flex items-center bg-[#070b14] p-1 rounded-lg border border-white/10 text-[11px] gap-1">
+            <button onclick="setFiltroEstado('TODOS')" id="fBtn_TODOS" class="px-2 py-1 rounded font-bold bg-blue-600 text-white cursor-pointer">Todos</button>
+            <button onclick="setFiltroEstado('LISTO_FACTURAR')" id="fBtn_LISTO_FACTURAR" class="px-2 py-1 rounded font-bold text-emerald-400 hover:bg-white/5 cursor-pointer">🟢 Listos Facturar</button>
+            <button onclick="setFiltroEstado('PARCIAL')" id="fBtn_PARCIAL" class="px-2 py-1 rounded font-bold text-amber-300 hover:bg-white/5 cursor-pointer">🌗 Parcial (Multi-DTE)</button>
+            <button onclick="setFiltroEstado('FALTA_OC')" id="fBtn_FALTA_OC" class="px-2 py-1 rounded font-bold text-purple-300 hover:bg-white/5 cursor-pointer">📎 Falta OC</button>
+            <button onclick="setFiltroEstado('FACTURADO')" id="fBtn_FACTURADO" class="px-2 py-1 rounded font-bold text-blue-300 hover:bg-white/5 cursor-pointer">🧾 100% Cerrados</button>
+          </div>
+
+          <div class="relative">
+            <span class="absolute left-2.5 top-1.5 text-xs text-slate-500">🔍</span>
+            <input
+              id="inputBusqueda"
+              oninput="renderizarTodo()"
+              type="text"
+              placeholder="Buscar OT, cliente, folio DTE, OC..."
+              class="bg-[#070b14] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 w-56"
+            />
+          </div>
+
+          <button
+            onclick="simularDescargaExcel()"
+            class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+          >
+            <span>📥</span>
+            <span id="labelBtnExcel">Exportar Excel (.xlsx)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- SUBMENÚ 1: TABLA DE AVANCE, CALCE Y ACCESO DIRECTO A DOCUMENTOS   -->
+      <!-- ================================================================= -->
+      <section id="vistaSubmenu1" class="bg-[#0f1629] border border-white/5 rounded-xl overflow-hidden shadow-lg">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-[#070b14] border-b border-white/10 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+                <th class="py-3 px-3.5">Proceso / Periodo / Cliente</th>
+                <th class="py-3 px-3 text-right">1. Comprometido<br/><span class="text-[9px] text-blue-400 font-normal">Cotización &amp; Acceso OC</span></th>
+                <th class="py-3 px-3 text-right">2. Devengado<br/><span class="text-[9px] text-cyan-400 font-normal">Reports &amp; Horas</span></th>
+                <th class="py-3 px-3 text-right">3. Cerrado ITS<br/><span class="text-[9px] text-indigo-400 font-normal">Ingreso, Costo &amp; Doc ITS</span></th>
+                <th class="py-3 px-3 text-right">4. Emitido EDP &amp; FE<br/><span class="text-[9px] text-amber-400 font-normal">Prefactura &amp; 3 Firmas FES</span></th>
+                <th class="py-3 px-3 text-right">5. Facturado DTE (Multi-DTE)<br/><span class="text-[9px] text-emerald-400 font-normal">Facturas SII/Laudus &amp; Saldo</span></th>
+                <th class="py-3 px-3.5 text-center">Calce Financiero<br/><span class="text-[9px] text-slate-500 font-normal">Devengado vs Cotizado</span></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyProcesos" class="divide-y divide-white/5 text-xs"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- SUBMENÚ 2: REPORTE DE HORAS DE OPERADORES / RIGGERS               -->
+      <!-- ================================================================= -->
+      <section id="vistaSubmenu2" class="hidden bg-[#0f1629] border border-white/5 rounded-xl overflow-hidden shadow-lg">
+        <div class="p-3 border-b border-white/5 bg-[#0a0f1e]/50 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-1 bg-[#070b14] p-1 rounded-lg border border-white/10 text-xs">
+            <button id="btnOpResumen" onclick="cambiarVistaPersonal('resumen')" class="px-3 py-1 rounded font-bold bg-blue-600 text-white cursor-pointer">
+              Consolidado por Trabajador
+            </button>
+            <button id="btnOpDetalle" onclick="cambiarVistaPersonal('detalle')" class="px-3 py-1 rounded font-bold text-slate-400 hover:text-white cursor-pointer">
+              Detalle Diario por Report
+            </button>
+          </div>
+          <div class="text-xs font-mono text-slate-400">
+            Horas Normales: <strong class="text-white">212,0 hrs</strong> ·
+            Sobretiempo: <strong class="text-amber-300">36,0 hrs</strong> ·
+            Total General: <strong class="text-emerald-400">248,0 hrs</strong>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead id="theadPersonal" class="bg-[#070b14] border-b border-white/10 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono"></thead>
+            <tbody id="tbodyPersonal" class="divide-y divide-white/5 text-xs"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- SUBMENÚ 3: REPORTE DE VENTAS POR GRÚA / EQUIPO                    -->
+      <!-- ================================================================= -->
+      <section id="vistaSubmenu3" class="hidden bg-[#0f1629] border border-white/5 rounded-xl overflow-hidden shadow-lg">
+        <div class="p-3 border-b border-white/5 bg-[#0a0f1e]/50 flex flex-wrap items-center justify-between gap-2">
+          <div class="text-xs font-bold text-slate-300">
+            Sábana de Facturación, Costos ITS y Margen de Contribución por Activo de Flota
+          </div>
+          <div class="text-xs font-mono text-slate-400">
+            Margen Contribución Promedio Flota: <strong class="text-emerald-400">79,2%</strong>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-[#070b14] border-b border-white/10 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+                <th class="py-3 px-3.5">Patente / Equipo</th>
+                <th class="py-3 px-3">Marca / Modelo / Tipo</th>
+                <th class="py-3 px-3 text-center">OTs Atendidas</th>
+                <th class="py-3 px-3 text-right">Días / Hrs Fact.</th>
+                <th class="py-3 px-3 text-right">1. Comprometido ($)</th>
+                <th class="py-3 px-3 text-right">2. Devengado ($)</th>
+                <th class="py-3 px-3 text-right">4. Emitido EDP ($)</th>
+                <th class="py-3 px-3 text-right">5. Facturado DTE ($)</th>
+                <th class="py-3 px-3 text-right">Costos Directos ITS</th>
+                <th class="py-3 px-3.5 text-right">Margen Contribución</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyEquipos" class="divide-y divide-white/5 text-xs"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL UNIVERSAL DE INSPECCIÓN Y EXPEDIENTES DOCUMENTALES              -->
+  <!-- ===================================================================== -->
+  <div id="modalDocOverlay" onclick="cerrarModalDoc(event)" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div onclick="event.stopPropagation()" class="bg-[#0f1629] border border-white/15 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+      <!-- HEADER DEL MODAL -->
+      <div class="px-5 py-3.5 bg-[#070b14] border-b border-white/10 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div id="modalDocIconContainer" class="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-lg">
+            <span id="modalDocIcon">📄</span>
+          </div>
+          <div>
+            <h4 id="modalDocTitle" class="text-xs font-black uppercase tracking-wider text-white font-mono">Expediente Documental</h4>
+            <p id="modalDocSubtitle" class="text-[11px] text-slate-400">Detalle y trazabilidad del documento</p>
+          </div>
+        </div>
+        <button onclick="cerrarModalDoc()" class="text-slate-400 hover:text-white text-base font-bold w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer">✕</button>
+      </div>
+
+      <!-- BODY DEL MODAL (SCROLLABLE) -->
+      <div id="modalDocBody" class="p-5 space-y-4 text-xs overflow-y-auto flex-1"></div>
+
+      <!-- FOOTER DEL MODAL -->
+      <div id="modalDocFooter" class="px-5 py-3 bg-[#070b14] border-t border-white/10 flex items-center justify-between shrink-0">
+        <div id="modalDocFooterInfo" class="text-[11px] font-mono text-slate-400"></div>
+        <div class="flex items-center gap-2">
+          <button onclick="cerrarModalDoc()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors cursor-pointer">
+            Cerrar
+          </button>
+          <button id="modalDocPrimaryBtn" onclick="ejecutarAccionPrimariaModal()" class="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5">
+            <span id="modalDocPrimaryBtnIcon">📄</span>
+            <span id="modalDocPrimaryBtnText">Ver PDF Oficial</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST DE CONFIRMACIÓN -->
+  <div id="toastNotif" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 border border-emerald-500/50 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs font-semibold">
+    <span class="text-emerald-400 text-base">✔</span>
+    <span id="toastText">Acción ejecutada</span>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. FACTURAS REALES DE AUDITORÍA (EXTRAÍDAS DE CONTABILIDAD/ Y PARSER TEST)
+    // =========================================================================
+    const FACTURAS_REALES_SAMPLE = {
+      LAUDUS_14664: {
+        id: 'LAUDUS_14664',
+        nombre_archivo: 'DTE 14664 de LUIS GHISELLINI J ARREND MAQ Y VEH MOTOR EN GRAL EIRL (1).pdf',
+        origen: 'Laudus ERP',
+        emisor_rut: '52.004.162-1',
+        emisor_razon: 'LUIS GHISELLINI J ARREND MAQ Y VEH MOTOR EN GRAL EIRL',
+        empresa_holding: 'Grúas San Pablo',
+        folio: '14664',
+        fecha: '2026-10-20',
+        neto: 1820000,
+        iva: 345800,
+        total: 2165800,
+        oc: '12990',
+        reports: '137668',
+        ots: '64991, 64992',
+        cliente_receptor: 'CONSTRUCTORA POCURO SPA',
+        plantilla: 'Plantilla Laudus ERP (Formato www.laudus.cl)'
+      },
+      SII_2907: {
+        id: 'SII_2907',
+        nombre_archivo: 'Fact. 2907 Soc. Hormigones y Baldosas.pdf',
+        origen: 'Portal SII',
+        emisor_rut: '76.209.534-3',
+        emisor_razon: 'SOCIEDAD DE SERVICIOS Y MAQUINARIAS BESTMAQ SPA',
+        empresa_holding: 'Bestmaq',
+        folio: '2907',
+        fecha: '2026-10-09',
+        neto: 16750000,
+        iva: 3182500,
+        total: 19932500,
+        oc: '7158, 7060',
+        reports: '137485, 137486',
+        ots: '64840, 64847',
+        cliente_receptor: 'SOCIEDAD DE HORMIGONES Y BALDOSAS SA',
+        plantilla: 'Plantilla Portal SII (Formato www.sii.cl)'
+      },
+      SII_3669: {
+        id: 'SII_3669',
+        nombre_archivo: 'Fact. 3669 Aquamet SA.pdf',
+        origen: 'Portal SII',
+        emisor_rut: '76.218.576-8',
+        emisor_razon: 'TRANSPORTES Y LOGISTICA DEL SUR SPA',
+        empresa_holding: 'Logística del Sur',
+        folio: '3669',
+        fecha: '2026-10-20',
+        neto: 807500,
+        iva: 153425,
+        total: 960925,
+        oc: '68885',
+        reports: '136983',
+        ots: '64924',
+        cliente_receptor: 'AQUAMET S.A.',
+        plantilla: 'Plantilla Portal SII (Formato www.sii.cl)'
+      },
+      SII_83: {
+        id: 'SII_83',
+        nombre_archivo: 'Fact. 83 Const. Ingevec SA.pdf',
+        origen: 'Portal SII',
+        emisor_rut: '78.254.535-3',
+        emisor_razon: 'ROYAL RENTAL SPA',
+        empresa_holding: 'Royal Rental',
+        folio: '83',
+        fecha: '2026-10-09',
+        neto: 200000,
+        iva: 38000,
+        total: 238000,
+        oc: '981187',
+        reports: '-',
+        ots: '197, 227',
+        cliente_receptor: 'CONSTRUCTORA INGEVEC S.A.',
+        plantilla: 'Plantilla Portal SII (Formato www.sii.cl)'
+      }
+    };
+
+    // =========================================================================
+    // 2. SERIES HISTÓRICAS DE 6 MESES (MAYO A OCTUBRE 2026)
+    // =========================================================================
+    const SERIES_6_MESES = [
+      { key: '2026-05', label: 'Mayo 2026', corto: 'May 26', comprometido: 36400000, devengado: 36400000, its: 36400000, edp: 36400000, facturado: 36400000 },
+      { key: '2026-06', label: 'Junio 2026', corto: 'Jun 26', comprometido: 41800000, devengado: 40950000, its: 40950000, edp: 40950000, facturado: 40950000 },
+      { key: '2026-07', label: 'Julio 2026', corto: 'Jul 26', comprometido: 38900000, devengado: 39600000, its: 39600000, edp: 39600000, facturado: 38100000 },
+      { key: '2026-08', label: 'Agosto 2026', corto: 'Ago 26', comprometido: 44500000, devengado: 45200000, its: 43800000, edp: 45200000, facturado: 42100000 },
+      { key: '2026-09', label: 'Septiembre 2026', corto: 'Sep 26', comprometido: 51200000, devengado: 50400000, its: 47900000, edp: 49100000, facturado: 43800000 },
+      { key: '2026-10', label: 'Octubre 2026', corto: 'Oct 26 (Curso)', comprometido: 48650000, devengado: 47280000, its: 35880000, edp: 41280000, facturado: 18600000 }
+    ];
+
+    // =========================================================================
+    // 3. SERIES SEMANALES DEL MES EN CURSO (OCTUBRE 2026)
+    // =========================================================================
+    const SERIES_SEMANAL_OCT = [
+      { semana: 'Sem 1 (01–06 Oct)', comprometido: 18800000, devengado: 18800000, its: 18800000, edp: 18200000, facturado: 13600000 },
+      { semana: 'Sem 2 (07–13 Oct)', comprometido: 9850000, devengado: 10450000, its: 10450000, edp: 10450000, facturado: 5000000 },
+      { semana: 'Sem 3 (14–20 Oct)', comprometido: 11750000, devengado: 12630000, its: 6630000, edp: 12630000, facturado: 0 },
+      { semana: 'Sem 4 (21–27 Oct)', comprometido: 8250000, devengado: 5400000, its: 0, edp: 0, facturado: 0 }
+    ];
+
+    // =========================================================================
+    // 4. PROCESOS CON MODELO MULTI-DTE (1 OT → N FACTURAS DTE)
+    // =========================================================================
+    const PROCESOS_DATA = [
+      {
+        codi: 'GSP-2610-229-014',
+        mes: '2026-10',
+        semana: 'Sem 1 (01–06 Oct)',
+        cliente: 'Constructora Pocuro SpA',
+        obra: 'Izaje Vigas Puente Cautín',
+        empresa: 'Grúas San Pablo',
+        comprometido: 7600000,
+        devengado: 7600000,
+        reports_ok: 4, reports_total: 4, horas: 36.0,
+        its_folio: 'ITS-2026-014', its_estado: 'CONCLUIDO', its_ingreso: 7600000, its_costo: 1480000,
+        edp_folio: 'EDP-2026-014', edp_monto: 7600000,
+        f1: { ok: true, user: 'Yara Ctl. Gestión', fecha: '06-10 17:40', hash: 'FES-91A4B2' },
+        f2: { ok: true, user: 'Maritza Contabilidad', fecha: '07-10 09:15', hash: 'FES-33C8D1' },
+        f3: { ok: true, user: 'Luis Comercial', fecha: '07-10 11:02', hash: 'FES-78E1F0' },
+        req_oc: false, tiene_oc: false, nro_oc: null, oc_fecha: null,
+        ocs_proveedor: [{ folio: 'OC-PROV-039', prov: 'Transportes Sur SpA', monto: 420000 }],
+        facturas_dte: [
+          {
+            id: 'F_14664',
+            folio: '14664',
+            emisor_rut: '52.004.162-1',
+            emisor_razon: 'LUIS GHISELLINI J ARREND MAQ Y VEH MOTOR EN GRAL EIRL',
+            empresa: 'Grúas San Pablo',
+            origen: 'Laudus ERP',
+            fecha: '2026-10-20',
+            neto: 1820000,
+            iva: 345800,
+            total: 2165800,
+            oc: '12990',
+            modalidad: 'PARCIAL',
+            nota: 'Cuota 1: Anticipo de faena y traslado'
+          },
+          {
+            id: 'F_14710',
+            folio: '14710',
+            emisor_rut: '52.004.162-1',
+            emisor_razon: 'LUIS GHISELLINI J ARREND MAQ Y VEH MOTOR EN GRAL EIRL',
+            empresa: 'Grúas San Pablo',
+            origen: 'Laudus ERP',
+            fecha: '2026-10-23',
+            neto: 5780000,
+            iva: 1098200,
+            total: 6878200,
+            oc: '12990',
+            modalidad: 'CIERRE',
+            nota: 'Cuota 2: Liquidación final y cierre 100%'
+          }
+        ],
+        calce_diff: 0, calce_nota: 'Calce Exacto (100% Facturado)'
+      },
+      {
+        codi: 'GSP-2610-241-019',
+        mes: '2026-10',
+        semana: 'Sem 1 (01–06 Oct)',
+        cliente: 'Celulosa Arauco y Constitución',
+        obra: 'Mantenimiento Parada Planta Valdivia',
+        empresa: 'Grúas San Pablo',
+        comprometido: 11200000,
+        devengado: 11200000,
+        reports_ok: 7, reports_total: 7, horas: 63.0,
+        its_folio: 'ITS-2026-019', its_estado: 'CONCLUIDO', its_ingreso: 11200000, its_costo: 2490000,
+        edp_folio: 'EDP-2026-019', edp_monto: 10600000,
+        f1: { ok: true, user: 'Yara Ctl. Gestión', fecha: '08-10 18:10', hash: 'FES-44B1A9' },
+        f2: { ok: true, user: 'Maritza Contabilidad', fecha: '09-10 10:05', hash: 'FES-52D9C4' },
+        f3: { ok: true, user: 'Omar Comercial', fecha: '09-10 12:30', hash: 'FES-88F0E3' },
+        req_oc: true, tiene_oc: true, nro_oc: 'HES-889120', oc_fecha: '05-10-2026',
+        ocs_proveedor: [{ folio: 'OC-PROV-041', prov: 'Grúas Apoyo Austral', monto: 890000 }],
+        facturas_dte: [
+          {
+            id: 'F_10501',
+            folio: '10501',
+            emisor_rut: '52.004.162-1',
+            emisor_razon: 'LUIS GHISELLINI J ARREND MAQ Y VEH MOTOR EN GRAL EIRL',
+            empresa: 'Grúas San Pablo',
+            origen: 'Portal SII',
+            fecha: '2026-10-10',
+            neto: 6000000,
+            iva: 1140000,
+            total: 7140000,
+            oc: 'HES-889120',
+            modalidad: 'PARCIAL',
+            nota: '1er Avance Quincenal según HES mandante'
+          }
+        ],
+        calce_diff: -600000, calce_nota: 'Saldo $4,6M en EDP / $5,2M s/Devengado'
+      },
+      {
+        codi: 'GSP-2610-233-016',
+        mes: '2026-10',
+        semana: 'Sem 2 (07–13 Oct)',
+        cliente: 'Tensacon S.A.',
+        obra: 'Montaje Naves Prensadas Planta Temuco',
+        empresa: 'Grúas San Pablo',
+        comprometido: 9850000,
+        devengado: 10450000,
+        reports_ok: 6, reports_total: 6, horas: 54.0,
+        its_folio: 'ITS-2026-016', its_estado: 'CONCLUIDO', its_ingreso: 10450000, its_costo: 2150000,
+        edp_folio: 'EDP-2026-016', edp_monto: 10450000,
+        f1: { ok: true, user: 'Yara Ctl. Gestión', fecha: '14-10 16:20', hash: 'FES-19A7C2' },
+        f2: { ok: true, user: 'Maritza Contabilidad', fecha: '15-10 09:40', hash: 'FES-60B3E8' },
+        f3: { ok: true, user: 'Luis Comercial', fecha: '15-10 14:15', hash: 'FES-94D2A1' },
+        req_oc: true, tiene_oc: true, nro_oc: 'OC-45009182', oc_fecha: '12-10-2026',
+        ocs_proveedor: [],
+        facturas_dte: [
+          {
+            id: 'F_10522',
+            folio: '10522',
+            emisor_rut: '52.004.162-1',
+            emisor_razon: 'LUIS GHISELLINI J ARREND MAQ Y VEH MOTOR EN GRAL EIRL',
+            empresa: 'Grúas San Pablo',
+            origen: 'Laudus ERP',
+            fecha: '2026-10-18',
+            neto: 5000000,
+            iva: 950000,
+            total: 5950000,
+            oc: 'OC-45009182',
+            modalidad: 'MENSUAL',
+            nota: 'Mes 1/2 Arriendo Grúa LTM 1100'
+          }
+        ],
+        calce_diff: +600000, calce_nota: 'Saldo $5,45M pendiente Mes 2'
+      },
+      {
+        codi: 'GSP-2610-245-021',
+        mes: '2026-10',
+        semana: 'Sem 3 (14–20 Oct)',
+        cliente: 'Echeverría Izquierdo Montajes',
+        obra: 'Montaje Estructuras Parque Eólico Renaico',
+        empresa: 'Grúas San Pablo',
+        comprometido: 6000000,
+        devengado: 6000000,
+        reports_ok: 4, reports_total: 4, horas: 32.0,
+        its_folio: null, its_estado: 'PENDIENTE', its_ingreso: 0, its_costo: 0,
+        edp_folio: 'EDP-2026-021', edp_monto: 6000000,
+        f1: { ok: true, user: 'Yara Ctl. Gestión', fecha: '20-10 17:00', hash: 'FES-71C4B9' },
+        f2: { ok: true, user: 'Maritza Contabilidad', fecha: '21-10 10:12', hash: 'FES-82E5D0' },
+        f3: { ok: true, user: 'Gisel Comercial', fecha: '21-10 11:45', hash: 'FES-15F9A3' },
+        req_oc: true, tiene_oc: true, nro_oc: 'OC-993011', oc_fecha: '19-10-2026',
+        ocs_proveedor: [],
+        facturas_dte: [],
+        calce_diff: 0, calce_nota: 'Listo para Facturar ($6,0M)'
+      },
+      {
+        codi: 'GSP-2610-248-022',
+        mes: '2026-10',
+        semana: 'Sem 3 (14–20 Oct)',
+        cliente: 'Salfa Montajes S.A.',
+        obra: 'Descarga Transformador Subestación Cautín',
+        empresa: 'Grúas San Pablo',
+        comprometido: 5750000,
+        devengado: 6630000,
+        reports_ok: 4, reports_total: 4, horas: 35.0,
+        its_folio: 'ITS-2026-022', its_estado: 'CONCLUIDO', its_ingreso: 6630000, its_costo: 1070000,
+        edp_folio: 'EDP-2026-022', edp_monto: 6630000,
+        f1: { ok: true, user: 'Yara Ctl. Gestión', fecha: '21-10 15:30', hash: 'FES-38B2C7' },
+        f2: { ok: true, user: 'Maritza Contabilidad', fecha: '22-10 09:20', hash: 'FES-49D1E6' },
+        f3: { ok: true, user: 'Luis Comercial', fecha: '22-10 12:10', hash: 'FES-63A8F2' },
+        req_oc: true, tiene_oc: false, nro_oc: null, oc_fecha: null,
+        ocs_proveedor: [{ folio: 'OC-PROV-044', prov: 'Escoltas Vial Sur', monto: 280000 }],
+        facturas_dte: [],
+        calce_diff: +880000, calce_nota: '+15,3% (Bloqueado por OC)'
+      },
+      {
+        codi: 'GSP-2610-252-025',
+        mes: '2026-10',
+        semana: 'Sem 4 (21–27 Oct)',
+        cliente: 'Cervecería CCU Chile',
+        obra: 'Izaje Estanques Fermentación Planta Temuco',
+        empresa: 'Grúas San Pablo',
+        comprometido: 8250000,
+        devengado: 5400000,
+        reports_ok: 3, reports_total: 4, horas: 28.0,
+        its_folio: null, its_estado: 'EN_FAENA', its_ingreso: 0, its_costo: 0,
+        edp_folio: 'EDP-2026-025', edp_monto: 0,
+        f1: { ok: true, user: 'Yara Ctl. Gestión', fecha: '24-10 18:00', hash: 'FES-22E4A1' },
+        f2: { ok: false, user: 'Pendiente Contabilidad', fecha: null, hash: null },
+        f3: { ok: false, user: 'Pendiente Comercial', fecha: null, hash: null },
+        req_oc: true, tiene_oc: true, nro_oc: 'OC-774120', oc_fecha: '21-10-2026',
+        ocs_proveedor: [],
+        facturas_dte: [],
+        calce_diff: -2850000, calce_nota: 'En faena (3/4 reports)'
+      },
+      // Procesos históricos Septiembre
+      {
+        codi: 'GSP-2609-198-011',
+        mes: '2026-09',
+        semana: 'Sem 3 Sep',
+        cliente: 'CMPC Pulp Planta Pacífico',
+        obra: 'Izaje Caldera Biomasa Mininco',
+        empresa: 'Grúas San Pablo',
+        comprometido: 26400000,
+        devengado: 26400000,
+        reports_ok: 12, reports_total: 12, horas: 108.0,
+        its_folio: 'ITS-2026-011', its_estado: 'CONCLUIDO', its_ingreso: 26400000, its_costo: 5100000,
+        edp_folio: 'EDP-2026-011', edp_monto: 26400000,
+        f1: { ok: true, user: 'Yara Ctl. Gestión', fecha: '25-09 17:10', hash: 'FES-90A1B2' },
+        f2: { ok: true, user: 'Maritza Contabilidad', fecha: '26-09 10:00', hash: 'FES-90C3D4' },
+        f3: { ok: true, user: 'Omar Comercial', fecha: '26-09 15:20', hash: 'FES-90E5F6' },
+        req_oc: true, tiene_oc: true, nro_oc: 'OC-881029', oc_fecha: '15-09-2026',
+        ocs_proveedor: [{ folio: 'OC-PROV-031', prov: 'Cama Baja Austral', monto: 1250000 }],
+        facturas_dte: [
+          {
+            id: 'F_10411',
+            folio: '10411',
+            emisor_rut: '52.004.162-1',
+            emisor_razon: 'LUIS GHISELLINI J ARREND MAQ Y VEH MOTOR EN GRAL EIRL',
+            empresa: 'Grúas San Pablo',
+            origen: 'Portal SII',
+            fecha: '2026-09-28',
+            neto: 26400000,
+            iva: 5016000,
+            total: 31416000,
+            oc: 'OC-881029',
+            modalidad: 'CIERRE',
+            nota: 'Cierre total de faena CMPC'
+          }
+        ],
+        calce_diff: 0, calce_nota: 'Calce Exacto (100%)'
+      }
+    ];
+
+    const PERSONAL_RESUMEN = [
+      { nombre: 'Robert Rodríguez', rut: '15.842.119-4', rol: 'OPERADOR', empresa: 'Grúas San Pablo', ots: 3, dias: 10, hrs_norm: 80.0, hrs_ext: 14.0, hrs_tot: 94.0, viaticos: 350000 },
+      { nombre: 'Carlos Huaiquimil', rut: '14.229.881-K', rol: 'OPERADOR', empresa: 'Grúas San Pablo', ots: 2, dias: 8, hrs_norm: 64.0, hrs_ext: 9.5, hrs_tot: 73.5, viaticos: 280000 },
+      { nombre: 'Patricio Ñancupil', rut: '16.901.442-1', rol: 'RIGGER', empresa: 'Grúas San Pablo', ots: 3, dias: 9, hrs_norm: 72.0, hrs_ext: 12.5, hrs_tot: 84.5, viaticos: 270000 },
+      { nombre: 'Marcelo Sepúlveda', rut: '13.554.910-2', rol: 'OPERADOR', empresa: 'Grúas San Pablo', ots: 2, dias: 6, hrs_norm: 48.0, hrs_ext: 6.0, hrs_tot: 54.0, viaticos: 180000 },
+      { nombre: 'Juan Pablo Mella', rut: '17.412.008-7', rol: 'RIGGER', empresa: 'Grúas San Pablo', ots: 2, dias: 6, hrs_norm: 48.0, hrs_ext: 4.0, hrs_tot: 52.0, viaticos: 150000 }
+    ];
+
+    const PERSONAL_DETALLE = [
+      { fecha: '2026-10-24', nombre: 'Robert Rodríguez', rol: 'OPERADOR', ot: 'GSP-2610-233-016', cliente: 'Tensacon S.A.', patente: 'DZXL.21-0', hrs_norm: 8.0, hrs_ext: 2.0, hrs_tot: 10.0, estado: 'VALIDADO_ANALISTA' },
+      { fecha: '2026-10-24', nombre: 'Patricio Ñancupil', rol: 'RIGGER', ot: 'GSP-2610-233-016', cliente: 'Tensacon S.A.', patente: 'DZXL.21-0', hrs_norm: 8.0, hrs_ext: 2.0, hrs_tot: 10.0, estado: 'VALIDADO_ANALISTA' },
+      { fecha: '2026-10-23', nombre: 'Robert Rodríguez', rol: 'OPERADOR', ot: 'GSP-2610-233-016', cliente: 'Tensacon S.A.', patente: 'DZXL.21-0', hrs_norm: 8.0, hrs_ext: 1.5, hrs_tot: 9.5, estado: 'VALIDADO_ANALISTA' },
+      { fecha: '2026-10-22', nombre: 'Carlos Huaiquimil', rol: 'OPERADOR', ot: 'GSP-2610-241-019', cliente: 'Celulosa Arauco', patente: 'LJWP.84-2', hrs_norm: 8.0, hrs_ext: 3.0, hrs_tot: 11.0, estado: 'VALIDADO_ANALISTA' },
+      { fecha: '2026-10-21', nombre: 'Marcelo Sepúlveda', rol: 'OPERADOR', ot: 'GSP-2610-248-022', cliente: 'Salfa Montajes S.A.', patente: 'PPRW.12-9', hrs_norm: 8.0, hrs_ext: 2.5, hrs_tot: 10.5, estado: 'VALIDADO_ANALISTA' }
+    ];
+
+    const EQUIPOS_DATA = [
+      { patente: 'DZXL.21-0', modelo: 'Liebherr LTM 1100-4.2 (100T)', tipo: 'GRÚA TELESCÓPICA', empresa: 'Grúas San Pablo', ots: 2, dias: 10, hrs: 90.0, comprometido: 17450000, devengado: 18050000, edp: 18050000, facturado: 7600000, costos: 3630000 },
+      { patente: 'LJWP.84-2', modelo: 'Grove GMK 4100L-1 (100T)', tipo: 'GRÚA TELESCÓPICA', empresa: 'Grúas San Pablo', ots: 2, dias: 11, hrs: 95.0, comprometido: 17200000, devengado: 17200000, edp: 16600000, facturado: 11000000, costos: 2490000 },
+      { patente: 'PPRW.12-9', modelo: 'Tadano ATF 70G-4 (70T)', tipo: 'GRÚA TELESCÓPICA', empresa: 'Grúas San Pablo', ots: 2, dias: 7, hrs: 63.0, comprometido: 14000000, devengado: 12030000, edp: 6630000, facturado: 0, costos: 1070000 }
+    ];
+
+    let empresaGlobalActiva = 'Grúas San Pablo';
+    let mesFiltroActivo = '2026-10';
+    let dimensionGrafico = '6meses';
+    let filtroEstadoActivo = 'TODOS';
+    let submenuActual = 'procesos';
+    let vistaPersonalActual = 'resumen';
+    let chartInstance = null;
+    let otActivaModal = null;
+    let tipoActivoModal = null;
+
+    function fmtCLP(val) {
+      return '$' + Math.round(Number(val) || 0).toLocaleString('es-CL');
+    }
+
+    // Calcula dinámicamente el total facturado neto y estado de cada proceso
+    function sincronizarTotalesProceso(p) {
+      p.facturado = (p.facturas_dte || []).reduce((acc, f) => acc + (Number(f.neto) || 0), 0);
+      const baseObjetivo = p.edp_monto > 0 ? p.edp_monto : p.devengado;
+      p.saldo_facturar = Math.max(0, baseObjetivo - p.facturado);
+
+      if (p.facturado === 0) {
+        if (p.req_oc && !p.tiene_oc) {
+          p.estado_contable = 'FALTA_OC';
+        } else if (p.edp_monto > 0 && p.f1.ok && p.f2.ok && p.f3.ok) {
+          p.estado_contable = 'LISTO_FACTURAR';
+        } else {
+          p.estado_contable = 'EN_EJECUCION';
+        }
+      } else if (p.saldo_facturar === 0) {
+        p.estado_contable = 'FACTURADO';
+      } else {
+        p.estado_contable = 'PARCIAL';
+      }
+    }
+
+    function obtenerProcesosPorPeriodoYBusqueda() {
+      const q = (document.getElementById('inputBusqueda')?.value || '').trim().toLowerCase();
+      PROCESOS_DATA.forEach(sincronizarTotalesProceso);
+
+      return PROCESOS_DATA.filter(p => {
+        if (empresaGlobalActiva !== 'TODAS' && p.empresa !== empresaGlobalActiva) return false;
+        if (mesFiltroActivo !== 'ALL_6M' && p.mes !== mesFiltroActivo) return false;
+        if (filtroEstadoActivo !== 'TODOS' && p.estado_contable !== filtroEstadoActivo) return false;
+        if (q) {
+          const match = p.codi.toLowerCase().includes(q) ||
+                        p.cliente.toLowerCase().includes(q) ||
+                        p.obra.toLowerCase().includes(q) ||
+                        (p.nro_oc || '').toLowerCase().includes(q) ||
+                        (p.its_folio || '').toLowerCase().includes(q) ||
+                        (p.facturas_dte || []).some(f => (f.folio || '').toLowerCase().includes(q));
+          if (!match) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderHighchartAgrupado() {
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      let categories = [];
+      let sComprometido = [];
+      let sDevengado = [];
+      let sIts = [];
+      let sEdp = [];
+      let sFacturado = [];
+      let keysClick = [];
+
+      if (dimensionGrafico === '6meses') {
+        document.getElementById('tituloGraficoBI').textContent = 'Comparativa de las 5 Variables Financieras — Últimos 6 Meses (Agrupado Mensual)';
+        document.getElementById('subBadgeDrill').textContent = 'Clic en cualquier mes para desglosar sus semanas';
+        categories = SERIES_6_MESES.map(m => m.corto);
+        sComprometido = SERIES_6_MESES.map(m => m.comprometido);
+        sDevengado = SERIES_6_MESES.map(m => m.devengado);
+        sIts = SERIES_6_MESES.map(m => m.its);
+        sEdp = SERIES_6_MESES.map(m => m.edp);
+        sFacturado = SERIES_6_MESES.map(m => m.facturado);
+        keysClick = SERIES_6_MESES.map(m => m.key);
+      } else {
+        document.getElementById('tituloGraficoBI').textContent = 'Comparativa de las 5 Variables Financieras — Mes en Curso (Agrupado Semanal)';
+        document.getElementById('subBadgeDrill').textContent = 'Evolución semanal dentro del mes activo';
+        categories = SERIES_SEMANAL_OCT.map(s => s.semana);
+        sComprometido = SERIES_SEMANAL_OCT.map(s => s.comprometido);
+        sDevengado = SERIES_SEMANAL_OCT.map(s => s.devengado);
+        sIts = SERIES_SEMANAL_OCT.map(s => s.its);
+        sEdp = SERIES_SEMANAL_OCT.map(s => s.edp);
+        sFacturado = SERIES_SEMANAL_OCT.map(s => s.facturado);
+      }
+
+      chartInstance = Highcharts.chart('highchartsMainContainer', {
+        chart: {
+          type: 'column',
+          backgroundColor: 'transparent',
+          style: { fontFamily: 'Inter, sans-serif' },
+          spacing: [10, 10, 5, 5]
+        },
+        title: { text: null },
+        credits: { enabled: false },
+        xAxis: {
+          categories: categories,
+          labels: { style: { color: '#cbd5e1', fontSize: '11px', fontWeight: '600', fontFamily: 'JetBrains Mono' } },
+          lineColor: '#1e293b'
+        },
+        yAxis: {
+          title: { text: null },
+          gridLineColor: '#1e293b',
+          labels: {
+            style: { color: '#64748b', fontSize: '10px', fontFamily: 'JetBrains Mono' },
+            formatter: function () { return '$' + (this.value / 1000000).toFixed(0) + 'M'; }
+          }
+        },
+        legend: {
+          itemStyle: { color: '#e2e8f0', fontSize: '11px', fontWeight: '600' },
+          itemHoverStyle: { color: '#ffffff' }
+        },
+        tooltip: {
+          shared: true,
+          backgroundColor: '#070b14',
+          borderColor: '#334155',
+          borderRadius: 8,
+          style: { color: '#f8fafc', fontSize: '11px', fontFamily: 'JetBrains Mono' },
+          valuePrefix: '$'
+        },
+        plotOptions: {
+          column: {
+            borderRadius: 4,
+            borderWidth: 0,
+            groupPadding: 0.14,
+            pointPadding: 0.06,
+            cursor: 'pointer',
+            point: {
+              events: {
+                click: function () {
+                  if (dimensionGrafico === '6meses' && keysClick[this.index]) {
+                    const mesKey = keysClick[this.index];
+                    document.getElementById('selectMesFiltro').value = mesKey;
+                    mesFiltroActivo = mesKey;
+                    cambiarDimensionGrafico('semanal');
+                    mostrarToast(`Drill-down semanal aplicado al periodo ${this.category}`);
+                  }
+                }
+              }
+            }
+          }
+        },
+        series: [
+          { name: '1. Comprometido (Cotización)', data: sComprometido, color: '#3b82f6' },
+          { name: '2. Devengado (Reports)', data: sDevengado, color: '#22d3ee' },
+          { name: '3. Cerrado en ITS', data: sIts, color: '#818cf8' },
+          { name: '4. Emitido en EDP (FE)', data: sEdp, color: '#fbbf24' },
+          { name: '5. Facturado DTE (SII/Laudus)', data: sFacturado, color: '#10b981' }
+        ]
+      });
+    }
+
+    function actualizarKPIs() {
+      const lista = obtenerProcesosPorPeriodoYBusqueda();
+      const comp = lista.reduce((a, b) => a + b.comprometido, 0);
+      const dev = lista.reduce((a, b) => a + b.devengado, 0);
+      const reps = lista.reduce((a, b) => a + b.reports_total, 0);
+      const hrs = lista.reduce((a, b) => a + b.horas, 0);
+      const itsIng = lista.reduce((a, b) => a + b.its_ingreso, 0);
+      const itsCost = lista.reduce((a, b) => a + b.its_costo, 0);
+      const itsCount = lista.filter(x => x.its_folio).length;
+      const edpMonto = lista.reduce((a, b) => a + b.edp_monto, 0);
+      const edpCount = lista.filter(x => x.edp_monto > 0).length;
+      const listos = lista.filter(x => x.estado_contable === 'LISTO_FACTURAR');
+      const listosMonto = listos.reduce((a, b) => a + b.edp_monto, 0);
+
+      const factMonto = lista.reduce((a, b) => a + b.facturado, 0);
+      const totalDtesEmitidos = lista.reduce((acc, p) => acc + (p.facturas_dte ? p.facturas_dte.length : 0), 0);
+      const brecha = Math.max(0, dev - factMonto);
+
+      const conOc = lista.filter(x => !x.req_oc || x.tiene_oc).length;
+      const sinOc = lista.filter(x => x.req_oc && !x.tiene_oc).length;
+
+      document.getElementById('kpi1Count').textContent = `${lista.length} OTs`;
+      document.getElementById('kpi1Monto').textContent = fmtCLP(comp);
+      document.getElementById('kpi1Sub').textContent = `${conOc} con OC/Exenta · ${sinOc} falta OC`;
+
+      const pctDev = comp > 0 ? Math.round((dev / comp) * 100) : 0;
+      document.getElementById('kpi2Count').textContent = `${reps} Rep · ${hrs}h`;
+      document.getElementById('kpi2Monto').textContent = fmtCLP(dev);
+      document.getElementById('kpi2Sub').textContent = `${pctDev}% ejecutado en terreno`;
+      document.getElementById('kpi2Bar').style.width = `${Math.min(100, pctDev)}%`;
+
+      const pctIts = comp > 0 ? Math.round((itsIng / comp) * 100) : 0;
+      document.getElementById('kpi3Count').textContent = `${itsCount} ITS`;
+      document.getElementById('kpi3Monto').textContent = fmtCLP(itsIng);
+      document.getElementById('kpi3Sub').innerHTML = `Costos ITS: <span class="text-slate-200 font-mono">${fmtCLP(itsCost)}</span>`;
+      document.getElementById('kpi3Bar').style.width = `${Math.min(100, pctIts)}%`;
+
+      const pctEdp = comp > 0 ? Math.round((edpMonto / comp) * 100) : 0;
+      document.getElementById('kpi4Count').textContent = `${edpCount} EDP`;
+      document.getElementById('kpi4Monto').textContent = fmtCLP(edpMonto);
+      document.getElementById('kpi4Sub').textContent = `🟢 ${listos.length} Listos Facturar (${fmtCLP(listosMonto)})`;
+      document.getElementById('kpi4Bar').style.width = `${Math.min(100, pctEdp)}%`;
+
+      const pctFact = comp > 0 ? Math.round((factMonto / comp) * 100) : 0;
+      document.getElementById('kpi5Count').textContent = `${totalDtesEmitidos} DTEs`;
+      document.getElementById('kpi5Monto').textContent = fmtCLP(factMonto);
+      document.getElementById('kpi5Saldo').textContent = fmtCLP(brecha);
+      document.getElementById('kpi5Bar').style.width = `${Math.min(100, pctFact)}%`;
+    }
+
+    function renderTablaProcesos() {
+      const filas = obtenerProcesosPorPeriodoYBusqueda();
+      document.getElementById('badgeCountProcesos').textContent = filas.length;
+      const tbody = document.getElementById('tbodyProcesos');
+
+      tbody.innerHTML = filas.map((p, idx) => {
+        // 1. Acceso a OC Cliente + OCs Proveedor
+        const ocClienteBtn = !p.req_oc
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-white/5">Exenta OC</span>`
+          : (p.tiene_oc
+              ? `<button onclick="abrirModalDocumento('OC', '${p.codi}')" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/15 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 transition-colors cursor-pointer" title="Ver PDF Orden de Compra Cliente">📎 ${p.nro_oc} ↗</button>`
+              : `<button onclick="abrirModalDocumento('OC_PENDIENTE', '${p.codi}')" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/15 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 transition-colors cursor-pointer">⚠️ + Cargar OC</button>`);
+
+        const ocProvBtn = p.ocs_proveedor && p.ocs_proveedor.length > 0
+          ? `<button onclick="abrirModalDocumento('OC_PROV', '${p.codi}')" class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-purple-500/15 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/30 transition-colors cursor-pointer" title="Órdenes de Compra de Costos asociadas a la OT">🛒 ${p.ocs_proveedor.length} OC Costo</button>`
+          : '';
+
+        // 3. Acceso a ITS
+        const itsCell = p.its_folio
+          ? `<div class="font-bold text-indigo-300">${fmtCLP(p.its_ingreso)}</div>
+             <div class="text-[10px] text-slate-400">Costo: ${fmtCLP(p.its_costo)}</div>
+             <div class="flex items-center justify-end gap-1 mt-1">
+               <button onclick="abrirModalDocumento('ITS', '${p.codi}')" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition-colors cursor-pointer">📊 ${p.its_folio}</button>
+               <button onclick="mostrarToast('Abriendo PDF oficial de ${p.its_folio}')" class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-white/5 hover:bg-white/15 text-slate-300 border border-white/10 cursor-pointer" title="PDF ITS">📄</button>
+             </div>`
+          : `<div class="text-slate-500 font-bold">$0</div>
+             <div class="text-[10px] text-slate-500">Sin ITS cerrado</div>
+             <div class="mt-1">
+               <button onclick="abrirModalDocumento('ITS', '${p.codi}')" class="px-2 py-0.5 rounded text-[10px] font-mono bg-white/5 hover:bg-indigo-600 text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer">+ Abrir ITS</button>
+             </div>`;
+
+        // 4. Acceso a EDP y Sellos de Firma Electrónica (FE)
+        const edpCell = `
+          <div class="font-bold text-amber-300">${p.edp_monto > 0 ? fmtCLP(p.edp_monto) : 'En elaboración'}</div>
+          <div class="flex items-center justify-end gap-1 mt-1">
+            <button onclick="abrirModalDocumento('EDP', '${p.codi}')" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/30 transition-colors cursor-pointer">
+              📑 ${p.edp_folio || 'Carátula EDP'}
+            </button>
+            <button onclick="abrirModalDocumento('FE', '${p.codi}')" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 transition-colors cursor-pointer" title="Ver/Firmar Circuito de 3 Firmas Electrónicas FES">
+              🔏 FE (${[p.f1.ok, p.f2.ok, p.f3.ok].filter(Boolean).length}/3)
+            </button>
+          </div>
+          <div class="flex items-center justify-end gap-1 mt-1 text-[9px] font-mono">
+            <span onclick="abrirModalDocumento('FE', '${p.codi}')" class="px-1 py-0.2 rounded border cursor-pointer ${p.f1.ok ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-white/5'}">1°Ctl ${p.f1.ok ? '✓' : '·'}</span>
+            <span onclick="abrirModalDocumento('FE', '${p.codi}')" class="px-1 py-0.2 rounded border cursor-pointer ${p.f2.ok ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-white/5'}">2°Con ${p.f2.ok ? '✓' : '·'}</span>
+            <span onclick="abrirModalDocumento('FE', '${p.codi}')" class="px-1 py-0.2 rounded border cursor-pointer ${p.f3.ok ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-white/5'}">3°Com ${p.f3.ok ? '✓' : '·'}</span>
+          </div>
+        `;
+
+        // 5. Acceso a Facturado Multi-DTE
+        const dtes = p.facturas_dte || [];
+        const numDtes = dtes.length;
+        let dteCell = '';
+
+        if (numDtes > 0) {
+          const badgeDtes = numDtes === 1
+            ? (p.saldo_facturar === 0 ? '✅ 1 DTE (100% Cierre)' : `🌗 1 DTE (${dtes[0].modalidad})`)
+            : `🌗 ${numDtes} DTEs (${p.saldo_facturar === 0 ? '100% Cerrado' : 'Parcial'})`;
+
+          dteCell = `
+            <div class="font-bold text-emerald-400 font-mono">${fmtCLP(p.facturado)}</div>
+            <div class="text-[10px] font-mono ${p.saldo_facturar > 0 ? 'text-amber-300' : 'text-slate-400'}">
+              ${p.saldo_facturar > 0 ? `Saldo: ${fmtCLP(p.saldo_facturar)}` : '✔ 100% Facturado'}
+            </div>
+            <div class="flex items-center justify-end gap-1 mt-1.5 flex-wrap">
+              <button onclick="abrirModalDocumento('DTE', '${p.codi}')" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 transition-colors cursor-pointer" title="Ver Expediente de ${numDtes} Facturas DTE">
+                🧾 ${badgeDtes}
+              </button>
+              <button onclick="abrirModalDocumento('DTE_AGREGAR', '${p.codi}')" class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-white/5 hover:bg-emerald-600 text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer" title="Asociar otra Factura DTE (Cuota/Mensual)">
+                + DTE
+              </button>
+            </div>
+          `;
+        } else {
+          dteCell = `
+            <div class="text-slate-500 font-bold font-mono">$0</div>
+            <div class="text-[10px] text-amber-300 font-mono">Por facturar: ${fmtCLP(p.saldo_facturar || p.devengado)}</div>
+            <div class="mt-1.5">
+              <button onclick="abrirModalDocumento('DTE_AGREGAR', '${p.codi}')" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold ${p.estado_contable === 'LISTO_FACTURAR' ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md' : 'bg-white/5 hover:bg-white/15 text-slate-300 border border-white/10'} transition-colors cursor-pointer">
+                💳 ${p.estado_contable === 'LISTO_FACTURAR' ? '+ Emitir DTE Ahora' : '+ Asociar Factura DTE'}
+              </button>
+            </div>
+          `;
+        }
+
+        const badgeEstado = {
+          'LISTO_FACTURAR': '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">🟢 Listo Facturar</span>',
+          'PARCIAL': `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">🌗 Parcial (${numDtes} DTEs)</span>`,
+          'FALTA_OC': '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">🟣 Falta OC Cliente</span>',
+          'EN_EJECUCION': '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">🔵 En Faena</span>',
+          'FACTURADO': '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30">✅ 100% Facturado</span>'
+        }[p.estado_contable] || '';
+
+        // Mini-gráfico de las 5 barras verticales por proceso
+        const maxMontoFila = Math.max(p.comprometido, p.devengado, p.its_ingreso, p.edp_monto, p.facturado, 1);
+        const h1 = Math.max(6, Math.round((p.comprometido / maxMontoFila) * 44));
+        const h2 = Math.max(6, Math.round((p.devengado / maxMontoFila) * 44));
+        const h3 = p.its_ingreso > 0 ? Math.max(6, Math.round((p.its_ingreso / maxMontoFila) * 44)) : 3;
+        const h4 = p.edp_monto > 0 ? Math.max(6, Math.round((p.edp_monto / maxMontoFila) * 44)) : 3;
+        const h5 = p.facturado > 0 ? Math.max(6, Math.round((p.facturado / maxMontoFila) * 44)) : 3;
+
+        const miniGrafico5Barras = `
+          <div class="relative group flex flex-col items-center shrink-0 ml-4">
+            <div class="flex items-end gap-1.5 h-12 px-2.5 pt-1 bg-[#070b14]/70 rounded-t-lg border-x border-t border-white/5 border-b border-slate-700">
+              <div style="height:${h1}px" class="w-3.5 rounded-t-[3px] bg-[#3b82f6] transition-all group-hover:brightness-110"></div>
+              <div style="height:${h2}px" class="w-3.5 rounded-t-[3px] bg-[#22d3ee] transition-all group-hover:brightness-110"></div>
+              <div style="height:${h3}px" class="w-3.5 rounded-t-[3px] ${p.its_ingreso > 0 ? 'bg-[#818cf8]' : 'bg-slate-800'} transition-all group-hover:brightness-110"></div>
+              <div style="height:${h4}px" class="w-3.5 rounded-t-[3px] ${p.edp_monto > 0 ? 'bg-[#fbbf24]' : 'bg-slate-800'} transition-all group-hover:brightness-110"></div>
+              <div style="height:${h5}px" class="w-3.5 rounded-t-[3px] ${p.facturado > 0 ? 'bg-[#10b981]' : 'bg-slate-800'} transition-all group-hover:brightness-110"></div>
+            </div>
+            <!-- Tooltip estilo Highcharts al pasar el mouse -->
+            <div class="hidden group-hover:block absolute left-full ml-2 top-1/2 -translate-y-1/2 z-40 w-64 bg-[#070b14] border border-slate-700 rounded-lg p-2.5 shadow-2xl text-[10px] font-mono pointer-events-none">
+              <div class="font-bold text-white mb-1 border-b border-white/10 pb-1">${p.codi} (${p.cliente})</div>
+              <div class="flex justify-between text-slate-300"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#3b82f6]"></span>1. Comprometido:</span><strong class="text-white">${fmtCLP(p.comprometido)}</strong></div>
+              <div class="flex justify-between text-slate-300"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#22d3ee]"></span>2. Devengado Reports:</span><strong class="text-white">${fmtCLP(p.devengado)}</strong></div>
+              <div class="flex justify-between text-slate-300"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#818cf8]"></span>3. Cerrado ITS:</span><strong class="text-white">${fmtCLP(p.its_ingreso)}</strong></div>
+              <div class="flex justify-between text-slate-300"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#fbbf24]"></span>4. Emitido EDP:</span><strong class="text-white">${fmtCLP(p.edp_monto)}</strong></div>
+              <div class="flex justify-between text-slate-300"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#10b981]"></span>5. Facturado DTE:</span><strong class="text-emerald-400">${fmtCLP(p.facturado)} (${numDtes} DTE)</strong></div>
+              <div class="flex justify-between text-amber-300 border-t border-white/10 mt-1 pt-1 font-bold"><span>Saldo por Facturar:</span><span>${fmtCLP(p.saldo_facturar)}</span></div>
+            </div>
+          </div>
+        `;
+
+        return `
+          <tr class="hover:bg-white/[0.02] transition-colors align-top">
+            <td class="py-3 px-3.5">
+              <div class="flex items-center justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono font-bold text-amber-400">${p.codi}</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/5 text-slate-400">${p.semana}</span>
+                  </div>
+                  <div class="font-bold text-white mt-0.5">${p.cliente}</div>
+                  <div class="text-[11px] text-slate-400 truncate max-w-xs">${p.obra}</div>
+                </div>
+                ${miniGrafico5Barras}
+              </div>
+            </td>
+
+            <td class="py-3 px-3 text-right font-mono">
+              <div class="font-bold text-white">${fmtCLP(p.comprometido)}</div>
+              <div class="flex items-center justify-end gap-1 mt-1.5 flex-wrap">
+                ${ocClienteBtn}
+                ${ocProvBtn}
+              </div>
+            </td>
+
+            <td class="py-3 px-3 text-right font-mono">
+              <div class="font-bold text-cyan-300">${fmtCLP(p.devengado)}</div>
+              <div class="text-[10px] text-slate-400">${p.horas} hrs operadas</div>
+              <div class="mt-1">
+                <button onclick="abrirModalDocumento('REPORTS', '${p.codi}')" class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/15 hover:bg-cyan-600 text-cyan-300 hover:text-white border border-cyan-500/30 transition-colors cursor-pointer">
+                  📋 ${p.reports_ok}/${p.reports_total} Reports ↗
+                </button>
+              </div>
+            </td>
+
+            <td class="py-3 px-3 text-right font-mono">${itsCell}</td>
+
+            <td class="py-3 px-3 text-right font-mono">${edpCell}</td>
+
+            <td class="py-3 px-3 text-right font-mono">${dteCell}</td>
+
+            <td class="py-3 px-3.5 text-center">
+              <div>${badgeEstado}</div>
+              <div class="text-[10px] font-mono mt-1.5 ${p.calce_diff > 0 ? 'text-cyan-300 font-bold' : (p.calce_diff < 0 ? 'text-amber-300' : 'text-slate-400')}">
+                ${p.calce_diff !== 0 ? (p.calce_diff > 0 ? '+' : '') + fmtCLP(p.calce_diff) : '$0 Desviación'}
+              </div>
+              <div class="text-[10px] text-slate-400">${p.calce_nota}</div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 5. GESTOR DE MODAL Y EXPEDIENTES (CON CARGA Y PARSER DE FACTURAS DTE)
+    // =========================================================================
+    function abrirModalDocumento(tipo, codi) {
+      otActivaModal = codi;
+      tipoActivoModal = tipo;
+      const p = PROCESOS_DATA.find(x => x.codi === codi);
+      if (!p) return;
+
+      const overlay = document.getElementById('modalDocOverlay');
+      const icon = document.getElementById('modalDocIcon');
+      const iconBox = document.getElementById('modalDocIconContainer');
+      const title = document.getElementById('modalDocTitle');
+      const sub = document.getElementById('modalDocSubtitle');
+      const body = document.getElementById('modalDocBody');
+      const btn = document.getElementById('modalDocPrimaryBtn');
+      const btnText = document.getElementById('modalDocPrimaryBtnText');
+      const btnIcon = document.getElementById('modalDocPrimaryBtnIcon');
+      const footerInfo = document.getElementById('modalDocFooterInfo');
+
+      // Limpiar clases
+      iconBox.className = 'w-9 h-9 rounded-xl flex items-center justify-center text-lg';
+
+      if (tipo === 'OC' || tipo === 'OC_PENDIENTE') {
+        icon.textContent = '📎';
+        iconBox.classList.add('bg-blue-500/10', 'border', 'border-blue-500/20');
+        title.textContent = `Orden de Compra Mandante — ${p.codi}`;
+        sub.textContent = `${p.cliente} · ${p.obra}`;
+        btnIcon.textContent = p.tiene_oc ? '📄' : '📤';
+        btnText.textContent = p.tiene_oc ? 'Abrir PDF OC Cliente' : 'Subir OC y Notificar a Contabilidad';
+        footerInfo.textContent = p.tiene_oc ? `OC: ${p.nro_oc} (${p.oc_fecha})` : 'Exige OC para habilitar Factura DTE';
+
+        body.innerHTML = p.tiene_oc ? `
+          <div class="bg-[#070b14] border border-blue-500/30 rounded-xl p-4 space-y-2">
+            <div class="flex justify-between"><span class="text-slate-400">N° Orden de Compra / HES:</span><span class="font-mono font-bold text-blue-300">${p.nro_oc}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Fecha Recepción Comercial:</span><span class="font-mono text-white">${p.oc_fecha}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Monto Comprometido Cubierto:</span><span class="font-mono font-bold text-emerald-400">${fmtCLP(p.comprometido)}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Empresa Holding Facturadora:</span><span class="font-mono text-amber-400 font-bold">${p.empresa}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Trazabilidad FES:</span><span class="font-mono text-emerald-300">✔ Aprobada por Mandante</span></div>
+          </div>
+        ` : `
+          <div class="bg-[#070b14] border border-purple-500/30 rounded-xl p-4 space-y-3">
+            <p class="text-purple-300 font-semibold">Este proceso mandante exige Orden de Compra formal para desbloquear la emisión de la Factura DTE.</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-[10px] font-mono text-slate-400 uppercase">Folio OC / HES Mandante</label>
+                <input id="inputNuevoFolioOC" type="text" placeholder="Ej: OC-45009912" value="OC-45009912" class="w-full mt-1 bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-white font-mono" />
+              </div>
+              <div>
+                <label class="text-[10px] font-mono text-slate-400 uppercase">Adjuntar PDF OC</label>
+                <input type="file" class="w-full mt-1 text-[11px] text-slate-300" />
+              </div>
+            </div>
+            <button onclick="guardarOCCliente('${p.codi}')" class="mt-2 w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors cursor-pointer">
+              ✔ Cargar y Desbloquear Proceso
+            </button>
+          </div>
+        `;
+      } else if (tipo === 'OC_PROV') {
+        icon.textContent = '🛒';
+        iconBox.classList.add('bg-purple-500/10', 'border', 'border-purple-500/20');
+        title.textContent = `Órdenes de Compra a Proveedores (Costos OT) — ${p.codi}`;
+        sub.textContent = `Costos imputados al ITS de ${p.cliente}`;
+        btnIcon.textContent = '📄';
+        btnText.textContent = 'Ver PDF OC Proveedor';
+        footerInfo.textContent = `${p.ocs_proveedor.length} OCs de Proveedor activas`;
+        body.innerHTML = `
+          <div class="space-y-2">
+            ${p.ocs_proveedor.map(oc => `
+              <div class="bg-[#070b14] border border-purple-500/30 rounded-xl p-3.5 flex items-center justify-between">
+                <div>
+                  <div class="font-mono font-bold text-purple-300">${oc.folio}</div>
+                  <div class="text-white font-semibold">${oc.prov}</div>
+                </div>
+                <div class="text-right font-mono">
+                  <div class="font-bold text-rose-300">${fmtCLP(oc.monto)}</div>
+                  <div class="text-[10px] text-emerald-400">Autorizada con Token FES</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else if (tipo === 'ITS') {
+        icon.textContent = '📊';
+        iconBox.classList.add('bg-indigo-500/10', 'border', 'border-indigo-500/20');
+        title.textContent = `Informe de Término de Servicio (${p.its_folio || 'Nuevo ITS'}) — ${p.codi}`;
+        sub.textContent = `Liquidación de ingresos y costos internos de operación`;
+        btnIcon.textContent = '📄';
+        btnText.textContent = 'Abrir PDF Oficial ITS';
+        const margen = p.its_ingreso - p.its_costo;
+        footerInfo.textContent = `Margen Bruto OT: ${fmtCLP(margen)}`;
+        body.innerHTML = `
+          <div class="grid grid-cols-3 gap-3 font-mono">
+            <div class="bg-[#070b14] border border-white/10 rounded-xl p-3">
+              <div class="text-[10px] text-slate-400">Ingresos Facturables</div>
+              <div class="text-sm font-black text-indigo-300 mt-1">${fmtCLP(p.its_ingreso || p.devengado)}</div>
+            </div>
+            <div class="bg-[#070b14] border border-white/10 rounded-xl p-3">
+              <div class="text-[10px] text-slate-400">Costos Directos Operación</div>
+              <div class="text-sm font-black text-rose-300 mt-1">${fmtCLP(p.its_costo)}</div>
+            </div>
+            <div class="bg-[#070b14] border border-white/10 rounded-xl p-3">
+              <div class="text-[10px] text-slate-400">Utilidad Bruta OT</div>
+              <div class="text-sm font-black text-emerald-400 mt-1">${fmtCLP(margen)}</div>
+            </div>
+          </div>
+        `;
+      } else if (tipo === 'FE' || tipo === 'EDP') {
+        icon.textContent = '🔏';
+        iconBox.classList.add('bg-amber-500/10', 'border', 'border-amber-500/20');
+        title.textContent = `Estado de Pago (${p.edp_folio}) & Circuito de 3 Firmas Electrónicas (FE)`;
+        sub.textContent = `${p.codi} · ${p.cliente} · Monto EDP: ${fmtCLP(p.edp_monto || p.devengado)}`;
+        btnIcon.textContent = '📄';
+        btnText.textContent = 'Abrir PDF Oficial EDP con Sellos FE';
+        footerInfo.textContent = `Circuito FES: ${[p.f1.ok, p.f2.ok, p.f3.ok].filter(Boolean).length}/3 firmas completadas`;
+        body.innerHTML = `
+          <div class="space-y-2.5">
+            ${[
+              { paso: '1° Control de Gestión (Revisión Reports y Rendimientos)', d: p.f1 },
+              { paso: '2° Contabilidad (Validación Tarifas, OC y Calce)', d: p.f2 },
+              { paso: '3° Comercial (Despacho Formal a Mandante y Cobranza)', d: p.f3 }
+            ].map(item => `
+              <div class="bg-[#070b14] border ${item.d.ok ? 'border-emerald-500/30' : 'border-amber-500/30'} rounded-xl p-3 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-white">${item.paso}</div>
+                  <div class="text-[11px] text-slate-400">${item.d.user} ${item.d.fecha ? `· ${item.d.fecha}` : ''}</div>
+                </div>
+                <div class="text-right font-mono">
+                  ${item.d.ok
+                    ? `<span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">✔ Firmado (${item.d.hash})</span>`
+                    : `<button onclick="cerrarModalDoc(); mostrarToast('Firmado con PIN FES correctamente')" class="px-2.5 py-1 rounded bg-amber-500 text-slate-950 font-bold text-[10px] cursor-pointer">✍️ Firmar con PIN FES</button>`
+                  }
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else if (tipo === 'DTE' || tipo === 'DTE_AGREGAR') {
+        renderModalDTE(p);
+      } else if (tipo === 'REPORTS') {
+        icon.textContent = '📋';
+        iconBox.classList.add('bg-cyan-500/10', 'border', 'border-cyan-500/20');
+        title.textContent = `Reports Diarios de Terreno (${p.reports_ok}/${p.reports_total}) — ${p.codi}`;
+        sub.textContent = `Total ${p.horas} horas operadas certificadas con firma y GPS`;
+        btnIcon.textContent = '📄';
+        btnText.textContent = 'Descargar Dossier PDF Reports';
+        footerInfo.textContent = `Devengado acumulado: ${fmtCLP(p.devengado)}`;
+        body.innerHTML = `
+          <div class="bg-[#070b14] border border-cyan-500/30 rounded-xl p-4 space-y-2 font-mono text-xs">
+            <div class="flex justify-between text-slate-300"><span>Jornadas Validadas con Sello FES:</span><strong class="text-cyan-300">${p.reports_ok} de ${p.reports_total}</strong></div>
+            <div class="flex justify-between text-slate-300"><span>Total Horas Facturables:</span><strong class="text-white">${p.horas} hrs</strong></div>
+            <div class="flex justify-between text-slate-300"><span>Monto Devengado Acumulado:</span><strong class="text-emerald-400">${fmtCLP(p.devengado)}</strong></div>
+          </div>
+        `;
+      }
+
+      overlay.classList.remove('hidden');
+    }
+
+    // =========================================================================
+    // 6. RENDERIZADOR DEDICADO DE FACTURAS DTE (MULTI-FACTURAS + PARSER LAUDUS/SII)
+    // =========================================================================
+    function renderModalDTE(p) {
+      sincronizarTotalesProceso(p);
+      const icon = document.getElementById('modalDocIcon');
+      const iconBox = document.getElementById('modalDocIconContainer');
+      const title = document.getElementById('modalDocTitle');
+      const sub = document.getElementById('modalDocSubtitle');
+      const body = document.getElementById('modalDocBody');
+      const btnText = document.getElementById('modalDocPrimaryBtnText');
+      const btnIcon = document.getElementById('modalDocPrimaryBtnIcon');
+      const footerInfo = document.getElementById('modalDocFooterInfo');
+
+      icon.textContent = '🧾';
+      iconBox.className = 'w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-lg';
+      title.textContent = `Gestión de Facturación Multi-DTE — ${p.codi}`;
+      sub.textContent = `${p.cliente} · ${p.obra} (${p.empresa})`;
+      btnIcon.textContent = '💾';
+      btnText.textContent = 'Guardar y Cerrar Expediente';
+      footerInfo.textContent = `Facturado Acumulado: ${fmtCLP(p.facturado)} | Saldo Pendiente: ${fmtCLP(p.saldo_facturar)}`;
+
+      const baseMonto = p.edp_monto > 0 ? p.edp_monto : p.devengado;
+      const pctFacturado = baseMonto > 0 ? Math.min(100, Math.round((p.facturado / baseMonto) * 100)) : 0;
+      const facturas = p.facturas_dte || [];
+
+      // Historial de Facturas DTE de esta OT
+      const filasHistorial = facturas.length > 0 ? facturas.map((f, i) => `
+        <tr class="border-b border-white/5 hover:bg-white/[0.02]">
+          <td class="py-2.5 px-3 font-mono font-bold text-emerald-400">
+            DTE ${f.folio}
+            <div class="text-[9px] font-normal text-slate-400">${f.origen}</div>
+          </td>
+          <td class="py-2.5 px-3">
+            <div class="font-bold text-white">${f.empresa || p.empresa}</div>
+            <div class="text-[9px] font-mono text-slate-400">${f.emisor_rut || '52.004.162-1'}</div>
+          </td>
+          <td class="py-2.5 px-3 font-mono text-slate-300 text-center">${f.fecha}</td>
+          <td class="py-2.5 px-3 text-center">
+            <span class="px-2 py-0.5 rounded text-[9px] font-mono font-bold ${
+              f.modalidad === 'CIERRE' ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30' :
+              (f.modalidad === 'MENSUAL' ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30')
+            }">
+              ${f.modalidad === 'CIERRE' ? '100% Cierre' : (f.modalidad === 'MENSUAL' ? '📅 Arriendo Mensual' : '🌗 Pago Parcial / Cuota')}
+            </span>
+            ${f.nota ? `<div class="text-[9px] text-slate-400 mt-0.5 truncate max-w-[120px]" title="${f.nota}">${f.nota}</div>` : ''}
+          </td>
+          <td class="py-2.5 px-3 text-right font-mono font-bold text-white">${fmtCLP(f.neto)}</td>
+          <td class="py-2.5 px-3 text-right font-mono text-slate-300">${fmtCLP(f.total || f.neto * 1.19)}</td>
+          <td class="py-2.5 px-3 text-center">
+            <div class="flex items-center justify-center gap-1.5">
+              <button onclick="mostrarToast('Visualizando PDF de Factura DTE ${f.folio} (${f.origen})')" class="px-2 py-0.5 rounded bg-emerald-500/15 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 font-mono text-[10px] cursor-pointer" title="Ver Factura PDF Original">
+                📄 PDF
+              </button>
+              <button onclick="desvincularFactura('${p.codi}', '${f.id || f.folio}')" class="px-2 py-0.5 rounded bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 font-mono text-[10px] cursor-pointer" title="Desvincular factura de este proceso">
+                🗑️
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('') : `
+        <tr>
+          <td colspan="7" class="py-6 text-center text-slate-400 font-mono text-xs">
+            ⏳ No hay facturas DTE asociadas aún a esta orden de trabajo.
+          </td>
+        </tr>
+      `;
+
+      body.innerHTML = `
+        <!-- SECCIÓN 1: CUENTA CORRIENTE Y CALCE FINANCIERO -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 font-mono">
+          <div class="bg-[#070b14] border border-blue-500/20 rounded-xl p-3">
+            <span class="text-[10px] uppercase font-bold text-blue-400">1. Comprometido (OC)</span>
+            <div class="text-base font-black text-white mt-0.5">${fmtCLP(p.comprometido)}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">OC: <strong class="text-blue-300">${p.nro_oc || 'Exenta'}</strong></div>
+          </div>
+          <div class="bg-[#070b14] border border-cyan-500/20 rounded-xl p-3">
+            <span class="text-[10px] uppercase font-bold text-cyan-400">2. Devengado (Reports)</span>
+            <div class="text-base font-black text-cyan-300 mt-0.5">${fmtCLP(p.devengado)}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">${p.horas}h certificadas</div>
+          </div>
+          <div class="bg-[#070b14] border border-emerald-500/30 rounded-xl p-3">
+            <span class="text-[10px] uppercase font-bold text-emerald-400">5. Facturado DTE (${facturas.length})</span>
+            <div class="text-base font-black text-emerald-400 mt-0.5">${fmtCLP(p.facturado)}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">${pctFacturado}% de la base cubierto</div>
+          </div>
+          <div class="bg-[#070b14] border ${p.saldo_facturar > 0 ? 'border-amber-500/30 bg-amber-500/5' : 'border-emerald-500/20'} rounded-xl p-3">
+            <span class="text-[10px] uppercase font-bold ${p.saldo_facturar > 0 ? 'text-amber-300' : 'text-emerald-400'}">Saldo por Facturar</span>
+            <div class="text-base font-black ${p.saldo_facturar > 0 ? 'text-amber-300' : 'text-emerald-400'} mt-0.5">${fmtCLP(p.saldo_facturar)}</div>
+            <div class="text-[10px] ${p.saldo_facturar > 0 ? 'text-amber-200/70' : 'text-slate-400'} mt-0.5">${p.saldo_facturar > 0 ? 'Pendiente emisión' : '✔ Proceso cuadrado'}</div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: HISTORIAL DE FACTURAS ASOCIADAS A ESTA OT -->
+        <div class="bg-[#070b14] border border-white/10 rounded-xl overflow-hidden">
+          <div class="px-4 py-2.5 bg-[#0a0f1e] border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">📑 Expediente de Facturas Emitidas</span>
+              <span class="px-2 py-0.2 rounded bg-emerald-500/10 text-emerald-300 font-mono text-[10px] font-bold">${facturas.length} Facturas Vinculadas</span>
+            </div>
+            <span class="text-[10px] font-mono text-slate-400">Modelo 1 OT → N Facturas (Cuotas / Meses)</span>
+          </div>
+          <div class="overflow-x-auto max-h-44">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-[#050810] text-[10px] font-bold text-slate-400 uppercase font-mono sticky top-0">
+                <tr>
+                  <th class="py-2 px-3">Folio DTE / Origen</th>
+                  <th class="py-2 px-3">Emisor / RUT</th>
+                  <th class="py-2 px-3 text-center">Fecha Emisión</th>
+                  <th class="py-2 px-3 text-center">Modalidad</th>
+                  <th class="py-2 px-3 text-right">Neto ($)</th>
+                  <th class="py-2 px-3 text-right">Total Bruto ($)</th>
+                  <th class="py-2 px-3 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filasHistorial}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 3: MOTOR DE RECONOCIMIENTO INTELIGENTE DE FACTURAS PDF (LAUDUS Y PORTAL SII) -->
+        <div class="bg-[#070b14] border border-emerald-500/30 rounded-xl p-4 space-y-3 glow-parser">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-black uppercase tracking-wider text-emerald-400 font-mono">
+                  📥 Reconocimiento Automático de Facturas PDF (Laudus ERP &amp; Portal SII)
+                </span>
+                <span class="px-2 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px] font-bold">
+                  Sin Digitador · 100% Precisión
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-0.5">
+                Arrastra una factura PDF o prueba instantáneamente con cualquiera de las facturas reales auditadas del holding:
+              </p>
+            </div>
+          </div>
+
+          <!-- BOTONES DE PRUEBA RÁPIDA CON LAS 4 FACTURAS REALES -->
+          <div class="space-y-1.5">
+            <span class="text-[10px] font-mono text-slate-400 uppercase font-bold">Simular Carga de Factura Real de Contabilidad/:</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              <button
+                type="button"
+                onclick="simularParserFactura('LAUDUS_14664')"
+                class="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-600 border border-blue-500/30 text-left transition-all cursor-pointer group"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-mono font-bold text-blue-300 group-hover:text-white">Laudus · DTE 14664</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-200">GSP</span>
+                </div>
+                <div class="text-[11px] font-black text-white font-mono mt-0.5">$1.820.000 + IVA</div>
+                <div class="text-[9px] text-slate-400 truncate">Luis Ghisellini · OC 12990</div>
+              </button>
+
+              <button
+                type="button"
+                onclick="simularParserFactura('SII_2907')"
+                class="p-2 rounded-lg bg-amber-500/10 hover:bg-amber-600 border border-amber-500/30 text-left transition-all cursor-pointer group"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-mono font-bold text-amber-300 group-hover:text-white">Portal SII · Fact 2907</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-200">Bestmaq</span>
+                </div>
+                <div class="text-[11px] font-black text-white font-mono mt-0.5">$16.750.000 + IVA</div>
+                <div class="text-[9px] text-slate-400 truncate">Bestmaq · OCs 7158/7060</div>
+              </button>
+
+              <button
+                type="button"
+                onclick="simularParserFactura('SII_3669')"
+                class="p-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-600 border border-cyan-500/30 text-left transition-all cursor-pointer group"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-mono font-bold text-cyan-300 group-hover:text-white">Portal SII · Fact 3669</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-200">Log. Sur</span>
+                </div>
+                <div class="text-[11px] font-black text-white font-mono mt-0.5">$807.500 + IVA</div>
+                <div class="text-[9px] text-slate-400 truncate">Logística del Sur · OC 68885</div>
+              </button>
+
+              <button
+                type="button"
+                onclick="simularParserFactura('SII_83')"
+                class="p-2 rounded-lg bg-purple-500/10 hover:bg-purple-600 border border-purple-500/30 text-left transition-all cursor-pointer group"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-mono font-bold text-purple-300 group-hover:text-white">Portal SII · Fact 83</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-200">Royal</span>
+                </div>
+                <div class="text-[11px] font-black text-white font-mono mt-0.5">$200.000 + IVA</div>
+                <div class="text-[9px] text-slate-400 truncate">Royal Rental · OC 981187</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- DROPZONE / UPLOADER VISUAL -->
+          <div
+            id="dropzoneDTE"
+            onclick="document.getElementById('inputDtePdfFile').click()"
+            class="border-2 border-dashed border-emerald-500/40 hover:border-emerald-400 bg-slate-900/60 hover:bg-emerald-500/5 rounded-xl p-4 text-center cursor-pointer transition-all"
+          >
+            <input id="inputDtePdfFile" type="file" accept=".pdf" class="hidden" onchange="procesarArchivoPdfSubido(event)" />
+            <div class="flex items-center justify-center gap-3">
+              <span class="text-2xl">📄</span>
+              <div class="text-left">
+                <p class="font-bold text-white text-xs">Arrastra aquí la Factura PDF de Laudus o Portal SII o haz clic para subir</p>
+                <p class="text-[10px] text-slate-400">Extracción determinista en Node.js mediante inflado zlib nativo (sin OCR lento ni dependencias pesadas)</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- FORMULARIO DE DATOS EXTRAÍDOS (EDITABLE Y CON VALIDACIÓN) -->
+          <div id="panelDatosExtraidosDTE" class="space-y-3 pt-2">
+            <!-- Badge de Estado de la Extracción -->
+            <div id="badgeExtraccionStatus" class="p-2.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span class="text-emerald-400 font-bold">✔ Factura Reconocida:</span>
+                <span id="labelPlantillaDetectada" class="text-white font-mono font-semibold">DTE 14664 (Laudus ERP · Grúas San Pablo)</span>
+              </div>
+              <span class="px-2 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold">Confianza 100%</span>
+            </div>
+
+            <!-- Campos Extraídos -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="text-[10px] font-mono text-slate-400 uppercase font-bold">1. Empresa Holding Emisora</label>
+                <select id="formEmpresaEmisora" class="w-full mt-1 bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-amber-400 font-bold text-xs outline-none">
+                  <option value="Grúas San Pablo">Grúas San Pablo (52.004.162-1)</option>
+                  <option value="Bestmaq">Bestmaq Arriendos (76.209.534-3)</option>
+                  <option value="Logística del Sur">Logística del Sur (76.218.576-8)</option>
+                  <option value="Royal Rental">Royal Rental (78.254.535-3)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="text-[10px] font-mono text-slate-400 uppercase font-bold">2. N° Folio Factura DTE</label>
+                <input id="formFolioDte" type="text" value="14664" class="w-full mt-1 bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold text-xs" />
+              </div>
+
+              <div>
+                <label class="text-[10px] font-mono text-slate-400 uppercase font-bold">3. Fecha de Emisión</label>
+                <input id="formFechaDte" type="date" value="2026-10-20" class="w-full mt-1 bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-mono text-xs" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="text-[10px] font-mono text-slate-400 uppercase font-bold">4. Monto Neto ($ CLP)</label>
+                <input id="formMontoNeto" type="number" value="1820000" oninput="recalcularMontosFormulario()" class="w-full mt-1 bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-emerald-400 font-mono font-black text-xs" />
+              </div>
+
+              <div>
+                <label class="text-[10px] font-mono text-slate-400 uppercase font-bold">5. IVA 19% ($ CLP)</label>
+                <input id="formMontoIva" type="number" value="345800" readonly class="w-full mt-1 bg-slate-950 border border-white/5 rounded-lg px-2.5 py-1.5 text-slate-400 font-mono text-xs" />
+              </div>
+
+              <div>
+                <label class="text-[10px] font-mono text-slate-400 uppercase font-bold">6. Total Bruto ($ CLP)</label>
+                <input id="formMontoTotal" type="number" value="2165800" readonly class="w-full mt-1 bg-slate-950 border border-white/5 rounded-lg px-2.5 py-1.5 text-emerald-300 font-mono font-black text-xs" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="text-[10px] font-mono text-slate-400 uppercase font-bold">7. OC Referenciada en PDF</label>
+                <input id="formOcRef" type="text" value="12990" class="w-full mt-1 bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-blue-300 font-mono text-xs" />
+              </div>
+
+              <div>
+                <label class="text-[10px] font-mono text-slate-400 uppercase font-bold">8. Reports / OTs en Glosa</label>
+                <input id="formReportsRef" type="text" value="Report: 137668 | OTs: 64991, 64992" class="w-full mt-1 bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-slate-300 font-mono text-xs" />
+              </div>
+
+              <div>
+                <label class="text-[10px] font-mono text-slate-400 uppercase font-bold">9. Modalidad de Facturación</label>
+                <select id="formModalidadFact" class="w-full mt-1 bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs outline-none">
+                  <option value="PARCIAL" selected>🌗 Pago Parcial / Cuota N</option>
+                  <option value="MENSUAL">📅 Arriendo Mensual Continuo</option>
+                  <option value="CIERRE">✅ 100% Cierre Total de OT</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="text-[10px] font-mono text-slate-400 uppercase font-bold">10. Observación / Glosa Contable</label>
+              <input id="formNotaGlosa" type="text" placeholder="Ej: Pago de cuota 1 de faena de izaje..." value="Pago parcial por servicio de izaje" class="w-full mt-1 bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-slate-200 text-xs" />
+            </div>
+
+            <!-- BOTÓN ACCIÓN DE VINCULAR FACTURA -->
+            <button
+              type="button"
+              onclick="guardarYVincularFacturaDTE('${p.codi}')"
+              class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2 mt-2"
+            >
+              <span>💾</span>
+              <span>Asociar Factura DTE al Expediente de la OT</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function recalcularMontosFormulario() {
+      const neto = Number(document.getElementById('formMontoNeto')?.value) || 0;
+      const iva = Math.round(neto * 0.19);
+      const total = neto + iva;
+      const ivaEl = document.getElementById('formMontoIva');
+      const totEl = document.getElementById('formMontoTotal');
+      if (ivaEl) ivaEl.value = iva;
+      if (totEl) totEl.value = total;
+    }
+
+    function simularParserFactura(facturaKey) {
+      const muestra = FACTURAS_REALES_SAMPLE[facturaKey];
+      if (!muestra) return;
+
+      document.getElementById('labelPlantillaDetectada').textContent = `DTE ${muestra.folio} (${muestra.origen} · ${muestra.empresa_holding})`;
+      document.getElementById('formEmpresaEmisora').value = muestra.empresa_holding;
+      document.getElementById('formFolioDte').value = muestra.folio;
+      document.getElementById('formFechaDte').value = muestra.fecha;
+      document.getElementById('formMontoNeto').value = muestra.neto;
+      document.getElementById('formMontoIva').value = muestra.iva;
+      document.getElementById('formMontoTotal').value = muestra.total;
+      document.getElementById('formOcRef').value = muestra.oc;
+      document.getElementById('formReportsRef').value = `Reports: ${muestra.reports} | OTs: ${muestra.ots}`;
+      document.getElementById('formNotaGlosa').value = `Carga automática desde ${muestra.nombre_archivo}`;
+
+      mostrarToast(`Extracción automática completada para ${muestra.nombre_archivo} (${muestra.origen})`);
+    }
+
+    function procesarArchivoPdfSubido(evt) {
+      const file = evt.target.files && evt.target.files[0];
+      if (!file) return;
+
+      mostrarToast(`Analizando ${file.name} con motor parser nativo...`);
+      setTimeout(() => {
+        // Si el nombre contiene 2907, 3669, 83 o 14664, cargar muestra exacta
+        if (file.name.includes('2907')) {
+          simularParserFactura('SII_2907');
+        } else if (file.name.includes('3669')) {
+          simularParserFactura('SII_3669');
+        } else if (file.name.includes('83')) {
+          simularParserFactura('SII_83');
+        } else {
+          simularParserFactura('LAUDUS_14664');
+        }
+      }, 350);
+    }
+
+    function guardarYVincularFacturaDTE(codi) {
+      const p = PROCESOS_DATA.find(x => x.codi === codi);
+      if (!p) return;
+
+      const folio = document.getElementById('formFolioDte')?.value || 'S/F';
+      const neto = Number(document.getElementById('formMontoNeto')?.value) || 0;
+      const iva = Number(document.getElementById('formMontoIva')?.value) || Math.round(neto * 0.19);
+      const total = Number(document.getElementById('formMontoTotal')?.value) || (neto + iva);
+      const fecha = document.getElementById('formFechaDte')?.value || '2026-10-25';
+      const empresa = document.getElementById('formEmpresaEmisora')?.value || p.empresa;
+      const modalidad = document.getElementById('formModalidadFact')?.value || 'PARCIAL';
+      const oc = document.getElementById('formOcRef')?.value || p.nro_oc;
+      const nota = document.getElementById('formNotaGlosa')?.value || '';
+
+      if (!p.facturas_dte) p.facturas_dte = [];
+
+      // Validar si el folio ya existe en esta OT
+      const existe = p.facturas_dte.find(f => f.folio === folio);
+      if (existe) {
+        mostrarToast(`⚠️ El Folio DTE ${folio} ya está asociado a esta OT.`);
+        return;
+      }
+
+      p.facturas_dte.push({
+        id: 'F_' + folio + '_' + Date.now(),
+        folio,
+        emisor_rut: empresa === 'Bestmaq' ? '76.209.534-3' : (empresa === 'Logística del Sur' ? '76.218.576-8' : (empresa === 'Royal Rental' ? '78.254.535-3' : '52.004.162-1')),
+        emisor_razon: empresa,
+        empresa,
+        origen: 'Laudus / SII',
+        fecha,
+        neto,
+        iva,
+        total,
+        oc,
+        modalidad,
+        nota
+      });
+
+      sincronizarTotalesProceso(p);
+      renderModalDTE(p);
+      renderizarTodo();
+      mostrarToast(`✔ Factura DTE ${folio} (${fmtCLP(neto)}) asociada exitosamente a ${p.codi}`);
+    }
+
+    function desvincularFactura(codi, facturaId) {
+      const p = PROCESOS_DATA.find(x => x.codi === codi);
+      if (!p || !p.facturas_dte) return;
+
+      p.facturas_dte = p.facturas_dte.filter(f => f.id !== facturaId && f.folio !== facturaId);
+      sincronizarTotalesProceso(p);
+      renderModalDTE(p);
+      renderizarTodo();
+      mostrarToast(`Factura desvinculada del proceso ${codi}. Saldo recalculado.`);
+    }
+
+    function guardarOCCliente(codi) {
+      const p = PROCESOS_DATA.find(x => x.codi === codi);
+      if (!p) return;
+      const oc = document.getElementById('inputNuevoFolioOC')?.value || 'OC-45009912';
+      p.tiene_oc = true;
+      p.nro_oc = oc;
+      p.oc_fecha = '2026-10-25';
+      sincronizarTotalesProceso(p);
+      cerrarModalDoc();
+      renderizarTodo();
+      mostrarToast(`✔ Orden de Compra ${oc} vinculada. Proceso desbloqueado para Facturación.`);
+    }
+
+    function ejecutarAccionPrimariaModal() {
+      cerrarModalDoc();
+      mostrarToast(`Operación documental registrada correctamente.`);
+    }
+
+    function cerrarModalDoc(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('modalDocOverlay').classList.add('hidden');
+    }
+
+    function renderTablaPersonal() {
+      const thead = document.getElementById('theadPersonal');
+      const tbody = document.getElementById('tbodyPersonal');
+
+      if (vistaPersonalActual === 'resumen') {
+        thead.innerHTML = `
+          <tr>
+            <th class="py-3 px-3.5">Trabajador / RUT</th>
+            <th class="py-3 px-3">Rol Operativo</th>
+            <th class="py-3 px-3">Empresa</th>
+            <th class="py-3 px-3 text-center">OTs Atendidas</th>
+            <th class="py-3 px-3 text-center">Jornadas (Días)</th>
+            <th class="py-3 px-3 text-right">Horas Normales</th>
+            <th class="py-3 px-3 text-right">Horas Sobretiempo</th>
+            <th class="py-3 px-3 text-right">Horas Totales</th>
+            <th class="py-3 px-3.5 text-right">Viáticos Asignados</th>
+          </tr>
+        `;
+        tbody.innerHTML = PERSONAL_RESUMEN.map(r => `
+          <tr class="hover:bg-white/[0.02]">
+            <td class="py-3 px-3.5">
+              <div class="font-bold text-white">${r.nombre}</div>
+              <div class="text-[10px] font-mono text-slate-400">${r.rut}</div>
+            </td>
+            <td class="py-3 px-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold ${r.rol === 'OPERADOR' ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30' : 'bg-purple-500/15 text-purple-300 border border-purple-500/30'}">${r.rol}</span>
+            </td>
+            <td class="py-3 px-3 text-slate-300">${r.empresa}</td>
+            <td class="py-3 px-3 text-center font-mono font-bold text-white">${r.ots} OTs</td>
+            <td class="py-3 px-3 text-center font-mono text-slate-300">${r.dias} días</td>
+            <td class="py-3 px-3 text-right font-mono text-slate-200">${r.hrs_norm.toFixed(1)} h</td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-amber-300">${r.hrs_ext.toFixed(1)} h</td>
+            <td class="py-3 px-3 text-right font-mono font-black text-emerald-400">${r.hrs_tot.toFixed(1)} h</td>
+            <td class="py-3 px-3.5 text-right font-mono text-slate-200">${fmtCLP(r.viaticos)}</td>
+          </tr>
+        `).join('');
+      } else {
+        thead.innerHTML = `
+          <tr>
+            <th class="py-3 px-3.5">Fecha Report</th>
+            <th class="py-3 px-3">Trabajador</th>
+            <th class="py-3 px-3">Rol</th>
+            <th class="py-3 px-3">OT / Cliente</th>
+            <th class="py-3 px-3">Equipo / Patente</th>
+            <th class="py-3 px-3 text-right">Hrs Normales</th>
+            <th class="py-3 px-3 text-right">Hrs Sobretiempo</th>
+            <th class="py-3 px-3 text-right">Hrs Totales</th>
+            <th class="py-3 px-3.5 text-center">Documento Report</th>
+          </tr>
+        `;
+        tbody.innerHTML = PERSONAL_DETALLE.map(d => `
+          <tr class="hover:bg-white/[0.02]">
+            <td class="py-3 px-3.5 font-mono text-slate-300">${d.fecha}</td>
+            <td class="py-3 px-3 font-bold text-white">${d.nombre}</td>
+            <td class="py-3 px-3 font-mono text-[10px] text-slate-300">${d.rol}</td>
+            <td class="py-3 px-3"><span class="font-mono font-bold text-amber-400">${d.ot}</span> · <span class="text-slate-300">${d.cliente}</span></td>
+            <td class="py-3 px-3 font-mono text-cyan-300">${d.patente}</td>
+            <td class="py-3 px-3 text-right font-mono text-slate-200">${d.hrs_norm.toFixed(1)} h</td>
+            <td class="py-3 px-3 text-right font-mono text-amber-300">${d.hrs_ext.toFixed(1)} h</td>
+            <td class="py-3 px-3 text-right font-mono font-black text-emerald-400">${d.hrs_tot.toFixed(1)} h</td>
+            <td class="py-3 px-3.5 text-center">
+              <button onclick="mostrarToast('Abriendo PDF firmado de Report Diario (${d.ot})')" class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 cursor-pointer">
+                📄 PDF FES ↗
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function renderTablaEquipos() {
+      const tbody = document.getElementById('tbodyEquipos');
+      tbody.innerHTML = EQUIPOS_DATA.map(eq => {
+        const margen = eq.devengado - eq.costos;
+        const pct = eq.devengado > 0 ? Math.round((margen / eq.devengado) * 100) : 0;
+        return `
+          <tr class="hover:bg-white/[0.02]">
+            <td class="py-3 px-3.5">
+              <div class="font-mono font-black text-amber-400">${eq.patente}</div>
+              <div class="text-[10px] text-slate-400">${eq.empresa}</div>
+            </td>
+            <td class="py-3 px-3">
+              <div class="font-bold text-white">${eq.modelo}</div>
+              <div class="text-[10px] font-mono text-slate-400">${eq.tipo}</div>
+            </td>
+            <td class="py-3 px-3 text-center font-mono font-bold text-white">${eq.ots} OTs</td>
+            <td class="py-3 px-3 text-right font-mono text-slate-300">${eq.dias} d · <strong>${eq.hrs} h</strong></td>
+            <td class="py-3 px-3 text-right font-mono text-slate-200">${fmtCLP(eq.comprometido)}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-cyan-300">${fmtCLP(eq.devengado)}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-amber-300">${fmtCLP(eq.edp)}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-emerald-400">${fmtCLP(eq.facturado)}</td>
+            <td class="py-3 px-3 text-right font-mono text-rose-300">${fmtCLP(eq.costos)}</td>
+            <td class="py-3 px-3.5 text-right font-mono">
+              <div class="font-black text-emerald-400">${fmtCLP(margen)}</div>
+              <div class="text-[10px] text-slate-400">${pct}% s/venta</div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function cambiarDimensionGrafico(dim) {
+      dimensionGrafico = dim;
+      const active = 'px-3 py-1 rounded font-bold transition-all cursor-pointer bg-blue-600 text-white shadow';
+      const inactive = 'px-3 py-1 rounded font-bold transition-all cursor-pointer text-slate-400 hover:text-white';
+      document.getElementById('btnDim6Meses').className = dim === '6meses' ? active : inactive;
+      document.getElementById('btnDimSemanal').className = dim === 'semanal' ? active : inactive;
+      renderizarTodo();
+    }
+
+    function cambiarMesFiltro(val) {
+      mesFiltroActivo = val;
+      const labelMap = {
+        'ALL_6M': 'Últimos 6 Meses (May-Oct 2026)',
+        '2026-10': 'Octubre 2026',
+        '2026-09': 'Septiembre 2026',
+        '2026-08': 'Agosto 2026',
+        '2026-07': 'Julio 2026',
+        '2026-06': 'Junio 2026',
+        '2026-05': 'Mayo 2026'
+      };
+      document.getElementById('pillPeriodoActivo').textContent = `Periodo Activo: ${labelMap[val] || val}`;
+      renderizarTodo();
+    }
+
+    function setFiltroEstado(est) {
+      filtroEstadoActivo = est;
+      ['TODOS', 'LISTO_FACTURAR', 'PARCIAL', 'FALTA_OC', 'FACTURADO'].forEach(k => {
+        const el = document.getElementById('fBtn_' + k);
+        if (!el) return;
+        if (k === est) {
+          el.className = 'px-2 py-1 rounded font-bold bg-blue-600 text-white cursor-pointer';
+        } else {
+          el.className = 'px-2 py-1 rounded font-bold text-slate-300 hover:bg-white/5 cursor-pointer';
+        }
+      });
+      renderizarTodo();
+    }
+
+    function cambiarEmpresaGlobal(val) {
+      empresaGlobalActiva = val;
+      document.getElementById('badgeEmpresaActiva').textContent = val === 'TODAS' ? 'Todas las Empresas (Holding)' : val;
+      renderizarTodo();
+      mostrarToast(`Contexto global cambiado a: ${val}`);
+    }
+
+    function cambiarSubmenu(sub) {
+      submenuActual = sub;
+      document.getElementById('vistaSubmenu1').classList.toggle('hidden', sub !== 'procesos');
+      document.getElementById('vistaSubmenu2').classList.toggle('hidden', sub !== 'operadores');
+      document.getElementById('vistaSubmenu3').classList.toggle('hidden', sub !== 'equipos');
+
+      const activeCls = 'px-3 py-1.5 rounded-md text-xs font-bold bg-blue-600 text-white shadow transition-all flex items-center gap-2 cursor-pointer';
+      const inactiveCls = 'px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white transition-all flex items-center gap-2 cursor-pointer';
+
+      document.getElementById('subBtn1').className = sub === 'procesos' ? activeCls : inactiveCls;
+      document.getElementById('subBtn2').className = sub === 'operadores' ? activeCls : inactiveCls;
+      document.getElementById('subBtn3').className = sub === 'equipos' ? activeCls : inactiveCls;
+    }
+
+    function cambiarVistaPersonal(vista) {
+      vistaPersonalActual = vista;
+      document.getElementById('btnOpResumen').className = vista === 'resumen'
+        ? 'px-3 py-1 rounded font-bold bg-blue-600 text-white cursor-pointer'
+        : 'px-3 py-1 rounded font-bold text-slate-400 hover:text-white cursor-pointer';
+      document.getElementById('btnOpDetalle').className = vista === 'detalle'
+        ? 'px-3 py-1 rounded font-bold bg-blue-600 text-white cursor-pointer'
+        : 'px-3 py-1 rounded font-bold text-slate-400 hover:text-white cursor-pointer';
+      renderTablaPersonal();
+    }
+
+    function simularDescargaExcel() {
+      mostrarToast(`Descargando planilla Excel (.xlsx) del submenú "${submenuActual.toUpperCase()}"`);
+    }
+
+    function mostrarToast(msg) {
+      const box = document.getElementById('toastNotif');
+      document.getElementById('toastText').textContent = msg;
+      box.classList.remove('hidden');
+      setTimeout(() => box.classList.add('hidden'), 2800);
+    }
+
+    function renderizarTodo() {
+      actualizarKPIs();
+      renderHighchartAgrupado();
+      renderTablaProcesos();
+      renderTablaPersonal();
+      renderTablaEquipos();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderizarTodo();
+    });
+  </script>
+</body>
+</html>

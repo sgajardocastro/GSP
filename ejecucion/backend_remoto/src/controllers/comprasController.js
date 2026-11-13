@@ -580,6 +580,8 @@ const comprasController = {
         <div class="info-row"><span class="lbl">Ticket Solicitud Origen:</span><span class="val">${oc.folio_solicitud || 'Emisión Directa'}</span></div>
         <div class="info-row"><span class="lbl">OT / Proyecto Vinculado:</span><span class="val">${oc.codi_proyecto ? `${oc.codi_proyecto} - ${oc.nombre_proyecto || ''}` : (oc.numero_ot_mantenimiento ? `OT Mant. ${oc.numero_ot_mantenimiento}` : 'Stock General / Administración')}</span></div>
         <div class="info-row"><span class="lbl">Rubro Costo ITS:</span><span class="val">${oc.rubro_its || 'GASTO_EXTRA'}</span></div>
+        <div class="info-row"><span class="lbl">Cuenta Contable Laudus:</span><span class="val">${oc.codigo_cuenta_laudus ? `${oc.codigo_cuenta_laudus} · ${oc.nombre_cuenta_laudus || ''}` : 'Por Imputar'}</span></div>
+        <div class="info-row"><span class="lbl">Centro de Costo Laudus:</span><span class="val">${oc.centro_costo_laudus || oc.codi_proyecto || 'CASA MATRIZ TEMUCO'}</span></div>
         <div class="info-row"><span class="lbl">Folio OC Laudus ERP:</span><span class="val">${oc.folio_laudus_oc || 'Pendiente Sincronización'}</span></div>
         <div class="info-row"><span class="lbl">Factura Compra DTE:</span><span class="val">${oc.folio_dte_factura_compra || 'Pendiente Recepción DTE'}</span></div>
       </div>

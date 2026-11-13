@@ -66,6 +66,24 @@ class ComprasModel {
   constructor() {
     this.pool = pool;
     this.EMPRESAS_GRUPO = EMPRESAS_GRUPO;
+    this._schemaReady = false;
+  }
+
+  async ensureLaudusColumns() {
+    if (this._schemaReady) return;
+    try {
+      await this.pool.query(`
+        ALTER TABLE tcmp_solicitud_pedido
+          ADD COLUMN IF NOT EXISTS codigo_cuenta_laudus VARCHAR(40),
+          ADD COLUMN IF NOT EXISTS nombre_cuenta_laudus VARCHAR(150),
+          ADD COLUMN IF NOT EXISTS centro_costo_laudus VARCHAR(120);
+        ALTER TABLE tcmp_orden_compra
+          ADD COLUMN IF NOT EXISTS codigo_cuenta_laudus VARCHAR(40),
+          ADD COLUMN IF NOT EXISTS nombre_cuenta_laudus VARCHAR(150),
+          ADD COLUMN IF NOT EXISTS centro_costo_laudus VARCHAR(120);
+      `);
+      this._schemaReady = true;
+    } catch (_) {}
   }
 
   getYearMonthTag(date = new Date()) {
@@ -345,6 +363,7 @@ class ComprasModel {
   }
 
   async crearSolicitud(data, user = {}) {
+    await this.ensureLaudusColumns();
     const idEmpresa = Number(data.id_empresa || user.id_empresa || 9);
     const origen = ORIGENES_VALIDOS.includes(data.origen_solicitud) ? data.origen_solicitud : 'OPERACIONES_OT';
     const defaultRubro = origen === 'TALLER_BODEGA' ? 'REPUESTOS_TALLER' : 'FLETE_EXTERNO';
@@ -386,9 +405,12 @@ class ComprasModel {
         estado,
         id_usuario_solicita,
         nombre_solicita,
-        observacion_compras
+        observacion_compras,
+        codigo_cuenta_laudus,
+        nombre_cuenta_laudus,
+        centro_costo_laudus
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, 'PENDIENTE_COMPRAS', $14, $15, $16
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, 'PENDIENTE_COMPRAS', $14, $15, $16, $17, $18, $19
       )
       RETURNING *;
     `;
@@ -409,7 +431,10 @@ class ComprasModel {
       JSON.stringify(items),
       idUsuario,
       nombreSolicita,
-      data.observacion_compras || null
+      data.observacion_compras || null,
+      data.codigo_cuenta_laudus || null,
+      data.nombre_cuenta_laudus || null,
+      data.centro_costo_laudus || null
     ];
 
     const { rows } = await this.pool.query(query, params);
@@ -549,6 +574,7 @@ class ComprasModel {
   }
 
   async crearOrden(data, user = {}) {
+    await this.ensureLaudusColumns();
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -621,9 +647,12 @@ class ComprasModel {
           glosa_general,
           estado_oc,
           id_usuario_emite,
-          nombre_emite
+          nombre_emite,
+          codigo_cuenta_laudus,
+          nombre_cuenta_laudus,
+          centro_costo_laudus
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'BORRADOR', $20, $21
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'BORRADOR', $20, $21, $22, $23, $24
         )
         RETURNING *;
       `, [
@@ -647,7 +676,10 @@ class ComprasModel {
         montoTotal,
         data.glosa_general || null,
         idUsuarioEmite,
-        nombreEmite
+        nombreEmite,
+        data.codigo_cuenta_laudus || null,
+        data.nombre_cuenta_laudus || null,
+        data.centro_costo_laudus || null
       ]);
 
       const nuevaOc = insOcRes.rows[0];
@@ -819,6 +851,7 @@ class ComprasModel {
   }
 
   async sincronizarItsLaudus(idOc, payload = {}, user = {}) {
+    await this.ensureLaudusColumns();
     const oc = await this.getOrdenById(idOc);
     if (!oc) {
       throw new Error('Orden de Compra no encontrada');
@@ -831,6 +864,9 @@ class ComprasModel {
       const folioLaudus = payload.folio_laudus_oc !== undefined ? String(payload.folio_laudus_oc).trim() : oc.folio_laudus_oc;
       const folioDte = payload.folio_dte_factura_compra !== undefined ? String(payload.folio_dte_factura_compra).trim() : oc.folio_dte_factura_compra;
       const imputarIts = payload.imputado_en_its !== undefined ? Boolean(payload.imputado_en_its) : true;
+      const codCuenta = payload.codigo_cuenta_laudus !== undefined ? String(payload.codigo_cuenta_laudus).trim() : oc.codigo_cuenta_laudus;
+      const nomCuenta = payload.nombre_cuenta_laudus !== undefined ? String(payload.nombre_cuenta_laudus).trim() : oc.nombre_cuenta_laudus;
+      const centroCosto = payload.centro_costo_laudus !== undefined ? String(payload.centro_costo_laudus).trim() : oc.centro_costo_laudus;
 
       let nuevoEstado = oc.estado_oc;
       if (folioDte && ['AUTORIZADA', 'AUTORIZADA_CON_OBS', 'ENVIADA_PROVEEDOR', 'RECEPCIONADA_BODEGA'].includes(oc.estado_oc)) {
@@ -845,6 +881,9 @@ class ComprasModel {
           imputado_en_its = $4,
           fecha_sincronizacion_laudus = NOW(),
           estado_oc = $5,
+          codigo_cuenta_laudus = $6,
+          nombre_cuenta_laudus = $7,
+          centro_costo_laudus = $8,
           updated_at = NOW()
         WHERE id_oc = $1;
       `, [
@@ -852,7 +891,10 @@ class ComprasModel {
         folioLaudus || null,
         folioDte || null,
         imputarIts,
-        nuevoEstado
+        nuevoEstado,
+        codCuenta || null,
+        nomCuenta || null,
+        centroCosto || null
       ]);
 
       // Si tiene proyecto vinculado e imputarIts = true, sincronizar con tits_costo_operacional si existe cabecera ITS

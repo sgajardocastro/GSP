@@ -2,25 +2,29 @@
 
 **Documento:** `38_liquidacion_edp_y_facturacion_spec.md`  
 **Ecosistema:** Grúas San Pablo (GSP) / LeanGlobal Platform  
-**Módulo:** Torre de Control CRM / Operaciones (`GestorOportunidades.vue`)  
-**Subpestaña:** Subpestaña 7: `7. Valorización, ITS & Facturación`  
+**Módulo:** Torre de Control CRM / Operaciones (`GestorOportunidades.vue`) y Torre PMO (`Torre.vue`)  
+**Subpestaña:** Subpestaña 7: `7. Valorización, ITS & Facturación` (`subtab: 'liquidacion'`)  
 **Fase de Dominio:** Fases 6 & 7 - Cierre Operacional, Conciliación, Respaldo OC y Emisión DTE (`id_proyecto_estado = 6` / Liquidación y `id_proyecto_estado = 7` / Facturado y Concluido)  
 **Estado:** `CANÓNICO VIGENTE`  
-**Última Actualización:** 8 de Septiembre de 2026 (Consolidación Pipeline 4 Pasos & Repositorio OCs Mandante)  
+**Versión:** `v1.1.0`  
+**Última Actualización:** 6 de Octubre de 2026 (Transición Determinista Kanban Columna 5 ➔ Columna 6, Apertura Directa en Subpestaña 7 y Sincronización Backend ITS-Proyecto)  
 
 ---
 
 ## 1. 📌 Resumen Ejecutivo y Objetivo de Negocio
 
-La **Subpestaña 7 ("Valorización, ITS & Facturación")** consolida el cierre de ciclo de una Orden de Trabajo (OT) en Grúas San Pablo tras la ejecución en terreno.
+La **Subpestaña 7 ("Valorización, ITS & Facturación")** consolida el seguimiento y cierre de ciclo de una Orden de Trabajo (OT) en Grúas San Pablo tras la ejecución en terreno.
 
-Conforme a las definiciones operativas y contables acordadas con Gerencia General y Jefatura de Contabilidad (8 de Septiembre de 2026), este módulo unifica en un **Pipeline Secuencial de 4 Pasos** todo el proceso de cierre para eliminar fugas de facturación y discrepancias con el mandante:
+> **Regla de Gobernanza (Spec 57 / Spec 60):** En el Tablero Kanban y Gestor Comercial (`GestorOportunidades.vue`), **toda la información financiera opera en modo de solo lectura y auditoría visual**. La edición de tarifas, carga documental de OC y registro de Facturación DTE reside y opera **exclusivamente en la Torre de Control PMO (`Torre.vue` - Sub-vista 3)** a través de `ModalCaratulaEDP.vue` (`:solo-lectura="false"`).
 
-1. **Paso 1 - ITS (Informe de Término de Servicio - [Spec 46](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/46_informe_termino_servicio_its_spec.md) & [Spec 47](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/47_its_pdf_flujo_aprobacion_fes_spec.md)):** Liquidación técnica de horas de terreno (auto-pobladas de PWA), imputación de costos directos en 8 categorías, determinación de Utilidad Bruta y Margen % reactivo, plantillas de observación de 1-clic y triple firma interna previa a la emisión del EDP.
-2. **Paso 2 - EDP Mandante (Protegido por Candado Criptográfico FES):** Conciliación automática de jornadas operadas contra tarifas pactadas, cálculo de sobretiempos y emisión de la Carátula Oficial de Estado de Pago respaldada por reports firmados con geolocalización. **Invariante:** La Carátula Oficial permanece bloqueada hasta que Jefatura de Operaciones (Richard) apruebe el ITS con su PIN FES de 4 dígitos.
+Conforme a las definiciones operativas y contables acordadas, este módulo unifica en un **Pipeline Secuencial de 4 Pasos** todo el proceso de cierre para eliminar fugas de facturación y discrepancias con el mandante:
+
+1. **Paso 1 - ITS (Informe de Término de Servicio - [Spec 46](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/46_informe_termino_servicio_its_spec.md) & [Spec 47](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/47_its_pdf_flujo_aprobacion_fes_spec.md)):** Liquidación técnica de horas de terreno (auto-pobladas de PWA), imputación de costos directos en 8 categorías, determinación de Utilidad Bruta y Margen % reactivo, plantillas de observación de 1-clic y triple firma interna previa a la emisión del EDP. En Kanban opera en modo estrictamente de solo lectura (`:readonly="true"`).
+2. **Paso 2 - EDP Mandante (Protegido por Candado Criptográfico FES):** Conciliación automática de jornadas operadas contra tarifas pactadas, cálculo de sobretiempos y emisión de la Carátula Oficial de Estado de Pago respaldada por reports firmados con geolocalización. **Invariante:** La Carátula Oficial permanece bloqueada hasta que Jefatura de Operaciones apruebe el ITS con su PIN FES. En Kanban abre en modo de solo lectura (`:solo-lectura="true"`).
 3. **Paso 3 - Respaldo OC (Orden de Compra Mandante):** Repositorio documental de Órdenes de Compra / HES recibidas del cliente con validación financiera de cobertura:
    $$\sum \text{Monto OCs} \ge \text{Total Neto EDP}$$
-4. **Paso 4 - Factura DTE:** Vinculación al ERP Laudus, asociación de la OC seleccionada con un solo clic, registro de Folio DTE y cierre formal de la OT en estado `7` (Facturado y Concluido).
+   En Kanban permite visualizar y descargar los PDFs cargados. La subida física y validación se realiza en la Torre PMO.
+4. **Paso 4 - Factura DTE:** Ficha ejecutiva de estado de facturación. En Kanban opera en modo de solo lectura con detalle de montos y folio. La emisión y cierre contable oficial se gestionan en la Torre de Control PMO (`Torre.vue`).
 
 ---
 
@@ -195,3 +199,25 @@ Toda la traza documental y financiera de la Subpestaña 7 reside en el esquema `
 | **QA-38-03** | Carga y Repositorio de OC | Permite subir el archivo PDF de la OC, calcular la cobertura respecto al EDP y visualizar el documento en el visor nativo. |
 | **QA-38-04** | Auto-completado de OC en Facturación | Al hacer clic en el chip de una OC del Paso 3, el campo N° OC del Paso 4 se llena automáticamente. |
 | **QA-38-05** | Cierre y Transición a Facturado | Al registrar la factura y confirmar el cierre, la OT pasa a `id_proyecto_estado = 7` y se refleja en la columna final del Kanban. |
+| **QA-38-06** | Transición Automática Kanban (Col 5 ➔ Col 6) | Al concluir la faena (`id_proyecto_estado >= 6`) o visar el ITS por Operaciones (`EN_REVISION_CONTABILIDAD` o `CONCLUIDO`), la tarjeta sale deterministamente de la Columna 5 ("En Ejecución / Faena") y entra a la Columna 6 ("Finalizado / Contabilidad"). Al hacer clic en la tarjeta, abre inmediatamente la Subpestaña 7: `7. Valorización, ITS & Facturación` (`subtab: 'liquidacion'`). |
+
+---
+
+## 7. 🚦 Gobernanza de Transición Kanban: Columna 5 (Operaciones) ➔ Columna 6 (Contabilidad)
+
+### 7.1. Invariante de Exclusión Mutua Operaciones vs Contabilidad
+Para evitar confusiones entre el equipo de Operaciones de Terreno y el equipo de Contabilidad/Finanzas:
+1. **Columna 5 ("En Ejecución / Faena" - Operaciones):**
+   * Agrupa **únicamente** proyectos activos en fase de ejecución (`id_proyecto_estado === 5 && estaEnFaena(p)`).
+   * **Exclusión Estricta:** Si el proyecto califica como finalizado operacionalmente (`esFinalizadoOperacional(p)`), queda inmediatamente excluido de esta columna.
+2. **Columna 6 ("Finalizado / Contabilidad"):**
+   * Agrupa **todos** los proyectos que han completado su ciclo operativo o se encuentran en revisión/liquidación contable:
+     * `id_proyecto_estado >= 6 && id_proyecto_estado < 99` (sin desestimación).
+     * `estado_its IN ('EN_REVISION_CONTABILIDAD', 'CONCLUIDO')`.
+     * `estado_financiero IN ('DEVENGADO_PENDIENTE_FACTURA', 'FACTURADO_CONFORME')`.
+     * `json_field.its_v1.concluido === true` o `ejecucion_finalizada === true`.
+3. **Acción de Apertura Contextual:**
+   * Al hacer clic en cualquier tarjeta de la Columna 6, o mediante el enlace PMO de sugerencia, el sistema navega directamente a la **Subpestaña 7: `7. Valorización, ITS & Facturación`** (`subtab: 'liquidacion'`), permitiendo a Contabilidad auditar de inmediato los costos del ITS, la carátula de EDP, los respaldos de OC y la emisión del DTE.
+4. **Sincronización Backend Automática:**
+   * En `proyectoModel.js`, la consulta principal realiza un `LEFT JOIN LATERAL` hacia `tits_informe_termino` trayendo `id_its`, `folio_its` y `estado_its`.
+   * En `itsController.js`, al registrar el V°B° de Operaciones (Paso 2) o V°B° de Contabilidad (Paso 3), el backend ejecuta automáticamente un `UPDATE tpry_proyecto SET id_proyecto_estado = GREATEST(id_proyecto_estado, 6)` para asegurar coherencia relacional inmediata.

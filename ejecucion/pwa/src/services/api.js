@@ -17,6 +17,27 @@ const api = axios.create({
   baseURL: resolveApiBase()
 })
 
+// Interceptor de request: adjunta JWT y X-User-Id desde la sesión activa de la PWA
+api.interceptors.request.use((config) => {
+  try {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+    const perfilRaw = localStorage.getItem('perfil')
+    if (perfilRaw) {
+      const perfil = JSON.parse(perfilRaw)
+      const idUser = perfil?.ID_USUARIO || perfil?.id_user || null
+      if (idUser) {
+        config.headers['X-User-Id'] = String(idUser)
+      }
+    }
+  } catch (e) {
+    // Ignorar error de lectura de storage
+  }
+  return config
+})
+
 // TRANSAMAC_REMOVE_CONEXION_20260428: desactiva llamadas realtime de conexion.
 // Volver a false si se restaura el modulo CNX.
 const DISABLE_CNX_REALTIME_TOUCH = true

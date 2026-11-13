@@ -1,8 +1,20 @@
 import axios from 'axios'
 import { navStore } from '../stores/navStore'
 
+const resolveApiBase = () => {
+  if (typeof window !== 'undefined') {
+    if (window.location.pathname.startsWith('/lg-gsp-prod')) {
+      return 'https://servidor.leanglobal.cl/lg-gsp-prod/api'
+    }
+    if (window.location.pathname.startsWith('/lg-gsp-dev')) {
+      return 'https://servidor.leanglobal.cl/lg-gsp-dev/api'
+    }
+  }
+  return import.meta.env.VITE_API_BASE_URL_CORE || import.meta.env.VITE_API_BASE_URL || 'https://servidor.leanglobal.cl/lg-gsp-dev/api'
+}
+
 const apiAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL_CORE || import.meta.env.VITE_API_BASE_URL || 'https://servidor.leanglobal.cl/lg-gsp/api',
+  baseURL: resolveApiBase(),
   headers: {
     'Content-Type': 'application/json'
   }
@@ -42,7 +54,7 @@ apiAxios.interceptors.request.use((config) => {
 })
 
 const sstAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL_SST || 'https://servidor.leanglobal.cl/lg-gsp/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL_SST || resolveApiBase(),
   headers: {
     'Content-Type': 'application/json'
   }

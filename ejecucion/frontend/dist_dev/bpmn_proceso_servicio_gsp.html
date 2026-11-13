@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modelo de Proceso BPMN 2.0 Integral | Grúas San Pablo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+
+  <style>
+    :root {
+      --bg-deep: #060a14;
+      --bg-card: #0b1324;
+      --border-subtle: #1e293b;
+    }
+
+    body {
+      background-color: var(--bg-deep);
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0b1324;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+
+    #diagramCanvas {
+      width: 100%;
+      height: calc(100vh - 120px);
+      cursor: grab;
+      background-image: 
+        radial-gradient(ellipse 70% 50% at 50% 0%, rgba(37, 99, 235, 0.08), transparent),
+        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
+      background-size: 100% 100%, 24px 24px;
+    }
+    #diagramCanvas:active {
+      cursor: grabbing;
+    }
+
+    #mermaidOutput svg {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+    }
+
+    .node {
+      cursor: pointer;
+      transition: filter 0.2s ease, transform 0.2s ease;
+    }
+    .node text, .node .label {
+      font-size: 15px !important;
+      font-weight: 600 !important;
+      line-height: 1.45 !important;
+    }
+    .edgeLabel text, .edgeLabel .label {
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      fill: #fbbf24 !important;
+    }
+    .node:hover {
+      filter: brightness(1.25) drop-shadow(0 0 12px rgba(56, 189, 248, 0.6));
+    }
+
+    .tab-pill {
+      padding: 6px 14px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: #0f172a;
+      color: #94a3b8;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .tab-pill:hover {
+      background: #1e293b;
+      color: #ffffff;
+      border-color: #475569;
+    }
+    .tab-pill.active {
+      background: #d97706;
+      color: #0b0f17;
+      border-color: #f59e0b;
+      box-shadow: 0 0 14px rgba(217, 119, 6, 0.4);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col antialiased select-none">
+
+  <!-- ============================================================== -->
+  <!-- BARRA SUPERIOR: CONTROLES DE ZOOM Y VISTAS                     -->
+  <!-- ============================================================== -->
+  <header class="h-16 bg-[#060a14]/95 backdrop-blur border-b border-slate-800 px-4 md:px-6 flex items-center justify-between z-30 flex-shrink-0">
+    
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 font-mono font-extrabold text-base">
+        <i data-lucide="git-merge" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-extrabold text-white tracking-tight">Modelo de Procesos BPMN 2.0 (ISO/IEC 19510) — Grúas San Pablo</h1>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold">Ciclo Completo Granular</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Desde la Solicitud Inicial ➔ Visita Terreno ➔ Cotización V1/V2 ➔ Diff ➔ OT ➔ Bucle Reports ➔ EDP vs ITS</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Pestañas -->
+      <div class="flex items-center bg-slate-900 border border-slate-800 p-1 rounded-xl gap-1">
+        <button onclick="cambiarVista('diagrama', this)" class="tab-pill active">
+          <i data-lucide="workflow" class="w-3.5 h-3.5"></i>
+          <span>Diagrama BPMN 2.0 Integral</span>
+        </button>
+        <button onclick="cambiarVista('diferencia', this)" class="tab-pill">
+          <i data-lucide="split" class="w-3.5 h-3.5"></i>
+          <span>Diferencia EDP vs ITS</span>
+        </button>
+        <button onclick="cambiarVista('reglas', this)" class="tab-pill">
+          <i data-lucide="gauge" class="w-3.5 h-3.5"></i>
+          <span>Odómetros vs Horómetros</span>
+        </button>
+      </div>
+
+      <!-- Controles de Zoom y Ajuste -->
+      <div class="flex items-center bg-slate-900 border border-slate-800 p-1 rounded-xl gap-1 ml-2">
+        <button onclick="ajustarAlAncho()" class="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 font-bold text-xs flex items-center gap-1 border border-amber-500/40 cursor-pointer" title="Ajustar al ancho para lectura óptima (100%)">
+          <i data-lucide="align-justify" class="w-3.5 h-3.5"></i>
+          <span>Lectura 100%</span>
+        </button>
+        <button onclick="verPlanoCompleto()" class="px-2.5 py-1 rounded-lg hover:bg-slate-800 text-slate-300 text-xs flex items-center gap-1 cursor-pointer" title="Ver todo el plano completo">
+          <i data-lucide="shrink" class="w-3.5 h-3.5"></i>
+          <span>Ver Todo</span>
+        </button>
+        <div class="h-4 w-px bg-slate-800 my-auto"></div>
+        <button onclick="zoomIn()" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white cursor-pointer" title="Acercar (+)">
+          <i data-lucide="zoom-in" class="w-4 h-4"></i>
+        </button>
+        <button onclick="zoomOut()" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white cursor-pointer" title="Alejar (-)">
+          <i data-lucide="zoom-out" class="w-4 h-4"></i>
+        </button>
+        <button onclick="ajustarAlAncho()" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white cursor-pointer" title="Reajustar Lectura">
+          <i data-lucide="maximize-2" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================== -->
+  <!-- VISTA 1: LIENZO PRINCIPAL PAN & ZOOM                           -->
+  <!-- ============================================================== -->
+  <div id="vistaDiagrama" class="flex-1 relative overflow-hidden bg-[#060a14]">
+    
+    <!-- Leyenda Flotante -->
+    <div class="absolute top-4 left-4 z-20 bg-slate-900/90 backdrop-blur border border-slate-800 rounded-xl p-3 shadow-2xl flex flex-wrap items-center gap-3 text-xs pointer-events-auto">
+      <span class="text-[10px] font-mono text-slate-400 font-bold uppercase tracking-wider">Leyenda BPMN:</span>
+      <span class="flex items-center gap-1.5 text-[11px] font-mono text-sky-300">
+        <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Comercial
+      </span>
+      <span class="flex items-center gap-1.5 text-[11px] font-mono text-emerald-300">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Operaciones &amp; Patio
+      </span>
+      <span class="flex items-center gap-1.5 text-[11px] font-mono text-purple-300">
+        <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Bucle Terreno (Reports)
+      </span>
+      <span class="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 font-bold">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-500/40"></span> Carril EDP (Cobro)
+      </span>
+      <span class="flex items-center gap-1.5 text-[11px] font-mono text-blue-400 font-bold">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-blue-500/40"></span> Carril ITS (Costos/RRHH)
+      </span>
+      <span class="text-[10px] text-slate-400 border-l border-slate-700 pl-3">
+        <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">Arrastrar</kbd> mover &bull; <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">Rueda</kbd> zoom &bull; <strong>Clic en caja</strong> para ver ficha
+      </span>
+    </div>
+
+    <!-- Lienzo Pan & Zoom -->
+    <div id="diagramCanvas">
+      <div id="mermaidOutput" class="w-full h-full flex items-center justify-center p-4"></div>
+    </div>
+
+    <!-- DRAWER LATERAL DE INSPECCIÓN -->
+    <aside id="nodeDrawer" class="hidden absolute top-4 right-4 bottom-4 w-96 bg-slate-900/95 backdrop-blur border border-slate-800 rounded-xl p-5 shadow-2xl z-30 flex flex-col justify-between overflow-y-auto custom-scrollbar">
+      <div>
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+          <span id="drawerBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">FICHA DE ETAPA</span>
+          <button onclick="cerrarDrawer()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <h3 id="drawerTitulo" class="text-sm font-bold text-white mb-2 leading-snug">Selecciona una etapa</h3>
+        <p id="drawerDesc" class="text-xs text-slate-300 leading-relaxed mb-4">Haz clic en cualquier caja del diagrama para inspeccionar su rol, reglas y entregables.</p>
+        
+        <div class="space-y-3 text-xs">
+          <div class="bg-slate-950/80 p-3 rounded-lg border border-slate-800">
+            <span class="text-[10px] font-mono text-slate-400 uppercase font-bold block mb-1">Responsable / Rol RBAC:</span>
+            <div id="drawerRol" class="text-xs font-bold text-white">-</div>
+          </div>
+          <div class="bg-slate-950/80 p-3 rounded-lg border border-slate-800">
+            <span class="text-[10px] font-mono text-slate-400 uppercase font-bold block mb-1">Entregable Verificable / Salida:</span>
+            <div id="drawerSalida" class="text-xs font-mono text-emerald-400 font-bold">-</div>
+          </div>
+          <div class="bg-slate-950/80 p-3 rounded-lg border border-slate-800">
+            <span class="text-[10px] font-mono text-slate-400 uppercase font-bold block mb-1">Regla de Negocio / Tabla BD:</span>
+            <div id="drawerRegla" class="text-xs text-slate-300 leading-relaxed font-mono">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+        <span class="flex items-center gap-1 font-mono text-emerald-400">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Conforme Modelo GSP
+        </span>
+        <button onclick="cerrarDrawer()" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white">
+          Cerrar
+        </button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- VISTA 2: DIFERENCIA CANÓNICA EDP VS ITS                        -->
+  <!-- ============================================================== -->
+  <div id="vistaDiferencia" class="hidden flex-1 overflow-y-auto p-6 max-w-6xl mx-auto space-y-6 custom-scrollbar">
+    <div class="border border-amber-500/30 bg-slate-900/90 rounded-xl p-5">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+          <i data-lucide="split" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-extrabold text-white">Diferencia Estructural: EDP (Cobro Mandante) vs ITS (Costos Internos y RRHH)</h2>
+          <p class="text-xs text-slate-400">Por qué el EDP NO espera al ITS y cómo se garantiza el cobro oportuno y el pago de sueldos sin bloqueos</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- CARRIL A -->
+      <div class="bg-slate-900 border border-emerald-500/40 rounded-xl p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+            <h3 class="text-sm font-extrabold text-white uppercase tracking-wider">Carril A: Estado de Pago (EDP)</h3>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">NO ESPERA AL ITS</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Es el <strong>documento comercial formal para cobrarle al mandante</strong>. Apenas Control de Gestión (Yiara) revisa que están todos los Reports Diarios del período o servicio, emite el EDP con su PIN de 4 dígitos.
+        </p>
+        <ul class="text-xs text-slate-300 space-y-2 border-t border-slate-800 pt-3">
+          <li class="flex items-start gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+            <span><strong>Paso Directo a Comercial:</strong> Pasa directo de Control de Gestión a Comercial (sin pasar por Contabilidad).</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+            <span><strong>Firma 2 Comercial:</strong> El Ejecutivo revisa, firma con su PIN y lo envía al cliente mandante.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+            <span><strong>Subida de Orden de Compra (OC):</strong> Cuando el cliente aprueba, Comercial sube la OC en el botón <code>③ Respaldo OC</code> (aviso automático por correo a Contabilidad).</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+            <span><strong>Contabilidad NO firma el EDP:</strong> Trabaja en su módulo propio: con el EDP emitido y la OC subida, emite la factura en Laudus/SII y carga el PDF.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- CARRIL B -->
+      <div class="bg-slate-900 border border-blue-500/40 rounded-xl p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-blue-400"></span>
+            <h3 class="text-sm font-extrabold text-white uppercase tracking-wider">Carril B: ITS &amp; Remuneraciones RRHH</h3>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">SELLO ✔ REPORT</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Es el <strong>cierre técnico-económico interno y la base para liquidar los sueldos de la tripulación</strong>. Las horas a pagar al Operador, las horas del Rigger y los Viáticos se validan <strong>día a día dentro de cada Report Diario</strong>.
+        </p>
+        <ul class="text-xs text-slate-300 space-y-2 border-t border-slate-800 pt-3">
+          <li class="flex items-start gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5"></i>
+            <span><strong>Validación Diaria en Sección 3:</strong> Yiara revisa horas, categoría $/hr (19 tablas) y viático ($0 a $18.000) y valida con su PIN FES antes de las 13:00 hrs del día siguiente.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5"></i>
+            <span><strong>Traspaso Automático con Sello ✔ Report:</strong> Al abrir el ITS, el sistema hereda los valores certificados sin pedir re-digitación manual.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5"></i>
+            <span><strong>Desacople Total de RRHH:</strong> Tesalia liquida sueldos el último día del mes mediante filtro Desde-Hasta sobre Reports Validados, sin esperar que un servicio multi-día termine.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5"></i>
+            <span><strong>Cierre Técnico de Flota:</strong> La grúa retorna a base, se desasignan los aparejos en pañol y la máquina queda liberada para el próximo cliente.</span>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- VISTA 3: REGLAS DE ODÓMETROS Y HORÓMETROS                      -->
+  <!-- ============================================================== -->
+  <div id="vistaReglas" class="hidden flex-1 overflow-y-auto p-6 max-w-6xl mx-auto space-y-6 custom-scrollbar">
+    <div class="border border-purple-500/30 bg-slate-900/90 rounded-xl p-5">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
+          <i data-lucide="gauge" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-extrabold text-white">Reglas de Instrumentos en Terreno: Odómetros vs Horómetros</h2>
+          <p class="text-xs text-slate-400">Diferencia exacta entre lo que se captura en Carretera (Viaje) frente a lo que se captura en Faena (Report)</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/90">
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="bg-slate-950 border-b border-slate-800 text-slate-400 font-mono uppercase text-[10px]">
+            <th class="p-3">Hito Operativo</th>
+            <th class="p-3">Dónde se Registra</th>
+            <th class="p-3 text-center">Hora Reloj</th>
+            <th class="p-3 text-center">Odómetro Camión</th>
+            <th class="p-3 text-center">Horómetro Chasis</th>
+            <th class="p-3 text-center">Horómetro Grúa/Pluma</th>
+            <th class="p-3 text-center">Petróleo</th>
+            <th class="p-3">Respaldo Exigido</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800 text-slate-300 font-mono text-[11px]">
+          <tr>
+            <td class="p-3 font-bold text-white font-sans">1. Salida de Base GSP</td>
+            <td class="p-3 text-sky-400">Registro de Viaje</td>
+            <td class="p-3 text-center text-slate-400">Auto (GPS)</td>
+            <td class="p-3 text-center text-emerald-400 font-bold">SÍ (Inicial)</td>
+            <td class="p-3 text-center text-emerald-400 font-bold">SÍ (Inicial)</td>
+            <td class="p-3 text-center text-slate-600">-</td>
+            <td class="p-3 text-center text-cyan-400 font-bold">SÍ (% Salida)</td>
+            <td class="p-3 font-sans text-slate-400">3 Fotos + PIN</td>
+          </tr>
+          <tr>
+            <td class="p-3 font-bold text-white font-sans">2. Llegada a Faena</td>
+            <td class="p-3 text-sky-400">Registro de Viaje</td>
+            <td class="p-3 text-center text-slate-400">Auto (GPS)</td>
+            <td class="p-3 text-center text-emerald-400 font-bold">SÍ (Llegada)</td>
+            <td class="p-3 text-center text-emerald-400 font-bold">SÍ (Llegada)</td>
+            <td class="p-3 text-center text-slate-600">-</td>
+            <td class="p-3 text-center text-slate-600">-</td>
+            <td class="p-3 font-sans text-slate-400">2 Fotos + PIN</td>
+          </tr>
+          <tr class="bg-purple-950/20">
+            <td class="p-3 font-bold text-purple-300 font-sans">3. Faena en Obra (Report Diario)</td>
+            <td class="p-3 text-purple-400 font-bold">Report Diario</td>
+            <td class="p-3 text-center text-purple-300">Inicio / Término</td>
+            <td class="p-3 text-center text-slate-600">-</td>
+            <td class="p-3 text-center text-slate-600">-</td>
+            <td class="p-3 text-center text-emerald-400 font-bold">SÍ (Inicial &amp; Final)</td>
+            <td class="p-3 text-center text-slate-400">Litros (si carga)</td>
+            <td class="p-3 font-sans text-emerald-400 font-bold">Firma FES Mandante</td>
+          </tr>
+          <tr>
+            <td class="p-3 font-bold text-white font-sans">4. Retorno a Base GSP</td>
+            <td class="p-3 text-sky-400">Registro de Viaje</td>
+            <td class="p-3 text-center text-slate-400">Auto (GPS)</td>
+            <td class="p-3 text-center text-emerald-400 font-bold">SÍ (Retorno)</td>
+            <td class="p-3 text-center text-emerald-400 font-bold">SÍ (Retorno)</td>
+            <td class="p-3 text-center text-slate-600">-</td>
+            <td class="p-3 text-center text-cyan-400 font-bold">SÍ (% Retorno)</td>
+            <td class="p-3 font-sans text-slate-400">3 Fotos + PIN</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- SCRIPT DE RENDERIZADO MERMAID INTEGRAL                         -->
+  <!-- ============================================================== -->
+  <script>
+    lucide.createIcons();
+
+    // DEFINICIÓN MERMAID COMPLETA Y GRANULAR (BPMN 2.0 FORMAL)
+    const mermaidDiagramDef = `
+flowchart TD
+    classDef startend fill:#064e3b,stroke:#10b981,stroke-width:2.5px,color:#fff
+    classDef comercial fill:#0c4a6e,stroke:#38bdf8,stroke-width:1.5px,color:#fff
+    classDef operaciones fill:#064e3b,stroke:#34d399,stroke-width:1.5px,color:#fff
+    classDef patio fill:#451a03,stroke:#f59e0b,stroke-width:1.5px,color:#fff
+    classDef terreno fill:#3b0764,stroke:#c084fc,stroke-width:1.5px,color:#fff
+    classDef edp fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff
+    classDef its fill:#1e3a8a,stroke:#60a5fa,stroke-width:2px,color:#fff
+    classDef gateway fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#fff
+
+    %% ========================================================
+    %% FASE 1: PREVENTA, VISITA A TERRENO Y ESTRUCTURADOR
+    %% ========================================================
+    START(["● INICIO: Contacto Mandante / Detección Necesidad de Izaje"]):::startend
+    START --> P1_OPP["1.1 Registro Oportunidad Comercial<br/>(GestorOportunidades.vue: cliente, faena, radios, peso máx, fechas)"]:::comercial
+    
+    P1_OPP --> G_VISITA{"◇ ¿Requiere Visita a Terreno?<br/>(Complejidad de accesos, radio o suelo desconocido)"}:::gateway
+
+    %% Rama SÍ: Circuito de Visita a Terreno
+    G_VISITA -- "[SÍ] Faena de Alta Complejidad" --> V1["1.2 Solicitud Visita & Generación Token UUID<br/>(POST /api/visitas/solicitar/:id)"]:::comercial
+    V1 --> V2["1.3 Coordinador Operaciones Asigna Inspector & Agenda Fecha<br/>(/asignar-visita/:token)"]:::operaciones
+    V2 --> V3["1.4 Inspección PWA en Obra<br/>(Levantamiento: radio, obstáculos, tendidos, fotos suelo y aparejos sugeridos)"]:::operaciones
+    V3 --> V4["1.5 Emisión Informe Técnico de Terreno"]:::operaciones
+    V4 --> V5["1.6 Comercial presiona [Importar Visita] en Estructurador<br/>(Precarga automática de coordenadas, radio y restricciones)"]:::comercial
+
+    %% Rama NO: Bypass Directo
+    G_VISITA -- "[NO] Bypass: Mandante aporta datos técnicos certificados" --> P2_ESTRUC
+    V5 --> P2_ESTRUC
+
+    %% Estructuración de la Matriz de Servicios
+    P2_ESTRUC["2.1 Configuración de Matriz de Servicios en Estructurador<br/>• Selección Grúa Principal (tonelaje, radio, tabla de carga)<br/>• Camión Contrapesos / Cama Baja (si aplica)<br/>• Rigger Calificado (asignado; cobro según cotización)<br/>• Prevencionista APR (si exigido por mandante)<br/>• Flete / Traslado / Horas de piso mínimo<br/>• Viáticos y Pernoctación / Pensiones (faena fuera de base)"]:::comercial
+
+    P2_ESTRUC --> P2_CALC["2.2 Cálculo Automático de Costos, Tarifas y Margen Comercial<br/>(Verificación contra políticas de rentabilidad GSP)"]:::comercial
+    P2_CALC --> P2_PDF["2.3 Emisión Cotización Oficial PDF (Versión 1)<br/>(Despacho B2B registrado en cola tnot_queue con marcas de agua)"]:::comercial
+
+    %% Decisión del Mandante y Bucles
+    P2_PDF --> G_CLIENTE{"◇ Decisión del Mandante"}:::gateway
+    G_CLIENTE -- "[RECHAZADA] Requiere ajustes técnicos o tarifa" --> BUCLE_COT["↺ Bucle de Re-cotización:<br/>Genera versión incremental V2 / V3 / V4 con historial de cambios"]:::comercial
+    BUCLE_COT --> P2_ESTRUC
+    G_CLIENTE -- "[DESISTIDA] Mandante cancela proyecto" --> FIN_PERDIDA(["✕ FIN: Oportunidad Desistida o Perdida"]):::startend
+
+    %% ========================================================
+    %% FASE 2: HABILITACIÓN OPERATIVA, AUDITORÍA DIFF Y SALIDA
+    %% ========================================================
+    G_CLIENTE -- "[GANADA] Cotización Aprobada / Adjudicada" --> P3_GANADA["3.1 Marcar Cotización 'GANADA'<br/>(Congelamiento de matriz y tarifas acordadas)"]:::comercial
+    P3_GANADA --> P3_REQ["3.2 Registro Requerimientos de Acreditación & Entrada<br/>(Checklist faena: pases mina, inducciones, exámenes ocupacionales, cert. grúa)"]:::comercial
+    P3_REQ --> K1[("📌 KANBAN COLUMNA 1: Requerimiento Registrado")]:::operaciones
+
+    K1 --> P4_DIFF["4.1 Pestaña B: Auditoría Operativa Diff Comercial vs Flota Real<br/>(Comparador automático: equipo cotizado vs disponibilidad real)"]:::operaciones
+    P4_DIFF --> G_DIFF{"◇ ¿Factible Técnicamente sin Variación?"}:::gateway
+    G_DIFF -- "[SÍ] Aprobado Directo" --> K2[("📌 KANBAN COLUMNA 2: En Verificación Operaciones")]:::operaciones
+    G_DIFF -- "[NO] Con Desvíos" --> P4_OBS["4.1b Aprobado con Observaciones (APROBADO_CON_OBS)<br/>⚠️ Penalización Negativa en KPI de Calidad Comercial"]:::operaciones
+    P4_OBS --> K2
+
+    K2 --> P5_ASIG["5.1 Pestaña C: Asignación Nominativa de Recursos OT<br/>• Grúa física específica (patente, horómetros, cert. al día)<br/>• Operador Titular calificado<br/>• Rigger Acreditado<br/>• Chofer y Camión Contrapesos (si aplica)<br/>• Aparejos maestros serializados de pañol"]:::operaciones
+    P5_ASIG --> P5_OT["5.2 Emisión Formal de OT (tpry_orden_trabajo)<br/>(Notificaciones automáticas a tripulación y Patio + Desbloqueo Sub-tab 4)"]:::operaciones
+    P5_OT --> K3[("📌 KANBAN COLUMNA 3: En Asignación Recursos")]:::operaciones
+
+    K3 --> G_AND_PREP{"+ COMPUERTA PARALELA AND: Preparación Concurrente Pre-Salida"}:::gateway
+
+    %% Rama Acreditaciones B2B
+    G_AND_PREP --> D1["6A.1 Sub-tab 4: Gestión Dossier Acreditaciones B2B<br/>(Semáforo 3 Columnas: Empresa, Equipos, Personas)"]:::comercial
+    D1 --> G_DOCS{"◇ ¿Documentación 100% Vigente?"}:::gateway
+    G_DOCS -- "[NO] Vencido / Faltante" --> D_LOOP["↺ Subsanación in-situ: Subir PDF / Exigir doc"]:::comercial
+    D_LOOP --> D1
+    G_DOCS -- "[SÍ] Aprobado" --> D_DESPACHO["6A.2 Despacho Dossier B2B al Mandante / Carga en Plataforma Faena"]:::comercial
+
+    %% Rama Patio y Logística
+    G_AND_PREP --> PAT1["6B.1 Coordinador de Patio: Checklist Pre-Salida<br/>(Inspección mecánica, neumáticos, fluidos y combustible inicial)"]:::patio
+    PAT1 --> PAT2["6B.2 Entrega y Despacho de Aparejos Serializados en Pañol"]:::patio
+
+    %% Convergencia AND
+    D_DESPACHO --> G_AND_JOIN{"+ CONVERGENCIA AND: Autorización Salida de Base Central"}:::gateway
+    PAT2 --> G_AND_JOIN
+    G_AND_JOIN --> K4[("📌 KANBAN COLUMNA 4: En Preparación Operaciones / Patio")]:::operaciones
+
+    %% ========================================================
+    %% FASE 3: BUCLE MULTI-JORNADA TERRENO (PWA Y REPORTS)
+    %% ========================================================
+    K4 --> K5[("📌 KANBAN COLUMNA 5: En Ejecución / Faena")]:::terreno
+
+    subgraph BucleTerreno ["🔁 Subproceso Diario de Terreno (Por cada día/jornada de faena en obra)"]
+        K5 --> T1["6.1 Registro de Viaje Carretera (PWA Terreno)<br/>(Odómetro Inicial/Llegada + Horómetro Chasis + Petróleo + 3 Fotos + PIN)"]:::terreno
+        T1 --> T2["6.2 Faena en Obra: Check Pre-Op, Charla 5 Min (AST) & Posicionamiento<br/>(Horómetro Grúa/Pluma Inicial/Final, horas reloj faena, colación, standby)"]:::terreno
+        T2 --> T3["6.3 Confección Report Diario & Firma FES Mandante en Faena<br/>(Aprobación en pantalla PWA con PIN OTP SHA-256 + Sello RFC 3161)"]:::terreno
+        T3 --> T4["6.4 Validación Diaria Sección 3 por Control de Gestión (Yiara)<br/>Horas Operador/Rigger, Tarifa $/hr (19 categorías tpar_tarifa_operador), Viático $0-$18.000 con PIN FES"]:::terreno
+        T4 -.->|"Si el servicio continúa al día siguiente en la obra"| K5
+    end
+
+    %% Retorno de viaje al terminar la faena
+    T4 --> T_RETORNO["6.5 Registro de Viaje Retorno a Base GSP (Odómetros y combustible final)"]:::terreno
+
+    %% ========================================================
+    %% FASE 4: DESACOPLE ASÍNCRONO DE SALIDA (EDP vs ITS)
+    %% ========================================================
+    T_RETORNO ==> G_SPLIT{"+ COMPUERTA PARALELA ASÍNCRONA: DESACOPLE TOTAL DE SALIDA"}:::gateway
+
+    subgraph CarrilEDP ["💳 CARRIL A: EDP & FACTURACIÓN EXTERNA (NO ESPERA AL ITS)"]
+        G_SPLIT --> E1["7A.1 Control de Gestión (Yiara) consolida reports y emite EDP<br/>[Firma 1 con PIN] ➔ Pasa DIRECTO a Comercial (sin pasar por Contabilidad)"]:::edp
+        E1 --> E2["7A.2 Comercial firma EDP [Firma 2 con PIN] y despacha al Mandante<br/>(Estado: ENVIADO_CLIENTE)"]:::edp
+        E2 --> E3["7A.3 Mandante aprueba y entrega Orden de Compra (OC)<br/>Comercial sube PDF en botón '③ Respaldo OC' (aviso auto por correo a Contabilidad)"]:::edp
+        E3 --> E4["7A.4 Contabilidad (Maritza) NO firma el EDP<br/>Con el EDP emitido y la OC subida, emite Factura en Laudus/SII y carga PDF con folio"]:::edp
+    end
+
+    subgraph CarrilITS ["📋 CARRIL B: TRASPASO AL ITS & CIERRE RRHH (SELLO ✔ REPORT)"]
+        G_SPLIT --> I1["7B.1 Traspaso Automático de Horas, Tarifas y Viáticos al ITS con sello ✔ Report<br/>(Cero re-digitación: hereda exactamente los datos validados día a día en Sección 3)"]:::its
+        I1 --> I2["7B.2 Cierre Técnico del ITS: Retorno a base, reintegro de aparejos en pañol y liberación de flota<br/>(Máquina disponible para siguiente servicio)"]:::its
+        I1 --> I3["7B.3 Liquidación RRHH Desacoplada (Tesalia)<br/>En Perspectiva Contabilidad con filtro Desde-Hasta: Paga sueldos el último día del mes<br/>sin esperar que termine el ITS multi-día"]:::its
+    end
+
+    E4 --> K6[("📌 KANBAN COLUMNA 6: Finalizado / Devengado")]:::startend
+    I2 --> K6
+    I3 --> K6
+    K6 --> FIN(["✔ FIN INTEGRAL: Servicio Devengado, Facturado en SII y Pagado en Nómina"]):::startend
+    `;
+
+    // Metadatos para el Drawer
+    const nodeMeta = {
+      'START': {
+        titulo: 'Inicio del Ciclo de Servicio',
+        rol: 'Cliente Mandante',
+        salida: 'Solicitud Comercial de Izaje / Términos de Referencia',
+        regla: 'El cliente contacta a GSP solicitando disponibilidad de grúas móviles o camiones pluma para faena industrial o minera.'
+      },
+      'P1_OPP': {
+        titulo: '1.1 Registro de Oportunidad Comercial',
+        rol: 'Ejecutivo Comercial (COMERCIAL / ADM_COM)',
+        salida: 'Registro Borrador en tpry_proyecto (codigo_maestro: GSP-XXXX)',
+        regla: 'Ingreso en GestorOportunidades.vue de faena, dirección, radios preliminares, altura y tonelaje estimado de carga.'
+      },
+      'G_VISITA': {
+        titulo: 'Compuerta XOR: ¿Requiere Visita a Terreno?',
+        rol: 'Ejecutivo Comercial',
+        salida: 'Bifurcación condicional: visita_terreno (BOOLEAN)',
+        regla: 'Si la faena es estándar o conocida, aplica bypass directo a estructuración. Si es crítica o desconocida, solicita visita técnica.'
+      },
+      'V1': {
+        titulo: '1.2 Solicitud de Visita & Generación de Token UUID',
+        rol: 'Sistema Automático (Nodemailer)',
+        salida: 'Correo con magic link /asignar-visita/:token',
+        regla: 'POST /api/visitas/solicitar/:id genera token seguro y notifica al Coordinador de Operaciones.'
+      },
+      'V2': {
+        titulo: '1.3 Asignación de Inspector Técnico',
+        rol: 'Coordinador de Operaciones (COORD / GSP_PROG)',
+        salida: 'Registro tsrv_survey en estado PROGRAMADO',
+        regla: 'Coordinador accede mediante token, selecciona inspector técnico de terreno y define fecha de levantamiento.'
+      },
+      'V3': {
+        titulo: '1.4 Inspección PWA en Obra (Terreno)',
+        rol: 'Inspector Técnico / Especialista de Terreno',
+        salida: 'Reporte fotográfico de terreno + sugerencia de aparejos',
+        regla: 'Captura en app móvil de accesos, compactación de suelo, obstáculos aéreos, radio real y sugerencia de aparejos.'
+      },
+      'V4': {
+        titulo: '1.5 Emisión de Informe Técnico de Terreno',
+        rol: 'Inspector Técnico / Coordinador Operaciones',
+        salida: 'Informe de Factibilidad Técnica aprobado',
+        regla: 'Certifica que el izaje es viable o condiciona los requerimientos de la máquina y aparejos.'
+      },
+      'V5': {
+        titulo: '1.6 Comercial presiona [Importar Visita]',
+        rol: 'Ejecutivo Comercial',
+        salida: 'Borrador de cotización con coordenadas y aparejos precargados',
+        regla: 'El botón [Importar Visita] copia automáticamente las especificaciones técnicas del survey a la propuesta económica.'
+      },
+      'P2_ESTRUC': {
+        titulo: '2.1 Configuración de Matriz de Servicios en Estructurador',
+        rol: 'Ejecutivo Comercial',
+        salida: 'Matriz estructurada (json_field.servicios, json_field.pensiones)',
+        regla: 'Selección de grúa principal, plumas, camión contrapesos, tripulación (Rigger/Operador/APR) y viáticos (alojamiento, alimentación).'
+      },
+      'P2_CALC': {
+        titulo: '2.2 Cálculo Automático de Costos y Margen Comercial',
+        rol: 'Estructurador GSP + Comercial',
+        salida: 'Estructura de costos, márgenes brutos y precio final sugerido',
+        regla: 'Verificación contra políticas de rentabilidad mínima corporativa y pisos tarifarios autorizados.'
+      },
+      'P2_PDF': {
+        titulo: '2.3 Emisión de Cotización Oficial PDF V1',
+        rol: 'Ejecutivo Comercial + Sistema',
+        salida: 'Cotización B2B Oficial PDF ([CODIGO]V1.pdf) en tnot_queue',
+        regla: 'Generación de PDF con marcas de agua y despacho mediante plantilla HTML enriquecida con trazabilidad.'
+      },
+      'G_CLIENTE': {
+        titulo: 'Compuerta XOR: Decisión del Mandante',
+        rol: 'Cliente Mandante',
+        salida: 'Aprobación formal (Ganada), Rechazo con ajustes o Cancelación',
+        regla: 'Si el cliente pide ajustes de tarifa o equipo, se activa el bucle de re-cotización (V2/V3). Si acepta, se genera requerimiento.'
+      },
+      'BUCLE_COT': {
+        titulo: 'Bucle de Re-cotización Incremental',
+        rol: 'Ejecutivo Comercial',
+        salida: 'Nueva versión de cotización (V2, V3, V4)',
+        regla: 'Conserva el código maestro del proyecto y genera un nuevo PDF versionado formal con histórico.'
+      },
+      'FIN_PERDIDA': {
+        titulo: 'Oportunidad Desistida o Perdida',
+        rol: 'Comercial / Mandante',
+        salida: 'tpry_proyecto en estado PERDIDA/DESISTIDA con motivo',
+        regla: 'Cierre del expediente en el CRM con registro de causa de pérdida para analítica de mercado.'
+      },
+      'P3_GANADA': {
+        titulo: '3.1 Marcar Cotización GANADA',
+        rol: 'Ejecutivo Comercial',
+        salida: 'tpry_proyecto en estado COTIZACION_GANADA',
+        regla: 'Congelamiento inmutable de la matriz técnica y tarifas acordadas. Dispara triggers hacia Operaciones.'
+      },
+      'P3_REQ': {
+        titulo: '3.2 Registro Requerimientos de Acreditación',
+        rol: 'Ejecutivo Comercial',
+        salida: 'Checklist de exigencias faena (Empresa, Equipos, Personas)',
+        regla: 'Configura las carpetas de acreditación y pases de faena exigidos por el mandante.'
+      },
+      'K1': {
+        titulo: 'Kanban Columna 1: Requerimiento Registrado',
+        rol: 'Operaciones',
+        salida: 'Tarjeta ingresada formalmente a la bandeja de entrada operativa',
+        regla: 'Primer hito del tablero Kanban de operaciones.'
+      },
+      'P4_DIFF': {
+        titulo: '4.1 Auditoría Diff Operativo (Pestaña B)',
+        rol: 'Coordinador de Operaciones',
+        salida: 'Acta de auditoría técnica en observaciones_operaciones',
+        regla: 'Comparador visual: propuesta comercial vs factibilidad real de flota. Si hay subdimensionamiento comercial, se corrige.'
+      },
+      'G_DIFF': {
+        titulo: 'Compuerta XOR: ¿Factible sin Desvíos?',
+        rol: 'Coordinador de Operaciones',
+        salida: 'Estado APROBADO vs APROBADO_CON_OBS',
+        regla: 'Si Operaciones debe cambiar la grúa o agregar equipos no cotizados, se registra penalización negativa en KPI comercial.'
+      },
+      'P4_OBS': {
+        titulo: 'Aprobación con Observaciones & Penalización KPI',
+        rol: 'Coordinador de Operaciones + Sistema',
+        salida: 'Penalización automática en score comercial del vendedor',
+        regla: 'Registra el desvío técnico y ajusta la orden de trabajo a las capacidades reales de la flota.'
+      },
+      'K2': {
+        titulo: 'Kanban Columna 2: En Verificación Operaciones',
+        rol: 'Operaciones',
+        salida: 'Servicio validado técnicamente para asignación',
+        regla: 'Supera el control de factibilidad de flota.'
+      },
+      'P5_ASIG': {
+        titulo: '5.1 Asignación Nominativa de Recursos OT (Pestaña C)',
+        rol: 'Coordinador de Operaciones',
+        salida: 'tpry_rel_equipo + tpry_rel_persona + aparejos master',
+        regla: 'Asignación de grúa real (tequ_equipo), Operador y Rigger (tsec_users), equipos de apoyo y matriz de aparejos serializados.'
+      },
+      'P5_OT': {
+        titulo: '5.2 Emisión Formal de OT & Triggers',
+        rol: 'Sistema Automático',
+        salida: 'tpry_orden_trabajo emitida + Desbloqueo Sub-tab 4 Dossier',
+        regla: 'Despacha correos a tripulación asignada y a Coordinador de Patio. Habilita el Sub-tab 4 de Acreditaciones.'
+      },
+      'K3': {
+        titulo: 'Kanban Columna 3: En Asignación Recursos',
+        rol: 'Operaciones',
+        salida: 'OT creada con recursos nominativos completos',
+        regla: 'Paso previo a la fase de preparación física y documental.'
+      },
+      'G_AND_PREP': {
+        titulo: 'Compuerta Paralela AND: Preparación Concurrente Pre-Salida',
+        rol: 'Comercial + Patio',
+        salida: 'Ejecución paralela de Acreditaciones y Patio',
+        regla: 'Ambas ramas deben estar 100% conformes para que la grúa pueda salir a carretera rumbo a la faena.'
+      },
+      'D1': {
+        titulo: '6A.1 Sub-tab 4: Gestión Dossier Acreditaciones B2B',
+        rol: 'Ejecutivo Comercial / SST',
+        salida: 'Dossier de 3 columnas (Empresa, Equipos, Personas)',
+        regla: 'Auditoría con semáforo de 30 días. Si hay documentos vencidos, permite subida in-situ [Subir PDF] / [+ Exigir Doc].'
+      },
+      'G_DOCS': {
+        titulo: 'Compuerta XOR: ¿Documentación 100% Vigente?',
+        rol: 'Comercial / SST',
+        salida: 'Aprobación de carpeta de acreditación',
+        regla: 'Verifica vigencia de exámenes ocupacionales, licencias, revisiones técnicas y certificados de izaje.'
+      },
+      'D_LOOP': {
+        titulo: 'Bucle de Subsanación de Acreditaciones',
+        rol: 'Comercial / Tripulación / SST',
+        salida: 'Carga de documentos actualizados',
+        regla: 'Permite regularizar pases o certificados faltantes antes de la fecha límite de faena.'
+      },
+      'D_DESPACHO': {
+        titulo: '6A.2 Despacho Dossier B2B al Mandante',
+        rol: 'Ejecutivo Comercial',
+        salida: 'Dossier despachado vía correo corporativo (v1.0) / subida a plataforma mandante',
+        regla: 'Se envía al mandante con visor de auditoría y traza de entrega formal.'
+      },
+      'PAT1': {
+        titulo: '6B.1 Coordinador de Patio: Checklist Pre-Salida',
+        rol: 'Coordinador de Patio / Pañolero',
+        salida: 'Checklist de salida firmado + Inspección mecánica',
+        regla: 'Inspección técnica de neumáticos, fluidos, combustible y plumines en patio central.'
+      },
+      'PAT2': {
+        titulo: '6B.2 Entrega y Despacho de Aparejos Serializados',
+        rol: 'Pañolero Central GSP',
+        salida: 'Guía de aparejos (eslingas, grilletes, fajas) con certificación al día',
+        regla: 'Salida física controlada de elementos de izaje trazables.'
+      },
+      'G_AND_JOIN': {
+        titulo: 'Convergencia AND: Autorización Salida de Base',
+        rol: 'Operaciones',
+        salida: 'Flota autorizada legal y mecánicamente para viajar',
+        regla: 'Convergencia formal: grúa con documentos vigentes en faena y máquina revisada en patio.'
+      },
+      'K4': {
+        titulo: 'Kanban Columna 4: En Preparación Operaciones / Patio',
+        rol: 'Patio & Operaciones',
+        salida: 'Flota lista para encender motor y salir de patio',
+        regla: 'Último hito previo a la ruta.'
+      },
+      'K5': {
+        titulo: 'Kanban Columna 5: En Ejecución / Faena',
+        rol: 'Tripulación de Terreno',
+        salida: 'Servicio activo en obra',
+        regla: 'Comprende el ciclo recurrente diario de viajes y reports.'
+      },
+      'T1': {
+        titulo: '6.1 Registro de Viaje en Carretera (PWA Terreno)',
+        rol: 'Operador de Grúa / Chofer',
+        salida: 'Hitos en tequ_log_desplazamiento (Km y combustible)',
+        regla: 'En carretera solo se captura Odómetro Camión (km) y Horómetro Chasis (hrs), porcentaje de petróleo y 3 fotos con PIN. No se pide horómetro de grúa.'
+      },
+      'T2': {
+        titulo: '6.2 Faena en Obra & Maniobras de Izaje',
+        rol: 'Operador de Grúa & Rigger Certificado',
+        salida: 'AST Digital (Toma 5) + Lectura Horómetros Motor/Pluma',
+        regla: 'Checklist pre-operacional de máquina, AST firmado con Rigger, horómetro inicial y final de izaje, horas reloj, colación y standby.'
+      },
+      'T3': {
+        titulo: '6.3 Confección Report Diario & Firma FES Mandante',
+        rol: 'Supervisor de Faena Mandante + Operador',
+        salida: 'Report Diario Firmado FES (SHA-256 + Sello RFC 3161)',
+        regla: 'El mandante aprueba en pantalla de la PWA con su PIN OTP. Certificación legal inmutable de horas efectivas trabajadas en faena.'
+      },
+      'T4': {
+        titulo: '6.4 Validación Diaria Sección 3 por Control de Gestión',
+        rol: 'Analista Control de Gestión (Yiara - GSP_APROB)',
+        salida: 'Report Validado (tedp_reporte_avance.estado = VALIDADO)',
+        regla: 'Antes de las 13:00 hrs del día hábil siguiente, valida horas operador, horas rigger, tarifa $/hr de las 19 categorías y viático ($0 a $18.000) con su PIN.'
+      },
+      'T_RETORNO': {
+        titulo: '6.5 Registro de Viaje Retorno a Base GSP',
+        rol: 'Operador de Grúa / Chofer',
+        salida: 'Odómetros finales y nivel de combustible en patio',
+        regla: 'Cierre del ciclo de traslado y entrega de máquina en base.'
+      },
+      'G_SPLIT': {
+        titulo: 'Compuerta Paralela Asíncrona (Desacople Total de Salida)',
+        rol: 'Arquitectura del Sistema LeanGlobal',
+        salida: 'Bifurcación en 2 Carriles Desacoplados',
+        regla: 'El EDP (para cobrarle al cliente) NO espera al ITS (costos y cierre de flota). Ambos flujos corren en paralelo sin bloquearse mutuamente.'
+      },
+      'E1': {
+        titulo: '7A.1 Emisión del EDP por Control de Gestión (Firma 1)',
+        rol: 'Analista Control de Gestión (Yiara)',
+        salida: 'Estado de Pago Emitido (tedp_estado_pago - EMITIDO_ANALISTA)',
+        regla: 'Consolida los reports validados del período y estampa Firma 1 con su PIN. Pasa directo a Comercial (sin pasar por Contabilidad).'
+      },
+      'E2': {
+        titulo: '7A.2 Aprobación y Despacho del EDP por Comercial (Firma 2)',
+        rol: 'Ejecutivo Comercial Responsable',
+        salida: 'EDP Firmado (2 Firmas) & Notificación Enviada al Cliente',
+        regla: 'Comercial valida montos comerciales, estampa Firma 2 con su PIN y envía el EDP al cliente (ENVIADO_CLIENTE).'
+      },
+      'E3': {
+        titulo: '7A.3 Cliente Entrega Orden de Compra (OC) & Carga en Sistema',
+        rol: 'Ejecutivo Comercial Responsable',
+        salida: 'PDF de OC cargado en ③ Respaldo OC + Email a Contabilidad',
+        regla: 'Comercial sube la OC con número de folio. El sistema envía correo automático con copia del PDF a mseguel@arriendosanpablo.cl.'
+      },
+      'E4': {
+        titulo: '7A.4 Facturación en Contabilidad (Laudus / SII)',
+        rol: 'Jefatura de Contabilidad (Maritza - GSP_CONTA)',
+        salida: 'Factura Electrónica SII + Folio Laudus adjunto en PDF',
+        regla: 'Contabilidad NO firma el EDP. Con el EDP emitido y la OC subida, emite la factura en su propio módulo y carga el PDF.'
+      },
+      'I1': {
+        titulo: '7B.1 Traspaso Automático de Horas, Tarifas y Viáticos al ITS',
+        rol: 'Sistema Automático LeanGlobal',
+        salida: 'Pre-liquidación consolidada en tpry_its con sello ✔ Report',
+        regla: 'Cero re-digitación. El ITS hereda automáticamente las horas y viáticos ya validados día a día en cada Report Diario.'
+      },
+      'I2': {
+        titulo: '7B.2 Cierre Técnico del ITS & Liberación de Flota',
+        rol: 'Coordinador de Operaciones + Patio/Pañol',
+        salida: 'OT Cerrada Operacionalmente + Retorno de Aparejos a Pañol',
+        regla: 'La grúa retorna a base, se desasignan los aparejos serializados en pañol y la flota queda liberada para el siguiente servicio.'
+      },
+      'I3': {
+        titulo: '7B.3 Liquidación RRHH Desacoplada (Sueldos Fin de Mes)',
+        rol: 'Analista de Remuneraciones (Tesalia - RRHH)',
+        salida: 'Nómina Mensual de Operadores y Riggers Liquidada',
+        regla: 'En Perspectiva Contabilidad -> Horas Operadores/Riggers, filtra Desde-Hasta y liquida sueldos el último día del mes sin esperar el fin del ITS.'
+      },
+      'K6': {
+        titulo: 'Kanban Columna 6: Finalizado / Devengado',
+        rol: 'Control de Gestión & Contabilidad',
+        salida: 'Hito final del tablero Kanban de Operaciones',
+        regla: 'Servicio completamente ejecutado, facturado y pagado.'
+      },
+      'FIN': {
+        titulo: 'Fin Integral del Ciclo Operacional y Financiero',
+        rol: 'Ecosistema GSP',
+        salida: 'Expediente 100% Devengado, Facturado en SII y Pagado en Sueldos',
+        regla: 'Conformidad total comercial, operacional, contable y laboral en el expediente digital inmutable.'
+      }
+    };
+
+    let panZoomInstance = null;
+
+    async function initMermaid() {
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        securityLevel: 'loose',
+        flowchart: {
+          curve: 'basis',
+          htmlLabels: true,
+          useMaxWidth: false
+        }
+      });
+
+      const element = document.getElementById('mermaidOutput');
+      const { svg } = await mermaid.render('mermaidGraph', mermaidDiagramDef);
+      element.innerHTML = svg;
+
+      const svgElement = element.querySelector('svg');
+      if (svgElement) {
+        panZoomInstance = svgPanZoom(svgElement, {
+          zoomEnabled: true,
+          controlIconsEnabled: false,
+          fit: false,
+          center: false,
+          minZoom: 0.1,
+          maxZoom: 6,
+          zoomScaleSensitivity: 0.2
+        });
+
+        ajustarAlAncho();
+        configurarScrollVertical();
+        vincularEventosNodos(svgElement);
+      }
+    }
+
+    function ajustarAlAncho() {
+      if (!panZoomInstance) return;
+      const canvas = document.getElementById('diagramCanvas');
+      const svg = document.querySelector('#mermaidOutput svg');
+      if (!canvas || !svg) return;
+      
+      const bbox = svg.getBBox();
+      const canvasWidth = canvas.clientWidth;
+      // Ancho óptimo: entre 0.95 y 1.25 según ancho de pantalla para lectura nítida
+      const idealZoom = Math.min(1.25, Math.max(0.95, (canvasWidth - 80) / bbox.width));
+      
+      panZoomInstance.reset();
+      panZoomInstance.zoom(idealZoom);
+
+      const diagramRealWidth = bbox.width * idealZoom;
+      const panX = Math.max(20, (canvasWidth - diagramRealWidth) / 2);
+      panZoomInstance.pan({ x: panX, y: 30 });
+    }
+
+    function verPlanoCompleto() {
+      if (!panZoomInstance) return;
+      panZoomInstance.reset();
+      panZoomInstance.fit();
+      panZoomInstance.center();
+    }
+
+    function configurarScrollVertical() {
+      const canvas = document.getElementById('diagramCanvas');
+      if (!canvas) return;
+      canvas.addEventListener('wheel', (e) => {
+        if (!panZoomInstance) return;
+        if (!e.ctrlKey) {
+          e.preventDefault();
+          const pan = panZoomInstance.getPan();
+          panZoomInstance.pan({ x: pan.x, y: pan.y - e.deltaY * 0.9 });
+        }
+      }, { passive: false });
+    }
+
+    function vincularEventosNodos(svgEl) {
+      const nodes = svgEl.querySelectorAll('.node');
+      nodes.forEach(node => {
+        const id = node.id || '';
+        for (const k in nodeMeta) {
+          if (id.includes(`_${k}_`) || id.endsWith(`_${k}`) || node.textContent.includes(k)) {
+            node.addEventListener('click', (e) => {
+              e.stopPropagation();
+              mostrarDetalleNodo(k);
+            });
+            break;
+          }
+        }
+      });
+    }
+
+    function mostrarDetalleNodo(key) {
+      const meta = nodeMeta[key];
+      if (!meta) return;
+
+      document.getElementById('drawerBadge').textContent = `NODO: ${key}`;
+      document.getElementById('drawerTitulo').textContent = meta.titulo;
+      document.getElementById('drawerRol').textContent = meta.rol;
+      document.getElementById('drawerSalida').textContent = meta.salida;
+      document.getElementById('drawerRegla').textContent = meta.regla;
+
+      const drawer = document.getElementById('nodeDrawer');
+      drawer.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function cerrarDrawer() {
+      document.getElementById('nodeDrawer').classList.add('hidden');
+    }
+
+    function zoomIn() {
+      if (panZoomInstance) panZoomInstance.zoomIn();
+    }
+    function zoomOut() {
+      if (panZoomInstance) panZoomInstance.zoomOut();
+    }
+    function zoomReset() {
+      ajustarAlAncho();
+    }
+
+    function cambiarVista(vista, btnEl) {
+      document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+
+      document.getElementById('vistaDiagrama').classList.add('hidden');
+      document.getElementById('vistaDiferencia').classList.add('hidden');
+      document.getElementById('vistaReglas').classList.add('hidden');
+
+      if (vista === 'diagrama') {
+        document.getElementById('vistaDiagrama').classList.remove('hidden');
+        if (panZoomInstance) {
+          setTimeout(() => {
+            panZoomInstance.resize();
+            ajustarAlAncho();
+          }, 50);
+        }
+      } else if (vista === 'diferencia') {
+        document.getElementById('vistaDiferencia').classList.remove('hidden');
+      } else if (vista === 'reglas') {
+        document.getElementById('vistaReglas').classList.remove('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initMermaid();
+    });
+  </script>
+</body>
+</html>

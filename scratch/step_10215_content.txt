@@ -1,0 +1,209 @@
+Created At: 2026-11-08T21:21:22-03:00
+Completed At: 2026-11-08T21:21:22-03:00
+Showing lines 2295-2500 of 4184
+2295:       const { data: resUsers } = await apiAxios.get('/usuarios')
+2296:       const uList = resUsers?.data || resUsers || []
+2297:       if (Array.isArray(uList)) {
+2298:         const m = new Map()
+2299:         uList.forEach(u => {
+2300:           if (u.id_user) {
+2301:             const nombre = [u.name_frst, u.apellido_pat].filter(Boolean).join(' ').trim() || u.nombre || u.email || `Usuario ${u.id_user}`
+2302:             m.set(Number(u.id_user), nombre)
+2303:           }
+2304:         })
+2305:         mapaUsuarios.value = m
+2306:       }
+2307:     } catch (errU) {
+2308:       console.warn("No se cargó catálogo de usuarios:", errU.message)
+2309:     }
+2310: 
+2311:     await cargarFlotaMaster()
+2312:   } catch (e) {
+2313:     console.error('Error cargando proyectos:', e)
+2314:   } finally {
+2315:     cargandoProyectos.value = false
+2316:   }
+2317: }
+2318: 
+2319: const cargarFlotaMaster = async () => {
+2320:   try {
+2321:     const { data: res } = await apiAxios.get('/tequ-equipos')
+2322:     const raw = res?.data || res || []
+2323:     if (Array.isArray(raw) && raw.length > 0) {
+2324:       flotaEquiposMaster.value = raw.map(e => ({
+2325:         ...e,
+2326:         id_equipo: e.id_equipo || e.id,
+2327:         patente: e.patente || e.ppu || 'S/P',
+2328:         nombre_equipo: e.nombre_equipo || `${e.marca || ''} ${e.modelo || ''}`.trim() || e.tipo_equipo || 'Equipo',
+2329:         modelo: e.modelo || '',
+2330:         nombre_categoria: e.nombre_categoria || e.tipo_equipo || e.tipo || 'Maquinaria',
+2331:         estado: e.estado || 'DISPONIBLE',
+2332:         cant_inspecciones: Number(e.cant_inspecciones || 0)
+2333:       }))
+2334:     }
+2335:   } catch (err) {
+2336:     console.warn('Error cargando flota de equipos:', err)
+2337:   }
+2338: }
+2339: 
+2340: // -------------------------------------------------------------
+2341: // BANDEJA ANALISTA DE CONTROL DE GESTIÓN / PMO
+2342: // -------------------------------------------------------------
+2343: const cargarPendientesAnalista = async () => {
+2344:   try {
+2345:     cargandoAnalistaPMO.value = true
+2346:     const { data } = await apiAxios.get('/operaciones/report/pendientes-analista')
+2347:     if (data?.success && data?.data) {
+2348:       datosAnalistaPMO.value = data.data
+2349:     }
+2350:   } catch (err) {
+2351:     console.error('Error al cargar pendientes analista PMO:', err)
+2352:   } finally {
+2353:     cargandoAnalistaPMO.value = false
+2354:   }
+2355: }
+2356: 
+2357: const getUrlStoragePdf = (idDoc) => {
+2358:   if (!idDoc) return '#'
+2359:   const base = (apiAxios.defaults.baseURL || '').replace(/\/$/, '')
+2360:   return `${base}/v1/storage/view/${idDoc}`
+2361: }
+2362: 
+2363: const getUrlPdfIts = (idProyecto) => {
+2364:   if (!idProyecto) return '#'
+2365:   const base = (apiAxios.defaults.baseURL || '').replace(/\/$/, '')
+2366:   return `${base}/operaciones/its/preview-pdf/${idProyecto}`
+2367: }
+2368: 
+2369: const getUrlPdfEdp = (idProyecto) => {
+2370:   if (!idProyecto) return '#'
+2371:   const base = (apiAxios.defaults.baseURL || '').replace(/\/$/, '')
+2372:   return `${base}/operaciones/edp/proyecto/${idProyecto}/pdf`
+2373: }
+2374: 
+2375: const abrirPdfEdpEnPestana = (idProyecto) => {
+2376:   const url = getUrlPdfEdp(idProyecto)
+2377:   if (url && url !== '#') {
+2378:     window.open(url, '_blank')
+2379:   }
+2380: }
+2381: 
+2382: const abrirVisorReportPMO = (rep) => {
+2383:   reportSeleccionadoPMO.value = rep
+2384:   visorReportAbiertoPMO.value = true
+2385: }
+2386: 
+2387: const onReportValidadoPMO = () => {
+2388:   cargarPendientesAnalista()
+2389:   cargarProyectos()
+2390: }
+2391: 
+2392: const abrirItsModalPMO = (idProyecto) => {
+2393:   idProyectoItsPMO.value = idProyecto
+2394:   itsModalAbiertoPMO.value = true
+2395: }
+2396: 
+2397: const onItsActualizadoPMO = () => {
+2398:   cargarPendientesAnalista()
+2399:   cargarProyectos()
+2400: }
+2401: 
+2402: const abrirCaratulaEdpPMO = async (idProyecto) => {
+2403:   if (!idProyecto) return
+2404:   cargandoCaratulaPMO.value = true
+2405:   try {
+2406:     const { data } = await apiAxios.get(`/operaciones/report/edp/resumen/${idProyecto}`)
+2407:     if (data?.success) {
+2408:       edpDataPMO.value = data.data
+2409:       modalCaratulaEDPAbiertoPMO.value = true
+2410:     } else {
+2411:       alert('No se pudo cargar el resumen del EDP: ' + (data?.message || 'Error desconocido'))
+2412:     }
+2413:   } catch (err) {
+2414:     console.error('Error al abrir Carátula EDP:', err)
+2415:     alert('Error al obtener datos del EDP: ' + (err.response?.data?.message || err.message))
+2416:   } finally {
+2417:     cargandoCaratulaPMO.value = false
+2418:   }
+2419: }
+2420: 
+2421: const onEdpActualizadoPMO = async () => {
+2422:   await cargarPendientesAnalista()
+2423:   if (edpDataPMO.value?.id_proyecto) {
+2424:     try {
+2425:       const { data } = await apiAxios.get(`/operaciones/report/edp/resumen/${edpDataPMO.value.id_proyecto}`)
+2426:       if (data?.success) {
+2427:         edpDataPMO.value = data.data
+2428:       }
+2429:     } catch (e) {
+2430:       console.error('Error al refrescar EDP en modal:', e)
+2431:     }
+2432:   }
+2433: }
+2434: 
+2435: const reportsFiltradosInbox = computed(() => {
+2436:   let list = datosAnalistaPMO.value.reports || []
+2437:   if (filtroEstadoReportInbox.value === 'pendientes') {
+2438:     list = list.filter(r => r.estado_reporte === 'PENDIENTE_VALIDACION')
+2439:   } else if (filtroEstadoReportInbox.value === 'validados') {
+2440:     list = list.filter(r => r.estado_reporte === 'VALIDADO_ANALISTA')
+2441:   } else if (filtroEstadoReportInbox.value === 'con_ajustes') {
+2442:     list = list.filter(r => r.ajustes_analista?.modificado)
+2443:   }
+2444: 
+2445:   if (filtroReportsPMO.value.trim()) {
+2446:     const q = filtroReportsPMO.value.toLowerCase()
+2447:     list = list.filter(r => 
+2448:       (r.codi_proyecto || '').toLowerCase().includes(q) ||
+2449:       (r.cliente_nombre || '').toLowerCase().includes(q) ||
+2450:       (r.obra_nombre || '').toLowerCase().includes(q) ||
+2451:       (r.operador_nombre || '').toLowerCase().includes(q) ||
+2452:       (r.equipo_patente || '').toLowerCase().includes(q)
+2453:     )
+2454:   }
+2455:   return list
+2456: })
+2457: 
+2458: const otsFiltradasPMO = computed(() => {
+2459:   let list = datosAnalistaPMO.value.ots_liquidacion || []
+2460:   if (filtroItsPMO.value.trim()) {
+2461:     const q = filtroItsPMO.value.toLowerCase()
+2462:     list = list.filter(o => 
+2463:       (o.codi_proyecto || '').toLowerCase().includes(q) ||
+2464:       (o.cliente_nombre || '').toLowerCase().includes(q) ||
+2465:       (o.obra_nombre || '').toLowerCase().includes(q) ||
+2466:       (o.folio_its || '').toLowerCase().includes(q)
+2467:     )
+2468:   }
+2469:   return list
+2470: })
+2471: 
+2472: const formatMoneda = (val) => {
+2473:   return '$' + Math.round(Number(val) || 0).toLocaleString('es-CL')
+2474: }
+2475: 
+2476: const pipelineEdpFiltradas = computed(() => {
+2477:   let list = datosAnalistaPMO.value.ots_liquidacion || []
+2478:   return list
+2479: })
+2480: 
+2481: const getEstadoItsBadge = (estado) => {
+2482:   if (!estado) return { label: 'Sin ITS Creado', classes: 'bg-slate-700/40 text-slate-400 border-slate-600/40' }
+2483:   switch (estado) {
+2484:     case 'BORRADOR':
+2485:       return { label: 'Paso 1: Elaboración Analista', classes: 'bg-amber-500/20 text-amber-300 border-amber-500/40' }
+2486:     case 'EN_REVISION_OPERACIONES':
+2487:       return { label: 'Paso 2: V°B° Operaciones', classes: 'bg-purple-500/20 text-purple-300 border-purple-500/40 animate-pulse' }
+2488:     case 'EN_REVISION_CONTABILIDAD':
+2489:       return { label: 'Paso 3: Recep. Contabilidad', classes: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 animate-pulse' }
+2490:     case 'CONCLUIDO':
+2491:       return { label: '✓ Concluido / EDP Liberado', classes: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold' }
+2492:     default:
+2493:       return { label: estado, classes: 'bg-slate-700/40 text-slate-400 border-slate-600/40' }
+2494:   }
+2495: }
+2496: 
+2497: watch(() => activeView.value, (newView) => {
+2498:   if (newView === 'pmo') {
+2499:     cargarPendientesAnalista()
+2500:   }

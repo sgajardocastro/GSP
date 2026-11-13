@@ -3,14 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Centro de Documentación del Sistema | Grúas San Pablo</title>
-  <!-- Tailwind CSS & Lucide Icons via CDN -->
+  <title>Centro de Documentación | Grúas San Pablo</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -37,7 +35,6 @@
       }
     }
   </script>
-
   <style>
     body {
       background-color: #030712;
@@ -58,413 +55,365 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
       background: #4b5563;
     }
-    .badge-glow {
-      box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
-    }
   </style>
 </head>
 <body class="h-full flex flex-col antialiased custom-scrollbar">
 
   <!-- ========================================== -->
-  <!-- BARRA SUPERIOR GLOBAL                      -->
+  <!-- VISTA 1: CATÁLOGO DIRECTO (SIN HEADER)     -->
   <!-- ========================================== -->
-  <header class="h-16 border-b border-brand-border bg-brand-dark/95 backdrop-blur sticky top-0 z-50 px-4 md:px-8 flex items-center justify-between">
-    <div class="flex items-center space-x-4">
-      <div class="flex items-center space-x-3">
-        <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 text-slate-950 font-black text-xl">
-          <i data-lucide="layers" class="w-5 h-5 text-slate-950"></i>
-        </div>
-        <div>
-          <div class="flex items-center space-x-2">
-            <span class="font-extrabold text-sm tracking-wider text-slate-100 uppercase">Grúas San Pablo</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">Docs Oficial</span>
-          </div>
-          <p class="text-xs text-slate-400">Sistema Integrado de Gestión Operacional & Comercial</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Navegación y Acciones -->
-    <div class="flex items-center space-x-3">
-      <button id="btnVolverCatalogoNav" onclick="mostrarCatalogo()" class="hidden px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors flex items-center space-x-1.5">
-        <i data-lucide="grid" class="w-3.5 h-3.5"></i>
-        <span>Ver Catálogo Completo</span>
-      </button>
-
-      <a href="./" class="text-xs text-slate-400 hover:text-amber-400 transition-colors hidden sm:flex items-center space-x-1">
-        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-        <span>Ir a la Plataforma Web</span>
-      </a>
-
-      <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
-
-      <div class="text-right">
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>
-          Producción v1.0
-        </span>
-      </div>
-    </div>
-  </header>
-
-  <!-- ========================================== -->
-  <!-- VISTA 1: CATÁLOGO DE DOCUMENTACIÓN         -->
-  <!-- ========================================== -->
-  <main id="seccionCatalogo" class="flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-8 transition-opacity duration-300">
+  <main id="seccionCatalogo" class="flex-1 max-w-7xl w-full mx-auto px-3 md:px-6 py-2.5">
     
-    <!-- Hero / Encabezado -->
-    <div class="mb-10 text-center md:text-left md:flex md:items-end md:justify-between border-b border-slate-800/80 pb-8">
-      <div>
-        <div class="inline-flex items-center space-x-2 text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">
-          <i data-lucide="book-open" class="w-4 h-4"></i>
-          <span>Biblioteca de Conocimiento & Procesos</span>
-        </div>
-        <h1 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-          Documentación Oficial del Sistema
-        </h1>
-        <p class="mt-2 text-sm md:text-base text-slate-400 max-w-2xl leading-relaxed">
-          Acceso centralizado a los planos maestros de procesos, recorridos funcionales interactivos, especificaciones de liquidación financiera y protocolos de validación en faena.
-        </p>
-      </div>
-
-      <!-- Métricas / Resumen Rápido -->
-      <div class="mt-6 md:mt-0 flex items-center space-x-3 text-left">
-        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 px-4">
-          <div class="text-xs text-slate-400">Módulos Validados</div>
-          <div class="text-xl font-bold text-amber-400 font-mono">6 Módulos</div>
-        </div>
-        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 px-4">
-          <div class="text-xs text-slate-400">Cobertura Operativa</div>
-          <div class="text-xl font-bold text-blue-400 font-mono">100% E2E</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filtros Rápidos -->
-    <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
-      <div class="flex items-center space-x-2 overflow-x-auto pb-2 md:pb-0">
-        <button onclick="filtrarModulos('todos')" class="filtro-btn active px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 transition-all">Todos los Módulos</button>
-        <button onclick="filtrarModulos('operaciones')" class="filtro-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800 transition-all">Operaciones & Procesos</button>
-        <button onclick="filtrarModulos('comercial')" class="filtro-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800 transition-all">Comercial & Cotización</button>
-        <button onclick="filtrarModulos('finanzas')" class="filtro-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800 transition-all">Liquidación & Finanzas</button>
+    <!-- Única fila compacta de Filtros + Buscador -->
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-800">
+      <div class="flex items-center space-x-1.5 overflow-x-auto">
+        <button onclick="filtrarModulos('todos', this)" class="filtro-btn active px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition-all cursor-pointer">Todos (13)</button>
+        <button onclick="filtrarModulos('comercial', this)" class="filtro-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800 transition-all cursor-pointer">Comercial y Cotización</button>
+        <button onclick="filtrarModulos('operaciones', this)" class="filtro-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800 transition-all cursor-pointer">Operaciones, Terreno y Taller</button>
+        <button onclick="filtrarModulos('finanzas', this)" class="filtro-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800 transition-all cursor-pointer">ITS, EDP y Contabilidad</button>
       </div>
 
       <div class="relative w-full sm:w-64">
-        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-        <input id="inputBuscar" oninput="buscarModulo(this.value)" type="text" placeholder="Buscar por tema o rol..." class="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors" />
+        <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2"></i>
+        <input id="inputBuscar" oninput="buscarModulo(this.value)" type="text" placeholder="Buscar manual, tabla o simulador..." class="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors" />
       </div>
     </div>
 
-    <!-- Grid de Tarjetas de Documentación -->
-    <div id="gridDocumentos" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Grid de Tarjetas -->
+    <div id="gridDocumentos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
 
-      <!-- TARJETA 1: PLANO MAESTRO PIPELINE INTERACTIVO -->
-      <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="operaciones" data-keywords="pipeline e2e kanban procesos despacho salida patio report linaje roles trazabilidad">
+      <!-- 1. ETAPAS DEL SERVICIO (MAPA INTERACTIVO) -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-slate-800 hover:border-amber-500/40 rounded-xl p-4 flex flex-col justify-between" data-categoria="operaciones comercial" data-keywords="etapas servicio pipeline interactivo cotizacion ot despacho salida patio report cierre">
         <div>
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center">
-                <i data-lucide="git-merge" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <span class="text-xs font-mono uppercase text-blue-400 tracking-wider">Procesos & Linaje E2E</span>
-                <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                  Plano Maestro de Procesos & Linaje Operativo
-                </h3>
-              </div>
-            </div>
-            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
-              6 Etapas E2E
-            </span>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-blue-400">1. MAPA INTERACTIVO</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">Web Animada</span>
           </div>
-
-          <p class="text-xs text-slate-300 leading-relaxed mb-4">
-            Arquitectura visual del ciclo de vida operativo completo de 6 etapas: Oportunidad comercial, Adjudicación, Planificación y Despacho, Inspección de Patio, Ejecución en Terreno (Reports) y Cierre Administrativo con Liquidación. Detalla estados, reglas de avance y responsabilidades por rol.
+          <h3 class="text-sm font-bold text-white mb-1.5">Etapas del Servicio (De Cotización a Factura)</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Mapa interactivo de las 6 etapas del servicio: Cotización, Verificación, Asignación de Recursos (OT), Preparación y Salida de Patio, Ejecución en Terreno y Cierre.
           </p>
-
-          <!-- Metadatos de Negocio -->
-          <div class="space-y-2 mb-6 border-t border-slate-800/70 pt-3">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Audiencia Clave:</span>
-              <span class="text-slate-200 font-medium">Jefatura Operaciones, Planificadores, Torre Control</span>
-            </div>
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Reglas Clave:</span>
-              <span class="text-slate-200 font-medium">Linaje Estricto, Inmutabilidad de Etapas Concluidas</span>
-            </div>
-          </div>
         </div>
-
-        <div class="flex items-center space-x-3 pt-3 border-t border-slate-800/70">
-          <button onclick="abrirVisor('./presentacion_pipeline_interactivo.html', 'Plano Maestro de Procesos & Linaje Operativo')" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-amber-500/10">
+        <div class="flex items-center gap-1.5 pt-2.5 border-t border-slate-800/80">
+          <button onclick="abrirVisor('./presentacion_pipeline_interactivo.html', '1. Etapas del Servicio (Mapa Interactivo)')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
             <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
-            <span>Explorar en Visor Integrado</span>
+            <span>Abrir Mapa Interactivo</span>
           </button>
-          <a href="./presentacion_pipeline_interactivo.html" target="_blank" title="Abrir en nueva pestaña" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
-            <i data-lucide="external-link" class="w-4 h-4"></i>
+          <a href="./presentacion_pipeline_interactivo.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
           </a>
         </div>
       </div>
 
-      <!-- TARJETA 2: RECORRIDO OFICIAL COTIZACIÓN WEB (CRM) -->
-      <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="comercial" data-keywords="cotizacion crm gestor oportunidades equipos tarifas chofer rigger viaticos pdf margen comercial">
+      <!-- 1B. MODELO DE PROCESOS BPMN 2.0 (ISO/IEC 19510) -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-slate-800 hover:border-amber-500/40 rounded-xl p-4 flex flex-col justify-between" data-categoria="operaciones comercial finanzas" data-keywords="bpmn 2.0 proceso servicio granular asincrono compuertas xor and bucles preventa visita estructurador acreditacion patio terreno pwa report diario edp its desacople">
         <div>
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center">
-                <i data-lucide="calculator" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <span class="text-xs font-mono uppercase text-amber-400 tracking-wider">Módulo Comercial & CRM</span>
-                <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                  Flujo Oficial de Cotización WEB
-                </h3>
-              </div>
-            </div>
-            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
-              6 Pasos Guiados
-            </span>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-emerald-400">1B. MODELO BPMN 2.0</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">ISO/IEC 19510</span>
           </div>
-
-          <p class="text-xs text-slate-300 leading-relaxed mb-4">
-            Recorrido paso a paso fiel al código de producción (<code class="text-amber-400 font-mono text-[11px]">GestorOportunidades.vue</code> y <code class="text-amber-400 font-mono text-[11px]">proyectoModel.js</code>). Cubre el ciclo comercial completo: creación de oportunidad, costeo técnico de grúas/plumas, asignación de tripulación, viáticos y pernoctación, validación de margen y emisión del PDF formal.
+          <h3 class="text-sm font-bold text-white mb-1.5">Modelo de Procesos BPMN 2.0 (Ciclo Completo Granular &amp; Asíncrono)</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Diagrama formal con Pan &amp; Zoom: Preventa, Visita a Terreno, Matriz de Servicios, Bucles de Cotización V1/V2, Habilitación Operativa, Dossier B2B, Reports Diarios PWA y Desacople Asíncrono EDP vs ITS.
           </p>
-
-          <!-- Metadatos de Negocio -->
-          <div class="space-y-2 mb-6 border-t border-slate-800/70 pt-3">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Audiencia Clave:</span>
-              <span class="text-slate-200 font-medium">Ejecutivos Comerciales, Jefatura Comercial, Gerencia</span>
-            </div>
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Reglas Clave:</span>
-              <span class="text-slate-200 font-medium">Tarifas UF/CLP, Validaciones de Margen Mínimo, PDF Oficial</span>
-            </div>
-          </div>
         </div>
+        <div class="flex items-center gap-1.5 pt-2.5 border-t border-slate-800/80">
+          <button onclick="abrirVisor('./bpmn_proceso_servicio_gsp.html', '1B. Modelo de Procesos BPMN 2.0 (ISO/IEC 19510)')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="git-merge" class="w-3.5 h-3.5"></i>
+            <span>Abrir Modelo BPMN 2.0</span>
+          </button>
+          <a href="./bpmn_proceso_servicio_gsp.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </a>
+        </div>
+      </div>
 
-        <div class="space-y-2 pt-3 border-t border-slate-800/70">
-          <div class="flex items-center space-x-3">
-            <button onclick="abrirVisor('./navegacion_cotizacion_web.html', 'Flujo Oficial de Cotización WEB')" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-amber-500/10">
+      <!-- 2. CÓMO CREAR UNA COTIZACIÓN (WEB ANIMADA + SIMULADOR) -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-slate-800 hover:border-amber-500/40 rounded-xl p-4 flex flex-col justify-between" data-categoria="comercial" data-keywords="cotizacion comercial equipos tarifas margen pdf cliente simulador paso a paso">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-amber-400">2. COMERCIAL Y COTIZACIÓN</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">Guía Animada + Simulador</span>
+          </div>
+          <h3 class="text-sm font-bold text-white mb-1.5">Cómo Crear una Cotización</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Recorrido animado de los 6 pasos para cotizar grúas o plumas, calcular distancia en mapa, agregar fletes y pensiones, revisar margen y emitir el PDF.
+          </p>
+        </div>
+        <div class="space-y-1.5 pt-2.5 border-t border-slate-800/80">
+          <div class="flex items-center gap-1.5">
+            <button onclick="abrirVisor('./navegacion_cotizacion_web.html', '2. Cómo Crear una Cotización (Guía Animada)')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
               <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
-              <span>Explorar en Visor Integrado</span>
+              <span>Guía Animada (6 Pasos)</span>
             </button>
-            <a href="./navegacion_cotizacion_web.html" target="_blank" title="Abrir en nueva pestaña" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
-              <i data-lucide="external-link" class="w-4 h-4"></i>
+            <a href="./navegacion_cotizacion_web.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
             </a>
           </div>
-          <a href="./manual_cotizacion_paso_a_paso.html" target="_blank" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center justify-center space-x-2 transition-all no-underline">
-            <span>📄</span>
-            <span>Ver Manual Visual Paso a Paso (Para Imprimir)</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- TARJETA 3: CICLO FINANCIERO INTEGRAL & MATRIZ DE PRUEBAS -->
-      <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="finanzas" data-keywords="finanzas report diario its edp estado de pago facturacion yiara analista pmo protocolo pruebas spec 57 liquidacion conciliacion">
-        <div>
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                <i data-lucide="badge-dollar-sign" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <span class="text-xs font-mono uppercase text-emerald-400 tracking-wider">Control de Gestión & Liquidación</span>
-                <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                  Proceso Financiero & Protocolo de Pruebas
-                </h3>
-              </div>
-            </div>
-            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-              Spec 57 Validada
-            </span>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button onclick="abrirVisor('./simulador_cotizacion.html', 'Simulador Interactivo de Cotización')" class="py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 border border-amber-500/30 text-amber-300 font-bold text-[11px] cursor-pointer">
+              ⚡ Simulador Interactivo
+            </button>
+            <button onclick="abrirVisor('./manual_cotizacion_paso_a_paso.html', 'Manual Paso a Paso de Cotización')" class="py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[11px] cursor-pointer">
+              📄 Manual Imprimible
+            </button>
           </div>
-
-          <p class="text-xs text-slate-300 leading-relaxed mb-4">
-            Especificación funcional integral y protocolo exhaustivo de pruebas del circuito de liquidación operacional: Report Diario de Terreno (captura con firma digital FES) &rarr; Informe Técnico de Servicio (ITS consolidado) &rarr; Estado de Pago (EDP aprobado por mandante) &rarr; Facturación electrónica y conciliación contable.
-          </p>
-
-          <!-- Metadatos de Negocio -->
-          <div class="space-y-2 mb-6 border-t border-slate-800/70 pt-3">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Audiencia Clave:</span>
-              <span class="text-slate-200 font-medium">Analista de Operaciones (Yiara), Finanzas, Facturación</span>
-            </div>
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Reglas Clave:</span>
-              <span class="text-slate-200 font-medium">Candado de Liquidación, Matriz de Casos BDD, Cero Fuga de Cobro</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex items-center space-x-3 pt-3 border-t border-slate-800/70">
-          <button onclick="abrirVisor('./proceso_financiero_integral_y_protocolo_pruebas_gsp.html', 'Proceso Financiero & Protocolo de Pruebas')" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-amber-500/10">
-            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
-            <span>Explorar en Visor Integrado</span>
+          <button onclick="abrirVisor('./tratamiento_riggers_y_prevencionistas_estructurador.html', 'Tratamiento de Riggers y Prevencionistas en el Estructurador')" class="w-full py-1 px-2 rounded bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 font-bold text-[11px] cursor-pointer">
+            ⚙️ Tratamiento de Riggers y Prevencionistas en el Estructurador
           </button>
-          <a href="./proceso_financiero_integral_y_protocolo_pruebas_gsp.html" target="_blank" title="Abrir en nueva pestaña" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
-            <i data-lucide="external-link" class="w-4 h-4"></i>
-          </a>
         </div>
       </div>
 
-      <!-- TARJETA 4: MANEJO DE EXCEPCIONES (CONTROL DE GESTIÓN & LIQUIDACIÓN) -->
-      <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="finanzas" data-keywords="manejo de excepciones control en vivo pmo its edp liquidacion horas reales reporte fisico standby piso minimo contractual flete trazabilidad finanzas">
+      <!-- 2B. TRATAMIENTO DE RIGGERS Y PREVENCIONISTAS EN EL ESTRUCTURADOR -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-amber-500/40 hover:border-amber-400 rounded-xl p-4 flex flex-col justify-between ring-1 ring-amber-500/20" data-categoria="comercial operaciones" data-keywords="tratamiento riggers prevencionistas estructurador servicios preventa eliminar cobro cotizacion vigente operaciones horas minimas report diario req-1100">
         <div>
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                <i data-lucide="shield-alert" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <span class="text-xs font-mono uppercase text-emerald-400 tracking-wider">Control de Gestión & Liquidación</span>
-                <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                  Manejo de Excepciones
-                </h3>
-              </div>
-            </div>
-            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-              Spec 63 §12
-            </span>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-amber-400">ESPECIFICACIÓN ESTRUCTURADOR</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">SPEC-016 §19 • REQ-1100</span>
           </div>
-
-          <p class="text-xs text-slate-300 leading-relaxed mb-4">
-            Protocolo de gobernanza y trazabilidad financiera ante omisiones o discrepancias de registro en faena. Establece la separación estricta entre el monitoreo en Torre de Control y el linaje probatorio para cobro: Vía A (Reporte Físico de contingencia firmado por ITO) y Vía B (Cobro de Piso Mínimo Contractual por reserva/standby imputable al mandante).
+          <h3 class="text-sm font-bold text-white mb-1.5">Tratamiento de Riggers y Prevencionistas en el Estructurador</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Reglas de creación automática al marcar Rigger/Prevencionista en Preventa, eliminación libre desde el Estructurador cuando no se cobra aparte (sin perder el requerimiento operativo), validez de nuevas cotizaciones en servicios en operación y piso mínimo en Report Diario.
           </p>
-
-          <!-- Metadatos de Negocio -->
-          <div class="space-y-2 mb-6 border-t border-slate-800/70 pt-3">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Audiencia Clave:</span>
-              <span class="text-slate-200 font-medium">Torre de Control, Control de Gestión, Administración</span>
-            </div>
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Reglas Clave:</span>
-              <span class="text-slate-200 font-medium">Inmutabilidad Financiera, Doble Vía de Regularización</span>
-            </div>
-          </div>
         </div>
-
-        <div class="flex items-center space-x-3 pt-3 border-t border-slate-800/70">
-          <button onclick="abrirVisor('./politica_manejo_excepciones_gsp.html', 'Manejo de Excepciones: De Torre de Control a ITS y EDP')" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-amber-500/10">
-            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
-            <span>Explorar en Visor Integrado</span>
+        <div class="flex items-center gap-1.5 pt-2.5 border-t border-slate-800/80">
+          <button onclick="abrirVisor('./tratamiento_riggers_y_prevencionistas_estructurador.html', 'Tratamiento de Riggers y Prevencionistas en el Estructurador')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+            <span>Abrir Especificación</span>
           </button>
-          <a href="./politica_manejo_excepciones_gsp.html" target="_blank" title="Abrir en nueva pestaña" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
-            <i data-lucide="external-link" class="w-4 h-4"></i>
+          <a href="./tratamiento_riggers_y_prevencionistas_estructurador.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
           </a>
         </div>
       </div>
 
-      <!-- TARJETA 5: MARCHA BLANCA & CASOS DE NEGOCIO EN TERRENO -->
-      <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="operaciones" data-keywords="marcha blanca casos de negocio terreno faena pwa conductor operador izaje mineria amsa codelco">
+      <!-- 3. APP MÓVIL EN TERRENO: VIAJES, ODÓMETROS, HORÓMETROS Y REPORT (SIMULADOR CELULAR) -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-amber-500/40 hover:border-amber-400 rounded-xl p-4 flex flex-col justify-between ring-1 ring-amber-500/20" data-categoria="operaciones" data-keywords="operador terreno pwa celular app movil viaje salida llegada retorno odometro horometro petroleo combustible colacion report diario firma mandante">
         <div>
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center">
-                <i data-lucide="truck" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <span class="text-xs font-mono uppercase text-purple-400 tracking-wider">Validación en Faena</span>
-                <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                  Marcha Blanca: Casos de Negocio GSP
-                </h3>
-              </div>
-            </div>
-            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
-              Validación Terreno
-            </span>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-amber-400">3. APP MÓVIL TERRENO (PWA)</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">Simulador Celular + Voz</span>
           </div>
-
-          <p class="text-xs text-slate-300 leading-relaxed mb-4">
-            Catálogo de casos de negocio reales probados en marcha blanca operacional para servicios de izaje de alta exigencia (camiones pluma y grúas telescópicas en faenas mineras e industriales). Valida checklists preoperacionales, tracking GPS y transmisión de reports desde la PWA móvil.
+          <h3 class="text-sm font-bold text-white mb-1.5">Uso de la App en Terreno: Viajes, Combustible, Odómetros, Horómetros y Report</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Simulador interactivo paso a paso (9 pasos reales de la PWA): Panel Operativo de Campo, Salida de Base, Convoy en Ruta y Carga de Combustible (Copec), Llegada a Faena, Inicio Report, Término Report, Firma Mandante, Salida de Obra (Retorno) y Llegada a Patio Central GSP.
           </p>
-
-          <!-- Metadatos de Negocio -->
-          <div class="space-y-2 mb-6 border-t border-slate-800/70 pt-3">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Audiencia Clave:</span>
-              <span class="text-slate-200 font-medium">Supervisores de Faena, Operadores, Choferes, Cuadrillas</span>
-            </div>
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Reglas Clave:</span>
-              <span class="text-slate-200 font-medium">Inspección Preoperacional de Patio, Registro de Viaje, Firma en Sitio</span>
-            </div>
-          </div>
         </div>
-
-        <div class="flex items-center space-x-3 pt-3 border-t border-slate-800/70">
-          <button onclick="abrirVisor('./marcha_blanca_casos_negocio.html', 'Marcha Blanca: Casos de Negocio GSP')" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-amber-500/10">
-            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
-            <span>Explorar en Visor Integrado</span>
+        <div class="flex items-center gap-1.5 pt-2.5 border-t border-slate-800/80">
+          <button onclick="abrirVisor('./manual_operador_terreno_gsp.html?v=20261028_6', '3. Uso de la App en Terreno: Viajes, Combustible, Odómetros, Horómetros y Report')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+            <span>Abrir Simulador Celular (9 Pasos)</span>
           </button>
-          <a href="./marcha_blanca_casos_negocio.html" target="_blank" title="Abrir en nueva pestaña" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
-            <i data-lucide="external-link" class="w-4 h-4"></i>
+          <a href="./manual_operador_terreno_gsp.html?v=20261028_6" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
           </a>
         </div>
       </div>
 
-      <!-- TARJETA 6: ASIGNACIÓN DE RECURSOS, TRASLADOS & REPORTS -->
-      <div class="card-modulo group bg-brand-card hover:bg-brand-cardHover border border-slate-800/90 hover:border-amber-500/40 rounded-xl p-6 transition-all duration-200 flex flex-col justify-between shadow-lg" data-categoria="operaciones" data-keywords="asignacion recursos traslados reports contrapesos chofer operador cama baja viajes flete sueldo art 25 bis">
+      <!-- 4. ASIGNACIÓN DE EQUIPOS, TRASLADOS Y REPORTS DIARIOS -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-slate-800 hover:border-amber-500/40 rounded-xl p-4 flex flex-col justify-between" data-categoria="operaciones" data-keywords="asignacion recursos equipos gruas chofer operador rigger viajes contrapesos report diario odometro horometro">
         <div>
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
-                <i data-lucide="split" class="w-5 h-5"></i>
-              </div>
-              <div>
-                <span class="text-xs font-mono uppercase text-emerald-400 tracking-wider">Logística & Despacho</span>
-                <h3 class="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                  Asignación de Recursos, Traslados & Reports
-                </h3>
-              </div>
-            </div>
-            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-              Guía Oficial Spec 65
-            </span>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-sky-400">4. DESPACHO, VIAJES Y REPORTS</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20">Reglas Operativas</span>
           </div>
-
-          <p class="text-xs text-slate-300 leading-relaxed mb-4">
-            Matriz operacional y doctrinaria para la asignación de recursos en Pestaña C del CRM. Regula el desacoplamiento de chofer en grúas autopropulsadas, la logística de contrapesos en 4 viajes, fletes independientes y la unicidad del report de cara al mandante.
+          <h3 class="text-sm font-bold text-white mb-1.5">Asignación de Equipos, Viajes y Reports Diarios</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Reglas de asignación en los 5 casos de servicio (cuándo va Operador y cuándo va Chofer), viajes de camiones con contrapesos y qué datos se reportan en cada viaje y en el Report Diario.
           </p>
-
-          <!-- Metadatos de Negocio -->
-          <div class="space-y-2 mb-6 border-t border-slate-800/70 pt-3">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i> Audiencia Clave:</span>
-              <span class="text-slate-200 font-medium">Despacho, Tráfico, Operaciones, Jefatura Comercial</span>
-            </div>
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Reglas Clave:</span>
-              <span class="text-slate-200 font-medium">1 Report por Grúa, Chofer Solo en Camiones, Trazabilidad Art. 25 bis</span>
-            </div>
-          </div>
         </div>
-
-        <div class="flex items-center space-x-3 pt-3 border-t border-slate-800/70">
-          <button onclick="abrirVisor('./guia_asignacion_recursos_traslados_y_reports.html', 'Asignación de Recursos, Traslados & Reports')" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-amber-500/10">
-            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
-            <span>Explorar en Visor Integrado</span>
+        <div class="flex items-center gap-1.5 pt-2.5 border-t border-slate-800/80">
+          <button onclick="abrirVisor('./guia_asignacion_recursos_traslados_y_reports.html', '4. Asignación de Equipos, Viajes y Reports Diarios')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+            <span>Abrir Manual</span>
           </button>
-          <a href="./guia_asignacion_recursos_traslados_y_reports.html" target="_blank" title="Abrir en nueva pestaña" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors">
-            <i data-lucide="external-link" class="w-4 h-4"></i>
+          <a href="./guia_asignacion_recursos_traslados_y_reports.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
           </a>
         </div>
       </div>
 
-    </div>
+      <!-- 5. CASOS DE NEGOCIO EN TERRENO (MARCHA BLANCA) -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-slate-800 hover:border-amber-500/40 rounded-xl p-4 flex flex-col justify-between" data-categoria="operaciones" data-keywords="marcha blanca casos de negocio terreno faena izaje gruas camiones pluma">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-purple-400">5. CASOS DE NEGOCIO</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">Ejemplos Reales</span>
+          </div>
+          <h3 class="text-sm font-bold text-white mb-1.5">Casos de Negocio en Terreno (Marcha Blanca)</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Ejemplos prácticos de servicios reales (grúa sola, grúa con camión de contrapesos, servicios de varios días) desde la salida de planta hasta la firma del report.
+          </p>
+        </div>
+        <div class="flex items-center gap-1.5 pt-2.5 border-t border-slate-800/80">
+          <button onclick="abrirVisor('./marcha_blanca_casos_negocio.html', '5. Casos de Negocio en Terreno (Marcha Blanca)')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+            <span>Ver Casos de Negocio</span>
+          </button>
+          <a href="./marcha_blanca_casos_negocio.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </a>
+        </div>
+      </div>
 
-    <!-- Banner Informativo Inferior -->
-    <div class="mt-12 bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
-      <div class="flex items-center space-x-3">
-        <i data-lucide="info" class="w-5 h-5 text-amber-400 shrink-0"></i>
-        <p class="text-xs text-slate-300">
-          Esta documentación refleja fielmente la implementación productiva de Grúas San Pablo. Cada material interactivo se ejecuta de forma autónoma y respeta las reglas de negocio oficiales del ecosistema LeanGlobal.
-        </p>
+      <!-- 6. MANEJO DE EXCEPCIONES (TORRE DE CONTROL -> ITS -> EDP) -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-slate-800 hover:border-amber-500/40 rounded-xl p-4 flex flex-col justify-between" data-categoria="finanzas operaciones" data-keywords="manejo excepciones torre control en vivo reporte fisico contingencia standby minimo garantizado">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-rose-400">6. EXCEPCIONES Y CONTINGENCIAS</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20">Control en Vivo &rarr; ITS/EDP</span>
+          </div>
+          <h3 class="text-sm font-bold text-white mb-1.5">Manejo de Excepciones (Torre de Control &rarr; ITS &rarr; EDP)</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Qué hacer cuando falta un registro en terreno, se usa Report Físico en papel firmado por el cliente o aplica cobro de piso mínimo / Stand By.
+          </p>
+        </div>
+        <div class="flex items-center gap-1.5 pt-2.5 border-t border-slate-800/80">
+          <button onclick="abrirVisor('./politica_manejo_excepciones_gsp.html', '6. Manejo de Excepciones (Torre de Control → ITS → EDP)')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+            <span>Ver Reglas de Excepciones</span>
+          </button>
+          <a href="./politica_manejo_excepciones_gsp.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </a>
+        </div>
       </div>
-      <div class="shrink-0 text-xs font-mono text-slate-400">
-        Actualizado: Octubre 2026
+
+      <!-- 7. CIERRE DE SERVICIO (ITS): CÁLCULO DE HORAS OPERADOR, RIGGER Y VIÁTICOS -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-emerald-500/40 hover:border-amber-500/50 rounded-xl p-4 flex flex-col justify-between ring-1 ring-emerald-500/20" data-categoria="finanzas operaciones" data-keywords="report diario its cierre servicio valor hora operador rigger viatico alimentacion colacion stand by tabla tarifas tpar_tarifa_operador urbano rural odometro horometro remuneraciones rrhh">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-emerald-400">7. REPORT DIARIO, ITS Y REMUNERACIONES</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">Report &rarr; ITS &rarr; RRHH</span>
+          </div>
+          <h3 class="text-sm font-bold text-white mb-1.5">Verificación en Report Diario, Traspaso al ITS y Cálculo de Horas Operador, Rigger y Viáticos</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Validación diaria en la Sección 3 del Report Diario, traspaso automático al ITS (<code class="text-emerald-300 font-mono">&check; Report</code>), tabla de 19 tarifas (<code class="text-emerald-300 font-mono">tpar_tarifa_operador</code>), Rigger y Viático de Alimentación ($0 bajo 8h; $7.000 a $18.000).
+          </p>
+        </div>
+        <div class="flex items-center gap-1.5 pt-2.5 border-t border-slate-800/80">
+          <button onclick="abrirVisor('./proceso_financiero_integral_y_protocolo_pruebas_gsp.html', '7. Verificación en Report Diario, Traspaso al ITS y Cálculo de Horas Operador, Rigger y Viáticos')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+            <span>Ver Reglas y Tablas de Cálculo</span>
+          </button>
+          <a href="./proceso_financiero_integral_y_protocolo_pruebas_gsp.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </a>
+        </div>
       </div>
+
+      <!-- 8. ESTADO DE PAGO (EDP) Y FACTURACIÓN EN CONTABILIDAD -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-blue-500/40 hover:border-amber-500/50 rounded-xl p-4 flex flex-col justify-between ring-1 ring-blue-500/20" data-categoria="finanzas comercial" data-keywords="estado de pago edp contabilidad facturacion factura dte laudus sii orden de compra oc analista comercial yiara maritza tesalia report validado desde hasta">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-blue-400">8. COBRO, FACTURACIÓN Y REPORTES CONTABLES</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 font-bold">EDP + 5 Reportes Excel</span>
+          </div>
+          <h3 class="text-sm font-bold text-white mb-1.5">Estado de Pago (EDP), Facturación y Reportes Contables / RRHH</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Flujo directo de Control de Gestión a Comercial, subida de OC, carga de facturas (Laudus / SII) y 5 reportes descargables en Excel (incluyendo Horas Operadores con filtro Desde-Hasta y columna <code class="text-blue-300 font-mono">Report Validado</code>).
+          </p>
+        </div>
+        <div class="flex items-center gap-1.5 pt-2.5 border-t border-slate-800/80">
+          <button onclick="abrirVisor('./manual_contabilidad_edp_y_facturacion_gsp.html', '8. Estado de Pago (EDP) y Facturación en Contabilidad')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="landmark" class="w-3.5 h-3.5"></i>
+            <span>Abrir Manual de EDP y Facturación</span>
+          </button>
+          <a href="./manual_contabilidad_edp_y_facturacion_gsp.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- 9. ARRIENDO DE PLATAFORMAS (ENTREGA, RETORNO Y ACTAS 360°) -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-slate-800 hover:border-amber-500/40 rounded-xl p-4 flex flex-col justify-between" data-categoria="operaciones comercial" data-keywords="plataformas bsm bestmaq royal rental arriendo sin operador entrega retorno acta fotos 360">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-purple-400">9. PLATAFORMAS (SIN OPERADOR)</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">Actas 360°</span>
+          </div>
+          <h3 class="text-sm font-bold text-white mb-1.5">Arriendo de Plataformas (Entrega y Retorno)</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Cómo cotizar arriendo de plataformas con traslado ida/vuelta, asignar chofer al camión, firmar el Acta de Entrega 360° en terreno y gestionar el retiro al terminar el arriendo.
+          </p>
+        </div>
+        <div class="flex items-center gap-1.5 pt-2.5 border-t border-slate-800/80">
+          <button onclick="abrirVisor('./manual_entrega_y_retorno_plataformas_bsm.html', '9. Arriendo de Plataformas (Entrega y Retorno)')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+            <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+            <span>Abrir Manual</span>
+          </button>
+          <a href="./manual_entrega_y_retorno_plataformas_bsm.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- 10. MANTENIMIENTO Y TALLER (MANUAL + INFOGRAFÍA + FORMULARIOS) -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-slate-800 hover:border-amber-500/40 rounded-xl p-4 flex flex-col justify-between" data-categoria="operaciones" data-keywords="mantenimiento taller otm averia falla mecanico grua infografia formularios horometro">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-amber-400">10. TALLER Y FLOTA</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">Manual + Infografía</span>
+          </div>
+          <h3 class="text-sm font-bold text-white mb-1.5">Mantenimiento y Taller</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Aviso de fallas, apertura de OTM en Web o App Móvil, registro de horómetros/odómetros, asignación de mecánicos, fotos 360° y cierre de OTM.
+          </p>
+        </div>
+        <div class="space-y-1.5 pt-2.5 border-t border-slate-800/80">
+          <div class="flex items-center gap-1.5">
+            <button onclick="abrirVisor('./protocolo_verificacion_mantenimiento_e2e.html', '10. Mantenimiento y Taller')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+              <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+              <span>Abrir Manual de Taller</span>
+            </button>
+            <a href="./protocolo_verificacion_mantenimiento_e2e.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button onclick="abrirVisor('./infografia_taller_bodega.html', 'Infografía Visual: Taller y Bodega')" class="py-1 px-2 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-[11px] cursor-pointer">
+              📋 Infografía Taller/Bodega
+            </button>
+            <button onclick="abrirVisor('./diseno_real_formularios_mantenimiento.html', 'Formularios Interactivos de Mantenimiento')" class="py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[11px] cursor-pointer">
+              ⚙️ Formularios OTM
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 11. BODEGA E INVENTARIO DE REPUESTOS (MANUAL WMS + MAQUETA QR) -->
+      <div class="card-modulo bg-brand-card hover:bg-brand-cardHover border border-slate-800 hover:border-amber-500/40 rounded-xl p-4 flex flex-col justify-between" data-categoria="operaciones contabilidad" data-keywords="bodega inventario repuestos pañol recepcion entrega otm qr maqueta movil compras solped orden de compra laudus plan de cuentas">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-mono font-bold text-amber-400">11. BODEGA, INVENTARIO Y COMPRAS</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">WMS + OC + Laudus</span>
+          </div>
+          <h3 class="text-sm font-bold text-white mb-1.5">Bodega WMS, Compras (Solped/OC) y Puente Laudus</h3>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Infografías funcionales del ciclo completo de Compras (Solped, OC Multi-Empresa, Plan de Cuentas Laudus y Centros de Costo), recepción en Bodega WMS, QR y entrega a OTM.
+          </p>
+        </div>
+        <div class="space-y-1.5 pt-2.5 border-t border-slate-800/80">
+          <div class="flex items-center gap-1.5">
+            <button onclick="abrirVisor('./manual_operativo_inventario_wms_gsp.html', '11. Bodega WMS, Compras y Puente Laudus')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+              <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+              <span>Abrir Manual e Infografías Compras</span>
+            </button>
+            <a href="./manual_operativo_inventario_wms_gsp.html" target="_blank" title="Abrir en pestaña nueva" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button onclick="abrirVisor('./maqueta_mobile_qr_wms.html', 'Maqueta Móvil Escaneo QR Bodega')" class="py-1 px-2 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-[11px] cursor-pointer">
+              📱 Maqueta Móvil QR
+            </button>
+            <button onclick="abrirVisor('./presentacion_flujo_taller_y_bodega.html', 'Presentación Interactiva Taller y Bodega')" class="py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-[11px] cursor-pointer">
+              ▶ Flujo Animado
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 
@@ -472,41 +421,46 @@
   <!-- VISTA 2: VISOR INTEGRADO INTERACTIVO       -->
   <!-- ========================================== -->
   <section id="seccionVisor" class="hidden flex-1 flex flex-col bg-slate-950 overflow-hidden">
-    <!-- Barra de Control del Visor -->
-    <div class="h-12 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between z-20">
-      
-      <!-- Izquierda: Selector / Selector Rápido de Documento -->
-      <div class="flex items-center space-x-3">
-        <button onclick="mostrarCatalogo()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center space-x-1.5 border border-slate-700 transition-colors">
+    <!-- Barra de Control Compacta del Visor -->
+    <div class="h-10 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between z-20">
+      <div class="flex items-center space-x-2">
+        <button onclick="mostrarCatalogo()" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center space-x-1 transition-colors cursor-pointer">
           <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-          <span class="hidden sm:inline">Volver</span>
+          <span>Volver al Catálogo</span>
         </button>
 
         <div class="h-4 w-px bg-slate-700"></div>
 
-        <!-- Selector desplegable de módulo -->
-        <div class="flex items-center space-x-2">
-          <span class="text-xs text-slate-400 hidden md:inline">Documento:</span>
-          <select id="selectDocumentoVisor" onchange="cambiarDocumentoDesdeSelect(this.value)" class="bg-slate-800 text-slate-100 text-xs rounded border border-slate-700 px-2.5 py-1 focus:outline-none focus:border-amber-500 font-medium">
-            <option value="./presentacion_pipeline_interactivo.html">1. Plano Maestro de Procesos & Linaje E2E</option>
-            <option value="./navegacion_cotizacion_web.html">2. Flujo Oficial de Cotización WEB (CRM)</option>
-            <option value="./proceso_financiero_integral_y_protocolo_pruebas_gsp.html">3. Proceso Financiero & Protocolo de Pruebas</option>
-            <option value="./politica_manejo_excepciones_gsp.html">4. Manejo de Excepciones: Control en Vivo ➔ ITS ➔ EDP</option>
-            <option value="./marcha_blanca_casos_negocio.html">5. Marcha Blanca: Casos de Negocio GSP</option>
-            <option value="./guia_asignacion_recursos_traslados_y_reports.html">6. Asignación de Recursos, Traslados & Reports (Spec 65)</option>
-          </select>
-        </div>
+        <select id="selectDocumentoVisor" onchange="cambiarDocumentoDesdeSelect(this.value)" class="bg-slate-800 text-slate-100 text-xs rounded border border-slate-700 px-2 py-1 focus:outline-none focus:border-amber-500 font-medium">
+          <option value="./presentacion_pipeline_interactivo.html">1. Etapas del Servicio (Mapa Interactivo)</option>
+          <option value="./navegacion_cotizacion_web.html">2. Cómo Crear una Cotización (Guía Animada)</option>
+          <option value="./simulador_cotizacion.html">2B. Simulador Interactivo de Cotización</option>
+          <option value="./manual_cotizacion_paso_a_paso.html">2C. Manual Imprimible de Cotización</option>
+          <option value="./tratamiento_riggers_y_prevencionistas_estructurador.html">2D. Tratamiento de Riggers y Prevencionistas en el Estructurador</option>
+          <option value="./manual_operador_terreno_gsp.html">3. Uso de la App en Terreno: Viajes, Odómetros, Horómetros y Report</option>
+          <option value="./guia_asignacion_recursos_traslados_y_reports.html">4. Asignación de Equipos, Viajes y Reports Diarios</option>
+          <option value="./marcha_blanca_casos_negocio.html">5. Casos de Negocio en Terreno (Marcha Blanca)</option>
+          <option value="./politica_manejo_excepciones_gsp.html">6. Manejo de Excepciones (Torre de Control → ITS → EDP)</option>
+          <option value="./proceso_financiero_integral_y_protocolo_pruebas_gsp.html">7. Cierre de Servicio (ITS): Cálculo de Horas Operador, Rigger y Viáticos</option>
+          <option value="./manual_contabilidad_edp_y_facturacion_gsp.html">8. Estado de Pago (EDP) y Facturación en Contabilidad</option>
+          <option value="./manual_entrega_y_retorno_plataformas_bsm.html">9. Arriendo de Plataformas (Entrega y Retorno)</option>
+          <option value="./protocolo_verificacion_mantenimiento_e2e.html">10. Mantenimiento y Taller</option>
+          <option value="./infografia_taller_bodega.html">10B. Infografía Visual: Taller y Bodega</option>
+          <option value="./diseno_real_formularios_mantenimiento.html">10C. Formularios Interactivos OTM</option>
+          <option value="./manual_operativo_inventario_wms_gsp.html">11. Bodega WMS, Compras (Solped/OC) y Puente Laudus</option>
+          <option value="./maqueta_mobile_qr_wms.html">11B. Maqueta Móvil Escaneo QR Bodega</option>
+          <option value="./presentacion_flujo_taller_y_bodega.html">11C. Presentación Interactiva Taller y Bodega</option>
+        </select>
       </div>
 
-      <!-- Derecha: Acciones del Visor -->
-      <div class="flex items-center space-x-2">
-        <button onclick="recargarIframe()" title="Recargar documento" class="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs transition-colors">
+      <div class="flex items-center space-x-1.5">
+        <button onclick="recargarIframe()" title="Recargar documento" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs transition-colors cursor-pointer">
           <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
         </button>
-        <button onclick="togglePantallaCompleta()" title="Pantalla Completa" class="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs transition-colors">
+        <button onclick="togglePantallaCompleta()" title="Pantalla Completa" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs transition-colors cursor-pointer">
           <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
         </button>
-        <a id="btnAbrirNuevaPestana" href="#" target="_blank" title="Abrir en Pestaña Independiente" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold flex items-center space-x-1 transition-colors">
+        <a id="btnAbrirNuevaPestana" href="#" target="_blank" title="Abrir en Pestaña Independiente" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-semibold flex items-center space-x-1 transition-colors">
           <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
           <span class="hidden sm:inline">Abrir en Pestaña</span>
         </a>
@@ -515,29 +469,14 @@
 
     <!-- Contenedor del Iframe -->
     <div id="contenedorIframe" class="flex-1 relative w-full bg-slate-950">
-      <div id="loadingIframe" class="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center space-y-3 z-10 transition-opacity duration-300">
-        <i data-lucide="loader-2" class="w-8 h-8 text-amber-500 animate-spin"></i>
-        <span class="text-xs text-slate-400 font-mono tracking-wider">Cargando material interactivo...</span>
+      <div id="loadingIframe" class="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center space-y-2 z-10 transition-opacity duration-200">
+        <i data-lucide="loader-2" class="w-6 h-6 text-amber-500 animate-spin"></i>
+        <span class="text-xs text-slate-400 font-mono">Cargando...</span>
       </div>
       <iframe id="iframeVisor" src="" class="w-full h-full border-0" onload="iframeCargado()"></iframe>
     </div>
   </section>
 
-  <!-- ========================================== -->
-  <!-- FOOTER                                     -->
-  <!-- ========================================== -->
-  <footer class="border-t border-brand-border bg-brand-dark/95 py-4 px-4 md:px-8 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-    <div>
-      <span class="font-semibold text-slate-400">Grúas San Pablo S.A.</span> &bull; Centro Oficial de Documentación &bull; Ecosistema LeanGlobal
-    </div>
-    <div class="font-mono text-[11px] text-slate-400">
-      Acceso Público &bull; Solo Lectura
-    </div>
-  </footer>
-
-  <!-- ========================================== -->
-  <!-- SCRIPTS DE INTERACCIÓN                     -->
-  <!-- ========================================== -->
   <script>
     lucide.createIcons();
 
@@ -547,22 +486,27 @@
     const selectDocumentoVisor = document.getElementById('selectDocumentoVisor');
     const btnAbrirNuevaPestana = document.getElementById('btnAbrirNuevaPestana');
     const loadingIframe = document.getElementById('loadingIframe');
-    const btnVolverCatalogoNav = document.getElementById('btnVolverCatalogoNav');
+
+    const DOC_CACHE_VERSION = '20261105_3';
+    function withCacheBust(url) {
+      if (!url) return url;
+      const base = url.split('?')[0];
+      return base + '?v=' + DOC_CACHE_VERSION;
+    }
 
     function abrirVisor(url, titulo) {
       seccionCatalogo.classList.add('hidden');
       seccionVisor.classList.remove('hidden');
-      btnVolverCatalogoNav.classList.remove('hidden');
 
       loadingIframe.style.opacity = '1';
       loadingIframe.style.display = 'flex';
 
-      iframeVisor.src = url;
-      selectDocumentoVisor.value = url;
-      btnAbrirNuevaPestana.href = url;
+      const cleanUrl = url.split('?')[0];
+      iframeVisor.src = withCacheBust(cleanUrl);
+      selectDocumentoVisor.value = cleanUrl;
+      btnAbrirNuevaPestana.href = withCacheBust(cleanUrl);
 
-      // Actualizar hash en URL sin recargar
-      const urlHash = url.replace('./', '').replace('.html', '');
+      const urlHash = cleanUrl.replace('./', '').replace('.html', '');
       window.location.hash = 'doc=' + urlHash;
 
       lucide.createIcons();
@@ -571,7 +515,6 @@
     function mostrarCatalogo() {
       seccionVisor.classList.add('hidden');
       seccionCatalogo.classList.remove('hidden');
-      btnVolverCatalogoNav.classList.add('hidden');
       iframeVisor.src = '';
       window.location.hash = '';
       lucide.createIcons();
@@ -580,9 +523,10 @@
     function cambiarDocumentoDesdeSelect(url) {
       loadingIframe.style.opacity = '1';
       loadingIframe.style.display = 'flex';
-      iframeVisor.src = url;
-      btnAbrirNuevaPestana.href = url;
-      const urlHash = url.replace('./', '').replace('.html', '');
+      const cleanUrl = url.split('?')[0];
+      iframeVisor.src = withCacheBust(cleanUrl);
+      btnAbrirNuevaPestana.href = withCacheBust(cleanUrl);
+      const urlHash = cleanUrl.replace('./', '').replace('.html', '');
       window.location.hash = 'doc=' + urlHash;
     }
 
@@ -591,7 +535,7 @@
         loadingIframe.style.opacity = '0';
         setTimeout(() => {
           loadingIframe.style.display = 'none';
-        }, 300);
+        }, 200);
       }
     }
 
@@ -614,17 +558,19 @@
       }
     }
 
-    function filtrarModulos(categoria) {
+    function filtrarModulos(categoria, btnEl) {
       document.querySelectorAll('.filtro-btn').forEach(b => {
-        b.classList.remove('bg-amber-500', 'text-slate-950', 'active');
-        b.classList.add('bg-slate-900', 'text-slate-300');
+        b.classList.remove('bg-amber-500', 'text-slate-950', 'active', 'font-bold');
+        b.classList.add('bg-slate-900', 'text-slate-300', 'font-semibold');
       });
-      event.target.classList.remove('bg-slate-900', 'text-slate-300');
-      event.target.classList.add('bg-amber-500', 'text-slate-950', 'active');
+      const target = btnEl || event.target;
+      target.classList.remove('bg-slate-900', 'text-slate-300', 'font-semibold');
+      target.classList.add('bg-amber-500', 'text-slate-950', 'active', 'font-bold');
 
       const cards = document.querySelectorAll('.card-modulo');
       cards.forEach(card => {
-        if (categoria === 'todos' || card.getAttribute('data-categoria') === categoria) {
+        const cats = (card.getAttribute('data-categoria') || '').split(/\s+/);
+        if (categoria === 'todos' || cats.includes(categoria)) {
           card.style.display = 'flex';
         } else {
           card.style.display = 'none';
@@ -644,34 +590,6 @@
         }
       });
     }
-
-    // Comprobar parámetros o hash al cargar la página
-    window.addEventListener('DOMContentLoaded', () => {
-      const hash = window.location.hash;
-      const params = new URLSearchParams(window.location.search);
-      const docParam = params.get('doc');
-
-      let targetDoc = null;
-      if (docParam) {
-        targetDoc = docParam;
-      } else if (hash && hash.startsWith('#doc=')) {
-        targetDoc = hash.replace('#doc=', '');
-      }
-
-      if (targetDoc) {
-        if (targetDoc.includes('pipeline')) {
-          abrirVisor('./presentacion_pipeline_interactivo.html', 'Plano Maestro de Procesos & Linaje E2E');
-        } else if (targetDoc.includes('cotizacion')) {
-          abrirVisor('./navegacion_cotizacion_web.html', 'Flujo Oficial de Cotización WEB');
-        } else if (targetDoc.includes('excepcion') || targetDoc.includes('excepciones')) {
-          abrirVisor('./politica_manejo_excepciones_gsp.html', 'Manejo de Excepciones: De Torre de Control a ITS y EDP');
-        } else if (targetDoc.includes('financiero') || targetDoc.includes('pruebas')) {
-          abrirVisor('./proceso_financiero_integral_y_protocolo_pruebas_gsp.html', 'Proceso Financiero & Protocolo de Pruebas');
-        } else if (targetDoc.includes('marcha_blanca') || targetDoc.includes('terreno')) {
-          abrirVisor('./marcha_blanca_casos_negocio.html', 'Marcha Blanca: Casos de Negocio GSP');
-        }
-      }
-    });
   </script>
 </body>
 </html>

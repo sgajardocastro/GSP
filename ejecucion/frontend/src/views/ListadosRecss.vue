@@ -393,7 +393,7 @@ const formInfo = reactive({
   periodo: ''
 })
 
-const getPhotoUrl = (n) => n ? (n.startsWith('http') ? n : `${import.meta.env.VITE_API_BASE_URL_CORE || 'https://servidor.leanglobal.cl/lean-services-transmac-dev/api'}/archivo/transmac/sst/${n}`) : ''
+const getPhotoUrl = (n) => n ? (n.startsWith('http') ? n : `${(apiAxios.defaults.baseURL || '').replace(/\/$/, '')}/archivo/transmac/sst/${n}`) : ''
 const triggerPhoto = (i) => { activePhotoItem.value = i; photoInput.value?.click() }
 
 const resolveCurrentUserId = () => {

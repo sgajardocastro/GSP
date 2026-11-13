@@ -2,9 +2,18 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || (import.meta.env.PROD 
-  ? '900336188439-v2jr120b65dcvbi5j26kst05ldl73uou.apps.googleusercontent.com' 
-  : '377216762278-t19n05j9jkksqbufafs9j5pa474mu14e.apps.googleusercontent.com')
+const resolverGoogleClientId = () => {
+  if (typeof window !== 'undefined' && window.location) {
+    // Todo origen leanglobal.cl (DEV y PROD) requiere el Client ID registrado para ese dominio
+    if (window.location.hostname.includes('leanglobal.cl')) {
+      return '900336188439-v2jr120b65dcvbi5j26kst05ldl73uou.apps.googleusercontent.com'
+    }
+  }
+  // Localhost
+  return '377216762278-t19n05j9jkksqbufafs9j5pa474mu14e.apps.googleusercontent.com'
+}
+
+const GOOGLE_CLIENT_ID = resolverGoogleClientId()
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8086/api'
 
 export function useAuth() {
@@ -89,6 +98,7 @@ export function useAuth() {
   const handleLoginSuccess = (data) => {
     localStorage.setItem('token', data.token)
     localStorage.setItem('user', JSON.stringify(data.user))
+    window.dispatchEvent(new Event('auth-change'))
     
     const isEnrolPending = data.user?.flag_proc_enrol === true || data.user?.flag_proc_enrol === 't' || data.user?.flag_proc_enrol === 1
     if (isEnrolPending) {

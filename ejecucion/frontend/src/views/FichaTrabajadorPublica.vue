@@ -193,7 +193,7 @@ onMounted(async () => {
         nombre: doc.nombre_tipo || doc.nombre || 'Certificado',
         fechaVencimiento: displayDate || 'S/I',
         estado: getStatusText(doc.fecha_vencimiento),
-        url: doc.id_doc ? `https://servidor.leanglobal.cl/lg-gsp/api/archivo/ver/${doc.id_doc}` : '#'
+        url: doc.id_doc ? `${(apiAxios.defaults.baseURL || (typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod') ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api' : 'https://servidor.leanglobal.cl/lg-gsp-dev/api')).replace(/\/$/, '')}/archivo/ver/${doc.id_doc}` : '#'
       }
     })
 

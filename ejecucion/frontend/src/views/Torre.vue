@@ -1985,6 +1985,7 @@
     <!-- ========================================================== -->
     <PerspectivaContabilidad
       v-else-if="activeView === 'contabilidad'"
+      :key="contabilidadRefreshKey"
       @abrir-edp="(p) => abrirCaratulaEdpPMO(p.id_proyecto)"
       @abrir-its="(p) => abrirItsModalPMO(p.id_proyecto)"
       @abrir-facturacion="(p) => abrirProyecto(p.id_proyecto, 'liquidacion')"
@@ -2097,6 +2098,8 @@
       v-if="visorReportAbiertoPMO"
       :visible="visorReportAbiertoPMO"
       :report="reportSeleccionadoPMO"
+      :readonly="false"
+      :modo-edicion-inicial="true"
       @close="visorReportAbiertoPMO = false"
       @report-validado="onReportValidadoPMO"
     />
@@ -2521,11 +2524,15 @@ const abrirCaratulaEdpPMO = async (idProyecto) => {
   }
 }
 
+const contabilidadRefreshKey = ref(0)
+
 const onEdpActualizadoPMO = async () => {
-  await cargarPendientesAnalista()
-  if (edpDataPMO.value?.id_proyecto) {
+  contabilidadRefreshKey.value += 1
+  await Promise.allSettled([cargarPendientesAnalista(), cargarProyectos()])
+  const idProyRef = edpDataPMO.value?.proyecto?.id_proyecto || edpDataPMO.value?.id_proyecto
+  if (idProyRef) {
     try {
-      const { data } = await apiAxios.get(`/operaciones/report/edp/resumen/${edpDataPMO.value.id_proyecto}`)
+      const { data } = await apiAxios.get(`/operaciones/report/edp/resumen/${idProyRef}`)
       if (data?.success) {
         edpDataPMO.value = data.data
       }
@@ -4592,11 +4599,35 @@ const totalLevantadasKardex = computed(() => {
 })
 
 
+const atenderDeepLinkQuery = async () => {
+  const viewParam = String(route.query.view || '').trim().toLowerCase()
+  if (['kanban', 'kardex', 'pmo', 'gantt', 'contabilidad'].includes(viewParam)) {
+    activeView.value = viewParam
+  }
+  if (route.query.id_proyecto) {
+    const accionParam = String(route.query.accion || '').trim().toLowerCase()
+    if (accionParam === 'caratula' || accionParam === 'edp') {
+      await abrirCaratulaEdpPMO(Number(route.query.id_proyecto))
+    } else if (accionParam === 'its') {
+      abrirItsModalPMO(Number(route.query.id_proyecto))
+    } else {
+      abrirProyecto(route.query.id_proyecto, route.query.subtab)
+    }
+  }
+}
+
+watch(
+  () => [route.query.id_proyecto, route.query.view, route.query.accion],
+  async ([newId, newView, newAccion], [oldId, oldView, oldAccion]) => {
+    if (newId !== oldId || newView !== oldView || newAccion !== oldAccion) {
+      await atenderDeepLinkQuery()
+    }
+  }
+)
+
 onMounted(async () => {
   await Promise.allSettled([cargarProyectos(), cargarPendientesAnalista()])
-  if (route.query.id_proyecto) {
-    abrirProyecto(route.query.id_proyecto, route.query.subtab)
-  }
+  await atenderDeepLinkQuery()
 })
 </script>
 

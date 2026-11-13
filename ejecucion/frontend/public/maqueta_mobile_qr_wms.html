@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>GSP WMS-Lite | Módulo Mobile Escaneo QR & Barcode (PWA)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @keyframes scanLaser {
+      0% { top: 10%; opacity: 0.8; }
+      50% { top: 90%; opacity: 1; }
+      100% { top: 10%; opacity: 0.8; }
+    }
+    .laser-line {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #f59e0b, #ef4444, #f59e0b, transparent);
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.9), 0 0 30px rgba(239, 68, 68, 0.8);
+      animation: scanLaser 2s infinite ease-in-out;
+    }
+    .reticle-corner {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-color: #f59e0b;
+      border-width: 4px;
+    }
+    .reticle-tl { top: 12px; left: 12px; border-right: none; border-bottom: none; border-top-left-radius: 8px; }
+    .reticle-tr { top: 12px; right: 12px; border-left: none; border-bottom: none; border-top-right-radius: 8px; }
+    .reticle-bl { bottom: 12px; left: 12px; border-right: none; border-top: none; border-bottom-left-radius: 8px; }
+    .reticle-br { bottom: 12px; right: 12px; border-left: none; border-top: none; border-bottom-right-radius: 8px; }
+    
+    /* Device Frame */
+    .mobile-frame {
+      max-width: 420px;
+      height: 860px;
+      border-radius: 44px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 0 12px #1e293b, 0 0 0 14px #334155;
+    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-2 sm:p-6 font-sans">
+
+  <!-- Header Informativo Superior -->
+  <header class="max-w-xl w-full text-center mb-4">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-2">
+      <i class="fa-solid fa-qrcode"></i> GSP WMS-Lite Mobile | Spec 80
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Operación Móvil de Bodega & Taller</h1>
+    <p class="text-xs sm:text-sm text-slate-400 mt-1">
+      Simulador de escaneo continuo con cámara WebRTC y pistola láser Bluetooth/USB para mecánicos y pañoleros de Grúas San Pablo.
+    </p>
+  </header>
+
+  <!-- Simulador Mobile Frame -->
+  <main class="mobile-frame w-full bg-slate-900 border border-slate-800 flex flex-col overflow-hidden relative">
+    
+    <!-- Barra Superior de Estado (iOS / Android Style) -->
+    <div class="h-10 bg-slate-950 px-6 flex items-center justify-between text-xs text-slate-400 select-none border-b border-white/5">
+      <span class="font-bold text-slate-200" id="clockText">09:41</span>
+      <div class="w-24 h-4 bg-slate-900 rounded-full flex items-center justify-center">
+        <div class="w-3 h-3 rounded-full bg-slate-950 mr-2"></div>
+        <div class="w-2 h-2 rounded-full bg-slate-800"></div>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">WMS DEV</span>
+        <i class="fa-solid fa-wifi text-slate-300"></i>
+        <i class="fa-solid fa-battery-full text-slate-300"></i>
+      </div>
+    </div>
+
+    <!-- App Bar GSP -->
+    <div class="bg-slate-950 px-4 py-2.5 flex items-center justify-between border-b border-white/10">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-sm">
+          SP
+        </div>
+        <div>
+          <div class="text-xs font-black uppercase text-white tracking-wide">Bodega & Pañol</div>
+          <div class="text-[10px] text-amber-400 font-semibold" id="currentUserLabel">Rodrigo Valenzuela (Pañolero)</div>
+        </div>
+      </div>
+      
+      <!-- Controles de Hardware -->
+      <div class="flex items-center gap-1.5">
+        <button id="btnTorch" onclick="toggleTorch()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs transition" title="Encender Linterna">
+          <i class="fa-solid fa-bolt" id="torchIcon"></i>
+        </button>
+        <button onclick="toggleAudio()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 flex items-center justify-center text-xs transition" title="Sonido Beep">
+          <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Pestañas de Modos de Operación -->
+    <div class="bg-slate-950 px-2 py-1.5 border-b border-white/5 flex gap-1 overflow-x-auto hide-scrollbar text-xs font-bold">
+      <button onclick="setMode('lookup')" id="tab-lookup" class="mode-tab px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 whitespace-nowrap transition">
+        <i class="fa-solid fa-magnifying-glass mr-1"></i> Consulta
+      </button>
+      <button onclick="setMode('despacho')" id="tab-despacho" class="mode-tab px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white whitespace-nowrap transition">
+        <i class="fa-solid fa-wrench mr-1"></i> Despacho OT
+      </button>
+      <button onclick="setMode('reubicar')" id="tab-reubicar" class="mode-tab px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white whitespace-nowrap transition">
+        <i class="fa-solid fa-arrows-up-down-left-right mr-1"></i> Reubicar
+      </button>
+      <button onclick="setMode('recepcion')" id="tab-recepcion" class="mode-tab px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white whitespace-nowrap transition">
+        <i class="fa-solid fa-truck-ramp-box mr-1"></i> Recepción
+      </button>
+      <button onclick="setMode('conteo')" id="tab-conteo" class="mode-tab px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white whitespace-nowrap transition">
+        <i class="fa-solid fa-clipboard-check mr-1"></i> Conteo
+      </button>
+    </div>
+
+    <!-- Visor de Cámara con Retícula Activa -->
+    <div class="relative bg-slate-950 h-56 flex-shrink-0 flex items-center justify-center overflow-hidden border-b border-white/10" id="cameraContainer">
+      <!-- Background simulando feed de video -->
+      <div id="videoMockBg" class="absolute inset-0 bg-cover bg-center opacity-40 transition-all duration-300" style="background-image: radial-gradient(circle at center, #334155 0%, #0f172a 100%);">
+        <div class="absolute inset-0 flex items-center justify-center text-slate-600 text-4xl">
+          <i class="fa-solid fa-barcode opacity-20 text-7xl"></i>
+        </div>
+      </div>
+
+      <!-- Retícula de Escaneo -->
+      <div class="relative w-48 h-44 rounded-xl border border-white/10 backdrop-blur-[1px] shadow-2xl flex items-center justify-center">
+        <div class="reticle-corner reticle-tl"></div>
+        <div class="reticle-corner reticle-tr"></div>
+        <div class="reticle-corner reticle-bl"></div>
+        <div class="reticle-corner reticle-br"></div>
+        <div class="laser-line" id="laserBeam"></div>
+        <span class="text-[10px] uppercase tracking-widest font-black text-amber-400/80 bg-slate-950/80 px-2.5 py-1 rounded-full border border-amber-400/20 z-10" id="reticleLabel">
+          ENFOQUE QR / BARCODE
+        </span>
+      </div>
+
+      <!-- Flashlight Overlay -->
+      <div id="torchOverlay" class="absolute inset-0 bg-white/20 pointer-events-none opacity-0 transition-opacity"></div>
+
+      <!-- Pill Indicador de Pistola / Cámara -->
+      <div class="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[11px] text-slate-400 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
+        <span class="flex items-center gap-1.5 text-emerald-400 font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Cámara Activa (60 fps)
+        </span>
+        <span class="text-slate-400 font-mono text-[10px]">HTML5 QR Reader v5.7</span>
+      </div>
+    </div>
+
+    <!-- Simulación de Entrada Rápida (Pistola Bluetooth o QRs Predefinidos) -->
+    <div class="bg-slate-950/90 px-3 py-2 border-b border-white/10">
+      <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+        <span>Simular Disparo de Escaneo:</span>
+        <span class="text-amber-400 font-mono">Pistola HID / Teclado</span>
+      </div>
+      <div class="flex gap-1.5">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-barcode absolute left-2.5 top-2.5 text-slate-500 text-xs"></i>
+          <input 
+            type="text" 
+            id="barcodeInput" 
+            placeholder="Pegar o disparar payload..." 
+            class="w-full pl-7 pr-2 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+            onkeydown="if(event.key === 'Enter') triggerManualScan()"
+          >
+        </div>
+        <button onclick="triggerManualScan()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs transition flex items-center gap-1">
+          <i class="fa-solid fa-bolt"></i> Beep
+        </button>
+      </div>
+
+      <!-- Botones de Acceso Rápido a QRs Reales de la Bodega GSP -->
+      <div class="flex gap-1.5 overflow-x-auto hide-scrollbar mt-2 pt-1 text-[10px] font-semibold text-slate-300">
+        <button onclick="simulateScan('GSP:SKU:FILT-00373')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 whitespace-nowrap border border-white/5">
+          <i class="fa-solid fa-filter text-amber-400 mr-1"></i> FILT-00373 (Scania)
+        </button>
+        <button onclick="simulateScan('GSP:SKU:MEC-01237')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 whitespace-nowrap border border-white/5">
+          <i class="fa-solid fa-gear text-amber-400 mr-1"></i> MEC-01237 (Turbo)
+        </button>
+        <button onclick="simulateScan('GSP:SKU:NEUM-00037')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 whitespace-nowrap border border-white/5">
+          <i class="fa-solid fa-circle-dot text-amber-400 mr-1"></i> NEUM-00037 (Corral)
+        </button>
+        <button onclick="simulateScan('GSP:LOC:E1-A2')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 whitespace-nowrap border border-white/5">
+          <i class="fa-solid fa-cubes text-blue-400 mr-1"></i> Rack E1-A2
+        </button>
+        <button onclick="simulateScan('GSP:LOC:CORRAL')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 whitespace-nowrap border border-white/5">
+          <i class="fa-solid fa-warehouse text-purple-400 mr-1"></i> Patio Corral
+        </button>
+        <button onclick="simulateScan('GSP:OT:104')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 whitespace-nowrap border border-white/5">
+          <i class="fa-solid fa-truck-moving text-emerald-400 mr-1"></i> OT #104 (Liebherr)
+        </button>
+      </div>
+    </div>
+
+    <!-- Área de Contenido Dinámico según el Modo Activo -->
+    <div class="flex-1 overflow-y-auto p-3 space-y-3 hide-scrollbar" id="contentArea">
+      
+      <!-- ================================================================= -->
+      <!-- VISTA MODO 1: CONSULTA RÁPIDA (LOOKUP)                            -->
+      <!-- ================================================================= -->
+      <div id="view-lookup" class="space-y-3">
+        <div class="p-3 bg-slate-800/60 rounded-xl border border-white/5 flex items-start justify-between">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">Modo Activo</span>
+            <h3 class="text-sm font-black text-white">Consulta Rápida de Inventario</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Escanee un repuesto para ver ficha técnica y stock, o una gaveta para ver sus repuestos.</p>
+          </div>
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-search"></i>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Resultado de Producto Escaneado -->
+        <div id="lookupResultCard" class="p-4 bg-slate-800/90 rounded-2xl border border-amber-500/30 shadow-lg relative overflow-hidden transition-all">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-black text-xs font-mono" id="lookupSku">FILT-00373</span>
+                <span class="text-[10px] text-slate-400 font-mono" id="lookupLegado">Legado: FAE0075</span>
+              </div>
+              <h2 class="text-base font-black text-white mt-1.5" id="lookupNombre">FILTRO AIRE EXT SCANIA 2829529</h2>
+              <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                <span id="lookupFamilia"><i class="fa-solid fa-tag text-amber-400 mr-1"></i> Filtros</span>
+                <span>•</span>
+                <span>UoM: <strong class="text-white" id="lookupUom">UN</strong></span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] uppercase text-slate-400 font-bold block">PMP Vigente</span>
+              <span class="text-sm font-black text-emerald-400" id="lookupPmp">$38.450</span>
+            </div>
+          </div>
+
+          <!-- Métrica de Stock y Ubicación -->
+          <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/10">
+            <div class="p-2.5 bg-slate-900/80 rounded-xl">
+              <span class="text-[10px] uppercase text-slate-400 font-bold block">Stock Disponible</span>
+              <div class="flex items-baseline gap-1 mt-0.5">
+                <span class="text-xl font-black text-white" id="lookupStock">6</span>
+                <span class="text-xs text-slate-400">unids</span>
+              </div>
+              <span class="text-[10px] text-emerald-400 font-medium">✓ En nivel óptimo</span>
+            </div>
+            <div class="p-2.5 bg-slate-900/80 rounded-xl">
+              <span class="text-[10px] uppercase text-slate-400 font-bold block">Ubicación Física</span>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <i class="fa-solid fa-location-dot text-amber-400 text-xs"></i>
+                <span class="text-base font-black text-white font-mono" id="lookupUbicacion">E1-A2</span>
+              </div>
+              <span class="text-[10px] text-slate-400">Rack Estantería Principal</span>
+            </div>
+          </div>
+
+          <!-- Compatibilidad con Flota -->
+          <div class="mt-3 p-2 bg-slate-900/50 rounded-xl border border-white/5 text-xs">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Compatibilidad con Grúas</span>
+            <div class="flex flex-wrap gap-1">
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-mono font-bold">Camión Pluma Scania G410</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-mono font-bold">Scania P450 8x4</span>
+            </div>
+          </div>
+
+          <!-- Acciones Rápidas -->
+          <div class="grid grid-cols-2 gap-2 mt-3">
+            <button onclick="goToDespachoWithCurrent()" class="py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-wrench"></i> Imputar a OT
+            </button>
+            <button onclick="goToReubicarWithCurrent()" class="py-2 px-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-arrows-up-down-left-right"></i> Mover Gaveta
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- VISTA MODO 2: DESPACHO A ORDEN DE TRABAJO (OT)                    -->
+      <!-- ================================================================= -->
+      <div id="view-despacho" class="space-y-3 hidden">
+        <!-- Selector o Escaneo de OT -->
+        <div class="p-3 bg-slate-800/80 rounded-xl border border-white/10">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-amber-400">Orden de Trabajo Destino</span>
+              <div class="text-sm font-black text-white flex items-center gap-2 mt-0.5">
+                <span class="font-mono text-amber-400" id="otNumeroDisplay">OT #104</span>
+                <span class="text-xs text-slate-300 font-normal">| Grúa Liebherr LTM 1100 (GPT-135)</span>
+              </div>
+            </div>
+            <button onclick="simulateScan('GSP:OT:104')" class="px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-xs font-bold text-white transition">
+              <i class="fa-solid fa-qrcode mr-1"></i> QR Grúa
+            </button>
+          </div>
+          <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+            <span>Mecánico: <strong>Camilo Araya</strong></span>
+            <span class="text-amber-400">Mantenimiento Preventivo 500h</span>
+          </div>
+        </div>
+
+        <!-- Carrito de Despacho (Escaneo Continuo Beep-and-Add) -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-400 px-1">
+            <span>REPUESTOS A ENTREGAR (<span id="cartCount">2</span>)</span>
+            <span class="text-amber-400 text-[11px]">Escanee repuestos sucesivamente</span>
+          </div>
+
+          <div id="cartItemsList" class="space-y-2">
+            <!-- Item 1 -->
+            <div class="p-2.5 bg-slate-800 rounded-xl border border-white/5 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                  <i class="fa-solid fa-filter"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-white">FILTRO AIRE EXT SCANIA 2829529</div>
+                  <div class="text-[10px] text-slate-400 font-mono">FILT-00373 | Ubic: E1-A2 | $38.450</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="flex items-center bg-slate-900 rounded-lg border border-slate-700">
+                  <button class="px-2 py-0.5 text-slate-400 hover:text-white" onclick="adjustQty(0, -1)">-</button>
+                  <span class="px-2 text-white font-bold font-mono">1</span>
+                  <button class="px-2 py-0.5 text-slate-400 hover:text-white" onclick="adjustQty(0, 1)">+</button>
+                </div>
+                <button class="text-red-400 hover:text-red-300 p-1" onclick="removeItem(0)"><i class="fa-solid fa-trash-can"></i></button>
+              </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="p-2.5 bg-slate-800 rounded-xl border border-white/5 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+                  <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-white">GUANTES CABRITILLA (TALLA L)</div>
+                  <div class="text-[10px] text-slate-400 font-mono">EPP-00193 | Ubic: E9-A | $1.000</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="flex items-center bg-slate-900 rounded-lg border border-slate-700">
+                  <button class="px-2 py-0.5 text-slate-400 hover:text-white" onclick="adjustQty(1, -1)">-</button>
+                  <span class="px-2 text-white font-bold font-mono">2</span>
+                  <button class="px-2 py-0.5 text-slate-400 hover:text-white" onclick="adjustQty(1, 1)">+</button>
+                </div>
+                <button class="text-red-400 hover:text-red-300 p-1" onclick="removeItem(1)"><i class="fa-solid fa-trash-can"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Total Despacho -->
+          <div class="p-3 bg-slate-950 rounded-xl border border-white/10 flex items-center justify-between text-xs">
+            <div>
+              <span class="text-[10px] uppercase text-slate-400 font-bold block">Costo Total Imputado a OT</span>
+              <span class="text-base font-black text-emerald-400 font-mono" id="cartTotalCost">$40.450 CLP</span>
+            </div>
+            <div class="text-right text-[10px] text-slate-400">
+              <span>Transacción: <strong>KARDEX DESPACHO</strong></span><br>
+              <span>Afecta PMP Vigente</span>
+            </div>
+          </div>
+
+          <!-- Botón de Confirmación -->
+          <button onclick="commitDespacho()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center gap-2">
+            <i class="fa-solid fa-check-circle text-base"></i> Confirmar y Despachar a OT
+          </button>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- VISTA MODO 3: REUBICACIÓN / TRANSFERENCIA INTERNA                 -->
+      <!-- ================================================================= -->
+      <div id="view-reubicar" class="space-y-3 hidden">
+        <div class="p-3 bg-slate-800/80 rounded-xl border border-white/5">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">Flujo de Reubicación</span>
+          <h3 class="text-sm font-black text-white">Reasignar Gaveta o Rack</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Paso 1: Escanee el repuesto ➔ Paso 2: Escanee el código QR de la nueva ubicación física.</p>
+        </div>
+
+        <div class="space-y-2.5">
+          <!-- Paso 1: Repuesto Origen -->
+          <div class="p-3 bg-slate-800 rounded-xl border border-white/10">
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="font-bold text-slate-400 uppercase text-[10px]">1. Repuesto Seleccionado</span>
+              <span class="text-emerald-400 text-[10px] font-semibold">✓ Identificado</span>
+            </div>
+            <div class="font-black text-white text-xs" id="reubicarRepuestoNom">TURBO GRÚA (TMR0637)</div>
+            <div class="text-[11px] text-slate-400 font-mono mt-0.5">SKU: MEC-01237 | Ubic. Actual: <strong class="text-amber-400">SIN-UBICAR</strong></div>
+          </div>
+
+          <!-- Icono de Flecha de Transferencia -->
+          <div class="flex justify-center text-amber-400 text-sm">
+            <i class="fa-solid fa-arrow-down animate-bounce"></i>
+          </div>
+
+          <!-- Paso 2: Nueva Ubicación -->
+          <div class="p-3 bg-slate-800 rounded-xl border border-amber-500/40 relative">
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="font-bold text-amber-400 uppercase text-[10px]">2. Escanear Ubicación Destino</span>
+              <span class="text-[10px] text-slate-400 font-mono">Esperando QR...</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm">
+                <i class="fa-solid fa-cubes"></i>
+              </div>
+              <div class="flex-1">
+                <input 
+                  type="text" 
+                  id="reubicarDestinoInput" 
+                  value="E4-C2" 
+                  class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-white uppercase focus:outline-none focus:border-amber-500"
+                >
+                <div class="text-[10px] text-slate-400 mt-0.5">Estantería E4 • Nivel C • Posición 2</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cantidad a mover -->
+          <div class="p-3 bg-slate-900 rounded-xl flex items-center justify-between text-xs">
+            <span class="text-slate-300 font-semibold">Cantidad a Reubicar:</span>
+            <div class="flex items-center bg-slate-800 rounded-lg border border-slate-700">
+              <button class="px-2 py-0.5 text-slate-400">-</button>
+              <span class="px-3 text-white font-bold font-mono">1</span>
+              <button class="px-2 py-0.5 text-slate-400">+</button>
+            </div>
+          </div>
+
+          <button onclick="commitReubicar()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition">
+            <i class="fa-solid fa-arrows-up-down-left-right mr-1"></i> Confirmar Reubicación
+          </button>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- VISTA MODO 4: RECEPCIÓN DE MATERIALES (INBOUND)                   -->
+      <!-- ================================================================= -->
+      <div id="view-recepcion" class="space-y-3 hidden">
+        <div class="p-3 bg-slate-800/80 rounded-xl border border-white/5 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">Ingreso de Materiales</span>
+            <div class="text-sm font-black text-white font-mono">OC-2026-0891</div>
+            <div class="text-xs text-slate-400">Proveedor: <strong>DIMASUR S.A.</strong> (Fact. #44120)</div>
+          </div>
+          <span class="px-2 py-1 rounded bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase">En Recepción</span>
+        </div>
+
+        <!-- Líneas de la OC -->
+        <div class="space-y-2">
+          <div class="text-xs font-bold text-slate-400 px-1">LÍNEAS PENDIENTES DE RECEPCIÓN</div>
+          
+          <div class="p-3 bg-slate-800 rounded-xl border border-white/5 space-y-2">
+            <div class="flex items-start justify-between text-xs">
+              <div>
+                <span class="font-bold text-white block">PARKA 2 EN 1 AZUL TALLA M</span>
+                <span class="text-[10px] text-slate-400 font-mono">EPP-00200 • Pedido: 10 unids</span>
+              </div>
+              <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">10 Recibidas</span>
+            </div>
+            
+            <div class="flex items-center justify-between pt-2 border-t border-white/10 text-xs">
+              <span class="text-slate-400 text-[11px]">Asignar a: <strong class="text-white font-mono">SIN-UBICAR</strong></span>
+              <button onclick="printThermalLabel('EPP-00200', 'PARKA 2 EN 1 AZUL TALLA M')" class="px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-amber-400 font-bold text-[10px] flex items-center gap-1 transition">
+                <i class="fa-solid fa-print"></i> Etiqueta QR (50x30)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="alert('✅ Recepción OC-2026-0891 guardada en PostgreSQL con éxito. Stock actualizado en DEV.')" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition">
+          <i class="fa-solid fa-check-double mr-1"></i> Cerrar Recepción OC
+        </button>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- VISTA MODO 5: CONTEO CÍCLICO / INVENTARIO FÍSICO CIEGO            -->
+      <!-- ================================================================= -->
+      <div id="view-conteo" class="space-y-3 hidden">
+        <div class="p-3 bg-slate-800/80 rounded-xl border border-white/5">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">Auditoría Cíclica ABC</span>
+          <div class="flex items-center justify-between mt-0.5">
+            <h3 class="text-sm font-black text-white">Gaveta: <span class="font-mono text-amber-400">Rack E1-A2</span></h3>
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono text-[10px] font-bold">16 SKUs Teóricos</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">
+            <strong>Conteo Ciego:</strong> Escanee cada repuesto en la gaveta y digite la cantidad física real observada.
+          </p>
+        </div>
+
+        <!-- Lista de Repuestos Contados en la Gaveta -->
+        <div class="space-y-2">
+          <div class="p-2.5 bg-slate-800 rounded-xl border border-white/5 flex items-center justify-between text-xs">
+            <div>
+              <span class="font-bold text-white block">FILTRO AIRE EXT SCANIA</span>
+              <span class="text-[10px] text-slate-400 font-mono">FILT-00373</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] text-slate-400">Contado:</span>
+              <input type="number" value="6" class="w-12 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center font-bold text-white font-mono text-xs">
+              <span class="text-emerald-400 text-xs"><i class="fa-solid fa-circle-check"></i></span>
+            </div>
+          </div>
+
+          <div class="p-2.5 bg-slate-800 rounded-xl border border-white/5 flex items-center justify-between text-xs">
+            <div>
+              <span class="font-bold text-white block">FILTRO ACEITE MOTOR SCANIA</span>
+              <span class="text-[10px] text-slate-400 font-mono">FILT-00387</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] text-slate-400">Contado:</span>
+              <input type="number" value="4" class="w-12 bg-slate-900 border border-amber-500 rounded px-1.5 py-0.5 text-center font-bold text-amber-400 font-mono text-xs">
+              <span class="text-amber-400 text-xs" title="Diferencia detectada"><i class="fa-solid fa-triangle-exclamation"></i></span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="alert('✅ Conteo de Rack E1-A2 enviado a aprobación del Jefe de Bodega. Kardex preparado para ajuste auditado.')" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition">
+          <i class="fa-solid fa-paper-plane mr-1"></i> Enviar Conteo Ciego a Aprobación
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Barra de Navegación Inferior (PWA Standard GSP) -->
+    <div class="bg-slate-950 border-t border-white/10 px-4 py-2 flex items-center justify-around text-slate-400 text-xs">
+      <button class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-white transition">
+        <i class="fa-solid fa-clipboard-list text-base"></i>
+        <span class="text-[9px] uppercase tracking-wider font-semibold">Operación</span>
+      </button>
+      <button class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-white transition">
+        <i class="fa-solid fa-file-signature text-base"></i>
+        <span class="text-[9px] uppercase tracking-wider font-semibold">Firmas</span>
+      </button>
+      <button class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-white transition">
+        <i class="fa-solid fa-wrench text-base"></i>
+        <span class="text-[9px] uppercase tracking-wider font-semibold">Taller</span>
+      </button>
+      <button class="flex flex-col items-center gap-0.5 text-amber-400 font-bold">
+        <div class="w-7 h-7 rounded-full bg-amber-500/20 flex items-center justify-center">
+          <i class="fa-solid fa-qrcode text-sm"></i>
+        </div>
+        <span class="text-[9px] uppercase tracking-wider">Bodega</span>
+      </button>
+      <button class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-white transition">
+        <i class="fa-solid fa-user text-base"></i>
+        <span class="text-[9px] uppercase tracking-wider font-semibold">Perfil</span>
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Modal Etiqueta Térmica Preview -->
+  <div id="labelModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl p-5 max-w-sm w-full text-slate-200 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="font-black text-sm uppercase text-white flex items-center gap-2">
+          <i class="fa-solid fa-print text-amber-400"></i> Etiqueta Térmica 50x30 mm
+        </div>
+        <button onclick="closeLabelModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Preview Etiqueta Física -->
+      <div class="my-4 p-4 bg-white text-slate-900 rounded-xl shadow-inner font-sans border-2 border-dashed border-slate-300">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="text-[9px] font-black tracking-widest text-slate-600 uppercase">GRÚAS SAN PABLO • MRO</div>
+            <div class="text-sm font-black text-black leading-tight mt-0.5" id="labelItemName">FILTRO AIRE SCANIA</div>
+            <div class="text-xs font-mono font-bold text-slate-800 mt-1" id="labelSkuCode">FILT-00373</div>
+          </div>
+          <!-- Código QR Simulado -->
+          <div class="w-14 h-14 bg-black p-1 rounded flex items-center justify-center text-white text-xs">
+            <i class="fa-solid fa-qrcode text-3xl"></i>
+          </div>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-300 flex items-center justify-between text-[9px] text-slate-700 font-mono">
+          <span>Ubic: <strong id="labelLocation">E1-A2</strong></span>
+          <span>Lote: <strong>REC-2026-42</strong></span>
+          <span>15/10/2026</span>
+        </div>
+      </div>
+
+      <div class="text-xs text-slate-400 mb-4 text-center">
+        Compatible con impresoras Bluetooth Zebra ZQ520 / Rongta 58mm / TSC Alpha-3R.
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="closeLabelModal()" class="py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs">Cerrar</button>
+        <button onclick="alert('🖨️ Enviado comando ZPL/TSPL a impresora Bluetooth.'); closeLabelModal();" class="py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs">Imprimir</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Audio Context para generar el "BEEP" sintético de escaneo profesional
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playBeep(freq = 1800, duration = 0.08) {
+      if (!soundEnabled) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.log('Audio no disponible:', e);
+      }
+    }
+
+    function toggleAudio() {
+      soundEnabled = !soundEnabled;
+      const icon = document.getElementById('soundIcon');
+      if (soundEnabled) {
+        icon.className = 'fa-solid fa-volume-high';
+        playBeep(2200, 0.05);
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+      }
+    }
+
+    // Linterna / Flashlight
+    let torchActive = false;
+    function toggleTorch() {
+      torchActive = !torchActive;
+      const overlay = document.getElementById('torchOverlay');
+      const icon = document.getElementById('torchIcon');
+      const btn = document.getElementById('btnTorch');
+      if (torchActive) {
+        overlay.classList.remove('opacity-0');
+        overlay.classList.add('opacity-100');
+        icon.classList.add('text-amber-400');
+        btn.classList.add('bg-amber-500/20', 'border', 'border-amber-400');
+        playBeep(2400, 0.04);
+      } else {
+        overlay.classList.remove('opacity-100');
+        overlay.classList.add('opacity-0');
+        icon.classList.remove('text-amber-400');
+        btn.classList.remove('bg-amber-500/20', 'border', 'border-amber-400');
+      }
+    }
+
+    // Reloj en vivo
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('clockText').textContent = `${h}:${m}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Catálogo Demo en Vivo
+    const PRODUCTS_DB = {
+      'FILT-00373': { sku: 'FILT-00373', legado: 'FAE0075', nombre: 'FILTRO AIRE EXT SCANIA 2829529', familia: 'Filtros', uom: 'UN', pmp: 38450, stock: 6, ubic: 'E1-A2' },
+      'MEC-01237': { sku: 'MEC-01237', legado: 'TMR0637', nombre: 'TURBO GRÚA LIEBHERR', familia: 'Repuestos Taller Mecánico', uom: 'UN', pmp: 953026, stock: 2, ubic: 'SIN-UBICAR' },
+      'NEUM-00037': { sku: 'NEUM-00037', legado: 'NENU027', nombre: '445/95 R25 BRIDGESTONE V-STEEL', familia: 'Neumáticos', uom: 'UN', pmp: 350000, stock: 7, ubic: 'CORRAL' },
+      'EPP-00193': { sku: 'EPP-00193', legado: 'EPP0025', nombre: 'GUANTES CABRITILLA (TALLA L)', familia: 'EPP', uom: 'PAR', pmp: 1000, stock: 190, ubic: 'E9-A' },
+      'HERR-00022': { sku: 'HERR-00022', legado: 'MV00101', nombre: 'BÁSCULA DIGITAL TALLER', familia: 'Herramientas', uom: 'UN', pmp: 13945, stock: 1, ubic: 'PAÑOL' }
+    };
+
+    // Navegación de Modos
+    let currentMode = 'lookup';
+    function setMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.mode-tab').forEach(tab => {
+        tab.className = 'mode-tab px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white whitespace-nowrap transition';
+      });
+      const activeTab = document.getElementById(`tab-${mode}`);
+      if (activeTab) {
+        activeTab.className = 'mode-tab px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-black whitespace-nowrap transition';
+      }
+
+      ['lookup', 'despacho', 'reubicar', 'recepcion', 'conteo'].forEach(v => {
+        document.getElementById(`view-${v}`).classList.add('hidden');
+      });
+      document.getElementById(`view-${mode}`).classList.remove('hidden');
+
+      const reticleLabel = document.getElementById('reticleLabel');
+      if (mode === 'lookup') reticleLabel.textContent = 'CONSULTA QR / BARCODE';
+      else if (mode === 'despacho') reticleLabel.textContent = 'ESCANEAR REPUESTO A OT';
+      else if (mode === 'reubicar') reticleLabel.textContent = 'ESCANEAR DESTINO';
+      else if (mode === 'recepcion') reticleLabel.textContent = 'ESCANEAR BULTO / OC';
+      else if (mode === 'conteo') reticleLabel.textContent = 'CONTEO CIEGO';
+    }
+
+    // Simulación de Escaneo
+    function simulateScan(payload) {
+      document.getElementById('barcodeInput').value = payload;
+      triggerManualScan();
+    }
+
+    function triggerManualScan() {
+      const input = document.getElementById('barcodeInput');
+      const raw = input.value.trim();
+      if (!raw) return;
+
+      playBeep(2000, 0.09);
+
+      // Efecto visual de flash en la retícula
+      const beam = document.getElementById('laserBeam');
+      beam.style.boxShadow = '0 0 35px #10b981, 0 0 50px #10b981';
+      setTimeout(() => {
+        beam.style.boxShadow = '0 0 15px rgba(245, 158, 11, 0.9), 0 0 30px rgba(239, 68, 68, 0.8)';
+      }, 350);
+
+      // Procesar Payload
+      processPayload(raw);
+      input.value = '';
+    }
+
+    function processPayload(payload) {
+      console.log('Payload procesado:', payload);
+
+      // Caso 1: Escaneo de Ubicación (GSP:LOC:xxx)
+      if (payload.startsWith('GSP:LOC:')) {
+        const loc = payload.replace('GSP:LOC:', '');
+        if (currentMode === 'reubicar') {
+          document.getElementById('reubicarDestinoInput').value = loc;
+          alert(`📍 Ubicación destino capturada: ${loc}`);
+        } else if (currentMode === 'conteo') {
+          alert(`📋 Gaveta seleccionada para inventario cíclico: ${loc}`);
+        } else {
+          alert(`📍 Ubicación física: ${loc} consultada.`);
+        }
+        return;
+      }
+
+      // Caso 2: Escaneo de OT (GSP:OT:xxx)
+      if (payload.startsWith('GSP:OT:')) {
+        const otId = payload.replace('GSP:OT:', '');
+        setMode('despacho');
+        document.getElementById('otNumeroDisplay').textContent = `OT #${otId}`;
+        alert(`🚜 Orden de Trabajo #${otId} cargada. Ahora escanee los repuestos a entregar.`);
+        return;
+      }
+
+      // Caso 3: Escaneo de Producto (GSP:SKU:xxx o SKU plano)
+      const sku = payload.replace('GSP:SKU:', '').replace('GSP:LOT:', '').split(':')[0];
+      const prod = PRODUCTS_DB[sku] || {
+        sku: sku,
+        legado: 'LEANGSP',
+        nombre: 'REPUESTO GSP (ESCANEO)',
+        familia: 'General',
+        uom: 'UN',
+        pmp: 15000,
+        stock: 5,
+        ubic: 'E1-A2'
+      };
+
+      if (currentMode === 'lookup') {
+        renderLookupCard(prod);
+      } else if (currentMode === 'despacho') {
+        addItemToCart(prod);
+      } else if (currentMode === 'reubicar') {
+        document.getElementById('reubicarRepuestoNom').textContent = `${prod.nombre} (${prod.legado})`;
+        alert(`📦 Repuesto cargado para reubicación: ${prod.sku}. Ahora escanee el QR del rack destino.`);
+      }
+    }
+
+    function renderLookupCard(p) {
+      document.getElementById('lookupSku').textContent = p.sku;
+      document.getElementById('lookupLegado').textContent = `Legado: ${p.legado}`;
+      document.getElementById('lookupNombre').textContent = p.nombre;
+      document.getElementById('lookupFamilia').innerHTML = `<i class="fa-solid fa-tag text-amber-400 mr-1"></i> ${p.familia}`;
+      document.getElementById('lookupUom').textContent = p.uom;
+      document.getElementById('lookupPmp').textContent = `$${p.pmp.toLocaleString('es-CL')}`;
+      document.getElementById('lookupStock').textContent = p.stock;
+      document.getElementById('lookupUbicacion').textContent = p.ubic;
+    }
+
+    // Carrito de Despacho
+    function addItemToCart(p) {
+      alert(`➕ Añadido al despacho de OT: ${p.nombre} ($${p.pmp.toLocaleString('es-CL')})`);
+    }
+
+    function goToDespachoWithCurrent() {
+      setMode('despacho');
+    }
+
+    function goToReubicarWithCurrent() {
+      setMode('reubicar');
+    }
+
+    function commitDespacho() {
+      playBeep(2400, 0.15);
+      alert('✅ Transacción de Despacho Registrada:\n• Stock rebajado en Kardex\n• Costo imputado a la OT #104\n• Notificación enviada al supervisor de taller.');
+    }
+
+    function commitReubicar() {
+      const dest = document.getElementById('reubicarDestinoInput').value;
+      playBeep(2200, 0.1);
+      alert(`✅ Repuesto reubicado a: ${dest} con éxito en PostgreSQL.`);
+    }
+
+    // Modal de Etiqueta Térmica
+    function printThermalLabel(sku, nombre) {
+      document.getElementById('labelSkuCode').textContent = sku;
+      document.getElementById('labelItemName').textContent = nombre;
+      document.getElementById('labelModal').classList.remove('hidden');
+    }
+
+    function closeLabelModal() {
+      document.getElementById('labelModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

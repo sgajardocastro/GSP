@@ -1,5 +1,6 @@
 <template>
-  <div v-if="visible" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4 animate-fadeIn">
+  <Teleport to="body">
+    <div v-if="visible" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4 animate-fadeIn">
     <div class="bg-[#0b1021] border border-amber-500/40 rounded-2xl w-full max-w-[1260px] max-h-[92vh] flex flex-col overflow-hidden shadow-2xl shadow-black">
       
       <!-- 1. CABECERA COMPACTA (UNA SOLA LÍNEA CONTEXTUAL) -->
@@ -451,13 +452,13 @@
                       Terreno: {{ reportLocal?.horas_operadas || 0 }}h
                     </div>
                     <div class="text-2xl font-black font-mono" :class="esHorasOperadasModificadas ? 'text-emerald-400' : 'text-white'">
-                      {{ horasOperacionReal }} <span class="text-[10px] text-slate-400 font-normal">HRS</span>
+                      {{ formatHorasHHMM(horasOperacionReal) }} <span class="text-[10px] text-slate-400 font-normal">HRS</span>
                     </div>
                   </div>
                 </div>
                 <div class="pt-2 border-t border-white/5 mt-2">
                   <span class="text-[10px] text-slate-400 block font-mono">
-                    {{ horasComputablesCliente }}h netas (incl. {{ formAjustes.horas_standby_cliente }}h SB Cli)
+                    {{ formatHorasHHMM(horasComputablesCliente) }}h netas (incl. {{ formatHorasHHMM(formAjustes.horas_standby_cliente) }}h SB Cli)
                   </span>
                 </div>
               </div>
@@ -477,17 +478,38 @@
 
                   <div class="mt-1">
                     <div v-if="esHorasFacturablesModificadas" class="text-[10px] line-through text-rose-400 font-mono">
-                      Terreno: {{ reportLocal?.horas_facturables || reportLocal?.horas_operadas || 0 }}h
+                      Terreno: {{ formatHorasHHMM(reportLocal?.ajustes_analista?.valores_originales?.horas_facturables ?? reportLocal?.horas_operadas ?? reportLocal?.horas_facturables ?? 0) }}h
                     </div>
-                    <div class="text-2xl font-black font-mono text-amber-400">
-                      {{ horasFacturablesCalculadas }} <span class="text-[10px] text-amber-300 font-normal">HRS</span>
+                    <div v-if="modoAjuste" class="flex items-center gap-2 mt-1">
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        v-model.number="formAjustes.horas_facturables"
+                        :placeholder="horasFacturablesCalculadas.toFixed(1)"
+                        class="w-24 bg-amber-950/40 border border-amber-500/50 rounded px-2 py-1 text-xl font-black font-mono text-amber-300 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                        title="Horas a facturar ajustables para redondeo contable"
+                      />
+                      <span class="text-xs text-amber-300 font-mono">HRS</span>
+                      <button
+                        v-if="formAjustes.horas_facturables !== null && formAjustes.horas_facturables !== undefined"
+                        type="button"
+                        @click="formAjustes.horas_facturables = null"
+                        class="text-[10px] text-amber-400/70 hover:text-amber-300 underline"
+                        title="Restablecer a cálculo automático"
+                      >
+                        Auto
+                      </button>
+                    </div>
+                    <div v-else class="text-2xl font-black font-mono text-amber-400">
+                      {{ formatHorasHHMM(horasFacturablesCalculadas) }} <span class="text-[10px] text-amber-300 font-normal">HRS</span>
                     </div>
                   </div>
                 </div>
 
                 <div class="pt-2 border-t border-white/5 mt-2">
                   <span class="text-[10px] text-amber-500/80 block font-mono truncate">
-                    {{ baseMinima > 0 ? `Base ${baseMinima}h` : 'Sin mín. diario (Mensual)' }} · Imputables {{ horasComputablesCliente }}h
+                    {{ baseMinima > 0 ? `Base ${formatHorasHHMM(baseMinima)}h` : 'Sin mín. diario (Mensual)' }} · Imputables {{ formatHorasHHMM(horasComputablesCliente) }}h
                   </span>
                 </div>
               </div>
@@ -497,7 +519,7 @@
                 <div>
                   <span class="text-[10px] text-slate-400 font-bold uppercase block">⚡ Sobretiempo</span>
                   <div class="text-2xl font-black font-mono mt-1" :class="sobretiempoCalculado > 0 ? 'text-yellow-400' : 'text-slate-500'">
-                    +{{ sobretiempoCalculado }} <span class="text-[10px] font-normal">HRS</span>
+                    +{{ formatHorasHHMM(sobretiempoCalculado) }} <span class="text-[10px] font-normal">HRS</span>
                   </div>
                 </div>
                 <div class="pt-2 border-t border-white/5 mt-2">
@@ -596,7 +618,7 @@
                 <div>
                   <label class="text-[9.5px] text-cyan-300 uppercase font-bold block mb-1">Total Hrs Pagar</label>
                   <div class="text-sm font-mono font-black text-cyan-300 bg-cyan-950/30 px-2.5 py-1 rounded-lg border border-cyan-500/30 text-center">
-                    {{ horasTotalesLiqOperador }} hrs
+                    {{ formatHorasHHMM(horasTotalesLiqOperador) }} hrs
                   </div>
                 </div>
 
@@ -895,6 +917,18 @@
                     title="Clic para ampliar foto"
                   />
                 </div>
+                <!-- SPEC-098 v1.1.0: Switch privacidad Foto Inicio -->
+                <div class="pt-1.5 flex items-center justify-center">
+                  <label v-if="!esValidado || modoAjuste" class="flex items-center gap-1.5 text-[10px] text-slate-300 hover:text-white cursor-pointer select-none">
+                    <input type="checkbox" v-model="privacidadPdf.incluir_foto_inicio" class="rounded text-emerald-500 focus:ring-0 cursor-pointer" />
+                    <span :class="privacidadPdf.incluir_foto_inicio ? 'text-emerald-400 font-bold' : 'text-slate-400'">
+                      {{ privacidadPdf.incluir_foto_inicio ? '✓ Adjuntar en PDF Mandante' : '✗ No adjuntar en PDF' }}
+                    </span>
+                  </label>
+                  <span v-else class="text-[9px] font-mono px-1.5 py-0.5 rounded" :class="privacidadPdf.incluir_foto_inicio ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-slate-800 text-slate-400 border border-white/10'">
+                    {{ privacidadPdf.incluir_foto_inicio ? '📄 En PDF Mandante' : '🔒 Excluido de PDF' }}
+                  </span>
+                </div>
               </div>
 
               <div 
@@ -910,6 +944,18 @@
                     @click="abrirFotoGrande(reportLocal?.foto_tablero_termino)"
                     title="Clic para ampliar foto"
                   />
+                </div>
+                <!-- SPEC-098 v1.1.0: Switch privacidad Foto Término -->
+                <div class="pt-1.5 flex items-center justify-center">
+                  <label v-if="!esValidado || modoAjuste" class="flex items-center gap-1.5 text-[10px] text-slate-300 hover:text-white cursor-pointer select-none">
+                    <input type="checkbox" v-model="privacidadPdf.incluir_foto_termino" class="rounded text-emerald-500 focus:ring-0 cursor-pointer" />
+                    <span :class="privacidadPdf.incluir_foto_termino ? 'text-emerald-400 font-bold' : 'text-slate-400'">
+                      {{ privacidadPdf.incluir_foto_termino ? '✓ Adjuntar en PDF Mandante' : '✗ No adjuntar en PDF' }}
+                    </span>
+                  </label>
+                  <span v-else class="text-[9px] font-mono px-1.5 py-0.5 rounded" :class="privacidadPdf.incluir_foto_termino ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-slate-800 text-slate-400 border border-white/10'">
+                    {{ privacidadPdf.incluir_foto_termino ? '📄 En PDF Mandante' : '🔒 Excluido de PDF' }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -997,9 +1043,17 @@
                   <span class="truncate font-semibold">{{ doc.titulo || doc.nombre_archivo }}</span>
                   <span class="text-[10px] text-cyan-400 shrink-0">↗ Ver</span>
                 </a>
-                <div class="flex items-center gap-1.5 shrink-0">
+                <div class="flex items-center gap-2 shrink-0">
+                  <!-- SPEC-098 v1.1.0: Casilla granular por documento del día -->
+                  <label v-if="!esValidado || modoAjuste" class="flex items-center gap-1 text-[10px] cursor-pointer select-none" title="Incluir en PDF oficial de cliente">
+                    <input type="checkbox" :checked="isDocIncluidoEnPdf(doc.id_doc)" @change="toggleDocEnPdf(doc.id_doc, $event.target.checked)" class="rounded text-cyan-500 focus:ring-0 cursor-pointer" />
+                    <span :class="isDocIncluidoEnPdf(doc.id_doc) ? 'text-cyan-300 font-bold' : 'text-slate-400'">PDF</span>
+                  </label>
+                  <span v-else class="text-[9px] font-mono px-1.5 py-0.5 rounded" :class="isDocIncluidoEnPdf(doc.id_doc) ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800 text-slate-500'">
+                    {{ isDocIncluidoEnPdf(doc.id_doc) ? 'PDF' : 'Interno' }}
+                  </span>
                   <button
-                    v-if="!readonly && doc.id_doc"
+                    v-if="!readonly && doc.id_doc && (!esValidado || modoAjuste)"
                     type="button"
                     @click="quitarDocumentoDiaDesdeVisor(doc)"
                     class="text-slate-400 hover:text-rose-400 text-xs cursor-pointer px-1"
@@ -1068,6 +1122,13 @@
               <p class="text-slate-300 italic bg-black/40 p-2 rounded-lg border border-white/5 text-xs">
                 "{{ reportLocal?.obs_validador || 'Report validado conforme.' }}"
               </p>
+
+              <div v-if="reportLocal?.observaciones_cliente || reportLocal?.ajustes_analista?.observaciones_cliente" class="bg-sky-950/30 border border-sky-500/30 rounded-lg p-2.5 text-xs text-sky-200">
+                <span class="text-[10px] text-sky-400 font-bold uppercase tracking-wider block mb-1">
+                  📄 Observación para el Cliente (Visible en PDF Oficial):
+                </span>
+                <span class="italic">"{{ reportLocal?.observaciones_cliente || reportLocal?.ajustes_analista?.observaciones_cliente }}"</span>
+              </div>
             </div>
 
             <div v-else-if="readonly" class="bg-amber-950/20 border border-amber-500/40 rounded-xl p-3.5 space-y-1.5 text-xs">
@@ -1080,16 +1141,42 @@
               </p>
             </div>
 
-            <div v-else class="space-y-1.5">
-              <label class="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">
-                {{ hayModificaciones ? 'Justificación del Ajuste:' : 'Observaciones de Validación (Opcional):' }}
-              </label>
-              <textarea 
-                v-model="obsValidacion" 
-                rows="2"
-                :placeholder="hayModificaciones ? 'Ej: Se descuenta 1.0 hr por colación extendida según telemetría GPS...' : 'Ej: Cuadratura horaria conforme con la OT y parte de terreno...'" 
-                class="w-full bg-[#050810] border border-white/20 rounded-lg p-2 text-xs text-white focus:border-amber-400 focus:outline-none transition-colors resize-none"
-              ></textarea>
+            <div v-else class="space-y-2.5">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">
+                    🔒 {{ hayModificaciones ? 'Observaciones de Validación / Justificación (Interno):' : 'Observaciones de Validación (Interno - Opcional):' }}
+                  </label>
+                  <button
+                    v-if="esValidado && esObsValidacionModificada"
+                    type="button"
+                    @click="guardarObsValidadorDirecto"
+                    :disabled="guardandoObsDirecto"
+                    class="px-2.5 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-mono font-black cursor-pointer disabled:opacity-50"
+                  >
+                    {{ guardandoObsDirecto ? '⏳ Guardando...' : '💾 Actualizar' }}
+                  </button>
+                </div>
+                <textarea 
+                  v-model="obsValidacion" 
+                  rows="2"
+                  :placeholder="hayModificaciones ? 'Ej: Se descuenta 1.0 hr por colación extendida según telemetría GPS...' : 'Ej: Cuadratura horaria conforme con la OT y parte de terreno...'" 
+                  class="w-full bg-[#050810] border border-white/20 rounded-lg p-2 text-xs text-white focus:border-amber-400 focus:outline-none transition-colors resize-none"
+                ></textarea>
+              </div>
+
+              <div>
+                <label class="text-[11px] font-bold text-sky-400 block uppercase tracking-wider mb-1">
+                  📄 Observaciones para el Cliente (Visible en PDF Oficial):
+                </label>
+                <textarea 
+                  v-model="formAjustes.observaciones_cliente" 
+                  rows="2"
+                  placeholder="Ej: Se acuerda cobro de 5.0 hrs por detención operativa debido a pinchazo hasta las 13:00 hrs acordado con supervisor..." 
+                  class="w-full bg-[#050810] border border-sky-500/40 rounded-lg p-2 text-xs text-sky-100 placeholder-slate-500 focus:border-sky-400 focus:outline-none transition-colors resize-none"
+                ></textarea>
+              </div>
+
               <div class="text-[10px] text-slate-400 flex items-center justify-between">
                 <span>🔐 Requiere PIN de 4 dígitos para certificar</span>
                 <span v-if="hayModificaciones" class="text-amber-400 font-bold">⚠️ Con cambios pendientes</span>
@@ -1306,10 +1393,11 @@
       </div>
     </div>
   </div>
+</Teleport>
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import apiAxios from '../../services/api'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -1330,6 +1418,10 @@ const props = defineProps({
   readonly: {
     type: Boolean,
     default: false
+  },
+  modoEdicionInicial: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -1380,7 +1472,8 @@ const formAjustes = ref({
   id_user_rigger: null,
   horas_standby_cliente: 0,
   horas_standby_gsp: 0,
-  motivo_standby: ''
+  motivo_standby: '',
+  horas_facturables: null
 })
 
 // SPEC-106: Formulario de Liquidación Diaria de Personal y Viáticos (RRHH / Control de Gestión)
@@ -1482,6 +1575,51 @@ const archivoDocVisor = ref(null)
 const tituloDocVisor = ref('')
 const subiendoDocVisor = ref(false)
 const inputArchivoDocVisorRef = ref(null)
+
+// SPEC-098 v1.1.0 / REQ-1147: Estado reactivo de privacidad de fotos y anexos para PDF de cliente
+const privacidadPdf = reactive({
+  incluir_foto_inicio: false,
+  incluir_foto_termino: false,
+  docs_incluidos_pdf: []
+})
+
+const isDocIncluidoEnPdf = (idDoc) => {
+  if (!idDoc) return false
+  return privacidadPdf.docs_incluidos_pdf.map(Number).includes(Number(idDoc))
+}
+
+const toggleDocEnPdf = (idDoc, forceVal = null) => {
+  if (!idDoc) return
+  const numId = Number(idDoc)
+  const idx = privacidadPdf.docs_incluidos_pdf.map(Number).indexOf(numId)
+  const shouldInclude = forceVal !== null ? forceVal : idx < 0
+  if (shouldInclude) {
+    if (idx < 0) privacidadPdf.docs_incluidos_pdf.push(numId)
+  } else {
+    if (idx >= 0) privacidadPdf.docs_incluidos_pdf.splice(idx, 1)
+  }
+}
+
+const inicializarPrivacidad = (rep) => {
+  if (!rep) return
+  const aj = typeof rep.ajustes_analista === 'string'
+    ? (() => { try { return JSON.parse(rep.ajustes_analista) } catch (_) { return {} } })()
+    : (rep.ajustes_analista || {})
+  const priv = rep.privacidad_pdf || aj.privacidad_pdf || null
+  if (priv) {
+    privacidadPdf.incluir_foto_inicio = priv.incluir_foto_inicio === true
+    privacidadPdf.incluir_foto_termino = priv.incluir_foto_termino === true
+    privacidadPdf.docs_incluidos_pdf = Array.isArray(priv.docs_incluidos_pdf)
+      ? [...priv.docs_incluidos_pdf].map(Number)
+      : []
+  } else {
+    // Por defecto (INV-PRIV-01): Fotos internas de flota quedan excluidas
+    privacidadPdf.incluir_foto_inicio = false
+    privacidadPdf.incluir_foto_termino = false
+    // Por omisión, si hay documentos anexos y no se ha configurado privacidad, incluir los existentes
+    privacidadPdf.docs_incluidos_pdf = documentosDiaVisor.value.map(d => Number(d.id_doc)).filter(Boolean)
+  }
+}
 
 const documentosDiaVisor = computed(() => {
   const lista = []
@@ -1603,8 +1741,11 @@ watch(() => props.report, (newRep) => {
     reportLocal.value = JSON.parse(JSON.stringify(newRep))
     cancelarAdjuntoDiaVisor()
     
-    const tieneAjuste = !!newRep.ajustes_analista?.modificado
-    const valAj = newRep.ajustes_analista?.valores_ajustados || {}
+    const aj = typeof newRep.ajustes_analista === 'string'
+      ? (() => { try { return JSON.parse(newRep.ajustes_analista) } catch (_) { return {} } })()
+      : (newRep.ajustes_analista || {})
+    const tieneAjuste = !!aj?.modificado
+    const valAj = aj?.valores_ajustados || {}
 
     const hIni = tieneAjuste && valAj.hora_inicio
       ? valAj.hora_inicio
@@ -1661,6 +1802,12 @@ watch(() => props.report, (newRep) => {
     const motSb = tieneAjuste && valAj.motivo_standby !== undefined
       ? valAj.motivo_standby
       : (newRep.motivo_standby || '')
+    const valHFact = tieneAjuste && valAj.horas_facturables !== undefined && valAj.horas_facturables !== null
+      ? Number(valAj.horas_facturables)
+      : (newRep.horas_facturables !== undefined && newRep.horas_facturables !== null ? Number(newRep.horas_facturables) : null)
+    const valObsCli = tieneAjuste && valAj.observaciones_cliente !== undefined
+      ? valAj.observaciones_cliente
+      : (newRep.observaciones_cliente || newRep.ajustes_analista?.observaciones_cliente || '')
 
     formAjustes.value = {
       hora_inicio: hIni,
@@ -1674,13 +1821,16 @@ watch(() => props.report, (newRep) => {
       id_user_rigger: rigId,
       horas_standby_cliente: sbCli,
       horas_standby_gsp: sbGsp,
-      motivo_standby: motSb
+      motivo_standby: motSb,
+      horas_facturables: valHFact,
+      observaciones_cliente: valObsCli
     }
 
     obsValidacion.value = newRep.obs_validador || ''
-    modoAjuste.value = false
+    modoAjuste.value = !props.readonly && props.modoEdicionInicial
 
     inicializarLiquidacionDesdeReport(newRep)
+    inicializarPrivacidad(newRep)
     cargarUsuariosOperativos()
 
     // Inicializar mapa de firma
@@ -1692,9 +1842,15 @@ watch(() => props.report, (newRep) => {
 
 watch(() => props.visible, (val) => {
   if (val) {
+    if (reportLocal.value) {
+      inicializarPrivacidad(reportLocal.value)
+    }
     if (props.readonly) {
       modoAjuste.value = false
     } else {
+      if (props.modoEdicionInicial) {
+        modoAjuste.value = true
+      }
       cargarUsuariosOperativos()
     }
     nextTick(() => {
@@ -1801,6 +1957,8 @@ const toggleModoEdicion = () => {
 
 const restablecerAjustes = () => {
   if (reportLocal.value) {
+    const origHFact = reportLocal.value?.ajustes_analista?.valores_originales?.horas_facturables ?? reportLocal.value?.horas_operadas ?? null
+    const origObsCli = reportLocal.value?.ajustes_analista?.valores_originales?.observaciones_cliente ?? reportLocal.value?.observaciones_cliente ?? ''
     formAjustes.value = {
       hora_inicio: formatHoraSimple(reportLocal.value.fecha_inicio_servicio, '08:00'),
       hora_termino: formatHoraSimple(reportLocal.value.fecha_termino_servicio, '18:00'),
@@ -1813,7 +1971,9 @@ const restablecerAjustes = () => {
       id_user_rigger: reportLocal.value.id_user_rigger ? Number(reportLocal.value.id_user_rigger) : null,
       horas_standby_cliente: Number(reportLocal.value.horas_standby_cliente || 0),
       horas_standby_gsp: Number(reportLocal.value.horas_standby_gsp || 0),
-      motivo_standby: reportLocal.value.motivo_standby || ''
+      motivo_standby: reportLocal.value.motivo_standby || '',
+      horas_facturables: origHFact !== null ? Number(origHFact) : null,
+      observaciones_cliente: origObsCli
     }
     inicializarLiquidacionDesdeReport(reportLocal.value)
   }
@@ -1919,8 +2079,16 @@ const baseMinima = computed(() => {
   return 4.0
 })
 
-// Horas a facturar: Math.max(Base Mínima, Horas Computables al Mandante) (Spec 84 corregido / REQ-1109)
+// Horas a facturar: Permite override manual en modoAjuste (acuerdo Yara Mendoza / contabilidad) o cálculo automático Math.max(Base Mínima, Horas Computables al Mandante)
 const horasFacturablesCalculadas = computed(() => {
+  if (modoAjuste.value && formAjustes.value.horas_facturables !== null && formAjustes.value.horas_facturables !== undefined && String(formAjustes.value.horas_facturables).trim() !== '') {
+    const manual = parseFloat(formAjustes.value.horas_facturables)
+    if (!isNaN(manual) && manual >= 0) return manual
+  }
+  const ajHFact = reportLocal.value?.ajustes_analista?.valores_ajustados?.horas_facturables ?? reportLocal.value?.horas_facturables
+  if (ajHFact !== undefined && ajHFact !== null && String(ajHFact).trim() !== '' && !isNaN(Number(ajHFact)) && Number(ajHFact) >= 0) {
+    return Number(Number(ajHFact).toFixed(1))
+  }
   const comp = horasComputablesCliente.value
   const base = baseMinima.value
   return Number((base > 0 ? Math.max(base, comp) : comp).toFixed(1))
@@ -2011,7 +2179,11 @@ const esHorasOperadasModificadas = computed(() => {
 
 const esHorasFacturablesModificadas = computed(() => {
   if (!reportLocal.value) return false
-  const orig = Number(reportLocal.value.horas_facturables || reportLocal.value.horas_operadas || 0)
+  const orig = Number(
+    reportLocal.value.ajustes_analista?.valores_originales?.horas_facturables ??
+    reportLocal.value.horas_operadas ??
+    reportLocal.value.horas_facturables ?? 0
+  )
   return Math.abs(Number(horasFacturablesCalculadas.value) - orig) > 0.01
 })
 
@@ -2110,8 +2282,72 @@ const esLiquidacionPersonalModificada = computed(() => {
   )
 })
 
+const esObsValidacionModificada = computed(() => {
+  if (!reportLocal.value) return false
+  return String(obsValidacion.value || '').trim() !== String(reportLocal.value.obs_validador || '').trim()
+})
+
+const guardandoObsDirecto = ref(false)
+const guardarObsValidadorDirecto = async () => {
+  if (!reportLocal.value?.id_proyecto) return
+  try {
+    guardandoObsDirecto.value = true
+    const fechaIso = reportLocal.value.fecha_reporte_iso || (reportLocal.value.fecha_reporte ? String(reportLocal.value.fecha_reporte).slice(0, 10) : '')
+    const { data } = await apiAxios.post('/operaciones/control-vivo/override-hito', {
+      id_proyecto: reportLocal.value.id_proyecto,
+      id_equipo: reportLocal.value.id_equipo || 0,
+      fecha: fechaIso,
+      dia: reportLocal.value.dia_correlativo || 1,
+      id_reporte_avance: reportLocal.value.id_reporte_avance || null,
+      clave_actividad: 'OBS_VALIDADOR',
+      obs_validador: obsValidacion.value
+    })
+    if (data && data.success) {
+      reportLocal.value.obs_validador = data.data?.obs_validador || ''
+      emit('report-validado', reportLocal.value)
+    }
+  } catch (err) {
+    console.error('Error actualizando observación de validación:', err)
+    alert('❌ No se pudo actualizar la observación: ' + (err.response?.data?.message || err.message))
+  } finally {
+    guardandoObsDirecto.value = false
+  }
+}
+
+const formatHorasHHMM = (val) => {
+  const num = parseFloat(val)
+  if (isNaN(num) || num <= 0) return '00:00'
+  const totalMin = Math.round(num * 60)
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+const esPrivacidadModificada = computed(() => {
+  if (!reportLocal.value) return false
+  const aj = typeof reportLocal.value.ajustes_analista === 'string'
+    ? (() => { try { return JSON.parse(reportLocal.value.ajustes_analista) } catch (_) { return {} } })()
+    : (reportLocal.value.ajustes_analista || {})
+  const privOrig = reportLocal.value.privacidad_pdf || aj.privacidad_pdf || {}
+  const iniOrig = privOrig.incluir_foto_inicio === true
+  const finOrig = privOrig.incluir_foto_termino === true
+  const docsOrig = Array.isArray(privOrig.docs_incluidos_pdf) ? privOrig.docs_incluidos_pdf.map(Number).sort().join(',') : ''
+  const docsCurr = [...privacidadPdf.docs_incluidos_pdf].map(Number).sort().join(',')
+  return privacidadPdf.incluir_foto_inicio !== iniOrig || privacidadPdf.incluir_foto_termino !== finOrig || docsCurr !== docsOrig
+})
+
+const esObservacionesClienteModificadas = computed(() => {
+  if (!reportLocal.value) return false
+  const orig = String(
+    reportLocal.value.ajustes_analista?.valores_originales?.observaciones_cliente ??
+    reportLocal.value.observaciones_cliente ??
+    reportLocal.value.ajustes_analista?.observaciones_cliente ?? ''
+  ).trim()
+  return String(formAjustes.value.observaciones_cliente || '').trim() !== orig
+})
+
 const hayModificaciones = computed(() => {
-  return esHorarioModificado.value || esColacionModificada.value || esHorometroModificado.value || esOdometroModificado.value || esOperadorModificado.value || esRiggerModificado.value || esStandbyModificado.value || esLiquidacionPersonalModificada.value
+  return esHorarioModificado.value || esColacionModificada.value || esHorometroModificado.value || esOdometroModificado.value || esOperadorModificado.value || esRiggerModificado.value || esStandbyModificado.value || esLiquidacionPersonalModificada.value || esObsValidacionModificada.value || esHorasFacturablesModificadas.value || esPrivacidadModificada.value || esObservacionesClienteModificadas.value
 })
 
 const formatearFecha = (fechaStr) => {
@@ -2253,6 +2489,11 @@ const ejecutarValidacionConPin = async () => {
       id_user_validador: idUser,
       pin: pinCompleto.value,
       obs_validador: justificacionFinal,
+      privacidad_pdf: {
+        incluir_foto_inicio: privacidadPdf.incluir_foto_inicio === true,
+        incluir_foto_termino: privacidadPdf.incluir_foto_termino === true,
+        docs_incluidos_pdf: [...privacidadPdf.docs_incluidos_pdf]
+      },
       ajustes: hayModificaciones.value ? {
         hora_inicio: formAjustes.value.hora_inicio,
         hora_termino: formAjustes.value.hora_termino,
@@ -2268,8 +2509,10 @@ const ejecutarValidacionConPin = async () => {
         motivo_standby: formAjustes.value.motivo_standby,
         horas_operadas: horasEfectivasCalculadas.value,
         horas_facturables: horasFacturablesCalculadas.value,
-        horas_sobretiempo: sobretiempoCalculado.value
+        horas_sobretiempo: sobretiempoCalculado.value,
+        observaciones_cliente: formAjustes.value.observaciones_cliente
       } : null,
+      observaciones_cliente: formAjustes.value.observaciones_cliente,
       liquidacion_personal_dia: {
         regimen: formLiquidacionDia.value.regimen,
         distancia_km: formLiquidacionDia.value.distancia_km,
@@ -2297,6 +2540,12 @@ const ejecutarValidacionConPin = async () => {
         reportLocal.value = {
           ...reportLocal.value,
           ...res.data.data
+        }
+        if (res.data.data.horas_facturables !== undefined && res.data.data.horas_facturables !== null) {
+          formAjustes.value.horas_facturables = Number(res.data.data.horas_facturables)
+        }
+        if (res.data.data.observaciones_cliente !== undefined) {
+          formAjustes.value.observaciones_cliente = res.data.data.observaciones_cliente || ''
         }
       }
       modoAjuste.value = false

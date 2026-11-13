@@ -44,3 +44,21 @@ Toda contingencia real (falla técnica de equipo, reemplazo de operador, o adici
 ## 4. Criterio de Aceptación & Verificación Empírica (QA)
 - **Prueba 1:** Entrar a un proyecto en estado *Preparación de Salida*, abrir la Sub-tab 2 (Asignación) y verificar que los `<select>` de grúas y tripulantes estén bloqueados (`disabled`).
 - **Prueba 2:** Navegar a la Sub-tab 4 (Acreditaciones), cerrar el modal y verificar en la Torre de Control que el proyecto permanezca intacto en la columna **"EN PREPARACION OPERACIONES"**.
+
+---
+
+## 5. Gobernanza Financiera: Protocolo de Regularización de Jornadas (Control en Vivo ➔ ITS ➔ EDP)
+*Gobernado canónicamente por [Spec 63 §12](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/63_control_operativo_vivo_hibrido_spec.md#L279).*
+
+### 5.1. Frontera entre Monitoreo Operativo y Título Ejecutivo de Cobro
+1. **Monitoreo (Control en Vivo):** Registrar o corregir horas en Torre de Control gestiona SLAs y semáforos matinales, pero **no sustituye la fe pública del Report Diario**.
+2. **Prohibición de Facturación "en el Aire":** Ninguna jornada puede liquidarse en el Estado de Pago (EDP) ni enviarse a Facturación sin contar con uno de los **3 Linajes Probatorios Exclusivos**:
+   - `🟢 FES Digital:` Reporte emitido desde PWA con firma canvas de mandante, geolocalización y código FES.
+   - `📄 Doc Físico Regularizado:` Reporte administrativo generado por Analista de Gestión (Yiara) con respaldo obligatorio adjunto (PDF/foto de boleta física firmada por ITO o correo formal de aprobación).
+   - `⚖️ Piso Mínimo Contractual:` Imputación formal de horas mínimas pactadas en cotización CRM (ej. 8 horas de standby) por causa imputable al mandante sin firma de terreno.
+
+### 5.2. Conciliación Obligatoria en la Mesa del ITS
+- Es responsabilidad estricta del **Analista de Gestión de Operaciones (Yiara)** regularizar las jornadas sin report en la apertura del ITS.
+- El sistema detectará las brechas entre la planificación y las emisiones de terreno, ofreciendo los dos caminos de resolución (Vía B: Respaldo Físico / Vía C: Piso Mínimo) antes de consolidar el ITS y generar la Carátula del EDP.
+- Una vez emitido el ITS, las jornadas quedan **selladas e inmutables**. Cualquier modificación posterior exige una Solicitud de Cambio RFC formal aprobada por Administración.
+

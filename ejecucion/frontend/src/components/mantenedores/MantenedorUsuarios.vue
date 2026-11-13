@@ -142,6 +142,22 @@
               </td>
               <td class="px-4 py-4 text-xs font-medium text-white/80">{{ u.rut }}</td>
               <td class="px-4 py-4">
+                <div class="flex flex-wrap gap-1 max-w-[220px]">
+                  <template v-if="rbacRoleCodesPorUsuario(u.id_user).length">
+                    <span
+                      v-for="rCode in rbacRoleCodesPorUsuario(u.id_user)"
+                      :key="rCode"
+                      class="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase border border-emerald-500/20"
+                    >
+                      {{ rCode }}
+                    </span>
+                  </template>
+                  <span v-else class="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[8px] font-bold uppercase border border-amber-500/20">
+                    SIN ROL
+                  </span>
+                </div>
+              </td>
+              <td class="px-4 py-4">
                 <div class="flex flex-wrap gap-1">
                   <span v-for="pId in userProjectsIdsMatch[u.id_user]" :key="pId" class="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase border border-emerald-500/20">
                     {{ getProjectName(pId) }}
@@ -225,6 +241,7 @@ const headers = [
   { title: 'EMAIL', key: 'email' },
   { title: 'NOMBRE', key: 'nombre' },
   { title: 'RUT', key: 'rut' },
+  { title: 'ROLES RBAC', key: 'roles' },
   { title: 'PROYECTOS', key: 'proyectos' },
   { title: 'EMPRESA', key: 'id_empresa' },
   { title: 'ESTADO', key: 'activo' },
@@ -269,7 +286,10 @@ const usuariosFiltrados = computed(() => {
 
   const q = (props.search || '').trim().toLowerCase()
   if (q) {
-    list = list.filter(u => `${u.id_user} ${u.email} ${u.rut} ${u.name_frst} ${u.apellido_pat}`.toLowerCase().includes(q))
+    list = list.filter(u => {
+      const rolesStr = rbacRoleCodesPorUsuario(u.id_user).join(' ')
+      return `${u.id_user} ${u.email} ${u.rut} ${u.name_frst} ${u.apellido_pat} ${rolesStr}`.toLowerCase().includes(q)
+    })
   }
 
   // Ordenamiento interactivo por columnas
@@ -281,6 +301,9 @@ const usuariosFiltrados = computed(() => {
       if (sortBy.value === 'nombre') {
         valA = `${a.name_frst || ''} ${a.apellido_pat || ''} ${a.apellido_mat || ''}`.trim().toLowerCase()
         valB = `${b.name_frst || ''} ${b.apellido_pat || ''} ${b.apellido_mat || ''}`.trim().toLowerCase()
+      } else if (sortBy.value === 'roles') {
+        valA = rbacRoleCodesPorUsuario(a.id_user).join(',').toLowerCase()
+        valB = rbacRoleCodesPorUsuario(b.id_user).join(',').toLowerCase()
       } else if (sortBy.value === 'cargo') {
         valA = getJsonValue(a.json_data, 'cargo').toLowerCase()
         valB = getJsonValue(b.json_data, 'cargo').toLowerCase()
@@ -373,21 +396,15 @@ const roleIdByCode = computed(() => {
 })
 
 const rbacRoleCodeSet = computed(() => {
-  const set = new Set()
-  const functionCodes = ['ADMIN', 'PROG', 'EJEC', 'APROB']
-  const modulesList = ['TMAC', 'CDLC_DMH', 'CDLC_DCH', 'CDLC_SPOT', 'AMSA_MLP', 'TMAC_CALM', 'TMAC_LAND', 'RENTMAC']
-  modulesList.forEach(m => {
-    functionCodes.forEach(f => {
-      set.add(`${m}_${f}`)
-    })
-  })
-  set.add('ADMIN')
-
-  for (const p of permisos.value || []) {
-    const modCode = inferModuleCodeFromText(p?.description)
-    const fnCode = String(p?.code_perm || '').trim().toUpperCase()
-    if (!modCode || !fnCode) continue
-    set.add(`${modCode}_${fnCode}`)
+  const set = new Set([
+    'ADMIN', 'ADM_COM', 'COMERCIAL', 'COORD',
+    'GSP_APROB', 'GSP_PROG', 'SECRETARIA', 'GSP_PREV',
+    'GSP_CONTA', 'GSP_TALLER_APROB', 'GSP_TALLER_PROG',
+    'GSP_TALLER_EJEC', 'GSP_BODEGA', 'GSP_EJEC'
+  ])
+  for (const r of roles.value || []) {
+    const code = getRoleCode(r).toUpperCase()
+    if (code && code !== 'USR-CONSENT') set.add(code)
   }
   return set
 })

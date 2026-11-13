@@ -11,5 +11,6 @@ router.delete('/:id', backlogController.eliminarRequerimiento);
 // Releases
 router.get('/releases', backlogController.getReleases);
 router.post('/releases', backlogController.crearRelease);
+router.get('/version', backlogController.getVersion);
 
 module.exports = router;

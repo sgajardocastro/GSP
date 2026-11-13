@@ -67,13 +67,48 @@
 </template>
 
 <script setup>
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref, watchEffect, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Bell } from 'lucide-vue-next'
 import Sidebar from './components/Sidebar.vue'
 import { navStore } from './stores/navStore'
+import apiAxios from './services/api'
 
 const route = useRoute()
+
+const clientVersion = String(typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '').replace(/^v/i, '')
+let versionCheckInterval = null
+let isCheckingVersion = false
+
+const verificarVersionServidor = async () => {
+  if (!clientVersion || isCheckingVersion) return
+  isCheckingVersion = true
+  try {
+    const res = await apiAxios.get('/backlog/version', {
+      params: { _t: Date.now() },
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
+    })
+    const serverVersion = String(res?.data?.version || '').replace(/^v/i, '').trim()
+    if (serverVersion && serverVersion !== clientVersion) {
+      const lastReloaded = sessionStorage.getItem('gsp_reloaded_for_version')
+      if (lastReloaded !== serverVersion) {
+        sessionStorage.setItem('gsp_reloaded_for_version', serverVersion)
+        console.info(`[GSP Version Guard] Nueva versión detectada en servidor (v${serverVersion} vs local v${clientVersion}). Recargando aplicación...`)
+        window.location.reload()
+      }
+    }
+  } catch (e) {
+    // Silencioso ante microcortes de red
+  } finally {
+    isCheckingVersion = false
+  }
+}
+
+const onVisibilityChange = () => {
+  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+    verificarVersionServidor()
+  }
+}
 
 const isPrintLayout = computed(() => route.meta.layout === 'print' || route.name === 'versurveyprint' || route.path.includes('versurveyprint'))
 const isAuthLayout = computed(() => route.meta.layout === 'auth' && !isPrintLayout.value)
@@ -168,24 +203,55 @@ const currentPathTitle = computed(() => {
   return titles[route.name] || 'Consola de Control de Maquinarias GSP'
 })
 
-const getLoggedUser = () => {
+const loggedUser = ref(null)
+
+const refreshLoggedUser = () => {
   try {
     const raw = localStorage.getItem('user')
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      loggedUser.value = JSON.parse(raw)
+      return
+    }
   } catch (e) {}
-  return { name_frst: 'Sergio', apellido_pat: 'Gajardo', role: 'Consultor Operacional' }
+  loggedUser.value = null
 }
 
+// Escuchar cambios de ruta, almacenamiento y eventos de login/logout
+watch(() => route.fullPath, () => {
+  refreshLoggedUser()
+  verificarVersionServidor()
+}, { immediate: true })
+
+onMounted(() => {
+  refreshLoggedUser()
+  verificarVersionServidor()
+  window.addEventListener('storage', refreshLoggedUser)
+  window.addEventListener('auth-change', refreshLoggedUser)
+  window.addEventListener('focus', verificarVersionServidor)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  versionCheckInterval = setInterval(verificarVersionServidor, 180000)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('storage', refreshLoggedUser)
+  window.removeEventListener('auth-change', refreshLoggedUser)
+  window.removeEventListener('focus', verificarVersionServidor)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  if (versionCheckInterval) clearInterval(versionCheckInterval)
+})
+
 const userName = computed(() => {
-  const u = getLoggedUser()
+  const u = loggedUser.value
+  if (!u) return 'Usuario'
   if (u.name_frst || u.apellido_pat) {
     return `${u.name_frst ?? ''} ${u.apellido_pat ?? ''}`.trim()
   }
-  return u.name || 'Sergio Gajardo'
+  return u.name || u.email || 'Usuario'
 })
 
 const userInitials = computed(() => {
-  const u = getLoggedUser()
+  const u = loggedUser.value
+  if (!u) return 'US'
   const first = u.name_frst || u.name || ''
   const last = u.apellido_pat || ''
   if (first && last) {
@@ -194,12 +260,19 @@ const userInitials = computed(() => {
   if (first) {
     return first.substring(0, 2).toUpperCase()
   }
-  return 'SG'
+  if (u.email) {
+    return u.email.substring(0, 2).toUpperCase()
+  }
+  return 'US'
 })
 
 const userRole = computed(() => {
-  const u = getLoggedUser()
-  return u.role || 'Consultor'
+  const u = loggedUser.value
+  if (!u) return 'Invitado'
+  if (Array.isArray(u.roles) && u.roles.length > 0) {
+    return u.roles[0].replace(/_/g, ' ')
+  }
+  return u.role || 'Operaciones'
 })
 </script>
 

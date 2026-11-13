@@ -3897,6 +3897,13 @@ const submitNuevaOt = async () => {
     return
   }
 
+  const eqSel = flotaEquipos.value.find(e => e.id_equipo === formNuevaOt.value.id_equipo)
+  const minHoroActual = Number(eqSel?.horometro_actual || 0)
+  if (minHoroActual > 0 && Number(formNuevaOt.value.horometro_inicio || 0) < minHoroActual) {
+    nuevaOtError.value = `El horómetro de ingreso (${formNuevaOt.value.horometro_inicio} hrs) no puede ser menor al horómetro acumulado del equipo (${minHoroActual} hrs).`
+    return
+  }
+
   if (creandoOt.value) return
   creandoOt.value = true
 
@@ -3964,6 +3971,24 @@ const abrirDetalleOt = async (ot) => {
 
 const guardarMedidoresInicioWeb = async () => {
   if (!selectedOt.value?.ot?.id_ot) return
+  const otActual = selectedOt.value.ot
+  const minGrua = Number(otActual.horometro_grua_inicio || otActual.horometro_inicio || 0)
+  const minChasis = Number(otActual.horometro_chasis_inicio || 0)
+  const minOdo = Number(otActual.odometro_inicio || 0)
+
+  if (minGrua > 0 && Number(formMedidoresWeb.value.horometro_grua_inicio || 0) < minGrua) {
+    mostrarToast(`El horómetro de grúa (${formMedidoresWeb.value.horometro_grua_inicio} hrs) no puede ser menor al registrado (${minGrua} hrs).`, 'error')
+    return
+  }
+  if (minChasis > 0 && Number(formMedidoresWeb.value.horometro_chasis_inicio || 0) < minChasis) {
+    mostrarToast(`El horómetro de chasis (${formMedidoresWeb.value.horometro_chasis_inicio} hrs) no puede ser menor al registrado (${minChasis} hrs).`, 'error')
+    return
+  }
+  if (minOdo > 0 && Number(formMedidoresWeb.value.odometro_inicio || 0) < minOdo) {
+    mostrarToast(`El odómetro de entrada (${formMedidoresWeb.value.odometro_inicio} km) no puede ser menor al registrado (${minOdo} km).`, 'error')
+    return
+  }
+
   guardandoMedidoresWeb.value = true
   try {
     const id = selectedOt.value.ot.id_ot
@@ -4569,6 +4594,24 @@ const confirmarCierre = async () => {
 
   const idOt = selectedOt.value?.ot?.id_ot
   if (!idOt) return
+
+  const otAct = selectedOt.value.ot
+  const minGruaCierre = Number(otAct.horometro_grua_inicio || otAct.horometro_inicio || 0)
+  const minChasisCierre = Number(otAct.horometro_chasis_inicio || 0)
+  const minOdoCierre = Number(otAct.odometro_inicio || 0)
+
+  if (minGruaCierre > 0 && Number(formCierre.value.horometro_cierre || 0) < minGruaCierre) {
+    cierreError.value = `El horómetro de grúa al cierre (${formCierre.value.horometro_cierre} hrs) no puede ser menor al de inicio (${minGruaCierre} hrs).`
+    return
+  }
+  if (minChasisCierre > 0 && Number(formCierre.value.horometro_chasis_cierre || 0) < minChasisCierre) {
+    cierreError.value = `El horómetro de chasis al cierre (${formCierre.value.horometro_chasis_cierre} hrs) no puede ser menor al de inicio (${minChasisCierre} hrs).`
+    return
+  }
+  if (minOdoCierre > 0 && Number(formCierre.value.odometro_cierre || 0) < minOdoCierre) {
+    cierreError.value = `El odómetro de cierre (${formCierre.value.odometro_cierre} km) no puede ser menor al de inicio (${minOdoCierre} km).`
+    return
+  }
 
   try {
     const res = await apiAxios.post(`/mantenimiento/ots/${idOt}/cerrar`, {

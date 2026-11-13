@@ -210,6 +210,52 @@ const toggleGroup = (item) => {
 
 const activeProjectsCount = ref(0)
 const blockedOperatorsCount = ref(0)
+const userRoles = ref([])
+
+const loadUserRoles = async () => {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    const localRoles = Array.isArray(parsed?.roles)
+      ? parsed.roles.map(r => String(r?.name || r?.codi_rol || r?.name_rol || r || '').trim().toUpperCase()).filter(Boolean)
+      : []
+    userRoles.value = localRoles
+
+    const uid = Number(parsed?.id || parsed?.id_user)
+    if (!uid) return
+    const [rRes, urRes] = await Promise.all([
+      apiAxios.get('/servicio/leanglobal/obtenerRoles'),
+      apiAxios.get('/servicio/leanglobal/obtenerUsuariosRoles')
+    ])
+    const rolesCatalog = Array.isArray(rRes.data?.data) ? rRes.data.data : (Array.isArray(rRes.data) ? rRes.data : [])
+    const urList = Array.isArray(urRes.data?.data) ? urRes.data.data : (Array.isArray(urRes.data) ? urRes.data : [])
+    const roleMap = new Map(rolesCatalog.map(r => [Number(r.id_rol ?? r.id), String(r.codi_rol ?? r.name_rol ?? '').trim().toUpperCase()]))
+    const freshCodes = urList
+      .filter(ur => Number(ur.id_user) === uid)
+      .map(ur => roleMap.get(Number(ur.id_rol)))
+      .filter(Boolean)
+    if (freshCodes.length) {
+      userRoles.value = Array.from(new Set(freshCodes))
+      const prevStr = JSON.stringify(localRoles)
+      const nextStr = JSON.stringify(userRoles.value)
+      if (prevStr !== nextStr) {
+        localStorage.setItem('user', JSON.stringify({ ...parsed, roles: userRoles.value }))
+        window.dispatchEvent(new Event('auth-change'))
+      }
+    }
+  } catch (e) {
+    console.warn('No se pudieron refrescar roles en Sidebar:', e)
+  }
+}
+
+const hasMenuAccess = (allowedRoles) => {
+  if (!allowedRoles || allowedRoles.includes('*')) return true
+  const functional = userRoles.value.filter(r => r !== 'USR-CONSENT')
+  if (functional.includes('ADMIN')) return true
+  if (functional.length === 0) return !allowedRoles.every(r => r === 'ADMIN')
+  return functional.some(r => allowedRoles.includes(r))
+}
 
 const companyThemes = {
   9: {
@@ -300,39 +346,45 @@ const logout = () => {
 
 const menuItems = computed(() => {
   const c = activeTheme.value.colorName
-  return [
+  const allItems = [
     { 
       name: 'Dashboard', 
       routeName: 'dashboard', 
-      icon: BarChart3
+      icon: BarChart3,
+      allowedRoles: ['ADMIN', 'ADM_COM', 'COMERCIAL', 'COORD', 'GSP_APROB', 'GSP_PROG', 'SECRETARIA', 'GSP_CONTA']
     },
     { 
       name: 'Torre de Control Vista 360', 
       routeName: 'torre', 
       icon: LayoutGrid, 
       count: activeProjectsCount.value || null,
-      countClass: `border-${c}-500/30 text-${c}-500`
+      countClass: `border-${c}-500/30 text-${c}-500`,
+      allowedRoles: ['ADMIN', 'ADM_COM', 'COMERCIAL', 'COORD', 'GSP_APROB', 'GSP_PROG', 'SECRETARIA', 'GSP_CONTA', 'GSP_PREV']
     },
     { 
       name: 'Clientes', 
       routeName: 'clientes', 
-      icon: Users
+      icon: Users,
+      allowedRoles: ['ADMIN', 'ADM_COM', 'COMERCIAL', 'COORD', 'GSP_APROB', 'GSP_PROG', 'SECRETARIA', 'GSP_CONTA']
     },
     { 
       name: 'ITS Transición', 
       routeName: 'its_transicion', 
-      icon: FileSpreadsheet
+      icon: FileSpreadsheet,
+      allowedRoles: ['ADMIN', 'ADM_COM', 'COMERCIAL', 'COORD', 'GSP_APROB', 'GSP_PROG', 'SECRETARIA', 'GSP_CONTA']
     },
     { 
       name: 'Compras & OCs', 
       routeName: 'compras_oc',
       path: '/compras-oc',
-      icon: ShoppingCart
+      icon: ShoppingCart,
+      allowedRoles: ['ADMIN', 'COORD', 'GSP_APROB', 'GSP_PROG', 'GSP_CONTA', 'GSP_TALLER_APROB', 'GSP_TALLER_PROG', 'GSP_BODEGA']
     },
     { 
       name: 'Gestión de Flota', 
       icon: Orbit,
       subtitle: 'Control & Mantenimiento',
+      allowedRoles: ['ADMIN', 'ADM_COM', 'COMERCIAL', 'COORD', 'GSP_APROB', 'GSP_PROG', 'SECRETARIA', 'GSP_PREV', 'GSP_TALLER_APROB', 'GSP_TALLER_PROG', 'GSP_TALLER_EJEC', 'GSP_BODEGA'],
       children: [
         { name: 'Vista Equipos 360', routeName: 'vista360' },
         { name: 'Radar Horómetros & Odómetros', routeName: 'radar_flota' },
@@ -344,6 +396,7 @@ const menuItems = computed(() => {
       name: 'Inventario & WMS',
       icon: Package,
       subtitle: 'Gestión de Almacenes',
+      allowedRoles: ['ADMIN', 'COORD', 'GSP_APROB', 'GSP_PROG', 'GSP_CONTA', 'GSP_TALLER_APROB', 'GSP_TALLER_PROG', 'GSP_BODEGA'],
       children: [
         { name: '1. Bodegas & Ubicaciones', routeName: 'inventario_bodegas' },
         { name: '2. Maestro de Existencias', routeName: 'inventario_productos' },
@@ -361,32 +414,42 @@ const menuItems = computed(() => {
       routeName: 'acreditacion', 
       icon: ShieldCheck, 
       count: blockedOperatorsCount.value || null,
-      countClass: 'border-red-500/30 text-red-500 !bg-red-500/10'
+      countClass: 'border-red-500/30 text-red-500 !bg-red-500/10',
+      allowedRoles: ['ADMIN', 'ADM_COM', 'COMERCIAL', 'COORD', 'GSP_APROB', 'GSP_PROG', 'SECRETARIA', 'GSP_PREV']
     },
     { 
       name: 'Gestor Documental', 
       routeName: 'documentos', 
-      icon: FolderOpen
+      icon: FolderOpen,
+      allowedRoles: ['ADMIN', 'ADM_COM', 'COMERCIAL', 'COORD', 'GSP_APROB', 'GSP_PROG', 'SECRETARIA', 'GSP_CONTA', 'GSP_PREV', 'GSP_TALLER_APROB', 'GSP_TALLER_PROG', 'GSP_BODEGA']
     },
     { 
       name: 'Centro Documentación', 
       routeName: 'documentacion', 
-      icon: BookOpen
+      icon: BookOpen,
+      allowedRoles: ['*']
     },
     { 
       name: 'Mantenedores', 
       routeName: 'mantenedores', 
-      icon: Settings
+      icon: Settings,
+      allowedRoles: ['ADMIN']
     },
     { 
       name: 'Backlog', 
       routeName: 'backlog', 
-      icon: ListTodo
+      icon: ListTodo,
+      allowedRoles: ['ADMIN']
     }
   ]
+
+  return allItems.filter(item => hasMenuAccess(item.allowedRoles))
 })
 
-onMounted(fetchRealData)
+onMounted(() => {
+  loadUserRoles()
+  fetchRealData()
+})
 </script>
 
 <style scoped>

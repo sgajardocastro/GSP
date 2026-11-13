@@ -26,9 +26,37 @@
 
     <!-- CUERPO PRINCIPAL DEL MÓVIL -->
     <main class="flex-1 p-4 max-w-lg mx-auto w-full space-y-4">
+
+      <!-- FRANJA DISTINTIVA: ORDEN DE MOVIMIENTO INTERNO GSP (SPEC 87) -->
+      <div
+        v-if="esMovimientoInterno"
+        class="bg-amber-500/15 border-2 border-dashed border-amber-400 rounded-2xl p-3.5 shadow-lg space-y-1.5"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[11px] font-black uppercase tracking-wider text-amber-300 font-mono flex items-center gap-1.5">
+            <span>🔁</span>
+            <span>ORDEN DE MOVIMIENTO INTERNO GSP (NO FACTURABLE)</span>
+          </span>
+          <span class="text-[9px] font-mono font-bold bg-amber-500 text-black px-2 py-0.5 rounded uppercase">
+            COSTO PROPIO
+          </span>
+        </div>
+        <div class="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+          <span>📍</span>
+          <span class="truncate">{{ viaje.sucursal_origen || viaje.origen_nombre || 'Base Origen GSP' }}</span>
+          <span class="text-amber-400">➔</span>
+          <span class="truncate text-amber-300">{{ viaje.sucursal_destino || viaje.obra_nombre || 'Sucursal Destino GSP' }}</span>
+        </div>
+        <p class="text-[10px] text-slate-300">
+          Traslado interno entre sucursales/taller. Al arribar a destino no requiere firma de cliente externo (cierre directo para ITS de Costos).
+        </p>
+      </div>
       
       <!-- TARJETA DEL EQUIPO & DESTINO (DATOS REALES) -->
-      <div class="bg-[#0a0f1e] border border-white/10 rounded-2xl p-4 shadow-xl space-y-3">
+      <div
+        class="bg-[#0a0f1e] rounded-2xl p-4 shadow-xl space-y-3"
+        :class="esMovimientoInterno ? 'border-l-4 border-dashed border-amber-400 border border-amber-500/30' : 'border border-white/10'"
+      >
         <div class="flex justify-between items-start">
           <div>
             <span class="text-[10px] font-mono uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-bold">
@@ -48,7 +76,7 @@
         <div class="bg-black/40 border border-white/5 rounded-xl p-3 space-y-1.5 text-xs">
           <!-- Origen si es Retorno -->
           <div v-if="viaje.tipo_trayecto === 'RETORNO'" class="flex items-center gap-2 text-slate-300">
-            <span class="text-amber-400">🏗️</span>
+            <span class="text-amber-400">🏭</span>
             <span class="font-semibold text-white">Origen:</span>
             <span class="truncate">{{ viaje.origen_nombre || viaje.obra_nombre || 'Faena Mandante' }}</span>
           </div>
@@ -88,8 +116,16 @@
           <div>Odóm. Inicial: <strong class="text-amber-400 font-bold">{{ viaje.odometro_salida }} KM</strong></div>
           <div>Horóm. Inicial: <strong class="text-amber-400 font-bold">{{ viaje.horometro_salida }} HRS</strong></div>
         </div>
-        <div v-if="viaje.foto_salida" class="mt-1">
-          <img :src="viaje.foto_salida" alt="Foto Salida" class="h-28 w-full object-cover rounded-xl border border-white/10" />
+        <!-- Fotos de Salida (Odómetro y Horómetro) -->
+        <div class="grid grid-cols-2 gap-2 mt-1">
+          <div v-if="viaje.foto_odometro_salida || viaje.foto_salida" class="space-y-1">
+            <span class="text-[9px] text-slate-400 font-mono block">Foto Odómetro:</span>
+            <img :src="viaje.foto_odometro_salida || viaje.foto_salida" alt="Odómetro Salida" class="h-24 w-full object-cover rounded-xl border border-white/10" />
+          </div>
+          <div v-if="viaje.foto_horometro_salida" class="space-y-1">
+            <span class="text-[9px] text-slate-400 font-mono block">Foto Horómetro:</span>
+            <img :src="viaje.foto_horometro_salida" alt="Horómetro Salida" class="h-24 w-full object-cover rounded-xl border border-white/10" />
+          </div>
         </div>
       </div>
 
@@ -102,37 +138,100 @@
               {{ viaje.tipo_trayecto === 'RETORNO' ? 'Paso 1: Salida de Faena hacia Base GSP' : 'Paso 1: Salida de Base / Patio' }}
             </h2>
             <p class="text-[11px] text-slate-400">
-              {{ viaje.tipo_trayecto === 'RETORNO' ? 'Registra odómetro de salida de faena y firma para iniciar convoy de retorno.' : 'Registra odómetro, horómetro y firma para iniciar el convoy.' }}
+              {{ viaje.tipo_trayecto === 'RETORNO' ? 'Registra odómetro, horómetro del camión con sus 2 fotos y firma para iniciar retorno.' : 'Registra odómetro, horómetro del camión con sus 2 fotos y firma para iniciar el convoy.' }}
             </p>
+            <a
+              :href="urlManualOperador"
+              target="_blank"
+              class="inline-flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 font-mono underline underline-offset-2 mt-1"
+            >
+              <span>📖</span>
+              <span>¿Dudas con los marcadores? Ver Matriz Oficial</span>
+            </a>
           </div>
         </div>
 
         <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-300 mb-1">Odómetro de Salida (KM) *</label>
-            <input type="number" step="0.1" v-model="formSalida.odometro" placeholder="Ej: 145820.5" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-amber-400" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-300 mb-1">Horómetro de Salida (HRS) *</label>
-            <input type="number" step="0.1" v-model="formSalida.horometro" placeholder="Ej: 3240.2" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-amber-400" />
-          </div>
-
-
-
-          <!-- Captura de Fotografía Tablero -->
-          <div>
-            <label class="block text-xs font-bold text-slate-300 mb-1">Foto del Tablero / Odómetro *</label>
-            <div v-if="formSalida.foto" class="relative rounded-xl overflow-hidden border border-emerald-500/50 mb-2">
-              <img :src="formSalida.foto" alt="Tablero Salida" class="w-full h-40 object-cover" />
-              <button @click="formSalida.foto = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full text-xs font-bold">✕ Quitar</button>
+          <!-- 1. Odómetro Camión -->
+          <div class="bg-black/30 border border-white/10 rounded-xl p-3 space-y-2">
+            <div>
+              <label class="block text-xs font-bold text-slate-200 mb-1">1. Odómetro de Salida (KM) *</label>
+              <input type="number" step="0.1" v-model="formSalida.odometro" placeholder="Ej: 145820.5" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2.5 text-base text-white font-mono font-bold outline-none focus:border-amber-400" />
             </div>
-            <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-amber-400 rounded-xl p-4 cursor-pointer bg-black/30 transition-colors">
-              <span class="text-2xl mb-1">📸</span>
-              <span class="text-xs font-bold text-amber-400">Tomar Foto del Tablero</span>
-              <span class="text-[10px] text-slate-400">Captura clara de kilometraje y horómetro</span>
-              <input type="file" accept="image/*" capture="environment" @change="onFotoSalidaCapturada" class="hidden" />
-            </label>
+
+            <div>
+              <label class="block text-[11px] font-bold text-amber-300 mb-1">📸 Foto Odómetro Camión (KM) *</label>
+              <div v-if="formSalida.foto_odometro" class="relative rounded-xl overflow-hidden border border-emerald-500/50">
+                <img :src="formSalida.foto_odometro" alt="Odómetro Salida" class="w-full h-32 object-cover" />
+                <button @click="formSalida.foto_odometro = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">✕ Quitar</button>
+              </div>
+              <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-amber-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
+                <span class="text-xl mb-0.5">📸</span>
+                <span class="text-xs font-bold text-amber-400">Tomar Foto del Odómetro (Tacógrafo)</span>
+                <span class="text-[9px] text-slate-400">Captura clara de los kilómetros de salida</span>
+                <input type="file" accept="image/*" capture="environment" @change="onFotoOdometroSalida" class="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <!-- 2. Horómetro Camión -->
+          <div class="bg-black/30 border border-white/10 rounded-xl p-3 space-y-2">
+            <div>
+              <label class="block text-xs font-bold text-slate-200 mb-1">2. Horómetro Motor Camión / Chasis (HRS) *</label>
+              <input type="number" step="0.1" v-model="formSalida.horometro" placeholder="Ej: 3240.2" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2.5 text-base text-white font-mono font-bold outline-none focus:border-amber-400" />
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-amber-300 mb-1">📸 Foto Horómetro Motor Camión (HRS) *</label>
+              <div v-if="formSalida.foto_horometro" class="relative rounded-xl overflow-hidden border border-emerald-500/50">
+                <img :src="formSalida.foto_horometro" alt="Horómetro Salida" class="w-full h-32 object-cover" />
+                <button @click="formSalida.foto_horometro = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">✕ Quitar</button>
+              </div>
+              <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-amber-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
+                <span class="text-xl mb-0.5">📸</span>
+                <span class="text-xs font-bold text-amber-400">Tomar Foto del Horómetro del Motor</span>
+                <span class="text-[9px] text-slate-400">Captura clara de las horas del motor chasis</span>
+                <input type="file" accept="image/*" capture="environment" @change="onFotoHorometroSalida" class="hidden" />
+              </label>
+            </div>
+
+            <!-- Botón de Asistencia: Misma foto si están juntos en el display -->
+            <button
+              v-if="formSalida.foto_odometro && !formSalida.foto_horometro"
+              @click="copiarFotoOdometroAHorometroSalida"
+              type="button"
+              class="w-full py-1.5 px-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>📋</span> ¿Mismo display digital? Usar la foto del odómetro para el horómetro
+            </button>
+            <button
+              v-else-if="formSalida.foto_horometro && !formSalida.foto_odometro"
+              @click="copiarFotoHorometroAOdometroSalida"
+              type="button"
+              class="w-full py-1.5 px-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>📋</span> ¿Mismo display digital? Usar la foto del horómetro para el odómetro
+            </button>
+          </div>
+
+          <!-- 3. Nivel de Combustible al Salir de Patio (Base GSP) -->
+          <div class="bg-black/30 border border-white/10 rounded-xl p-3 space-y-2">
+            <label class="block text-xs font-bold text-slate-200 mb-1">3. Nivel de Combustible al Salir de Patio *</label>
+            <select v-model="formSalida.combustible_salida" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-amber-400">
+              <option value="" disabled>Seleccione nivel (1% a 100%)...</option>
+              <option v-for="pct in nivelesCombustible" :key="pct" :value="pct">{{ pct }}</option>
+            </select>
+            <div class="pt-1">
+              <label class="block text-[11px] font-bold text-slate-400 mb-1">📸 Foto Marcador Combustible Salida (Opcional)</label>
+              <div v-if="formSalida.foto_combustible" class="relative rounded-xl overflow-hidden border border-emerald-500/50">
+                <img :src="formSalida.foto_combustible" alt="Combustible Salida" class="w-full h-24 object-cover" />
+                <button @click="formSalida.foto_combustible = ''" type="button" class="absolute top-1 right-1 bg-red-600 text-white px-2 py-0.5 rounded-full text-xs">✕</button>
+              </div>
+              <label v-else class="flex items-center justify-center gap-2 border border-dashed border-white/20 hover:border-amber-400 rounded-xl p-2 cursor-pointer bg-black/40 text-xs text-amber-400 font-bold">
+                <span>📸 Adjuntar Foto Marcador</span>
+                <input type="file" accept="image/*" capture="environment" @change="onFotoCombustibleSalida" class="hidden" />
+              </label>
+            </div>
           </div>
 
           <!-- PIN de Firma del Conductor -->
@@ -143,6 +242,11 @@
           </div>
         </div>
 
+        <!-- Alerta de Candado si es Retorno de Plataforma y no se ha sellado el Acta de Retiro -->
+        <div v-if="esServicioPlataformaBsm && viaje.tipo_trayecto === 'RETORNO' && !actaBsm?.retiro_sellado" class="bg-red-500/15 border border-red-500/40 rounded-xl p-3 text-center text-xs text-red-200 font-bold">
+          🔒 BLOQUEADO POR CANDADO SPEC-081: Debe sellar arriba el Acta de Recuperación 360° con la firma manual del cliente antes de iniciar el viaje de retorno.
+        </div>
+
         <!-- Indicador reactivo de requisitos pendientes -->
         <div v-if="!isFormSalidaValido" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 text-center text-xs space-y-1">
           <p class="font-bold text-amber-300">Requisitos para autorizar e iniciar:</p>
@@ -151,8 +255,20 @@
               {{ formSalida.odometro ? '✓' : '⚠️' }} Odómetro
             </span>
             <span class="text-slate-600">•</span>
+            <span :class="formSalida.foto_odometro ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
+              {{ formSalida.foto_odometro ? '✓' : '⚠️' }} Foto Odóm.
+            </span>
+            <span class="text-slate-600">•</span>
             <span :class="formSalida.horometro ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
               {{ formSalida.horometro ? '✓' : '⚠️' }} Horómetro
+            </span>
+            <span class="text-slate-600">•</span>
+            <span :class="formSalida.foto_horometro ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
+              {{ formSalida.foto_horometro ? '✓' : '⚠️' }} Foto Horóm.
+            </span>
+            <span class="text-slate-600">•</span>
+            <span :class="formSalida.combustible_salida ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
+              {{ formSalida.combustible_salida ? '✓' : '⚠️' }} Combustible
             </span>
             <span class="text-slate-600">•</span>
             <span :class="(formSalida.pin && formSalida.pin.length === 4) ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
@@ -161,7 +277,7 @@
           </div>
         </div>
 
-        <button @click="ejecutarInicioViaje" :disabled="guardando" type="button" class="w-full min-h-[58px] bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black text-sm uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer">
+        <button @click="ejecutarInicioViaje" :disabled="guardando || !isFormSalidaValido || (esServicioPlataformaBsm && viaje.tipo_trayecto === 'RETORNO' && !actaBsm?.retiro_sellado)" type="button" class="w-full min-h-[58px] bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-black text-sm uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer">
           <span v-if="guardando">⏳ Registrando...</span>
           <span v-else>{{ viaje.tipo_trayecto === 'RETORNO' ? '🟢 INICIAR RETORNO (SALIDA DE FAENA)' : '🟢 INICIAR VIAJE (SALIDA DE BASE)' }}</span>
         </button>
@@ -204,8 +320,24 @@
         <p v-if="viaje.obs_termino" class="text-[11px] text-slate-300 italic bg-black/30 p-2 rounded-lg border border-white/5">
           "{{ viaje.obs_termino }}"
         </p>
-        <div v-if="viaje.foto_llegada" class="mt-1">
-          <img :src="viaje.foto_llegada" alt="Foto Llegada" class="h-28 w-full object-cover rounded-xl border border-white/10" />
+        <!-- Fotos de Llegada -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+          <div v-if="viaje.foto_odometro_llegada || viaje.foto_llegada" class="space-y-1">
+            <span class="text-[9px] text-slate-400 font-mono block">Odómetro Llegada:</span>
+            <img :src="viaje.foto_odometro_llegada || viaje.foto_llegada" alt="Odómetro Llegada" class="h-20 w-full object-cover rounded-xl border border-white/10" />
+          </div>
+          <div v-if="viaje.foto_horometro_camion_llegada" class="space-y-1">
+            <span class="text-[9px] text-slate-400 font-mono block">Horómetro Camión:</span>
+            <img :src="viaje.foto_horometro_camion_llegada" alt="Horómetro Camión" class="h-20 w-full object-cover rounded-xl border border-white/10" />
+          </div>
+          <div v-if="viaje.foto_horometro_grua_llegada" class="space-y-1">
+            <span class="text-[9px] text-amber-300 font-mono block">Horómetro Grúa:</span>
+            <img :src="viaje.foto_horometro_grua_llegada" alt="Horómetro Grúa" class="h-20 w-full object-cover rounded-xl border border-amber-500/40" />
+          </div>
+          <div v-if="viaje.combustible_llegada?.foto" class="space-y-1">
+            <span class="text-[9px] text-emerald-400 font-mono block">Combustible:</span>
+            <img :src="viaje.combustible_llegada.foto" alt="Combustible Llegada" class="h-20 w-full object-cover rounded-xl border border-emerald-500/30" />
+          </div>
         </div>
       </div>
 
@@ -238,6 +370,13 @@
         <button @click="abrirModalLlegada" type="button" class="w-full min-h-[54px] bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-xl tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer">
           <span>{{ viaje.tipo_trayecto === 'RETORNO' ? '🏁 CONFIRMAR LLEGADA A PATIO CENTRAL GSP' : '🏁 CONFIRMAR LLEGADA A FAENA' }}</span>
         </button>
+
+        <!-- Enlace Sutil: Consultar Datos de Salida -->
+        <div class="text-center pt-1">
+          <button @click="mostrarModalDatosSalida = true" type="button" class="text-[11px] text-slate-400 hover:text-white underline underline-offset-4 font-mono transition-colors">
+            👁️ Consultar Datos Registrados de Salida
+          </button>
+        </div>
       </div>
 
       <!-- ========================================================================= -->
@@ -264,6 +403,19 @@
             </h2>
             <p class="text-xs text-slate-300">
               La maquinaria <strong>{{ viaje.patente }}</strong> ha ingresado conforme a Patio Central San Pablo. El servicio ha finalizado con éxito y el equipo queda <strong>DISPONIBLE</strong>.
+            </p>
+          </div>
+
+          <!-- CASO MOVIMIENTO INTERNO GSP (SPEC 87): IDA CONCLUIDA, HABILITAR RETORNO (VUELTA) -->
+          <div v-else-if="esMovimientoInterno" class="space-y-1">
+            <span class="text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-400/50 px-2.5 py-0.5 rounded font-black tracking-wider">
+              🔁 TRAMO DE IDA CONCLUIDO • SUCURSAL DESTINO
+            </span>
+            <h2 class="text-base font-black text-white uppercase tracking-wider font-mono mt-1">
+              Arribo a {{ viaje.sucursal_destino || viaje.obra_nombre }} Confirmado
+            </h2>
+            <p class="text-xs text-slate-300">
+              El equipo <strong>{{ viaje.patente }}</strong> ha registrado su llegada en <strong>{{ viaje.sucursal_destino || viaje.obra_nombre }}</strong>. Cuando inicies el regreso a <strong>{{ viaje.sucursal_origen || 'Sucursal Origen' }}</strong>, presiona el botón inferior para registrar el <strong>Viaje de Vuelta (Retorno)</strong>.
             </p>
           </div>
 
@@ -297,19 +449,49 @@
 
           <!-- BOTONES DE ACCIÓN SEGÚN TIPO DE TRAYECTO -->
           <div class="pt-2 space-y-2">
-            <!-- Si es Retorno: volver a la PWA / Menú Principal -->
+            <!-- Si es Retorno concluido: volver a la PWA / Menú Principal -->
             <a
               v-if="viaje.tipo_trayecto === 'RETORNO'"
               :href="urlHomePwa"
               class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 no-underline cursor-pointer"
             >
               <span>🏠</span>
-              <span>VOLVER A MIS SERVICIOS (MENÚ PRINCIPAL) ➔</span>
+              <span>VIAJE IDA Y VUELTA CONCLUIDO • VOLVER AL MENÚ PWA ➔</span>
             </a>
 
-            <!-- Si es Ida: avanzar al Report Diario de Faena -->
+            <!-- Si es Ida de Requerimiento Interno: botón para iniciar Viaje de Vuelta (Retorno) -->
+            <template v-else-if="esMovimientoInterno">
+              <button
+                @click="iniciarViajeRetornoInterno"
+                :disabled="iniciandoRetorno"
+                type="button"
+                class="w-full py-4 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer"
+              >
+                <span v-if="iniciandoRetorno" class="animate-spin">⏳</span>
+                <span v-else>🔄</span>
+                <span>{{ iniciandoRetorno ? 'GENERANDO HOJA DE VUELTA...' : `INICIAR VIAJE DE VUELTA (RETORNO A ${viaje.sucursal_origen || 'ORIGEN'}) ➔` }}</span>
+              </button>
+              <a
+                :href="urlHomePwa"
+                class="w-full py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-[11px] uppercase rounded-xl tracking-wider transition-all flex items-center justify-center gap-1.5 border border-white/10 no-underline cursor-pointer"
+              >
+                <span>🏠</span>
+                <span>Volver al Menú Principal</span>
+              </a>
+            </template>
+
+            <!-- Si es Ida Comercial: avanzar al Report Diario de Faena o al Acta de Entrega 360° de Plataforma en PWA -->
             <template v-else>
               <a
+                v-if="esServicioPlataformaBsm"
+                :href="`${urlHomePwa}?abrir_acta_bsm=ENTREGA&id_proyecto=${viaje.id_proyecto || ''}`"
+                class="w-full py-4 bg-teal-500 hover:bg-teal-400 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-teal-500/20 no-underline cursor-pointer"
+              >
+                <span>📋</span>
+                <span>PASO 2: COMPLETAR ACTA DE ENTREGA 360° DE PLATAFORMA (PWA) ➔</span>
+              </a>
+              <a
+                v-else
                 :href="urlRetornoReport"
                 class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 no-underline cursor-pointer"
               >
@@ -651,42 +833,121 @@
               <p class="text-[10px] text-slate-400">
                 {{ viaje.tipo_trayecto === 'RETORNO' ? 'Recepción de maquinaria en base GSP y cierre definitivo de servicio' : 'Cierre de viaje y paso a etapa de maniobra' }}
               </p>
+              <a
+                :href="urlManualOperador"
+                target="_blank"
+                class="inline-flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 font-mono underline underline-offset-2 mt-0.5"
+              >
+                <span>📖</span>
+                <span>¿Dudas con los marcadores? Ver Matriz Oficial</span>
+              </a>
             </div>
           </div>
           <button @click="modalLlegada.visible = false" type="button" class="text-slate-400 hover:text-white p-1 text-lg">✕</button>
         </div>
 
         <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-300 mb-1">Odómetro de Llegada (KM) *</label>
-            <input type="number" step="0.1" v-model="formLlegada.odometro" placeholder="Ej: 146120.0" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-emerald-400" />
-          </div>
+          <!-- BLOQUE 1: INSTRUMENTOS DEL CAMIÓN / CHASIS -->
+          <div class="bg-black/30 border border-white/10 rounded-xl p-3 space-y-3">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider block border-b border-white/10 pb-1">
+              🚚 1. Instrumentos Camión / Chasis
+            </span>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-300 mb-1">Horómetro Camión / Chasis Llegada (HRS) *</label>
-            <input type="number" step="0.1" v-model="formLlegada.horometro" placeholder="Ej: 3248.5" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-3 text-base text-white font-mono font-bold outline-none focus:border-emerald-400" />
-          </div>
-
-          <!-- Horómetro Grúa / Superestructura Inicial (Solo en Llegada a Faena, no en Retorno) -->
-          <div v-if="viaje.tipo_trayecto !== 'RETORNO'" class="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3 space-y-1">
-            <div class="flex items-center justify-between">
-              <label class="block text-xs font-bold text-amber-300 uppercase tracking-wide">⚙️ Horómetro Grúa / Superestructura (Inicio Faena) *</label>
-              <span class="text-[10px] text-amber-400 font-mono font-bold">Línea base izaje</span>
+            <!-- Odómetro Llegada -->
+            <div>
+              <label class="block text-xs font-bold text-slate-200 mb-1">Odómetro de Llegada (KM) *</label>
+              <input type="number" step="0.1" v-model="formLlegada.odometro" placeholder="Ej: 146120.0" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2.5 text-base text-white font-mono font-bold outline-none focus:border-emerald-400" />
             </div>
-            <p class="text-[11px] text-slate-300">Lectura inicial de la superestructura antes de posicionar estabilizadores.</p>
-            <input type="number" step="0.1" v-model="formLlegada.horometro_grua" placeholder="Ej: 1250.0" class="w-full bg-[#050810] border border-amber-500/60 rounded-xl px-3 py-3 text-base text-amber-300 font-mono font-bold outline-none focus:border-amber-400" />
+
+            <!-- Foto Odómetro Llegada -->
+            <div>
+              <label class="block text-[11px] font-bold text-emerald-300 mb-1">📸 Foto Odómetro Llegada (KM) *</label>
+              <div v-if="formLlegada.foto_odometro" class="relative rounded-xl overflow-hidden border border-emerald-500/50">
+                <img :src="formLlegada.foto_odometro" alt="Odómetro Llegada" class="w-full h-32 object-cover" />
+                <button @click="formLlegada.foto_odometro = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">✕ Quitar</button>
+              </div>
+              <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
+                <span class="text-xl mb-0.5">📸</span>
+                <span class="text-xs font-bold text-emerald-400">Tomar Foto del Odómetro Llegada</span>
+                <input type="file" accept="image/*" capture="environment" @change="onFotoOdometroLlegada" class="hidden" />
+              </label>
+            </div>
+
+            <!-- Horómetro Camión Llegada -->
+            <div class="border-t border-white/10 pt-2">
+              <label class="block text-xs font-bold text-slate-200 mb-1">Horómetro Camión / Chasis Llegada (HRS) *</label>
+              <input type="number" step="0.1" v-model="formLlegada.horometro" placeholder="Ej: 3248.5" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2.5 text-base text-white font-mono font-bold outline-none focus:border-emerald-400" />
+            </div>
+
+            <!-- Foto Horómetro Camión Llegada -->
+            <div>
+              <label class="block text-[11px] font-bold text-emerald-300 mb-1">📸 Foto Horómetro Camión Llegada (HRS) *</label>
+              <div v-if="formLlegada.foto_horometro_camion" class="relative rounded-xl overflow-hidden border border-emerald-500/50">
+                <img :src="formLlegada.foto_horometro_camion" alt="Horómetro Camión Llegada" class="w-full h-32 object-cover" />
+                <button @click="formLlegada.foto_horometro_camion = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">✕ Quitar</button>
+              </div>
+              <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
+                <span class="text-xl mb-0.5">📸</span>
+                <span class="text-xs font-bold text-emerald-400">Tomar Foto del Horómetro Camión</span>
+                <input type="file" accept="image/*" capture="environment" @change="onFotoHorometroCamionLlegada" class="hidden" />
+              </label>
+            </div>
+
+            <!-- Botón Atajo Display Único Camión -->
+            <button
+              v-if="formLlegada.foto_odometro && !formLlegada.foto_horometro_camion"
+              @click="copiarFotoOdometroAHorometroLlegada"
+              type="button"
+              class="w-full py-1.5 px-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>📋</span> ¿Mismo display digital? Usar la foto del odómetro para horómetro camión
+            </button>
+            <button
+              v-else-if="formLlegada.foto_horometro_camion && !formLlegada.foto_odometro"
+              @click="copiarFotoHorometroAOdometroLlegada"
+              type="button"
+              class="w-full py-1.5 px-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>📋</span> ¿Mismo display digital? Usar la foto de horómetro camión para odómetro
+            </button>
           </div>
 
-          <!-- Control de Combustible Llegada (Explícito según equipo) -->
-          <div class="bg-black/50 border border-emerald-500/30 rounded-xl p-3 space-y-2.5">
+          <!-- BLOQUE 2: INSTRUMENTO DE LA GRÚA (CABINA SUPERIOR DE IZAJE) -->
+          <!-- Solo en Llegada a Faena para Grúas, no en Retorno ni en Camiones de Traslado de Plataformas -->
+          <div v-if="viaje.tipo_trayecto !== 'RETORNO' && !esServicioPlataformaBsm" class="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3 space-y-2.5">
+            <div class="flex items-center justify-between border-b border-amber-500/20 pb-1">
+              <label class="block text-xs font-bold text-amber-300 uppercase tracking-wide">⚙️ 2. Horómetro Grúa (Superestructura - Opcional)</label>
+              <span class="text-[9px] text-amber-400 font-mono font-bold bg-amber-900/50 px-1.5 py-0.5 rounded">Cabina Superior LICCON</span>
+            </div>
+            <p class="text-[11px] text-slate-300">Lectura inicial de la cabina de izaje (opcional si la grúa opera superestructura).</p>
+
+            <input type="number" step="0.1" v-model="formLlegada.horometro_grua" placeholder="Ej: 1250.0 (Opcional)" class="w-full bg-[#050810] border border-amber-500/60 rounded-xl px-3 py-2.5 text-base text-amber-300 font-mono font-bold outline-none focus:border-amber-400" />
+
+            <!-- Foto Horómetro Grúa -->
+            <div>
+              <label class="block text-[11px] font-bold text-amber-300 mb-1">📸 Foto Horómetro Grúa / Superestructura (Opcional)</label>
+              <div v-if="formLlegada.foto_horometro_grua" class="relative rounded-xl overflow-hidden border border-amber-500/60">
+                <img :src="formLlegada.foto_horometro_grua" alt="Horómetro Grúa" class="w-full h-32 object-cover" />
+                <button @click="formLlegada.foto_horometro_grua = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">✕ Quitar</button>
+              </div>
+              <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-amber-500/40 hover:border-amber-400 rounded-xl p-3 cursor-pointer bg-black/40 transition-colors">
+                <span class="text-xl mb-0.5">📸</span>
+                <span class="text-xs font-bold text-amber-400">Tomar Foto Horómetro Cabina Grúa (Opcional)</span>
+                <span class="text-[9px] text-slate-400">Pantalla LICCON o reloj en cabina de izaje</span>
+                <input type="file" accept="image/*" capture="environment" @change="onFotoHorometroGruaLlegada" class="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <!-- BLOQUE 3: COMBUSTIBLE AL INGRESAR A PATIO (SOLO EN RETORNO A BASE GSP) -->
+          <div v-if="viaje.tipo_trayecto === 'RETORNO'" class="bg-black/50 border border-emerald-500/30 rounded-xl p-3 space-y-2.5">
             <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
-              <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">⛽ Nivel Combustible Llegada</span>
-              <span class="text-[10px] text-slate-400 font-mono">{{ esGruaBimotor ? '2 Estanques' : '1 Estanque' }}</span>
+              <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">⛽ 3. Nivel de Combustible al Ingresar a Patio Central</span>
             </div>
 
             <div>
               <label class="block text-[11px] font-bold text-slate-300 mb-1">
-                {{ esGruaBimotor ? 'Estanque 1: Chasis / Traslado *' : 'Estanque Principal (Chasis) *' }}
+                Nivel de Combustible al Ingreso a Patio *
               </label>
               <select v-model="formLlegada.combustible_chasis" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-emerald-400">
                 <option value="" disabled>Seleccione porcentaje (1% a 100%)...</option>
@@ -694,43 +955,21 @@
               </select>
             </div>
 
-            <div v-if="esGruaBimotor">
-              <label class="block text-[11px] font-bold text-slate-300 mb-1">
-                Estanque 2: Grúa / Superestructura *
-              </label>
-              <select v-model="formLlegada.combustible_grua" class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2.5 text-sm text-white font-mono outline-none focus:border-emerald-400">
-                <option value="" disabled>Seleccione porcentaje (1% a 100%)...</option>
-                <option v-for="pct in nivelesCombustible" :key="pct" :value="pct">{{ pct }}</option>
-              </select>
-            </div>
-
             <div>
-              <label class="block text-[11px] font-bold text-slate-300 mb-1">Foto Marcador Combustible al Llegar *</label>
+              <label class="block text-[11px] font-bold text-slate-300 mb-1">📸 Foto Marcador Combustible al Ingresar (Opcional)</label>
               <div v-if="formLlegada.foto_combustible" class="relative rounded-xl overflow-hidden border border-emerald-500/50 mb-1">
                 <img :src="formLlegada.foto_combustible" alt="Marcador Combustible Llegada" class="w-full h-32 object-cover" />
                 <button @click="formLlegada.foto_combustible = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full text-xs">✕</button>
               </div>
               <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-3 cursor-pointer bg-black/30 transition-colors">
                 <span class="text-xl mb-0.5">📸</span>
-                <span class="text-xs font-bold text-emerald-400">Tomar Foto Marcador Combustible</span>
+                <span class="text-xs font-bold text-emerald-400">Tomar Foto Marcador Combustible (Opcional)</span>
                 <input type="file" accept="image/*" capture="environment" @change="onFotoCombustibleLlegada" class="hidden" />
               </label>
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-300 mb-1">Foto del Tablero en Faena *</label>
-            <div v-if="formLlegada.foto" class="relative rounded-xl overflow-hidden border border-emerald-500/50 mb-2">
-              <img :src="formLlegada.foto" alt="Tablero Llegada" class="w-full h-36 object-cover" />
-              <button @click="formLlegada.foto = ''" type="button" class="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full text-xs">✕</button>
-            </div>
-            <label v-else class="flex flex-col items-center justify-center border-2 border-dashed border-white/20 hover:border-emerald-400 rounded-xl p-4 cursor-pointer bg-black/30">
-              <span class="text-2xl mb-1">📸</span>
-              <span class="text-xs font-bold text-emerald-400">Tomar Foto del Tablero en Obra</span>
-              <input type="file" accept="image/*" capture="environment" @change="onFotoLlegadaCapturada" class="hidden" />
-            </label>
-          </div>
-
+          <!-- BLOQUE 4: OBSERVACIONES Y PIN -->
           <div>
             <label class="block text-xs font-bold text-slate-300 mb-1">Observaciones de Término / Ruta</label>
             <textarea v-model="formLlegada.obs_termino" rows="2" placeholder="Detalla condiciones de carretera, clima o estado de portería..." class="w-full bg-[#050810] border border-white/20 rounded-xl p-2.5 text-xs text-white outline-none resize-none focus:border-emerald-400"></textarea>
@@ -742,8 +981,41 @@
           </div>
         </div>
 
-        <button @click="ejecutarLlegadaFaena" :disabled="!isFormLlegadaValido" type="button" class="w-full min-h-[50px] bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all cursor-pointer">
-          {{ viaje.tipo_trayecto === 'RETORNO' ? '🏁 Confirmar Llegada a Patio y Liberar Equipo' : 'Confirmar Llegada y Cerrar Desplazamiento' }}
+        <!-- Indicador reactivo de requisitos de llegada -->
+        <div v-if="!isFormLlegadaValido" class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 text-center text-xs space-y-1">
+          <p class="font-bold text-amber-300">Requisitos para autorizar llegada:</p>
+          <div class="flex flex-wrap items-center justify-center gap-1.5 text-[10px]">
+            <span :class="formLlegada.odometro ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
+              {{ formLlegada.odometro ? '✓' : '⚠️' }} Odóm.
+            </span>
+            <span class="text-slate-600">•</span>
+            <span :class="formLlegada.foto_odometro ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
+              {{ formLlegada.foto_odometro ? '✓' : '⚠️' }} Foto Odóm.
+            </span>
+            <span class="text-slate-600">•</span>
+            <span :class="formLlegada.horometro ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
+              {{ formLlegada.horometro ? '✓' : '⚠️' }} Horóm. Camión
+            </span>
+            <span class="text-slate-600">•</span>
+            <span :class="formLlegada.foto_horometro_camion ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
+              {{ formLlegada.foto_horometro_camion ? '✓' : '⚠️' }} Foto Horóm. Camión
+            </span>
+            <template v-if="viaje.tipo_trayecto === 'RETORNO'">
+              <span class="text-slate-600">•</span>
+              <span :class="formLlegada.combustible_chasis ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
+                {{ formLlegada.combustible_chasis ? '✓' : '⚠️' }} Combustible Patio
+              </span>
+            </template>
+            <span class="text-slate-600">•</span>
+            <span :class="(formLlegada.pin && formLlegada.pin.length === 4) ? 'text-emerald-400 font-bold' : 'text-amber-400/80'">
+              {{ (formLlegada.pin && formLlegada.pin.length === 4) ? '✓' : '⚠️' }} PIN ({{ formLlegada.pin ? formLlegada.pin.length : 0 }}/4)
+            </span>
+          </div>
+        </div>
+
+        <button @click="ejecutarLlegadaFaena" :disabled="!isFormLlegadaValido || guardando" type="button" class="w-full min-h-[50px] bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-black font-black text-xs uppercase rounded-xl tracking-wider transition-all cursor-pointer">
+          <span v-if="guardando">⏳ Registrando...</span>
+          <span v-else>{{ viaje.tipo_trayecto === 'RETORNO' ? '🏁 Confirmar Llegada a Patio y Liberar Equipo' : 'Confirmar Llegada y Cerrar Desplazamiento' }}</span>
         </button>
       </div>
     </div>
@@ -842,6 +1114,65 @@
       </div>
     </div>
 
+    <!-- ========================================================================= -->
+    <!-- MODAL: CONSULTA DE DATOS REGISTRADOS DE SALIDA DE PATIO                   -->
+    <!-- ========================================================================= -->
+    <div v-if="mostrarModalDatosSalida" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-[#0a0f1e] border border-amber-500/40 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-white/10 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">📋</span>
+            <div>
+              <h3 class="text-sm font-bold text-white uppercase font-mono">Registro de Salida de Patio</h3>
+              <p class="text-[10px] text-slate-400">Lecturas iniciales capturadas en Base GSP</p>
+            </div>
+          </div>
+          <button @click="mostrarModalDatosSalida = false" type="button" class="text-slate-400 hover:text-white p-1 text-lg">✕</button>
+        </div>
+
+        <div class="space-y-3 font-mono text-xs">
+          <div class="grid grid-cols-2 gap-2 bg-black/40 p-3 rounded-xl border border-white/10">
+            <div>
+              <span class="text-[10px] text-slate-400 block">Odómetro Salida:</span>
+              <strong class="text-amber-400 text-sm font-black">{{ viaje.odometro_salida || '---' }} KM</strong>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 block">Horómetro Camión:</span>
+              <strong class="text-amber-400 text-sm font-black">{{ viaje.horometro_salida || '---' }} HRS</strong>
+            </div>
+            <div class="col-span-2 border-t border-white/10 pt-2 flex justify-between items-center">
+              <span class="text-[10px] text-slate-400">Combustible Salida:</span>
+              <span class="text-emerald-400 font-bold">{{ viaje.combustible_salida || '100% (Lleno)' }}</span>
+            </div>
+            <div class="col-span-2 flex justify-between items-center text-[10px] text-slate-400">
+              <span>Hora de Salida:</span>
+              <span class="text-white">{{ formatFechaHora(viaje.timestamp_inicio) }}</span>
+            </div>
+          </div>
+
+          <!-- Fotos de Salida -->
+          <div class="grid grid-cols-2 gap-2">
+            <div v-if="viaje.foto_odometro_salida || viaje.foto_salida" class="space-y-1">
+              <span class="text-[10px] text-slate-400 block">Foto Odómetro:</span>
+              <img :src="viaje.foto_odometro_salida || viaje.foto_salida" alt="Foto Odómetro Salida" class="w-full h-28 object-cover rounded-xl border border-white/10" />
+            </div>
+            <div v-if="viaje.foto_horometro_salida" class="space-y-1">
+              <span class="text-[10px] text-slate-400 block">Foto Horómetro:</span>
+              <img :src="viaje.foto_horometro_salida" alt="Foto Horómetro Salida" class="w-full h-28 object-cover rounded-xl border border-white/10" />
+            </div>
+            <div v-if="viaje.foto_combustible_salida" class="col-span-2 space-y-1">
+              <span class="text-[10px] text-slate-400 block">Foto Marcador Combustible:</span>
+              <img :src="viaje.foto_combustible_salida" alt="Foto Combustible Salida" class="w-full h-28 object-cover rounded-xl border border-white/10" />
+            </div>
+          </div>
+        </div>
+
+        <button @click="mostrarModalDatosSalida = false" type="button" class="w-full py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase rounded-xl transition-all cursor-pointer">
+          Cerrar
+        </button>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -887,6 +1218,7 @@ const viaje = ref({
   token_viaje: tokenViaje.value,
   id_log_desplazamiento: null,
   id_proyecto: null,
+  tipo_trayecto: tokenViaje.value.includes('ret') ? 'RETORNO' : 'IDA',
   codigo_proyecto: 'GSP-OT',
   patente: 'S/P',
   modelo: 'Maquinaria de Izaje GSP',
@@ -901,6 +1233,14 @@ const viaje = ref({
   horometro_salida: null,
   odometro_llegada: null,
   horometro_llegada: null,
+  horometro_grua_llegada: null,
+  foto_salida: null,
+  foto_odometro_salida: null,
+  foto_horometro_salida: null,
+  foto_llegada: null,
+  foto_odometro_llegada: null,
+  foto_horometro_camion_llegada: null,
+  foto_horometro_grua_llegada: null,
   cargas_combustible: [],
   pings_ruta: [],
   total_pings_gps: 0
@@ -925,9 +1265,13 @@ const nivelesCombustible = [
 
 // Formularios
 const formSalida = ref({
-  odometro: '145820.5',
-  horometro: '3240.2',
+  odometro: '',
+  horometro: '',
+  combustible_salida: '',
+  foto_combustible: '',
   foto: '',
+  foto_odometro: '',
+  foto_horometro: '',
   pin: ''
 })
 
@@ -939,6 +1283,9 @@ const formLlegada = ref({
   combustible_grua: '',
   foto_combustible: '',
   foto: '',
+  foto_odometro: '',
+  foto_horometro_camion: '',
+  foto_horometro_grua: '',
   pin: '',
   obs_termino: ''
 })
@@ -961,6 +1308,8 @@ const formCombustible = ref({
 const modalLlegada = ref({
   visible: false
 })
+
+const mostrarModalDatosSalida = ref(false)
 
 // =============================================================
 // ESTADO Y MÉTODOS: REPORT DIARIO DE IZAJE (MULTI-DÍA)
@@ -1061,6 +1410,13 @@ const isFormReportValido = computed(() => {
          Boolean(formReport.value.mandante_nombre?.trim()) &&
          Boolean(formReport.value.mandante_rut?.trim()) &&
          Boolean(formReport.value.firma_mandante)
+})
+
+const urlManualOperador = computed(() => {
+  const baseOrigin = window.location.origin
+  const isDev = window.location.pathname.includes('-dev')
+  const prefix = isDev ? '/lg-gsp-dev' : '/lg-gsp-prod'
+  return `${baseOrigin}${prefix}/manual_operador_terreno_gsp.html`
 })
 
 const abrirFormularioReport = () => {
@@ -1196,7 +1552,10 @@ let timerInterval = null
 // Validaciones Computadas
 const isFormSalidaValido = computed(() => {
   return Boolean(formSalida.value.odometro) &&
+         Boolean(formSalida.value.foto_odometro) &&
          Boolean(formSalida.value.horometro) &&
+         Boolean(formSalida.value.foto_horometro) &&
+         Boolean(formSalida.value.combustible_salida) &&
          Boolean(formSalida.value.pin) &&
          formSalida.value.pin.length === 4
 })
@@ -1206,30 +1565,157 @@ const isFormRendicionCombustibleValido = computed(() => {
          Boolean(formCombustible.value.monto)
 })
 
-const isFormLlegadaValido = computed(() => {
-  const baseValida = Boolean(formLlegada.value.odometro) &&
-                     Boolean(formLlegada.value.horometro) &&
-                     Boolean(formLlegada.value.pin) &&
-                     formLlegada.value.pin.length === 4 &&
-                     Boolean(formLlegada.value.combustible_chasis?.trim()) &&
-                     Boolean(formLlegada.value.foto_combustible)
-  if (viaje.value.tipo_trayecto !== 'RETORNO' && !formLlegada.value.horometro_grua) {
-    return false
-  }
-  if (esGruaBimotor.value) {
-    return baseValida && Boolean(formLlegada.value.combustible_grua?.trim())
-  }
-  return baseValida
+// =============================================================
+// DETECCIÓN DE REQUERIMIENTO INTERNO (SPEC-087)
+// =============================================================
+const esMovimientoInterno = computed(() => {
+  const cod = String(viaje.value?.codigo_proyecto || '').toUpperCase().trim()
+  return Boolean(
+    viaje.value?.es_interno === true ||
+    viaje.value?.es_requerimiento_interno === true ||
+    cod.startsWith('INT-')
+  )
 })
 
-// Handlers de Fotos
-const onFotoSalidaCapturada = async (e) => {
-  const file = e.target.files[0]
-  if (file) {
-    formSalida.value.foto = await comprimirFoto(file)
+// =============================================================
+// DETECCIÓN AUTOMÁTICA DE TRASLADO DE PLATAFORMAS (BSM / SPEC-081)
+// =============================================================
+const esServicioPlataformaBsm = computed(() => {
+  if (esMovimientoInterno.value) return false
+  const t = String(viaje.value?.tipo_equipo || '').toUpperCase()
+  const cod = String(viaje.value?.codigo_proyecto || '').toUpperCase()
+  const mod = String(viaje.value?.modelo || '').toUpperCase()
+  const lineas = Array.isArray(viaje.value?.lineas_servicio) ? viaje.value.lineas_servicio : []
+  const tieneLineaPlat = lineas.some(l => {
+    const s = `${l.tipo || ''} ${l.subcategoria || ''} ${l.descripcion || ''}`.toUpperCase()
+    return s.includes('PLATAFORMA') || s.includes('ALZA') || s.includes('MANLIFT') || s.includes('TIJERA') || s.includes('ARTICULAD')
+  })
+  return (
+    t.includes('CAMION') ||
+    t.includes('TRACTO') ||
+    t.includes('PLATAFORMA') ||
+    cod.startsWith('BMQ') ||
+    mod.includes('VOLVO') ||
+    mod.includes('JLG') ||
+    tieneLineaPlat
+  )
+})
+
+// =============================================================
+// ESTADO DE ACTA DE PLATAFORMAS (BSM / SPEC-081)
+// =============================================================
+const actaBsm = ref({
+  entrega_sellada: false,
+  retiro_sellado: false
+})
+
+const consultarEstadoActaBsm = async (idPry) => {
+  if (!idPry) return
+  try {
+    const { data: resp } = await apiAxios.get(`/operaciones/acta-plataforma/proyecto/${idPry}`)
+    const a = resp?.acta || resp?.data?.acta || resp?.data
+    if (a) {
+      const est = String(a.estado || a.estado_acta || '').toUpperCase()
+      const entregaSellada = Boolean(
+        est === 'ENTREGADA' || 
+        est === 'RECIBIDA_CONFORME' || 
+        est === 'EMITIDA_ENTREGA' || 
+        est === 'CERRADA_FINAL' ||
+        a.id_file_pdf_entrega ||
+        a.firma_entrega_base64
+      )
+      const retiroSellado = Boolean(
+        est === 'RECIBIDA_CONFORME' || 
+        est === 'CERRADA_FINAL' ||
+        a.id_file_pdf_final ||
+        a.firma_retiro_base64
+      )
+      actaBsm.value = {
+        entrega_sellada: entregaSellada,
+        retiro_sellado: retiroSellado
+      }
+    }
+  } catch (err) {
+    console.warn('[ViajeConductor] No se pudo obtener estado de acta de plataforma:', err?.message)
   }
 }
 
+const isFormLlegadaValido = computed(() => {
+  const baseValida = Boolean(formLlegada.value.odometro) &&
+                     Boolean(formLlegada.value.foto_odometro) &&
+                     Boolean(formLlegada.value.horometro) &&
+                     Boolean(formLlegada.value.foto_horometro_camion) &&
+                     Boolean(formLlegada.value.pin) &&
+                     formLlegada.value.pin.length === 4
+
+  // Al ingresar a Patio (Retorno): exigimos registrar combustible al ingreso
+  if (viaje.value.tipo_trayecto === 'RETORNO') {
+    return baseValida && Boolean(formLlegada.value.combustible_chasis?.trim())
+  }
+  // En llegada a Faena: combustible no se pide, y horómetro de grúa es opcional por defecto
+  return baseValida
+})
+
+// Handlers de Fotos Salida
+const onFotoOdometroSalida = async (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    const comp = await comprimirFoto(file)
+    formSalida.value.foto_odometro = comp
+    formSalida.value.foto = comp
+  }
+}
+
+const onFotoHorometroSalida = async (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    formSalida.value.foto_horometro = await comprimirFoto(file)
+  }
+}
+
+const copiarFotoOdometroAHorometroSalida = () => {
+  formSalida.value.foto_horometro = formSalida.value.foto_odometro
+}
+
+const copiarFotoHorometroAOdometroSalida = () => {
+  formSalida.value.foto_odometro = formSalida.value.foto_horometro
+  formSalida.value.foto = formSalida.value.foto_horometro
+}
+
+// Handlers de Fotos Llegada
+const onFotoOdometroLlegada = async (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    const comp = await comprimirFoto(file)
+    formLlegada.value.foto_odometro = comp
+    formLlegada.value.foto = comp
+  }
+}
+
+const onFotoHorometroCamionLlegada = async (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    formLlegada.value.foto_horometro_camion = await comprimirFoto(file)
+  }
+}
+
+const onFotoHorometroGruaLlegada = async (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    formLlegada.value.foto_horometro_grua = await comprimirFoto(file)
+  }
+}
+
+const copiarFotoOdometroAHorometroLlegada = () => {
+  formLlegada.value.foto_horometro_camion = formLlegada.value.foto_odometro
+}
+
+const copiarFotoHorometroAOdometroLlegada = () => {
+  formLlegada.value.foto_odometro = formLlegada.value.foto_horometro_camion
+  formLlegada.value.foto = formLlegada.value.foto_horometro_camion
+}
+
+// Handlers Combustible & Report
 const onFotoCombustibleSalida = async (e) => {
   const file = e.target.files[0]
   if (file) {
@@ -1255,13 +1741,6 @@ const onFotoCombustibleVoucher = async (e) => {
   const file = e.target.files[0]
   if (file) {
     formCombustible.value.foto_voucher = await comprimirFoto(file)
-  }
-}
-
-const onFotoLlegadaCapturada = async (e) => {
-  const file = e.target.files[0]
-  if (file) {
-    formLlegada.value.foto = await comprimirFoto(file)
   }
 }
 
@@ -1406,6 +1885,7 @@ const ejecutarInicioViaje = async () => {
     let faltantes = []
     if (!formSalida.value.odometro) faltantes.push('Odómetro de Salida (KM)')
     if (!formSalida.value.horometro) faltantes.push('Horómetro de Salida (HRS)')
+    if (!formSalida.value.combustible_salida) faltantes.push('Nivel de Combustible al Salir de Patio')
     if (!formSalida.value.pin) faltantes.push('PIN del Conductor')
     else if (String(formSalida.value.pin).trim().length !== 4) faltantes.push('El PIN debe tener exactamente 4 dígitos')
     alert(`⚠️ Requisitos incompletos para autorizar salida:\n\n• ${faltantes.join('\n• ')}`)
@@ -1436,8 +1916,11 @@ const ejecutarInicioViaje = async () => {
     id_user_chofer: viaje.value.id_user_chofer || null,
     km_inicial: Number(formSalida.value.odometro),
     horometro_inicial: Number(formSalida.value.horometro),
-    combustible_salida: null,
-    foto_salida: formSalida.value.foto || null,
+    combustible_salida: formSalida.value.combustible_salida || null,
+    foto_salida: formSalida.value.foto_odometro || formSalida.value.foto || null,
+    foto_odometro_salida: formSalida.value.foto_odometro || null,
+    foto_horometro_salida: formSalida.value.foto_horometro || null,
+    foto_combustible_salida: formSalida.value.foto_combustible || null,
     pin_hash: pinHashed,
     latitud: gps.latitud,
     longitud: gps.longitud,
@@ -1450,7 +1933,10 @@ const ejecutarInicioViaje = async () => {
       const { data: resp } = await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/salida`, payload)
       if (resp && resp.data) {
         viaje.value.fecha_salida_patio = resp.data.fecha_salida_patio
-        viaje.value.timestamp_inicio = resp.data.fecha_salida_patio
+        viaje.value.fecha_salida_faena = resp.data.fecha_salida_faena
+        viaje.value.timestamp_inicio = (viaje.value.tipo_trayecto === 'RETORNO')
+          ? (resp.data.fecha_salida_faena || resp.data.fecha_salida_patio || new Date().toISOString())
+          : (resp.data.fecha_salida_patio || new Date().toISOString())
         viaje.value.estado_trayecto = 'EN_RUTA'
       }
     } catch (httpErr) {
@@ -1469,8 +1955,11 @@ const ejecutarInicioViaje = async () => {
   }
   viaje.value.odometro_salida = payload.km_inicial
   viaje.value.horometro_salida = payload.horometro_inicial
-  viaje.value.foto_salida = formSalida.value.foto || null
+  viaje.value.foto_salida = payload.foto_salida
+  viaje.value.foto_odometro_salida = payload.foto_odometro_salida
+  viaje.value.foto_horometro_salida = payload.foto_horometro_salida
   viaje.value.combustible_salida = payload.combustible_salida
+  viaje.value.foto_combustible_salida = payload.foto_combustible_salida
 
   await guardarSesionLocal(tokenViaje.value, viaje.value)
   await actualizarContadorPendientes()
@@ -1555,12 +2044,16 @@ const ejecutarLlegadaFaena = async () => {
   const payload = {
     km_final: Number(formLlegada.value.odometro),
     horometro_final: Number(formLlegada.value.horometro),
-    combustible_llegada: {
+    horometro_grua: formLlegada.value.horometro_grua ? Number(formLlegada.value.horometro_grua) : null,
+    horometro_grua_inicial: formLlegada.value.horometro_grua ? Number(formLlegada.value.horometro_grua) : null,
+    combustible_llegada: (viaje.value.tipo_trayecto === 'RETORNO') ? {
       chasis: formLlegada.value.combustible_chasis,
-      grua: esGruaBimotor.value ? formLlegada.value.combustible_grua : null,
       foto: formLlegada.value.foto_combustible
-    },
-    foto_llegada: formLlegada.value.foto || null,
+    } : null,
+    foto_llegada: formLlegada.value.foto_odometro || formLlegada.value.foto || null,
+    foto_odometro_llegada: formLlegada.value.foto_odometro || null,
+    foto_horometro_camion_llegada: formLlegada.value.foto_horometro_camion || null,
+    foto_horometro_grua_llegada: formLlegada.value.foto_horometro_grua || null,
     pin_hash: pinHashed,
     latitud: gps.latitud,
     longitud: gps.longitud,
@@ -1574,8 +2067,11 @@ const ejecutarLlegadaFaena = async () => {
       const { data: resp } = await apiAxios.post(`/operaciones/viaje/${tokenViaje.value}/llegada`, payload)
       if (resp && resp.data) {
         viaje.value.fecha_llegada_faena = resp.data.fecha_llegada_faena
-        viaje.value.timestamp_llegada = resp.data.fecha_llegada_faena
-        viaje.value.estado_trayecto = 'LLEGADO'
+        viaje.value.fecha_llegada_patio = resp.data.fecha_llegada_patio
+        viaje.value.timestamp_llegada = (viaje.value.tipo_trayecto === 'RETORNO')
+          ? (resp.data.fecha_llegada_patio || resp.data.fecha_llegada_faena || new Date().toISOString())
+          : (resp.data.fecha_llegada_faena || new Date().toISOString())
+        viaje.value.estado_trayecto = (viaje.value.tipo_trayecto === 'RETORNO') ? 'CONCLUIDO' : 'LLEGADO'
         if (resp.data.pings_ruta && resp.data.pings_ruta.length) {
           viaje.value.pings_ruta = resp.data.pings_ruta
           totalPingsEnRuta.value = resp.data.pings_ruta.length
@@ -1598,8 +2094,12 @@ const ejecutarLlegadaFaena = async () => {
   }
   viaje.value.odometro_llegada = payload.km_final
   viaje.value.horometro_llegada = payload.horometro_final
+  viaje.value.horometro_grua_llegada = payload.horometro_grua
   viaje.value.obs_termino = payload.obs_termino
-  viaje.value.foto_llegada = formLlegada.value.foto || null
+  viaje.value.foto_llegada = payload.foto_llegada
+  viaje.value.foto_odometro_llegada = payload.foto_odometro_llegada
+  viaje.value.foto_horometro_camion_llegada = payload.foto_horometro_camion_llegada
+  viaje.value.foto_horometro_grua_llegada = payload.foto_horometro_grua_llegada
   viaje.value.combustible_llegada = payload.combustible_llegada
 
   await guardarSesionLocal(tokenViaje.value, viaje.value)
@@ -1609,9 +2109,42 @@ const ejecutarLlegadaFaena = async () => {
   guardando.value = false
 
   if (viaje.value.tipo_trayecto === 'RETORNO') {
-    alert('🏁 ¡Retorno a Base Central San Pablo Concluido!\n\nLa maquinaria ha ingresado a patio conforme y queda en estado DISPONIBLE.\nEl servicio operacional ha concluido exitosamente.')
-  } else {
+    alert('🏁 ¡Retorno a Sucursal Concluido!\n\nEl viaje de vuelta se ha registrado conforme y el equipo queda en estado DISPONIBLE.\nEl servicio ha concluido exitosamente.')
+  } else if (esMovimientoInterno.value) {
+    alert('🔁 ¡Tramo de Ida Concluido en Sucursal Destino!\n\nPuedes presionar "🔄 INICIAR VIAJE DE VUELTA" para registrar tu retorno a la sucursal de origen.')
+  } else if (!esServicioPlataformaBsm.value) {
     abrirFormularioReport()
+  }
+}
+
+const iniciandoRetorno = ref(false)
+const iniciarViajeRetornoInterno = async () => {
+  iniciandoRetorno.value = true
+  try {
+    const idPry = viaje.value.id_proyecto
+    const idEq = viaje.value.id_equipo
+    const idChofer = viaje.value.id_user_chofer || 55
+    const pat = viaje.value.patente
+    const tokenRetorno = `vj-${idPry || 'int'}-${idEq || 'eq'}-ret-${Math.random().toString(36).substring(2, 6)}`
+
+    const { data } = await apiAxios.post('/operaciones/viaje/asignar', {
+      id_proyecto: idPry,
+      id_equipo: idEq,
+      id_user_chofer: idChofer,
+      patente: pat,
+      tipo_trayecto: 'RETORNO',
+      token_viaje: tokenRetorno
+    })
+
+    const finalToken = data?.data?.token_viaje || tokenRetorno
+    const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+    const baseApp = isProd ? '/lg-gsp-prod' : '/lg-gsp-dev'
+    window.location.href = `${baseApp}/viaje/${finalToken}`
+  } catch (err) {
+    console.error('Error iniciando viaje de retorno:', err)
+    alert('No se pudo generar la hoja de viaje de retorno: ' + (err.response?.data?.error || err.message))
+  } finally {
+    iniciandoRetorno.value = false
   }
 }
 
@@ -1732,7 +2265,9 @@ const cambiarFaseDemo = (fase) => {
         id_autorizacion_copec: '#COPEC-8492'
       }
     ]
-    abrirFormularioReport()
+    if (!esServicioPlataformaBsm.value) {
+      abrirFormularioReport()
+    }
   } else if (fase === 'EN_RUTA') {
     viaje.value.odometro_salida = 145820.5
     viaje.value.horometro_salida = 3240.2
@@ -1753,26 +2288,45 @@ onMounted(async () => {
     try {
       const { data: dbViaje } = await apiAxios.get(`/operaciones/viaje/${tokenViaje.value}`)
       if (dbViaje) {
+        const esRetorno = dbViaje.tipo_trayecto === 'RETORNO' || tokenViaje.value.includes('ret')
+        const yaLlego = dbViaje.estado_trayecto === 'LLEGADO' ||
+                        dbViaje.estado_trayecto === 'ARRIBADO' ||
+                        dbViaje.estado_trayecto === 'CONCLUIDO' ||
+                        (esRetorno ? Boolean(dbViaje.fecha_llegada_patio) : Boolean(dbViaje.fecha_llegada_faena))
+        const yaSalio = dbViaje.estado_trayecto === 'EN_RUTA' ||
+                        (esRetorno ? Boolean(dbViaje.fecha_salida_faena) : Boolean(dbViaje.fecha_salida_patio))
+
         viaje.value = {
           token_viaje: dbViaje.token_viaje,
           id_log_desplazamiento: dbViaje.id_log_desplazamiento,
           id_proyecto: dbViaje.id_proyecto,
           id_equipo: dbViaje.id_equipo,
           id_user_chofer: dbViaje.id_user_chofer,
+          tipo_trayecto: esRetorno ? 'RETORNO' : 'IDA',
           codigo_proyecto: dbViaje.codi_proyecto || dbViaje.nombre_proyecto || 'GSP-OT',
+          es_interno: Boolean(dbViaje.es_interno || dbViaje.es_requerimiento_interno || String(dbViaje.codi_proyecto || '').toUpperCase().startsWith('INT-')),
+          sucursal_origen: dbViaje.sucursal_origen || dbViaje.origen_nombre || '',
+          sucursal_destino: dbViaje.sucursal_destino || dbViaje.obra_nombre || '',
           patente: dbViaje.patente || 'S/P',
           modelo: dbViaje.modelo || 'Maquinaria de Izaje',
           tipo_equipo: dbViaje.tipo_equipo || 'GRUAS TELESCOPICAS',
           obra_nombre: dbViaje.obra_nombre || 'Obra Mandante',
           obra_direccion: dbViaje.obra_direccion || 'Faena Operacional GSP',
           chofer_nombre: dbViaje.chofer_nombre || 'Conductor Asignado',
-          estado_viaje: (dbViaje.estado_trayecto === 'LLEGADO' || dbViaje.estado_trayecto === 'ARRIBADO' || dbViaje.fecha_llegada_faena)
-            ? 'ARRIBADO_FAENA'
-            : (dbViaje.estado_trayecto === 'EN_RUTA' || dbViaje.fecha_salida_patio ? 'EN_RUTA' : 'ASIGNADO'),
-          foto_salida: dbViaje.foto_tablero_salida_path || dbViaje.foto_salida || null,
-          foto_llegada: dbViaje.foto_tablero_llegada_path || dbViaje.foto_llegada || null,
-          timestamp_inicio: dbViaje.fecha_salida_patio,
-          timestamp_llegada: dbViaje.fecha_llegada_faena,
+          estado_viaje: yaLlego ? 'ARRIBADO_FAENA' : (yaSalio ? 'EN_RUTA' : 'ASIGNADO'),
+          foto_salida: dbViaje.foto_odometro_salida_path || dbViaje.foto_tablero_salida_path || dbViaje.foto_salida || null,
+          foto_odometro_salida: dbViaje.foto_odometro_salida_path || dbViaje.foto_tablero_salida_path || dbViaje.foto_salida || null,
+          foto_horometro_salida: dbViaje.foto_horometro_salida_path || null,
+          foto_llegada: dbViaje.foto_odometro_llegada_path || dbViaje.foto_tablero_llegada_path || dbViaje.foto_llegada || null,
+          foto_odometro_llegada: dbViaje.foto_odometro_llegada_path || dbViaje.foto_tablero_llegada_path || dbViaje.foto_llegada || null,
+          foto_horometro_camion_llegada: dbViaje.foto_horometro_camion_llegada_path || null,
+          foto_horometro_grua_llegada: dbViaje.foto_horometro_grua_llegada_path || null,
+          fecha_salida_patio: dbViaje.fecha_salida_patio,
+          fecha_salida_faena: dbViaje.fecha_salida_faena,
+          fecha_llegada_faena: dbViaje.fecha_llegada_faena,
+          fecha_llegada_patio: dbViaje.fecha_llegada_patio,
+          timestamp_inicio: esRetorno ? (dbViaje.fecha_salida_faena || dbViaje.fecha_salida_patio) : dbViaje.fecha_salida_patio,
+          timestamp_llegada: esRetorno ? (dbViaje.fecha_llegada_patio || dbViaje.fecha_llegada_faena) : dbViaje.fecha_llegada_faena,
           odometro_salida: dbViaje.km_inicial,
           horometro_salida: dbViaje.horometro_inicial,
           odometro_llegada: dbViaje.km_final,
@@ -1819,6 +2373,11 @@ onMounted(async () => {
     } else if (tokenViaje.value.includes('demo') || route.query.fase === 'arribado') {
       cambiarFaseDemo('ARRIBADO_FAENA')
     }
+  }
+
+  // 2. Si es servicio de plataforma BSM, consultar estado del acta para candados de retorno
+  if (viaje.value.id_proyecto && esServicioPlataformaBsm.value) {
+    await consultarEstadoActaBsm(viaje.value.id_proyecto)
   }
 
   // Sincronizar mutaciones en background

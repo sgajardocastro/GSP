@@ -1,0 +1,530 @@
+{
+  "dev": {
+    "schema": "sch_leangsp",
+    "total": 1342,
+    "directMatches": 438,
+    "caseMismatchMatches": 277,
+    "legacyMatches": 6,
+    "missingFiles": 621,
+    "byTipoDoc": {
+      "DOCUMENTO": {
+        "total": 474,
+        "okDirect": 49,
+        "caseMismatch": 262,
+        "legacy": 0,
+        "missing": 163
+      },
+      "PDF_GENERADO": {
+        "total": 85,
+        "okDirect": 28,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 57
+      },
+      "SIN_TIPO": {
+        "total": 16,
+        "okDirect": 0,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 16
+      },
+      "EVIDENCIA_AUDITORIA": {
+        "total": 3,
+        "okDirect": 0,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 3
+      },
+      "SST_EVIDENCIA": {
+        "total": 2,
+        "okDirect": 0,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 2
+      },
+      "INFORME_SST": {
+        "total": 16,
+        "okDirect": 0,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 16
+      },
+      "PDF": {
+        "total": 122,
+        "okDirect": 46,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 76
+      },
+      "CERTIFICADO": {
+        "total": 44,
+        "okDirect": 29,
+        "caseMismatch": 15,
+        "legacy": 0,
+        "missing": 0
+      },
+      "CERTIFICADO_PERSONA": {
+        "total": 288,
+        "okDirect": 1,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 287
+      },
+      "COTIZACION": {
+        "total": 111,
+        "okDirect": 111,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "GENERICO": {
+        "total": 45,
+        "okDirect": 45,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "DOCUMENTO_ESPECIFICACION": {
+        "total": 1,
+        "okDirect": 1,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "FOTOGRAFIA": {
+        "total": 33,
+        "okDirect": 33,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "OT": {
+        "total": 18,
+        "okDirect": 18,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "DOC_EMPRESA": {
+        "total": 1,
+        "okDirect": 1,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "REPORT_DIARIO": {
+        "total": 5,
+        "okDirect": 5,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "REPORT_FISICO_RESPALDO": {
+        "total": 1,
+        "okDirect": 0,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 1
+      },
+      "ITS-TRANSICION": {
+        "total": 10,
+        "okDirect": 10,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "EVIDENCIA_MNT": {
+        "total": 3,
+        "okDirect": 3,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "FOTO_360_FRENTE": {
+        "total": 2,
+        "okDirect": 2,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "FOTO_360_LAT_DER": {
+        "total": 1,
+        "okDirect": 1,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "AVISO_FALLA": {
+        "total": 3,
+        "okDirect": 3,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "HALLAZGO_EVIDENCIA": {
+        "total": 1,
+        "okDirect": 1,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "CONTRATO": {
+        "total": 19,
+        "okDirect": 13,
+        "caseMismatch": 0,
+        "legacy": 6,
+        "missing": 0
+      },
+      "EVIDENCIA_FOTOGRAFICA": {
+        "total": 30,
+        "okDirect": 30,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "FIRMA": {
+        "total": 4,
+        "okDirect": 4,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "ACTA_ENTREGA": {
+        "total": 2,
+        "okDirect": 2,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "ACTA_FINAL": {
+        "total": 2,
+        "okDirect": 2,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      }
+    },
+    "caseMismatchSample": [
+      {
+        "id_doc": 499,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/0033a4b9-2d0c-4112-acdc-ddad4b9b069f.pdf",
+        "filename": "0033a4b9-2d0c-4112-acdc-ddad4b9b069f.pdf"
+      },
+      {
+        "id_doc": 500,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/49e04435-a945-4078-b216-55d933e00542.pdf",
+        "filename": "49e04435-a945-4078-b216-55d933e00542.pdf"
+      },
+      {
+        "id_doc": 501,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/fb5fde0e-57dc-4f20-bd79-d0243b4b67d2.pdf",
+        "filename": "fb5fde0e-57dc-4f20-bd79-d0243b4b67d2.pdf"
+      },
+      {
+        "id_doc": 502,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/73767530-ec33-45db-87bd-047071daaa35.pdf",
+        "filename": "73767530-ec33-45db-87bd-047071daaa35.pdf"
+      },
+      {
+        "id_doc": 503,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/b9867cb1-0613-4b90-9171-a11c0abb3fb2.pdf",
+        "filename": "b9867cb1-0613-4b90-9171-a11c0abb3fb2.pdf"
+      },
+      {
+        "id_doc": 504,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/9fa5c62b-70b2-4a12-ad09-7be1e1a59940.pdf",
+        "filename": "9fa5c62b-70b2-4a12-ad09-7be1e1a59940.pdf"
+      },
+      {
+        "id_doc": 505,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/cf6b19ab-b3e2-46e1-a98e-43edf6e3548b.pdf",
+        "filename": "cf6b19ab-b3e2-46e1-a98e-43edf6e3548b.pdf"
+      },
+      {
+        "id_doc": 506,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/472d748b-1b46-44eb-84d4-9f927f763e04.pdf",
+        "filename": "472d748b-1b46-44eb-84d4-9f927f763e04.pdf"
+      },
+      {
+        "id_doc": 507,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/fda22fe7-5764-4acf-aff6-17a4acc7d765.pdf",
+        "filename": "fda22fe7-5764-4acf-aff6-17a4acc7d765.pdf"
+      },
+      {
+        "id_doc": 508,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/fa565251-51f7-4d35-8112-300d491fa297.pdf",
+        "filename": "fa565251-51f7-4d35-8112-300d491fa297.pdf"
+      }
+    ],
+    "missingSample": [
+      {
+        "id_doc": 1,
+        "tipo": "DOCUMENTO",
+        "filename": "3cf6c4b1-5369-4d7c-b54f-fef8ca6ec9e2.pdf",
+        "path_doc": "GSP/cotizaciones"
+      },
+      {
+        "id_doc": 2,
+        "tipo": "DOCUMENTO",
+        "filename": "9b0df20b-8991-49fb-8475-273d6df34e4a.pdf",
+        "path_doc": "GSP/cotizaciones"
+      },
+      {
+        "id_doc": 3,
+        "tipo": "DOCUMENTO",
+        "filename": "070304a5-485d-4cc0-b8fc-83e95794017c.pdf",
+        "path_doc": "GSP/cotizaciones"
+      },
+      {
+        "id_doc": 4,
+        "tipo": "DOCUMENTO",
+        "filename": "579eb0a8-40df-4d40-820f-dffcf2f7e3b8.pdf",
+        "path_doc": "GSP/cotizaciones"
+      },
+      {
+        "id_doc": 5,
+        "tipo": "DOCUMENTO",
+        "filename": "80fa42c8-a41e-44eb-b9ef-6d29d5577ea4.pdf",
+        "path_doc": "GSP/cotizaciones"
+      },
+      {
+        "id_doc": 6,
+        "tipo": "DOCUMENTO",
+        "filename": "093d1483-9c36-43ec-9b37-eb429a1361a2.pdf",
+        "path_doc": "GSP/cotizaciones"
+      },
+      {
+        "id_doc": 7,
+        "tipo": "DOCUMENTO",
+        "filename": "926d53b5-eeb9-4e5d-9b5e-2ede8d64314d.pdf",
+        "path_doc": "GSP/cotizaciones"
+      },
+      {
+        "id_doc": 8,
+        "tipo": "DOCUMENTO",
+        "filename": "c7abce7e-339a-4be0-aee2-04dfbbf1a4e2.pdf",
+        "path_doc": "GSP/cotizaciones"
+      },
+      {
+        "id_doc": 9,
+        "tipo": "PDF_GENERADO",
+        "filename": "7f9e2d1a-5f4a-4b96-84d9-8c2ccacc1d9c.pdf",
+        "path_doc": "GSP/cotizaciones"
+      },
+      {
+        "id_doc": 10,
+        "tipo": "DOCUMENTO",
+        "filename": "3c2ecffc-4359-4704-8d93-239ee9d50d04.pdf",
+        "path_doc": "GSP/cotizaciones"
+      }
+    ]
+  },
+  "prod": {
+    "schema": "sch_leangsp_prod",
+    "total": 389,
+    "directMatches": 127,
+    "caseMismatchMatches": 262,
+    "legacyMatches": 0,
+    "missingFiles": 0,
+    "byTipoDoc": {
+      "PDF_GENERADO": {
+        "total": 13,
+        "okDirect": 13,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "PDF": {
+        "total": 15,
+        "okDirect": 15,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "DOCUMENTO": {
+        "total": 260,
+        "okDirect": 1,
+        "caseMismatch": 259,
+        "legacy": 0,
+        "missing": 0
+      },
+      "COTIZACION": {
+        "total": 36,
+        "okDirect": 36,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "REPORT_DIARIO": {
+        "total": 9,
+        "okDirect": 9,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "OT": {
+        "total": 14,
+        "okDirect": 14,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "REPORT_FISICO_RESPALDO": {
+        "total": 1,
+        "okDirect": 1,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "FACTURA_DTE": {
+        "total": 1,
+        "okDirect": 1,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "CERTIFICADO": {
+        "total": 30,
+        "okDirect": 27,
+        "caseMismatch": 3,
+        "legacy": 0,
+        "missing": 0
+      },
+      "AVISO_FALLA": {
+        "total": 2,
+        "okDirect": 2,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "HALLAZGO_EVIDENCIA": {
+        "total": 1,
+        "okDirect": 1,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "FOTO_360_FRENTE": {
+        "total": 3,
+        "okDirect": 3,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "FOTO_360_LAT_DER": {
+        "total": 2,
+        "okDirect": 2,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "FOTO_360_POSTERIOR": {
+        "total": 1,
+        "okDirect": 1,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      },
+      "FOTO_360_LAT_IZQ": {
+        "total": 1,
+        "okDirect": 1,
+        "caseMismatch": 0,
+        "legacy": 0,
+        "missing": 0
+      }
+    },
+    "caseMismatchSample": [
+      {
+        "id_doc": 499,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/0033a4b9-2d0c-4112-acdc-ddad4b9b069f.pdf",
+        "filename": "0033a4b9-2d0c-4112-acdc-ddad4b9b069f.pdf"
+      },
+      {
+        "id_doc": 500,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/49e04435-a945-4078-b216-55d933e00542.pdf",
+        "filename": "49e04435-a945-4078-b216-55d933e00542.pdf"
+      },
+      {
+        "id_doc": 501,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/fb5fde0e-57dc-4f20-bd79-d0243b4b67d2.pdf",
+        "filename": "fb5fde0e-57dc-4f20-bd79-d0243b4b67d2.pdf"
+      },
+      {
+        "id_doc": 502,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/73767530-ec33-45db-87bd-047071daaa35.pdf",
+        "filename": "73767530-ec33-45db-87bd-047071daaa35.pdf"
+      },
+      {
+        "id_doc": 503,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/b9867cb1-0613-4b90-9171-a11c0abb3fb2.pdf",
+        "filename": "b9867cb1-0613-4b90-9171-a11c0abb3fb2.pdf"
+      },
+      {
+        "id_doc": 504,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/9fa5c62b-70b2-4a12-ad09-7be1e1a59940.pdf",
+        "filename": "9fa5c62b-70b2-4a12-ad09-7be1e1a59940.pdf"
+      },
+      {
+        "id_doc": 505,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/cf6b19ab-b3e2-46e1-a98e-43edf6e3548b.pdf",
+        "filename": "cf6b19ab-b3e2-46e1-a98e-43edf6e3548b.pdf"
+      },
+      {
+        "id_doc": 506,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/472d748b-1b46-44eb-84d4-9f927f763e04.pdf",
+        "filename": "472d748b-1b46-44eb-84d4-9f927f763e04.pdf"
+      },
+      {
+        "id_doc": 507,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/fda22fe7-5764-4acf-aff6-17a4acc7d765.pdf",
+        "filename": "fda22fe7-5764-4acf-aff6-17a4acc7d765.pdf"
+      },
+      {
+        "id_doc": 508,
+        "tipo": "DOCUMENTO",
+        "path_bd": "GSP/equipos",
+        "path_real": "/u05/LeanDocs/GSP/Equipos/fa565251-51f7-4d35-8112-300d491fa297.pdf",
+        "filename": "fa565251-51f7-4d35-8112-300d491fa297.pdf"
+      }
+    ],
+    "missingSample": []
+  }
+}

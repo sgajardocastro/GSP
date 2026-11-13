@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GSP · Spec 87 | Requerimientos Internos, Aprobador Móvil RindeGastos (Omar) & Compras Multi-Empresa</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gspBg: '#070b14',
+            gspCard: '#0f1629',
+            gspPanel: '#151d35',
+            gspBorder: '#1e293b'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #070b14;
+      color: #f1f5f9;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .phone-mockup {
+      width: 390px;
+      min-height: 780px;
+      border-radius: 42px;
+      background: #0b1120;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 0 10px #1e293b, 0 0 0 12px #334155;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .internal-card-dashed {
+      border-left: 5px solid #fbbf24;
+      border-top: 1.5px dashed rgba(251, 191, 36, 0.55);
+      border-right: 1.5px dashed rgba(251, 191, 36, 0.55);
+      border-bottom: 1.5px dashed rgba(251, 191, 36, 0.55);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.09) 0%, rgba(15, 22, 41, 0.95) 100%);
+    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP HEADER & NAVIGATION BAR -->
+  <header class="sticky top-0 z-40 bg-[#0b1120]/95 backdrop-blur-md border-b border-white/10 px-4 lg:px-8 py-3">
+    <div class="max-w-[1600px] mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black text-lg shadow-lg shadow-amber-500/20">
+          GSP
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              Spec Canónica N° 87
+            </span>
+            <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              Maqueta Interactiva E2E
+            </span>
+          </div>
+          <h1 class="text-base sm:text-lg font-black text-white tracking-tight mt-0.5">
+            Cierre Operativo, Aprobador Móvil Web Token (Estilo RindeGastos) &amp; Compras Multi-Empresa
+          </h1>
+        </div>
+      </div>
+
+      <!-- 4 Main Interactive Tabs -->
+      <nav class="flex flex-wrap gap-1.5 bg-[#070b14] p-1.5 rounded-xl border border-white/10">
+        <button onclick="switchMainTab('tab-torre')" id="btn-tab-torre" class="main-tab-btn px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-amber-500 text-slate-950 shadow">
+          <span>🔁 1. Torre &amp; Req. Internos</span>
+        </button>
+        <button onclick="switchMainTab('tab-omar')" id="btn-tab-omar" class="main-tab-btn px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5">
+          <span>📱 2. Web Token 1 Uso (Omar)</span>
+        </button>
+        <button onclick="switchMainTab('tab-pwa')" id="btn-tab-pwa" class="main-tab-btn px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5">
+          <span>🚚 3. PWA Chofer (OT Interna)</span>
+        </button>
+        <button onclick="switchMainTab('tab-compras')" id="btn-tab-compras" class="main-tab-btn px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5">
+          <span>🛒 4. Compras &amp; OCs (Eduardo)</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 lg:p-6">
+
+    <!-- ========================================================================= -->
+    <!-- PESTAÑA 1: TORRE DE CONTROL & REQUERIMIENTOS INTERNOS (Torre.vue)         -->
+    <!-- ========================================================================= -->
+    <section id="tab-torre" class="main-section space-y-6">
+      <!-- Banner Explicativo de Identidad Visual -->
+      <div class="bg-[#0f1629] border border-amber-500/30 rounded-2xl p-4 lg:p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-400">
+            <i class="fa-solid fa-eye"></i> Diferenciación Visual Inmediata en Kanban (Torre.vue)
+          </div>
+          <p class="text-xs sm:text-sm text-slate-300 max-w-4xl">
+            Los <strong>Requerimientos Internos (<code class="text-amber-300">INT-YYMM-XXX</code>)</strong> nacen directamente en la columna <em>En Preparación Operaciones</em> sin pasar por cotización comercial. Se distinguen al instante por su <strong>borde izquierdo grueso ámbar + contorno punteado</strong>, badge <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[11px]">🔁 MOVIMIENTO INTERNO · COSTO PROPIO</span> e indicador <span class="px-1.5 py-0.5 rounded bg-slate-800 text-amber-400 font-mono text-[11px]">🚫 NO FACTURABLE (C. COSTO INTERNO)</span>.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button onclick="openInternalModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 transition transform active:scale-95">
+            <span>🔁 + Requerimiento Interno</span>
+          </button>
+          <button class="px-3.5 py-2.5 rounded-xl bg-blue-600/20 border border-blue-500/40 text-blue-300 font-bold text-xs flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Nueva Oportunidad Comercial
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros de Torre -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-[#0f1629] px-4 py-3 rounded-xl border border-white/10">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-400 mr-1">Filtrar Tarjetas:</span>
+          <button onclick="filterKanban('all')" id="flt-all" class="flt-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-white/10 text-white">
+            Todas (5)
+          </button>
+          <button onclick="filterKanban('comercial')" id="flt-comercial" class="flt-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+            🏢 Comerciales Facturables (3)
+          </button>
+          <button onclick="filterKanban('interno')" id="flt-interno" class="flt-btn px-3 py-1.5 rounded-lg text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30">
+            🔁 Solo Requerimientos Internos (2)
+          </button>
+        </div>
+        <div class="flex items-center gap-4 text-xs text-slate-400">
+          <span class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-sm bg-blue-500/30 border border-blue-400"></span> Servicio Comercial Cliente
+          </span>
+          <span class="flex items-center gap-1.5 text-amber-300 font-semibold">
+            <span class="w-3 h-3 rounded-sm bg-amber-500/20 border border-dashed border-amber-400"></span> 🔁 Requerimiento Interno GSP
+          </span>
+        </div>
+      </div>
+
+      <!-- Tablero Kanban Simulado (3 Columnas Clave) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        <!-- Columna 1: Cotización / Negociación (Comercial) -->
+        <div class="bg-[#0f1629] rounded-2xl border border-white/10 flex flex-col">
+          <div class="p-4 border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-200">2. Cotización / V°B° Gerencia</h3>
+            </div>
+            <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-indigo-500/20 text-indigo-300">1</span>
+          </div>
+          <div class="p-3.5 space-y-3.5 flex-1">
+            <!-- Tarjeta Comercial Regular -->
+            <div class="kanban-card card-comercial bg-[#151d35] rounded-xl p-4 border border-white/10 hover:border-indigo-400/50 transition space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-xs font-black text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                  GSP-2610-084
+                </span>
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+                  📱 Esperando V°B° Omar
+                </span>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-white">Montaje Vigas Puente Cautín</h4>
+                <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+                  <i class="fa-regular fa-building text-slate-500"></i> Constructora Pocuro Sur S.A.
+                </p>
+              </div>
+              <div class="bg-[#0b1120] rounded-lg p-2.5 border border-white/5 grid grid-cols-2 gap-2 text-[11px]">
+                <div>
+                  <span class="text-slate-400 block">Tarifa Hora / Equipo</span>
+                  <span class="text-white font-bold">$85.000/hr · Grove 60T</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block">Flete Ida/Vuelta</span>
+                  <span class="text-emerald-400 font-bold">$650.000 Neto</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-1 border-t border-white/5 text-xs">
+                <span class="font-black text-emerald-400">$4.050.000 Neto</span>
+                <button onclick="goToOmarScenario('comercial')" class="text-[11px] font-bold text-amber-400 hover:underline flex items-center gap-1">
+                  Ver en Celular de Omar <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Nota informativa en columna comercial -->
+            <div class="rounded-xl p-3 border border-dashed border-slate-700 bg-slate-900/40 text-[11px] text-slate-400 flex items-start gap-2.5">
+              <i class="fa-solid fa-circle-info text-amber-400 mt-0.5"></i>
+              <span>Los <strong>Requerimientos Internos (`INT-`)</strong> omiten las columnas de preventa y nacen directo en <strong>En Preparación Operaciones</strong>.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna 2: En Preparación Operaciones (Donde nacen los INT-) -->
+        <div class="bg-[#0f1629] rounded-2xl border border-white/10 flex flex-col">
+          <div class="p-4 border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-200">3. En Preparación Operaciones</h3>
+            </div>
+            <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-500/20 text-amber-300" id="prep-count">2</span>
+          </div>
+          <div class="p-3.5 space-y-3.5 flex-1" id="kanban-col-prep">
+
+            <!-- TARJETA ESPECIAL DE REQUERIMIENTO INTERNO 1 -->
+            <div class="kanban-card card-interno internal-card-dashed rounded-xl p-4 transition space-y-3 shadow-lg">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-mono text-xs font-black text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded border border-amber-400/40">
+                  INT-2610-001
+                </span>
+                <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wide rounded bg-amber-400 text-slate-950">
+                  🔁 MOVIMIENTO INTERNO · COSTO PROPIO
+                </span>
+              </div>
+
+              <div>
+                <h4 class="text-sm font-black text-white">Traslado Posicionamiento Liebherr LTM 1100 (100T)</h4>
+                <p class="text-xs font-bold text-amber-300 flex items-center gap-1.5 mt-1">
+                  <span>📍 Base Central Temuco ➔ Sucursal Puerto Montt</span>
+                </p>
+              </div>
+
+              <div class="bg-[#070b14]/90 rounded-lg p-2.5 border border-amber-500/20 grid grid-cols-2 gap-2 text-[11px]">
+                <div>
+                  <span class="text-slate-400 block">Tipo Movimiento</span>
+                  <span class="text-amber-200 font-bold">TRASLADO_SUCURSAL (345 km)</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block">Empresa Interna</span>
+                  <span class="text-white font-bold">Grúas San Pablo SpA</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block">Conductor / Operador</span>
+                  <span class="text-slate-200 font-semibold">Carlos Muñoz + Rigger</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block">Presupuesto Ruta</span>
+                  <span class="text-amber-300 font-semibold">Copec + Peajes ($285.000)</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-2 border-t border-amber-500/20">
+                <span class="text-[11px] font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/30">
+                  🚫 NO FACTURABLE (C. COSTO INTERNO)
+                </span>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="goToOmarScenario('interno')" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold border border-amber-500/40 transition" title="Ver V°B° Gerencia">
+                    📱 V°B° Omar
+                  </button>
+                  <button onclick="switchMainTab('tab-pwa')" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black transition">
+                    🚀 PWA Chofer
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tarjeta Comercial Normal para contraste visual directo -->
+            <div class="kanban-card card-comercial bg-[#151d35] rounded-xl p-4 border border-white/10 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-xs font-black text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                  BMQ-2610-031
+                </span>
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  ✓ V°B° Omar Aprobado
+                </span>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-white">Arriendo Alza Hombres JLG 20m (Mensual)</h4>
+                <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+                  <i class="fa-regular fa-building text-slate-500"></i> Celulosa Arauco Planta Valdivia
+                </p>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
+                <span class="font-black text-emerald-400">$2.450.000 Neto</span>
+                <span class="text-[11px] text-slate-400">Listo para Despacho</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Columna 3: En Ejecución Terreno (PWA Activa) -->
+        <div class="bg-[#0f1629] rounded-2xl border border-white/10 flex flex-col">
+          <div class="p-4 border-b border-white/10 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-200">4. En Ejecución Terreno (PWA)</h3>
+            </div>
+            <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-emerald-500/20 text-emerald-300">2</span>
+          </div>
+          <div class="p-3.5 space-y-3.5 flex-1">
+
+            <!-- TARJETA ESPECIAL DE REQUERIMIENTO INTERNO 2 (EN RUTA) -->
+            <div class="kanban-card card-interno internal-card-dashed rounded-xl p-4 space-y-3 shadow-lg">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-mono text-xs font-black text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded border border-amber-400/40">
+                  INT-2610-002
+                </span>
+                <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wide rounded bg-amber-400 text-slate-950">
+                  🔁 MOVIMIENTO INTERNO · COSTO PROPIO
+                </span>
+              </div>
+
+              <div>
+                <h4 class="text-sm font-black text-white">Envío Camión Pluma Volvo FMX a Calibración Hidráulica</h4>
+                <p class="text-xs font-bold text-amber-300 flex items-center gap-1.5 mt-1">
+                  <span>📍 Base Concepción ➔ Taller Hidráulico San Pedro</span>
+                </p>
+              </div>
+
+              <div class="bg-[#070b14]/90 rounded-lg p-2.5 border border-amber-500/20 flex items-center justify-between text-[11px]">
+                <div>
+                  <span class="text-slate-400 block">Estado GPS / PWA</span>
+                  <span class="text-emerald-400 font-bold">● Salida Patio Registrada (08:30)</span>
+                </div>
+                <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">MOVIMIENTO_TALLER</span>
+              </div>
+
+              <div class="flex items-center justify-between pt-2 border-t border-amber-500/20">
+                <span class="text-[11px] font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/30">
+                  🚫 NO FACTURABLE (C. COSTO INTERNO)
+                </span>
+                <span class="text-[11px] text-slate-400 font-semibold">Cierra directo en ITS</span>
+              </div>
+            </div>
+
+            <!-- Tarjeta Comercial en Ejecución -->
+            <div class="kanban-card card-comercial bg-[#151d35] rounded-xl p-4 border border-white/10 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-xs font-black text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  GSP-2610-079
+                </span>
+                <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-blue-500/20 text-blue-300">
+                  Operando en Obra
+                </span>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-white">Izaje Estanques Acero Inoxidable</h4>
+                <p class="text-xs text-slate-400 mt-0.5">CCU Planta Temuco · Juan Pérez (Operador)</p>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
+                <span class="font-black text-emerald-400">$1.850.000 Neto</span>
+                <span class="text-[11px] text-slate-400">Exige Firma Mandante + EDP</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- PESTAÑA 2: CORREO B2B + WEB TOKEN DE 1 USO PARA OMAR (ESTILO RINDEGASTOS) -->
+    <!-- ========================================================================= -->
+    <section id="tab-omar" class="main-section hidden space-y-6">
+
+      <!-- Barra Selectora de los 3 Escenarios Reales que recibe Omar -->
+      <div class="bg-[#0f1629] border border-white/10 rounded-2xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div>
+          <span class="text-[11px] font-black uppercase tracking-wider text-amber-400 block">
+            Simulador Interactivo · 0% Login · Token Criptográfico de 1 Solo Uso (/aprobacion-gerencia/:token)
+          </span>
+          <h2 class="text-base font-black text-white mt-0.5">
+            Selecciona el tipo de solicitud que recibe Omar en su celular:
+          </h2>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="setOmarScenario('comercial')" id="scen-comercial" class="scen-btn px-3.5 py-2 rounded-xl text-xs font-black bg-emerald-500 text-slate-950 shadow transition">
+            🟢 1. Negocio Comercial Monetario (GSP-2610-084)
+          </button>
+          <button onclick="setOmarScenario('interno')" id="scen-interno" class="scen-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-[#151d35] text-slate-300 border border-white/10 hover:text-white transition">
+            🟣 2. Req. Interno / No Monetario (INT-2610-001)
+          </button>
+          <button onclick="setOmarScenario('oc')" id="scen-oc" class="scen-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-[#151d35] text-slate-300 border border-white/10 hover:text-white transition">
+            🛒 3. Orden de Compra Multi-Empresa (OC-2610-042)
+          </button>
+        </div>
+      </div>
+
+      <!-- Layout Dual: Izquierda Correo/WhatsApp + Derecha Smartphone RindeGastos -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- COLUMNA IZQUIERDA (7 cols): Vista Previa Correo B2B & WhatsApp con Magic Link -->
+        <div class="lg:col-span-7 space-y-5">
+
+          <!-- Tarjeta Correo B2B -->
+          <div class="bg-[#0f1629] rounded-2xl border border-white/10 overflow-hidden shadow-xl">
+            <div class="bg-[#151d35] px-5 py-3.5 border-b border-white/10 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-envelope-open-text text-amber-400"></i>
+                <span class="text-xs font-black uppercase tracking-wider text-white">Vista Previa Correo B2B + WhatsApp Ejecutivo</span>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                Token: Activo (1 Uso)
+              </span>
+            </div>
+
+            <div class="p-5 space-y-4">
+              <!-- Metadatos del Correo -->
+              <div class="bg-[#070b14] rounded-xl p-3.5 border border-white/5 text-xs space-y-1.5">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Para:</span>
+                  <span class="text-white font-semibold">Omar San Pablo &lt;omar@gruassanpablo.cl&gt; · +56 9 9888 XXXX</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Asunto:</span>
+                  <span class="text-amber-300 font-bold" id="email-subject">[V°B° GERENCIA] Solicitud Aprobación Negocio GSP-2610-084 · Constructora Pocuro</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Seguridad:</span>
+                  <span class="text-emerald-400 font-mono text-[11px]" id="email-token-url">https://servidor.leanglobal.cl/lg-gsp-dev/aprobacion-gerencia/9f8c-4a12-b77e</span>
+                </div>
+              </div>
+
+              <!-- Cuerpo Renderizado del Correo -->
+              <div class="bg-slate-900/90 rounded-xl p-5 border border-white/10 space-y-4">
+                <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-amber-400" id="email-company">GRÚAS SAN PABLO SpA · GERENCIA GENERAL</span>
+                    <h3 class="text-base font-black text-white mt-0.5" id="email-title">Resumen Ejecutivo para Autorización en 1 Toque</h3>
+                  </div>
+                  <span id="email-badge" class="px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    🟢 NEGOCIO MONETARIO
+                  </span>
+                </div>
+
+                <p class="text-xs text-slate-300 leading-relaxed" id="email-intro">
+                  Estimado Omar, se ha estructurado el siguiente requerimiento en plataforma y requiere su visación ejecutiva antes de liberar la operación:
+                </p>
+
+                <!-- Tabla Resumen en el Correo -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs" id="email-metrics-grid">
+                  <!-- Rellenado dinámicamente según escenario -->
+                </div>
+
+                <!-- Botón Magic Link dentro del correo -->
+                <div class="pt-2">
+                  <button onclick="focusPhoneScreen()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-mobile-screen-button text-sm"></i>
+                    <span>📱 Abrir Resumen y Autorizar (1 Solo Uso · Sin Login)</span>
+                  </button>
+                  <p class="text-[11px] text-center text-slate-400 mt-2">
+                    🔒 Este enlace contiene un <strong>Web Token criptográfico de 1 solo uso</strong>. Una vez tomada la decisión (Aprobar / Observar / Rechazar), el enlace expira automáticamente.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Explicación de Reglas de Negocio del Token -->
+          <div class="bg-[#0f1629] rounded-2xl border border-white/10 p-5 space-y-3">
+            <h4 class="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-2">
+              <i class="fa-solid fa-shield-halved"></i> Trazabilidad y Efecto Inmediato de la Decisión de Omar
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div class="bg-[#151d35] p-3 rounded-xl border border-emerald-500/20">
+                <div class="font-black text-emerald-400 mb-1">🟢 APROBAR</div>
+                <p class="text-slate-300 text-[11px]">Quema el token de 1 uso, registra IP/Timestamp, libera la OT a Operaciones o estampa el Sello FES de Omar en el PDF de la Orden de Compra.</p>
+              </div>
+              <div class="bg-[#151d35] p-3 rounded-xl border border-amber-500/20">
+                <div class="font-black text-amber-400 mb-1">🟡 APROBAR CON OBS.</div>
+                <p class="text-slate-300 text-[11px]">Autoriza el avance para no frenar la operación, pero ancla un <strong>Banner Amarillo Obligatorio</strong> con la condición de Omar en la OT/OC.</p>
+              </div>
+              <div class="bg-[#151d35] p-3 rounded-xl border border-rose-500/20">
+                <div class="font-black text-rose-400 mb-1">🔴 RECHAZAR</div>
+                <p class="text-slate-300 text-[11px]">Exige motivo u observación, bloquea el despacho o la OC, quema el token y notifica inmediatamente al vendedor o a Eduardo.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- COLUMNA DERECHA (5 cols): Simulador Smartphone Estilo RindeGastos -->
+        <div class="lg:col-span-5 flex flex-col items-center">
+          <div class="phone-mockup border border-slate-700" id="omarPhoneMockup">
+
+            <!-- Barra Estado Celular -->
+            <div class="h-9 bg-slate-950 px-5 flex items-center justify-between text-[11px] text-slate-400 border-b border-white/5">
+              <span class="font-bold text-white">09:42</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono text-[10px]">🔒 HTTPS · 1-USE TOKEN</span>
+              <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-signal"></i>
+                <i class="fa-solid fa-battery-full text-emerald-400"></i>
+              </div>
+            </div>
+
+            <!-- Cabecera RindeGastos Style -->
+            <div class="bg-[#151d35] px-4 py-3 border-b border-white/10 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center" id="phone-logo-box">
+                  GSP
+                </div>
+                <div>
+                  <div class="text-[10px] font-bold uppercase tracking-wider text-amber-400" id="phone-company-label">Grúas San Pablo SpA</div>
+                  <div class="text-xs font-black text-white" id="phone-folio-label">Folio: GSP-2610-084</div>
+                </div>
+              </div>
+              <span id="phone-type-pill" class="px-2 py-1 rounded-md text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                🟢 MONETARIO
+              </span>
+            </div>
+
+            <!-- Contenido Scrollable del Teléfono -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-3.5 hide-scrollbar" id="phone-active-body">
+
+              <!-- Bloque Principal: Monto Destacado estilo RindeGastos -->
+              <div class="bg-gradient-to-br from-[#151d35] to-[#0f1629] rounded-2xl p-4 border border-white/10 text-center space-y-1 shadow-inner">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400" id="phone-amount-caption">TOTAL NETO DEL REQUERIMIENTO</span>
+                <div class="text-2xl font-black text-emerald-400 tracking-tight" id="phone-main-amount">$4.050.000</div>
+                <div class="text-xs font-semibold text-white" id="phone-subject-title">Montaje Vigas Puente Cautín</div>
+                <div class="text-[11px] text-slate-400" id="phone-requester">Solicita: Roberto Gómez (Comercial)</div>
+              </div>
+
+              <!-- Bloque Cliente / Origen-Destino / Proveedor -->
+              <div class="bg-[#151d35] rounded-xl p-3.5 border border-white/10 space-y-2 text-xs" id="phone-entity-box">
+                <!-- Dinámico -->
+              </div>
+
+              <!-- Grilla Ejecutiva de Variables Clave (Valor Hora, Flete, Condición, etc.) -->
+              <div>
+                <div class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+                  <span>Variables Clave de Decisión</span>
+                  <span class="text-amber-400">Vista Ejecutiva</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2" id="phone-variables-grid">
+                  <!-- Dinámico -->
+                </div>
+              </div>
+
+              <!-- Observaciones Rápidas de Omar (Chips + Textarea) -->
+              <div class="bg-[#151d35] rounded-xl p-3 border border-white/10 space-y-2">
+                <label class="text-[11px] font-black uppercase tracking-wider text-amber-300 block">
+                  💬 Observación / Instrucción de Omar (Opcional en Aprobar, Obligatoria en Obs/Rechazo)
+                </label>
+                <!-- Chips de 1 toque -->
+                <div class="flex flex-wrap gap-1.5" id="phone-quick-chips">
+                  <button onclick="setQuickObs('OK autorizado según condiciones')" class="px-2 py-1 rounded-md bg-[#070b14] hover:bg-amber-500/20 text-[10px] text-slate-300 border border-white/10 transition">
+                    + OK autorizado
+                  </button>
+                  <button onclick="setQuickObs('Exigir OC firmada antes de salir de patio')" class="px-2 py-1 rounded-md bg-[#070b14] hover:bg-amber-500/20 text-[10px] text-slate-300 border border-white/10 transition">
+                    + Exigir OC antes de salir
+                  </button>
+                  <button onclick="setQuickObs('Cobrar flete ida y vuelta completo')" class="px-2 py-1 rounded-md bg-[#070b14] hover:bg-amber-500/20 text-[10px] text-slate-300 border border-white/10 transition">
+                    + Cobrar flete I/V
+                  </button>
+                  <button onclick="setQuickObs('Ajustar tarifa hora a piso $95.000/hr')" class="px-2 py-1 rounded-md bg-[#070b14] hover:bg-amber-500/20 text-[10px] text-slate-300 border border-white/10 transition">
+                    + Ajustar tarifa hora
+                  </button>
+                </div>
+                <textarea id="omarObsInput" rows="2" placeholder="Escribe o toca una instrucción rápida..." class="w-full rounded-lg bg-[#070b14] border border-white/10 p-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"></textarea>
+              </div>
+
+            </div>
+
+            <!-- Estado Post-Decisión (Token Consumido) - Oculto por defecto -->
+            <div id="phone-consumed-state" class="hidden flex-1 p-6 flex flex-col items-center justify-center text-center space-y-4 bg-[#0b1120]">
+              <div id="consumed-icon-box" class="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-2xl text-emerald-400">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <div class="space-y-1">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-amber-400 border border-amber-500/30">
+                  🔒 WEB TOKEN CONSUMIDO (1 SOLO USO)
+                </span>
+                <h3 id="consumed-title" class="text-lg font-black text-white pt-1">¡Autorizado con Éxito!</h3>
+                <p id="consumed-desc" class="text-xs text-slate-300">
+                  La resolución de Gerencia ha sido sellada digitalmente y notificada al equipo.
+                </p>
+              </div>
+              <div class="w-full bg-[#151d35] rounded-xl p-3.5 border border-white/10 text-left text-[11px] space-y-1.5 font-mono">
+                <div class="flex justify-between"><span class="text-slate-400">Folio:</span><span class="text-white font-bold" id="consumed-folio">GSP-2610-084</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Firmante:</span><span class="text-emerald-400">Omar San Pablo (Gerente Gral.)</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Estado Token:</span><span class="text-amber-400">UTILIZADO / EXPIRADO</span></div>
+                <div class="border-t border-white/10 pt-1.5 text-slate-300" id="consumed-obs-preview">Obs: Sin observaciones adicionales.</div>
+              </div>
+              <button onclick="resetOmarTokenDemo()" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition">
+                🔄 Reiniciar Simulación de Token
+              </button>
+            </div>
+
+            <!-- Botonera Fija Inferior Estilo RindeGastos -->
+            <div id="phone-footer-actions" class="p-3.5 bg-slate-950 border-t border-white/10 space-y-2">
+              <div class="grid grid-cols-3 gap-2">
+                <button onclick="submitOmarDecision('APROBADO')" class="py-3 px-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex flex-col items-center justify-center gap-0.5 shadow-lg shadow-emerald-500/20 transition transform active:scale-95">
+                  <i class="fa-solid fa-circle-check text-sm"></i>
+                  <span>APROBAR</span>
+                </button>
+                <button onclick="submitOmarDecision('APROBADO_CON_OBS')" class="py-3 px-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] flex flex-col items-center justify-center gap-0.5 shadow-lg shadow-amber-400/20 transition transform active:scale-95">
+                  <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+                  <span>CON OBS.</span>
+                </button>
+                <button onclick="submitOmarDecision('RECHAZADO')" class="py-3 px-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex flex-col items-center justify-center gap-0.5 shadow-lg shadow-rose-600/20 transition transform active:scale-95">
+                  <i class="fa-solid fa-circle-xmark text-sm"></i>
+                  <span>RECHAZAR</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- PESTAÑA 3: RECEPCIÓN EN PWA DEL CHOFER / OPERADOR (OT INTERNA SIN VENTA)  -->
+    <!-- ========================================================================= -->
+    <section id="tab-pwa" class="main-section hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- Simulador PWA Chofer (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col items-center">
+          <div class="phone-mockup border border-amber-500/40">
+            <!-- Status Bar -->
+            <div class="h-9 bg-slate-950 px-5 flex items-center justify-between text-[11px] text-slate-400 border-b border-white/5">
+              <span class="font-bold text-white">10:15</span>
+              <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px]">PWA TERRENO v1.0.45</span>
+              <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-location-dot text-emerald-400"></i>
+                <i class="fa-solid fa-battery-three-quarters text-emerald-400"></i>
+              </div>
+            </div>
+
+            <!-- Franja Superior Especial Ámbar para Orden Interna -->
+            <div class="bg-gradient-to-r from-amber-500 to-amber-400 px-4 py-2.5 text-slate-950 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-black">🔁 ORDEN INTERNA GSP</span>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-slate-950 text-amber-300 font-mono text-xs font-black">
+                INT-2610-001
+              </span>
+            </div>
+
+            <!-- Cuerpo PWA Chofer -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-3.5 hide-scrollbar">
+              <div class="bg-[#151d35] rounded-xl p-3.5 border border-amber-500/30 space-y-2">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="text-amber-300 font-bold uppercase">Traslado Entre Sucursales</span>
+                  <span class="text-slate-400">Conductor: Carlos Muñoz</span>
+                </div>
+                <h3 class="text-sm font-black text-white">Liebherr LTM 1100 (100T) + Cama Baja</h3>
+                <div class="bg-[#070b14] rounded-lg p-2.5 border border-white/5 text-xs space-y-1">
+                  <div class="text-emerald-400 font-bold">📍 Origen: Base Central Temuco</div>
+                  <div class="text-amber-300 font-bold">🏁 Destino: Sucursal Puerto Montt (345 km)</div>
+                </div>
+                <div class="flex items-center justify-between text-[11px] pt-1">
+                  <span class="px-2 py-0.5 rounded bg-slate-800 text-amber-300 font-semibold">
+                    🚫 Sin Cobro a Cliente
+                  </span>
+                  <span class="text-slate-400">Omite Firma Mandante</span>
+                </div>
+              </div>
+
+              <!-- Hitos Interactivos del Chofer en Ruta -->
+              <div class="space-y-2.5">
+                <div class="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  Bitácora de Viaje &amp; Costos Reales (PWA)
+                </div>
+
+                <!-- Hito 1: Salida de Patio -->
+                <div class="bg-[#151d35] rounded-xl p-3 border border-emerald-500/40 flex items-center justify-between">
+                  <div class="space-y-0.5">
+                    <div class="text-xs font-black text-emerald-400 flex items-center gap-1.5">
+                      <i class="fa-solid fa-circle-check"></i> 1. Salida de Patio Temuco
+                    </div>
+                    <div class="text-[11px] text-slate-300">Odómetro: 142.310 km · Diésel: 85% · 08:15 hrs</div>
+                  </div>
+                  <span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">OK</span>
+                </div>
+
+                <!-- Hito 2: Carga Combustible Copec -->
+                <div class="bg-[#151d35] rounded-xl p-3 border border-emerald-500/40 flex items-center justify-between">
+                  <div class="space-y-0.5">
+                    <div class="text-xs font-black text-emerald-400 flex items-center gap-1.5">
+                      <i class="fa-solid fa-gas-pump"></i> 2. Carga Combustible Ruta (Copec)
+                    </div>
+                    <div class="text-[11px] text-slate-300">135 Lts · Guía #88412 · <strong>$148.500 Neto</strong></div>
+                  </div>
+                  <span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">Cargado</span>
+                </div>
+
+                <!-- Hito 3: Arribo a Sucursal Destino y Cierre Directo -->
+                <div id="pwa-step3-box" class="bg-[#151d35] rounded-xl p-3.5 border border-amber-400 space-y-2.5">
+                  <div class="flex items-center justify-between">
+                    <div class="text-xs font-black text-white flex items-center gap-1.5">
+                      <i class="fa-solid fa-flag-checkered text-amber-400"></i> 3. Llegada a Sucursal Puerto Montt
+                    </div>
+                    <span id="pwa-step3-badge" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold">Pendiente</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-[11px]">
+                    <div class="bg-[#070b14] p-2 rounded border border-white/5">
+                      <span class="text-slate-400 block">Odómetro Llegada</span>
+                      <span class="text-white font-mono font-bold">142.655 km (+345 km)</span>
+                    </div>
+                    <div class="bg-[#070b14] p-2 rounded border border-white/5">
+                      <span class="text-slate-400 block">Recepción Interna</span>
+                      <span class="text-amber-300 font-bold">Jefe Patio Pto. Montt</span>
+                    </div>
+                  </div>
+                  <button id="btnPwaCloseInternal" onclick="completeInternalPwaTrip()" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg transition">
+                    🏁 Confirmar Llegada y Cerrar OT Interna
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Explicación + Vista Previa del ITS de Costo Interno (7 cols) -->
+        <div class="lg:col-span-7 space-y-5">
+          <div class="bg-[#0f1629] rounded-2xl border border-white/10 p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+              <div>
+                <span class="text-xs font-black uppercase tracking-wider text-amber-400">Cierre Simplificado sin Facturación SII</span>
+                <h3 class="text-lg font-black text-white mt-0.5">Consolidación Automática en ITS de Costo Interno</h3>
+              </div>
+              <span id="its-status-pill" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                En Ruta (PWA Activa)
+              </span>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed">
+              A diferencia de una OT comercial (que exige firma del cliente mandante en el Reporte Diario, generación de EDP, HES y Factura Electrónica SII), un <strong>Requerimiento Interno (<code class="text-amber-300">INT-2610-001</code>)</strong> cierra directamente desde la PWA del conductor e imputa todos los gastos reales al centro de costo interno de la sucursal o equipo:
+            </p>
+
+            <!-- Tabla ITS Interno -->
+            <div class="bg-[#070b14] rounded-xl border border-white/10 overflow-hidden">
+              <div class="px-4 py-2.5 bg-[#151d35] border-b border-white/10 flex items-center justify-between text-xs font-bold">
+                <span>📊 Estructura ITS Interno · Folio INT-2610-001</span>
+                <span class="text-amber-400 font-mono">Ingresos Venta: $0 (No Facturable)</span>
+              </div>
+              <div class="divide-y divide-white/5 text-xs">
+                <div class="px-4 py-2.5 flex justify-between">
+                  <span class="text-slate-300">1. Combustible en Ruta (Integración Copec / Ticket PWA)</span>
+                  <span class="font-mono font-bold text-white">$148.500</span>
+                </div>
+                <div class="px-4 py-2.5 flex justify-between">
+                  <span class="text-slate-300">2. Peajes Troncal Sur + Viático Conductor y Rigger</span>
+                  <span class="font-mono font-bold text-white">$86.500</span>
+                </div>
+                <div class="px-4 py-2.5 flex justify-between">
+                  <span class="text-slate-300">3. Horas Hombre Operación Traslado (7.5 hrs internas)</span>
+                  <span class="font-mono font-bold text-white">$112.500</span>
+                </div>
+                <div class="px-4 py-2.5 flex justify-between">
+                  <span class="text-slate-300">4. Orden de Compra Vinculada (OC-2610-042 Escolta Ruta)</span>
+                  <span class="font-mono font-bold text-amber-300">$180.000</span>
+                </div>
+                <div class="px-4 py-3 bg-amber-500/10 flex justify-between items-center font-black">
+                  <span class="text-amber-300">COSTO TOTAL INTERNO IMPUTADO (C. COSTO OPERACIONES SUR)</span>
+                  <span class="font-mono text-base text-amber-400">$527.500 Neto</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+              <div class="bg-[#151d35] p-3.5 rounded-xl border border-white/5">
+                <div class="font-bold text-emerald-400 mb-1">✓ Sin Fricción en Terreno</div>
+                <p class="text-slate-400 text-[11px]">El chofer no queda bloqueado pidiendo firma de un cliente externo inexistente al llegar a otra sucursal o a un taller.</p>
+              </div>
+              <div class="bg-[#151d35] p-3.5 rounded-xl border border-white/5">
+                <div class="font-bold text-amber-400 mb-1">✓ Control Presupuestario Real</div>
+                <p class="text-slate-400 text-[11px]">Jorge y Omar conocen exactamente cuánto cuesta mover equipos entre bases o enviarlos a taller externo cada mes.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- PESTAÑA 4: BANDEJA DE COMPRAS Y OCs POR RAZÓN SOCIAL (EDUARDO)            -->
+    <!-- ========================================================================= -->
+    <section id="tab-compras" class="main-section hidden space-y-6">
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- Columna Izquierda (5 cols): Tickets de Solicitud de Pedido (Operaciones & Taller) -->
+        <div class="lg:col-span-5 bg-[#0f1629] rounded-2xl border border-white/10 p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-white/10 pb-3">
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-amber-400">Paso 1 · Bandeja de Entrada de Eduardo</span>
+              <h3 class="text-base font-black text-white">Tickets de Solicitud de Pedido (SP)</h3>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300">2 Pendientes</span>
+          </div>
+
+          <div class="space-y-3">
+            <!-- Ticket 1: Desde Operaciones -->
+            <div onclick="selectPurchaseTicket(1)" id="sp-card-1" class="cursor-pointer bg-[#151d35] rounded-xl p-4 border-2 border-amber-400 space-y-2 transition">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-xs font-black text-amber-300">SP-2610-019</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                  ORIGEN: OPERACIONES (OT)
+                </span>
+              </div>
+              <h4 class="text-sm font-bold text-white">Subcontrato Cama Baja Baja Altura + Escolta Ruta</h4>
+              <p class="text-xs text-slate-400">Vinculado a: <strong class="text-indigo-300">GSP-2610-084</strong> (Puente Cautín) · Solicita: Jefe Operaciones</p>
+              <div class="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
+                <span class="text-slate-300">Proveedor sug.: <strong>Transportes Sur Austral Ltda.</strong></span>
+                <span class="font-bold text-amber-400">Seleccionado ➔</span>
+              </div>
+            </div>
+
+            <!-- Ticket 2: Desde Taller / Bodega -->
+            <div onclick="selectPurchaseTicket(2)" id="sp-card-2" class="cursor-pointer bg-[#151d35] rounded-xl p-4 border border-white/10 hover:border-white/30 space-y-2 transition">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-xs font-black text-purple-300">SP-2610-020</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  ORIGEN: TALLER / MANTENCIÓN
+                </span>
+              </div>
+              <h4 class="text-sm font-bold text-white">Kit Sellos Cilindro Pluma + Filtros Hidráulicos Liebherr</h4>
+              <p class="text-xs text-slate-400">Vinculado a: <strong class="text-purple-300">OTM-2610-011</strong> · Solicita: Jefe de Taller</p>
+              <div class="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
+                <span class="text-slate-300">Proveedor sug.: <strong>Hidráulica Austral SpA</strong></span>
+                <span class="text-slate-400">Clic para cargar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha (7 cols): Emisor de OC Multi-Empresa (Eduardo) y Despacho a Celular de Omar -->
+        <div class="lg:col-span-7 bg-[#0f1629] rounded-2xl border border-white/10 p-5 space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider text-emerald-400">Paso 2 · Conversión a Orden de Compra por Razón Social</span>
+              <h3 class="text-base font-black text-white">Emisión de OC Formal (<span id="oc-form-folio">OC-2610-042</span>) · Eduardo</h3>
+            </div>
+            <span class="px-2.5 py-1 rounded-lg bg-[#151d35] border border-white/10 text-xs font-mono text-slate-300">
+              Ticket base: <strong class="text-amber-300" id="oc-form-sp">SP-2610-019</strong>
+            </span>
+          </div>
+
+          <!-- Selector de las 4 Razones Sociales del Holding -->
+          <div class="space-y-2">
+            <label class="text-xs font-black uppercase tracking-wider text-amber-300 block">
+              1. Seleccionar Razón Social Emisora / Facturadora (Holding 4 Empresas):
+            </label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button onclick="selectHoldingCompany('GSP', 'Grúas San Pablo SpA', '76.111.222-3')" id="comp-GSP" class="comp-btn p-2.5 rounded-xl border-2 border-amber-400 bg-amber-500/15 text-left transition">
+                <div class="text-xs font-black text-white">Grúas San Pablo</div>
+                <div class="text-[10px] font-mono text-amber-300">RUT 76.111.222-3</div>
+              </button>
+              <button onclick="selectHoldingCompany('RRL', 'Royal Rental SpA', '76.333.444-5')" id="comp-RRL" class="comp-btn p-2.5 rounded-xl border border-white/10 bg-[#151d35] text-left hover:border-white/30 transition">
+                <div class="text-xs font-black text-white">Royal Rental</div>
+                <div class="text-[10px] font-mono text-slate-400">RUT 76.333.444-5</div>
+              </button>
+              <button onclick="selectHoldingCompany('BMQ', 'Bestmaq SpA', '76.555.666-7')" id="comp-BMQ" class="comp-btn p-2.5 rounded-xl border border-white/10 bg-[#151d35] text-left hover:border-white/30 transition">
+                <div class="text-xs font-black text-white">Bestmaq</div>
+                <div class="text-[10px] font-mono text-slate-400">RUT 76.555.666-7</div>
+              </button>
+              <button onclick="selectHoldingCompany('LDS', 'Logística del Sur SpA', '76.777.888-9')" id="comp-LDS" class="comp-btn p-2.5 rounded-xl border border-white/10 bg-[#151d35] text-left hover:border-white/30 transition">
+                <div class="text-xs font-black text-white">Logística del Sur</div>
+                <div class="text-[10px] font-mono text-slate-400">RUT 76.777.888-9</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Vista Previa Cabecera OC + Detalle Económico -->
+          <div class="bg-[#070b14] rounded-xl p-4 border border-white/10 space-y-3 text-xs">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+              <div>
+                <span class="text-[10px] text-slate-400 block">EMPRESA FACTURADORA SELECCIONADA</span>
+                <span class="text-sm font-black text-amber-400" id="oc-preview-company">Grúas San Pablo SpA (RUT: 76.111.222-3)</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] text-slate-400 block">PROVEEDOR ADJUDICADO</span>
+                <span class="text-sm font-bold text-white" id="oc-preview-supplier">Transportes Sur Austral Ltda. · Crédito 30 días</span>
+              </div>
+            </div>
+
+            <div class="space-y-1.5" id="oc-items-container">
+              <div class="flex justify-between py-1">
+                <span class="text-slate-300">Ítem 1: Servicio Cama Baja + Escolta Ruta Temuco - Puente Cautín</span>
+                <span class="font-mono font-bold text-white">$580.000</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-slate-300">Ítem 2: Permiso Vialidad Sobredimensión e Inspección</span>
+                <span class="font-mono font-bold text-white">$140.000</span>
+              </div>
+            </div>
+
+            <div class="border-t border-white/10 pt-2.5 flex items-center justify-between">
+              <div>
+                <span class="text-slate-400 block">Imputación Automática:</span>
+                <span class="text-emerald-400 font-bold" id="oc-preview-costcenter">Sección 3 ITS · OT GSP-2610-084 (Subcontrato Flete)</span>
+              </div>
+              <div class="text-right">
+                <span class="text-slate-400 block">Total Neto OC:</span>
+                <span class="text-lg font-black text-emerald-400 font-mono" id="oc-preview-total">$720.000 Neto</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón de Envío Directo al Web Token de Omar -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+            <div class="text-[11px] text-slate-400">
+              <i class="fa-solid fa-paper-plane text-amber-400 mr-1"></i>
+              Al enviar, Omar recibe el <strong>Web Token de 1 uso</strong> en su celular para firmar sin papel.
+            </div>
+            <button onclick="sendOcToOmarPhone()" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition">
+              <i class="fa-solid fa-mobile-screen-button"></i>
+              <span>📱 Enviar OC a Firma Móvil de Omar</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL INTERACTIVO: CREAR NUEVO REQUERIMIENTO INTERNO (INT-YYMM-XXX)       -->
+  <!-- ========================================================================= -->
+  <div id="modalInternalReq" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-[#0f1629] border-2 border-amber-400/60 rounded-2xl max-w-xl w-full overflow-hidden shadow-2xl">
+      <div class="bg-gradient-to-r from-amber-500 to-amber-400 px-5 py-3.5 text-slate-950 flex items-center justify-between">
+        <div class="flex items-center gap-2 font-black text-sm">
+          <span>🔁 Nuevo Requerimiento Interno de Operaciones (Sin Venta)</span>
+        </div>
+        <button onclick="closeInternalModal()" class="w-7 h-7 rounded-lg bg-slate-950/20 hover:bg-slate-950/40 flex items-center justify-center font-bold">✕</button>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs">
+        <div class="bg-amber-500/10 border border-dashed border-amber-400/50 rounded-xl p-3 text-amber-200 flex items-center justify-between">
+          <span>Se generará folio con prefijo <strong>INT-2610-003</strong> directo en <em>Preparación Operaciones</em>.</span>
+          <span class="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-black text-[10px]">🚫 NO FACTURABLE</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 font-bold mb-1">Empresa del Grupo</label>
+            <select id="newIntCompany" class="w-full rounded-lg bg-[#070b14] border border-white/15 p-2.5 text-white">
+              <option value="Grúas San Pablo SpA">Grúas San Pablo SpA</option>
+              <option value="Royal Rental SpA">Royal Rental SpA</option>
+              <option value="Bestmaq SpA">Bestmaq SpA</option>
+              <option value="Logística del Sur SpA">Logística del Sur SpA</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 font-bold mb-1">Tipo de Movimiento Interno</label>
+            <select id="newIntType" class="w-full rounded-lg bg-[#070b14] border border-white/15 p-2.5 text-amber-300 font-bold">
+              <option value="TRASLADO_SUCURSAL">TRASLADO_SUCURSAL (Entre Bases)</option>
+              <option value="MOVIMIENTO_TALLER">MOVIMIENTO_TALLER (Taller Externo)</option>
+              <option value="APOYO_LOGISTICO">APOYO_LOGISTICO (Movimiento Patio/Contrapesos)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 font-bold mb-1">Lugar / Sucursal Origen</label>
+            <input id="newIntOrigin" type="text" value="Base Central Temuco" class="w-full rounded-lg bg-[#070b14] border border-white/15 p-2.5 text-white">
+          </div>
+          <div>
+            <label class="block text-slate-400 font-bold mb-1">Lugar / Sucursal Destino</label>
+            <input id="newIntDest" type="text" value="Base Osorno (Ruta 5 Sur)" class="w-full rounded-lg bg-[#070b14] border border-white/15 p-2.5 text-white">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-slate-400 font-bold mb-1">Equipo y Conductor Asignado</label>
+            <input id="newIntEquip" type="text" value="Tracto Camión Scania R500 + Cama Baja · Chofer: Pedro Contreras" class="w-full rounded-lg bg-[#070b14] border border-white/15 p-2.5 text-white">
+          </div>
+        </div>
+
+        <label class="flex items-center gap-2.5 bg-[#151d35] p-3 rounded-xl border border-white/10 cursor-pointer">
+          <input type="checkbox" checked class="w-4 h-4 accent-amber-400">
+          <span class="text-slate-200 font-semibold">Solicitar V°B° Móvil a Gerencia (Omar) mediante Web Token de 1 uso</span>
+        </label>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-white/10">
+          <button onclick="closeInternalModal()" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold">
+            Cancelar
+          </button>
+          <button onclick="createNewInternalCard()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-lg">
+            🔁 Crear INT-2610-003 en Torre
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS INTERACTIVOS -->
+  <script>
+    // 1. Navegación entre las 4 pestañas principales
+    function switchMainTab(tabId) {
+      document.querySelectorAll('.main-section').forEach(sec => sec.classList.add('hidden'));
+      document.getElementById(tabId).classList.remove('hidden');
+
+      document.querySelectorAll('.main-tab-btn').forEach(btn => {
+        btn.className = 'main-tab-btn px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5';
+      });
+      const activeBtn = document.getElementById('btn-' + tabId);
+      if (activeBtn) {
+        activeBtn.className = 'main-tab-btn px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-amber-500 text-slate-950 shadow';
+      }
+    }
+
+    // 2. Filtro Kanban (Todos / Comerciales / Internos)
+    function filterKanban(mode) {
+      document.querySelectorAll('.flt-btn').forEach(b => {
+        b.className = 'flt-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white';
+      });
+      document.getElementById('flt-' + mode).className = 'flt-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+
+      document.querySelectorAll('.kanban-card').forEach(card => {
+        if (mode === 'all') {
+          card.classList.remove('hidden');
+        } else if (mode === 'comercial') {
+          card.classList.toggle('hidden', !card.classList.contains('card-comercial'));
+        } else if (mode === 'interno') {
+          card.classList.toggle('hidden', !card.classList.contains('card-interno'));
+        }
+      });
+    }
+
+    // 3. Modal de Creación de Requerimiento Interno
+    function openInternalModal() {
+      const m = document.getElementById('modalInternalReq');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+    function closeInternalModal() {
+      const m = document.getElementById('modalInternalReq');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+    function createNewInternalCard() {
+      const company = document.getElementById('newIntCompany').value;
+      const type = document.getElementById('newIntType').value;
+      const origin = document.getElementById('newIntOrigin').value;
+      const dest = document.getElementById('newIntDest').value;
+      const equip = document.getElementById('newIntEquip').value;
+
+      const col = document.getElementById('kanban-col-prep');
+      const cardHtml = `
+        <div class="kanban-card card-interno internal-card-dashed rounded-xl p-4 transition space-y-3 shadow-lg ring-2 ring-amber-400">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-xs font-black text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded border border-amber-400/40">
+              INT-2610-003
+            </span>
+            <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wide rounded bg-amber-400 text-slate-950">
+              🔁 MOVIMIENTO INTERNO · COSTO PROPIO
+            </span>
+          </div>
+          <div>
+            <h4 class="text-sm font-black text-white">${equip}</h4>
+            <p class="text-xs font-bold text-amber-300 flex items-center gap-1.5 mt-1">
+              <span>📍 ${origin} ➔ ${dest}</span>
+            </p>
+          </div>
+          <div class="bg-[#070b14]/90 rounded-lg p-2.5 border border-amber-500/20 grid grid-cols-2 gap-2 text-[11px]">
+            <div>
+              <span class="text-slate-400 block">Tipo Movimiento</span>
+              <span class="text-amber-200 font-bold">${type}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block">Empresa Interna</span>
+              <span class="text-white font-bold">${company}</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-amber-500/20">
+            <span class="text-[11px] font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/30">
+              🚫 NO FACTURABLE (C. COSTO INTERNO)
+            </span>
+            <button onclick="goToOmarScenario('interno')" class="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 text-[11px] font-black">
+              📱 Ver Token Omar
+            </button>
+          </div>
+        </div>
+      `;
+      col.insertAdjacentHTML('afterbegin', cardHtml);
+      document.getElementById('prep-count').textContent = '3';
+      closeInternalModal();
+    }
+
+    // 4. Datos de los 3 Escenarios Reales para el Aprobador Móvil de Omar (Estilo RindeGastos)
+    let currentOmarCompany = 'Grúas San Pablo SpA';
+    let currentOmarCompanyCode = 'GSP';
+
+    const omarScenarios = {
+      comercial: {
+        subject: '[V°B° GERENCIA] Solicitud Aprobación Negocio GSP-2610-084 · Constructora Pocuro',
+        tokenUrl: 'https://servidor.leanglobal.cl/lg-gsp-dev/aprobacion-gerencia/9f8c-4a12-b77e',
+        company: 'Grúas San Pablo SpA',
+        logo: 'GSP',
+        folio: 'GSP-2610-084',
+        badge: '🟢 NEGOCIO MONETARIO',
+        pill: '🟢 MONETARIO',
+        pillClass: 'px-2 py-1 rounded-md text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+        amountCaption: 'TOTAL NETO DEL REQUERIMIENTO',
+        mainAmount: '$4.050.000',
+        amountColor: 'text-2xl font-black text-emerald-400 tracking-tight',
+        title: 'Montaje Vigas Puente Cautín (Grove RT765E-2 60T)',
+        requester: 'Solicita: Roberto Gómez (Comercial Temuco)',
+        entityHtml: `
+          <div class="flex justify-between"><span class="text-slate-400">Cliente:</span><span class="text-white font-bold">Constructora Pocuro Sur S.A.</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">RUT Cliente:</span><span class="text-slate-200 font-mono">76.543.210-K</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Condición Pago:</span><span class="text-emerald-400 font-bold">Crédito 30 Días (Con OC)</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Ubicación Obra:</span><span class="text-slate-200">Acceso Sur Temuco km 4</span></div>
+        `,
+        variables: [
+          { label: 'VALOR POR HORA', value: '$85.000 / hr', sub: 'Piso mín. 8 hrs/día (5 días)' },
+          { label: 'COSTO FLETE I/V', value: '$650.000 Neto', sub: 'Cama Baja Ida y Vuelta' },
+          { label: 'COMBUSTIBLE', value: 'Cargo Cliente', sub: 'Reposición en Obra' },
+          { label: 'VIÁTICO / PENSIÓN', value: 'Cargo GSP ($180k)', sub: 'Operador + Rigger' }
+        ]
+      },
+      interno: {
+        subject: '[V°B° MOVIMIENTO INTERNO] Traslado Sucursal INT-2610-001 · Temuco ➔ Puerto Montt',
+        tokenUrl: 'https://servidor.leanglobal.cl/lg-gsp-dev/aprobacion-gerencia/3d1a-8c90-f441',
+        company: 'Grúas San Pablo SpA',
+        logo: 'INT',
+        folio: 'INT-2610-001',
+        badge: '🟣 REQ. INTERNO / NO MONETARIO',
+        pill: '🔁 INTERNO',
+        pillClass: 'px-2 py-1 rounded-md text-[10px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40',
+        amountCaption: 'MOVIMIENTO INTERNO · PRESUPUESTO DE COSTO RUTA',
+        mainAmount: '$0 Venta (Costo $285.000)',
+        amountColor: 'text-xl font-black text-amber-400 tracking-tight',
+        title: 'Traslado Posicionamiento Liebherr LTM 1100 (100T)',
+        requester: 'Solicita: Jefe de Operaciones (Movimiento entre Bases)',
+        entityHtml: `
+          <div class="flex justify-between"><span class="text-slate-400">Tipo Requerimiento:</span><span class="text-amber-300 font-bold">🔁 TRASLADO_SUCURSAL</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Origen:</span><span class="text-white font-semibold">📍 Base Central Temuco</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Destino:</span><span class="text-amber-300 font-bold">🏁 Sucursal Puerto Montt (345 km)</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Facturación SII:</span><span class="text-rose-300 font-bold">🚫 NO FACTURABLE (C. Costo Propio)</span></div>
+        `,
+        variables: [
+          { label: 'VALOR HORA VENTA', value: '$0 / No Aplica', sub: 'Movimiento Interno Flota' },
+          { label: 'COMBUSTIBLE RUTA', value: '$198.500 Est.', sub: 'Tarjeta Copec Corporativa' },
+          { label: 'PEAJES Y VIÁTICOS', value: '$86.500 Est.', sub: 'Conductor + Rigger Apoyo' },
+          { label: 'CIERRE DESTINO', value: 'Directo a ITS', sub: 'Sin Firma Cliente Externo' }
+        ]
+      },
+      oc: {
+        subject: '[FIRMA OC GERENCIA] Orden de Compra OC-2610-042 · Transportes Sur Austral Ltda.',
+        tokenUrl: 'https://servidor.leanglobal.cl/lg-gsp-dev/aprobacion-gerencia/7e22-91bc-a009',
+        company: currentOmarCompany,
+        logo: currentOmarCompanyCode,
+        folio: 'OC-2610-042',
+        badge: '🛒 ORDEN DE COMPRA MULTI-EMPRESA',
+        pill: '🛒 COMPRA OC',
+        pillClass: 'px-2 py-1 rounded-md text-[10px] font-black uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/40',
+        amountCaption: 'MONTO NETO ORDEN DE COMPRA',
+        mainAmount: '$720.000 Neto',
+        amountColor: 'text-2xl font-black text-cyan-400 tracking-tight',
+        title: 'Subcontrato Cama Baja + Escolta Ruta (SP-2610-019)',
+        requester: 'Emitida por: Eduardo (Adquisiciones GSP)',
+        entityHtml: `
+          <div class="flex justify-between"><span class="text-slate-400">Razón Social Emisora:</span><span class="text-amber-300 font-black" id="phone-oc-company">${currentOmarCompany}</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Proveedor:</span><span class="text-white font-bold">Transportes Sur Austral Ltda.</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Condición Pago OC:</span><span class="text-cyan-300 font-bold">Factura 30 Días</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Imputación Costo:</span><span class="text-emerald-400 font-semibold">OT GSP-2610-084 (ITS Sección 3)</span></div>
+        `,
+        variables: [
+          { label: 'SUBCONTRATO FLETE', value: '$580.000 Neto', sub: 'Cama Baja Baja Altura' },
+          { label: 'PERMISOS VIALIDAD', value: '$140.000 Neto', sub: 'Escolta y Sobredimensión' },
+          { label: 'IVA (19%) / BRUTO', value: '$856.800 Total', sub: 'Afecto Factura Proveedor' },
+          { label: 'SELLO FES OMAR', value: 'Estampado PDF', sub: 'Envío directo a Proveedor' }
+        ]
+      }
+    };
+
+    let currentScenarioKey = 'comercial';
+
+    function setOmarScenario(key) {
+      currentScenarioKey = key;
+      resetOmarTokenDemo();
+
+      // Update selector buttons
+      document.querySelectorAll('.scen-btn').forEach(btn => {
+        btn.className = 'scen-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-[#151d35] text-slate-300 border border-white/10 hover:text-white transition';
+      });
+      const activeBtn = document.getElementById('scen-' + key);
+      if (activeBtn) {
+        activeBtn.className = 'scen-btn px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500 text-slate-950 shadow transition';
+      }
+
+      const data = omarScenarios[key];
+      document.getElementById('email-subject').textContent = data.subject;
+      document.getElementById('email-token-url').textContent = data.tokenUrl;
+      document.getElementById('email-company').textContent = data.company.toUpperCase() + ' · VISACIÓN GERENCIA';
+      document.getElementById('email-badge').textContent = data.badge;
+
+      // Render Email Metrics Grid
+      const emailGrid = document.getElementById('email-metrics-grid');
+      emailGrid.innerHTML = data.variables.map(v => `
+        <div class="bg-[#070b14] p-2.5 rounded-lg border border-white/5">
+          <span class="text-[10px] text-slate-400 font-bold block">${v.label}</span>
+          <span class="text-xs font-black text-white">${v.value}</span>
+          <span class="text-[10px] text-slate-400 block">${v.sub}</span>
+        </div>
+      `).join('');
+
+      // Render Phone Screen
+      document.getElementById('phone-logo-box').textContent = data.logo;
+      document.getElementById('phone-company-label').textContent = data.company;
+      document.getElementById('phone-folio-label').textContent = 'Folio: ' + data.folio;
+      const pill = document.getElementById('phone-type-pill');
+      pill.textContent = data.pill;
+      pill.className = data.pillClass;
+
+      document.getElementById('phone-amount-caption').textContent = data.amountCaption;
+      const mainAmt = document.getElementById('phone-main-amount');
+      mainAmt.textContent = data.mainAmount;
+      mainAmt.className = data.amountColor;
+
+      document.getElementById('phone-subject-title').textContent = data.title;
+      document.getElementById('phone-requester').textContent = data.requester;
+      document.getElementById('phone-entity-box').innerHTML = data.entityHtml;
+
+      const phoneGrid = document.getElementById('phone-variables-grid');
+      phoneGrid.innerHTML = data.variables.map(v => `
+        <div class="bg-[#151d35] p-2.5 rounded-xl border border-white/10">
+          <span class="text-[9px] font-black uppercase tracking-wider text-slate-400 block">${v.label}</span>
+          <span class="text-xs font-black text-white block mt-0.5">${v.value}</span>
+          <span class="text-[10px] text-amber-300/90 block">${v.sub}</span>
+        </div>
+      `).join('');
+    }
+
+    function goToOmarScenario(key) {
+      switchMainTab('tab-omar');
+      setOmarScenario(key);
+    }
+
+    function setQuickObs(text) {
+      document.getElementById('omarObsInput').value = text;
+    }
+
+    function focusPhoneScreen() {
+      const phone = document.getElementById('omarPhoneMockup');
+      phone.classList.add('ring-4', 'ring-amber-400');
+      setTimeout(() => phone.classList.remove('ring-4', 'ring-amber-400'), 1200);
+    }
+
+    function submitOmarDecision(decision) {
+      const obs = document.getElementById('omarObsInput').value.trim();
+      if ((decision === 'APROBADO_CON_OBS' || decision === 'RECHAZADO') && !obs) {
+        document.getElementById('omarObsInput').value = decision === 'APROBADO_CON_OBS'
+          ? 'Autorizado sujeto a validar cobro de flete completo.'
+          : 'Rechazado: Revisar tarifa hora y condición de pago.';
+      }
+
+      const finalObs = document.getElementById('omarObsInput').value.trim() || 'Sin observaciones adicionales.';
+      const data = omarScenarios[currentScenarioKey];
+
+      document.getElementById('phone-active-body').classList.add('hidden');
+      document.getElementById('phone-footer-actions').classList.add('hidden');
+      const consumed = document.getElementById('phone-consumed-state');
+      consumed.classList.remove('hidden');
+
+      document.getElementById('consumed-folio').textContent = data.folio;
+      document.getElementById('consumed-obs-preview').textContent = 'Obs Omar: "' + finalObs + '"';
+
+      const iconBox = document.getElementById('consumed-icon-box');
+      const title = document.getElementById('consumed-title');
+      const desc = document.getElementById('consumed-desc');
+
+      if (decision === 'APROBADO') {
+        iconBox.className = 'w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-2xl text-emerald-400';
+        iconBox.innerHTML = '<i class="fa-solid fa-check"></i>';
+        title.textContent = '🟢 Aprobado y Sello FES Estampado';
+        desc.textContent = 'El Web Token de 1 uso ha sido consumido. La solicitud quedó liberada en tiempo real.';
+      } else if (decision === 'APROBADO_CON_OBS') {
+        iconBox.className = 'w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-2xl text-amber-400';
+        iconBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+        title.textContent = '🟡 Aprobado con Observación Obligatoria';
+        desc.textContent = 'Se autorizó el avance dejando tu instrucción fijada en el banner amarillo de la OT/OC.';
+      } else {
+        iconBox.className = 'w-16 h-16 rounded-full bg-rose-500/20 border-2 border-rose-400 flex items-center justify-center text-2xl text-rose-400';
+        iconBox.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+        title.textContent = '🔴 Solicitud Rechazada y Devuelta';
+        desc.textContent = 'El Web Token se quemó y se notificó el rechazo con tu observación al emisor.';
+      }
+    }
+
+    function resetOmarTokenDemo() {
+      document.getElementById('phone-active-body').classList.remove('hidden');
+      document.getElementById('phone-footer-actions').classList.remove('hidden');
+      document.getElementById('phone-consumed-state').classList.add('hidden');
+    }
+
+    // 5. Simulación de Cierre de Viaje Interno en la PWA del Chofer
+    function completeInternalPwaTrip() {
+      const badge = document.getElementById('pwa-step3-badge');
+      badge.textContent = 'Cerrado OK';
+      badge.className = 'px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold';
+
+      const btn = document.getElementById('btnPwaCloseInternal');
+      btn.textContent = '✓ OT Interna Cerrada Directo en ITS (Sin Factura SII)';
+      btn.className = 'w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider';
+
+      const pill = document.getElementById('its-status-pill');
+      pill.textContent = '✓ Finalizado Interno · Costos Consolidados en ITS';
+      pill.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+    }
+
+    // 6. Bandeja de Compras y Selección de las 4 Razones Sociales (Eduardo)
+    function selectHoldingCompany(code, name, rut) {
+      currentOmarCompany = name;
+      currentOmarCompanyCode = code;
+      omarScenarios.oc.company = name;
+      omarScenarios.oc.logo = code;
+
+      document.querySelectorAll('.comp-btn').forEach(btn => {
+        btn.className = 'comp-btn p-2.5 rounded-xl border border-white/10 bg-[#151d35] text-left hover:border-white/30 transition';
+      });
+      const active = document.getElementById('comp-' + code);
+      if (active) {
+        active.className = 'comp-btn p-2.5 rounded-xl border-2 border-amber-400 bg-amber-500/15 text-left transition';
+      }
+      document.getElementById('oc-preview-company').textContent = `${name} (RUT: ${rut})`;
+    }
+
+    function selectPurchaseTicket(num) {
+      if (num === 1) {
+        document.getElementById('sp-card-1').className = 'cursor-pointer bg-[#151d35] rounded-xl p-4 border-2 border-amber-400 space-y-2 transition';
+        document.getElementById('sp-card-2').className = 'cursor-pointer bg-[#151d35] rounded-xl p-4 border border-white/10 hover:border-white/30 space-y-2 transition';
+        document.getElementById('oc-form-folio').textContent = 'OC-2610-042';
+        document.getElementById('oc-form-sp').textContent = 'SP-2610-019';
+        document.getElementById('oc-preview-supplier').textContent = 'Transportes Sur Austral Ltda. · Crédito 30 días';
+        document.getElementById('oc-preview-costcenter').textContent = 'Sección 3 ITS · OT GSP-2610-084 (Subcontrato Flete)';
+        document.getElementById('oc-preview-total').textContent = '$720.000 Neto';
+      } else {
+        document.getElementById('sp-card-2').className = 'cursor-pointer bg-[#151d35] rounded-xl p-4 border-2 border-amber-400 space-y-2 transition';
+        document.getElementById('sp-card-1').className = 'cursor-pointer bg-[#151d35] rounded-xl p-4 border border-white/10 hover:border-white/30 space-y-2 transition';
+        document.getElementById('oc-form-folio').textContent = 'OC-2610-043';
+        document.getElementById('oc-form-sp').textContent = 'SP-2610-020';
+        document.getElementById('oc-preview-supplier').textContent = 'Hidráulica Austral SpA · Crédito 30 días';
+        document.getElementById('oc-preview-costcenter').textContent = 'Bodega WMS-Lite / OTM-2610-011 (Repuestos Hidráulicos)';
+        document.getElementById('oc-preview-total').textContent = '$490.000 Neto';
+      }
+    }
+
+    function sendOcToOmarPhone() {
+      omarScenarios.oc.entityHtml = `
+        <div class="flex justify-between"><span class="text-slate-400">Razón Social Emisora:</span><span class="text-amber-300 font-black">${currentOmarCompany}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Proveedor:</span><span class="text-white font-bold">Transportes Sur Austral Ltda.</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Condición Pago OC:</span><span class="text-cyan-300 font-bold">Factura 30 Días</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Imputación Costo:</span><span class="text-emerald-400 font-semibold">OT GSP-2610-084 (ITS Sección 3)</span></div>
+      `;
+      switchMainTab('tab-omar');
+      setOmarScenario('oc');
+      focusPhoneScreen();
+    }
+
+    // Inicializar escenario por defecto
+    setOmarScenario('comercial');
+  </script>
+</body>
+</html>

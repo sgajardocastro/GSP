@@ -168,7 +168,7 @@
                     {{ dimRoot.label }}
                   </h3>
                   <!-- Semáforo compacto de la dimensión -->
-                  <div class="flex items-center gap-1 font-mono text-[10px] font-bold">
+                  <div v-if="dimRoot.id !== 'dim-procesos'" class="flex items-center gap-1 font-mono text-[10px] font-bold">
                     <span
                       v-if="getNodeStats(dimRoot).vigentes > 0"
                       class="bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-1.5 py-0.2 rounded flex items-center gap-1"
@@ -225,8 +225,8 @@
                   <span class="text-base">{{ groupNode.icon || '📁' }}</span>
                   <span class="text-xs font-bold text-slate-200 hover:text-white truncate">{{ groupNode.label }}</span>
                   
-                  <!-- Semáforo compacto del grupo a la derecha del nombre -->
-                  <div class="flex items-center gap-1 font-mono text-[10px] font-bold ml-1">
+                  <!-- Semáforo compacto del grupo a la derecha del nombre (solo para grupos con documentos completos indexados: flota, personas, empresas) -->
+                  <div v-if="!String(groupNode.id).startsWith('clt-')" class="flex items-center gap-1 font-mono text-[10px] font-bold ml-1">
                     <span
                       v-if="getNodeStats(groupNode).vigentes > 0"
                       class="bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-1.5 py-0.2 rounded flex items-center gap-0.5"
@@ -253,11 +253,16 @@
                     </span>
                   </div>
 
-                  <span v-if="groupNode.detail" class="text-[10px] text-slate-500 truncate">{{ groupNode.detail }}</span>
+                  <span v-if="groupNode.detail && !String(groupNode.id).startsWith('clt-')" class="text-[10px] text-slate-500 truncate">{{ groupNode.detail }}</span>
                 </div>
 
                 <span class="text-[10px] text-slate-400 bg-white/5 px-2 py-0.5 rounded font-mono shrink-0">
-                  {{ groupNode.children?.length || 0 }} ítems
+                  <template v-if="String(groupNode.id).startsWith('clt-')">
+                    {{ groupNode.children?.length || 0 }} {{ (groupNode.children?.length === 1) ? 'proceso' : 'procesos' }}
+                  </template>
+                  <template v-else>
+                    {{ groupNode.children?.length || 0 }} ítems
+                  </template>
                 </span>
               </div>
 
@@ -285,8 +290,11 @@
                         {{ itemNode.label }}
                       </span>
 
-                      <!-- SEMÁFOROS COMPACTOS A LA DERECHA INMEDIATA DEL NOMBRE -->
-                      <div class="flex items-center gap-1 font-mono text-[10px] font-bold ml-1 shrink-0">
+                      <!-- SEMÁFOROS COMPACTOS A LA DERECHA INMEDIATA DEL NOMBRE (Solo cuando la OT ya tiene su expediente completo cargado) -->
+                      <div
+                        v-if="!String(itemNode.id).startsWith('pry-') || expedientesProyectosCache.has(Number(itemNode.id_proyecto))"
+                        class="flex items-center gap-1 font-mono text-[10px] font-bold ml-1 shrink-0"
+                      >
                         <span
                           v-if="getNodeStats(itemNode).vigentes > 0"
                           class="bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-1.5 py-0.2 rounded flex items-center gap-1"
@@ -327,9 +335,19 @@
                         <span>+ 📤</span>
                         <span>Subir Doc</span>
                       </button>
-                      <span class="text-[10px] text-slate-500 font-mono shrink-0">
-                        {{ countTotalArchivos(itemNode) }} docs
-                      </span>
+                      <template v-if="String(itemNode.id).startsWith('pry-')">
+                        <span v-if="expedientesProyectosCache.has(Number(itemNode.id_proyecto))" class="text-[10px] text-slate-400 bg-white/5 px-2 py-0.5 rounded font-mono shrink-0">
+                          {{ countTotalArchivos(itemNode) }} docs
+                        </span>
+                        <span v-else class="text-[10px] text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded font-mono shrink-0">
+                          Expediente 360°
+                        </span>
+                      </template>
+                      <template v-else>
+                        <span class="text-[10px] text-slate-500 font-mono shrink-0">
+                          {{ countTotalArchivos(itemNode) }} docs
+                        </span>
+                      </template>
                     </div>
                   </div>
 
@@ -346,6 +364,125 @@
                       >
                         + 📤 Subir Primer Documento
                       </button>
+                    </div>
+
+                    <!-- CASO C: EXPEDIENTE INTEGRAL E2E POR OT (SPEC-086) -->
+                    <div v-else-if="String(itemNode.id).startsWith('pry-')" class="space-y-2 pt-1 pb-1">
+                      <!-- Cabecera de Resumen de Expediente -->
+                      <div class="flex items-center justify-between px-3 py-1.5 bg-[#070e1c] rounded border border-sky-500/20 text-xs">
+                        <div class="flex items-center gap-2">
+                          <span class="text-sky-400 font-bold">📋 Expediente Integral E2E</span>
+                          <span class="text-slate-400 text-[10px]">Trazabilidad Documental E2E del Servicio</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <span class="text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-sky-500/10 text-sky-300 border border-sky-500/30">
+                            {{ countEtapasConDocs(itemNode) }} de {{ getEtapasParaProyecto(itemNode).length }} Etapas Activas
+                          </span>
+                          <span class="text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                            {{ getFilesFiltrados(itemNode.files).length }} Documentos
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- Contenedor de Etapas Canónicas -->
+                      <div
+                        v-for="etapa in getEtapasParaProyecto(itemNode)"
+                        :key="etapa.num"
+                        class="rounded-lg border transition-all overflow-hidden"
+                        :class="etapa.files.length > 0 ? 'bg-[#0a1224]/80 border-slate-700/60' : 'bg-[#070b14]/40 border-white/5 opacity-70'"
+                      >
+                        <!-- Cabecera de Etapa (Clic para colapsar/expandir) -->
+                        <div
+                          @click="toggleSubEtapa(itemNode.id, etapa.num)"
+                          class="flex items-center justify-between p-2 cursor-pointer hover:bg-white/5 transition-colors select-none"
+                        >
+                          <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-slate-500 text-[9px] font-mono">
+                              {{ isSubEtapaExpanded(itemNode.id, etapa.num) ? '▼' : '▶' }}
+                            </span>
+                            <span class="text-base">{{ etapa.icon }}</span>
+                            <span class="text-xs font-bold" :class="etapa.files.length > 0 ? 'text-white' : 'text-slate-400'">
+                              {{ etapa.nombre }}
+                            </span>
+                            <span class="text-[10px] text-slate-500 hidden sm:inline truncate max-w-[280px]">
+                              — {{ etapa.desc }}
+                            </span>
+                          </div>
+
+                          <div class="flex items-center gap-1.5 shrink-0">
+                            <span
+                              class="text-[10px] px-2 py-0.5 rounded font-mono font-bold"
+                              :class="etapa.files.length > 0
+                                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                                : 'bg-slate-800 text-slate-500 border border-slate-700/40'"
+                            >
+                              {{ etapa.files.length }} {{ etapa.files.length === 1 ? 'doc' : 'docs' }}
+                            </span>
+                          </div>
+                        </div>
+
+                        <!-- Lista de Archivos de la Etapa -->
+                        <div
+                          v-if="isSubEtapaExpanded(itemNode.id, etapa.num) && etapa.files.length > 0"
+                          class="pl-4 pr-2 pb-2 pt-1 border-t border-white/5 space-y-1 bg-black/20"
+                        >
+                          <div
+                            v-for="(file, fIdx) in etapa.files"
+                            :key="fIdx"
+                            class="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded-lg bg-[#0e1628]/80 hover:bg-[#131e36] border border-white/5 gap-2 transition-all group"
+                          >
+                            <div class="flex items-center gap-2.5 min-w-0">
+                              <span class="text-base">{{ getFileIcon(file.name) }}</span>
+                              <div class="min-w-0">
+                                <a
+                                  @click.prevent="abrirDocumentoNuevaPestana(file)"
+                                  href="#"
+                                  class="text-xs font-bold text-slate-200 hover:text-amber-300 transition-colors truncate block cursor-pointer"
+                                  :title="file.name"
+                                >
+                                  {{ file.name }}
+                                </a>
+                                <div class="flex flex-wrap items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                                  <span class="text-emerald-400 font-medium">{{ file.tipo }}</span>
+                                  <span>•</span>
+                                  <span>{{ file.emisor }}</span>
+                                  <span>•</span>
+                                  <span class="font-mono text-slate-500">Emisión: {{ file.fecha_emision }}</span>
+                                  <span v-if="file.size">• {{ file.size }}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                              <button
+                                @click="abrirDocumentoNuevaPestana(file)"
+                                class="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-2 py-1 rounded font-bold transition-all cursor-pointer flex items-center gap-1"
+                                title="Ver Documento"
+                              >
+                                <span>👁️</span>
+                                <span>Ver</span>
+                              </button>
+                              <a
+                                v-if="file.id_doc"
+                                :href="`/api/archivo/ver/${file.id_doc}`"
+                                download
+                                class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 px-2 py-1 rounded font-bold transition-all cursor-pointer flex items-center gap-1"
+                                title="Descargar archivo original"
+                              >
+                                <span>⬇️</span>
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Etapa Vacía (Sin documentos) -->
+                        <div
+                          v-else-if="isSubEtapaExpanded(itemNode.id, etapa.num) && etapa.files.length === 0"
+                          class="p-2.5 text-center text-slate-500 italic text-[11px] border-t border-white/5 bg-black/10"
+                        >
+                          Sin documentos registrados en esta etapa para este servicio.
+                        </div>
+                      </div>
                     </div>
 
                     <!-- CASO A: EXPEDIENTE DE PERSONA -> DOCUMENTOS UNIVERSALES + MATRIZ MULTI-EMPRESA (SPEC 45) -->
@@ -544,6 +681,18 @@
                           <span class="text-[10px]">↗</span>
                         </button>
 
+                        <!-- Si es Report Diario de Izaje, botón secundario para abrir el formulario web interactivo -->
+                        <button
+                          v-if="file.rawReport"
+                          @click.stop="abrirModalAuditoriaReport(file.rawReport)"
+                          type="button"
+                          class="cursor-pointer text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1"
+                          title="Abrir formulario web interactivo para auditar o ajustar datos"
+                        >
+                          <span>✏️</span>
+                          <span class="hidden sm:inline">Formulario Web</span>
+                        </button>
+
                         <!-- Botón de dar de baja para documentos de empresa -->
                         <button
                           v-if="String(itemNode.id).startsWith('emp-')"
@@ -733,6 +882,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import apiAxios from '../services/api'
+import { navStore } from '../stores/navStore'
 import ModalVisorReport from '../components/Operaciones/ModalVisorReport.vue'
 
 // --- ESTADO GENERAL ---
@@ -772,7 +922,7 @@ const nuevoDocEmpresa = ref({
 
 // --- DATOS MAESTROS PROVENIENTES DE BD ---
 const empresasList = ref([
-  { id_empresa: 9, name: 'Grúas San Pablo SpA', rut: '76.123.456-7', rubro: 'Izaje Industrial & Grúas Móviles', logo: '🏗️' },
+  { id_empresa: 9, name: 'Grúas San Pablo SpA', rut: '76.123.456-7', rubro: 'Izaje Industrial & Grúas Móviles', logo: '🏢' },
   { id_empresa: 7, name: 'Bestmaq Arriendos', rut: '76.209.534-3', rubro: 'Maquinaria Usada & Equipos Pesados', logo: '🚜' },
   { id_empresa: 8, name: 'Logística del Sur', rut: '76.890.123-4', rubro: 'Transporte Cama Baja & Escoltas', logo: '🚛' },
   { id_empresa: 11, name: 'Royal Rental', rut: '76.345.678-9', rubro: 'Plataformas Articuladas & Tijeras', logo: '🏢' }
@@ -783,6 +933,15 @@ const personasList = ref([])
 const proyectosList = ref([])
 const visitasTerrenoList = ref([])
 const reportsProyectosCache = ref(new Map())
+const actasProyectosMap = ref(new Map())
+const expedientesProyectosCache = ref(new Map())
+const subEtapasExpandidas = ref(new Set())
+
+const tryJsonParse = (str) => {
+  if (!str) return null
+  if (typeof str === 'object') return str
+  try { return JSON.parse(str) } catch { return null }
+}
 
 // Estado para visor interactivo de Report Diario Digital
 const modalVisorReportAbierto = ref(false)
@@ -814,8 +973,10 @@ const fetchDatosDimensiones = async () => {
     const { data: usrData } = await apiAxios.get('/servicio/leanglobal/obtenerUsuarios')
     personasList.value = Array.isArray(usrData) ? usrData : (usrData?.datos || [])
 
-    // 3. Proyectos & Clientes
-    const { data: pryData } = await apiAxios.get('/proyectos')
+    // 3. Proyectos & Clientes (Carga universal para el árbol dimensional sin sesgo inicial)
+    const { data: pryData } = await apiAxios.get('/proyectos', {
+      params: { _bypass_empresa: true, _id_empresa: 0 }
+    })
     proyectosList.value = Array.isArray(pryData?.proyectos) ? pryData.proyectos : []
 
     // 4. Visitas Técnicas a Terreno (66 visitas en BD con PDF)
@@ -824,6 +985,25 @@ const fetchDatosDimensiones = async () => {
       visitasTerrenoList.value = Array.isArray(visData) ? visData : []
     } catch (errVis) {
       console.warn('Error cargando visitas a terreno:', errVis)
+    }
+
+    // 5. Actas 360° de Plataformas (Relacional Directo desde BD)
+    try {
+      const { data: actasData } = await apiAxios.get('/operaciones/acta-plataforma', {
+        params: { _bypass_empresa: true, _id_empresa: 0 }
+      })
+      if (actasData?.success && Array.isArray(actasData.actas)) {
+        actasProyectosMap.value.clear()
+        actasData.actas.forEach(a => {
+          const pid = Number(a.id_proyecto)
+          if (!actasProyectosMap.value.has(pid)) {
+            actasProyectosMap.value.set(pid, [])
+          }
+          actasProyectosMap.value.get(pid).push(a)
+        })
+      }
+    } catch (errActas) {
+      console.warn('Error cargando actas relacionales:', errActas)
     }
 
     // RENDIMIENTO ULTRA-RÁPIDO (SPEC 45): Cero precarga masiva.
@@ -841,18 +1021,85 @@ const fetchDatosDimensiones = async () => {
 const cargarCertificadosEquipoDirecto = async (idEquipo) => {
   if (certsEquiposCache.value.has(idEquipo)) return
   try {
-    const { data } = await apiAxios.get(`/tequ-equipos/${idEquipo}/certificados`)
-    const certs = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : [])
-    certsEquiposCache.value.set(idEquipo, certs.map(c => ({
-      id_doc: c.id_doc,
-      id_certificado: c.id_certificado,
-      name: c.name_doc_orig || `${c.nombre_tipo}.pdf`,
-      tipo: c.nombre_tipo || 'Certificado de Equipo',
-      emisor: c.entidad_emisora || 'GSP',
-      fecha_emision: c.fecha_emision ? c.fecha_emision.split('T')[0] : 'S/I',
-      fecha_vencimiento: c.fecha_vencimiento ? c.fecha_vencimiento.split('T')[0] : 'Permanente',
-      size: c.path_doc || 'PDF Oficial'
-    })))
+    const [certRes, actasRes] = await Promise.allSettled([
+      apiAxios.get(`/tequ-equipos/${idEquipo}/certificados`),
+      apiAxios.get(`/operaciones/acta-plataforma/equipo/${idEquipo}`)
+    ])
+
+    const docsFinales = []
+
+    if (certRes.status === 'fulfilled') {
+      const certs = Array.isArray(certRes.value?.data?.data) ? certRes.value.data.data : (Array.isArray(certRes.value?.data) ? certRes.value.data : [])
+      certs.forEach(c => {
+        docsFinales.push({
+          id_doc: c.id_doc,
+          id_certificado: c.id_certificado,
+          name: c.name_doc_orig || `${c.nombre_tipo}.pdf`,
+          tipo: c.nombre_tipo || 'Certificado de Equipo',
+          emisor: c.entidad_emisora || 'GSP',
+          fecha_emision: c.fecha_emision ? c.fecha_emision.split('T')[0] : 'S/I',
+          fecha_vencimiento: c.fecha_vencimiento ? c.fecha_vencimiento.split('T')[0] : 'Permanente',
+          size: c.path_doc || 'PDF Oficial'
+        })
+      })
+    }
+
+    if (actasRes.status === 'fulfilled' && actasRes.value?.data?.success) {
+      const actas = Array.isArray(actasRes.value.data.actas) ? actasRes.value.data.actas : []
+      actas.forEach(a => {
+        if (a.id_file_pdf_entrega) {
+          docsFinales.push({
+            id_doc: a.id_file_pdf_entrega,
+            name: `${a.folio_acta}_ENTREGA.pdf`,
+            tipo: 'Acta Entrega Terreno 360°',
+            emisor: `Chofer: ${a.chofer_entrega_nombre || 'GSP'}`,
+            empresa_emisora: a.cliente_nombre ? `Faena: ${a.cliente_nombre}` : null,
+            fecha_emision: a.fecha_entrega ? String(a.fecha_entrega).split('T')[0] : 'S/I',
+            fecha_vencimiento: 'Permanente',
+            size: 'Acta Terreno'
+          })
+        }
+        if (a.id_file_pdf_final) {
+          docsFinales.push({
+            id_doc: a.id_file_pdf_final,
+            name: `${a.folio_acta}_FINAL.pdf`,
+            tipo: 'Acta Retiro & Cierre Terreno 360°',
+            emisor: `Chofer: ${a.chofer_retiro_nombre || 'GSP'}`,
+            empresa_emisora: a.cliente_nombre ? `Faena: ${a.cliente_nombre}` : null,
+            fecha_emision: a.fecha_retiro ? String(a.fecha_retiro).split('T')[0] : 'S/I',
+            fecha_vencimiento: 'Permanente',
+            size: 'Acta Terreno'
+          })
+        }
+      })
+    }
+
+    // Contratos de arriendo asociados a este equipo
+    proyectosList.value.forEach(p => {
+      const jf = typeof p.json_field === 'string' ? (tryJsonParse(p.json_field) || {}) : (p.json_field || {})
+      const crm = jf.crm_v1 || {}
+      const ops = jf.ejecucion_v1 || {}
+      const ctr = crm.contrato
+      if (ctr && ctr.id_doc) {
+        const match = crm.id_equipo == idEquipo ||
+          ops.equipo_id == idEquipo ||
+          (Array.isArray(ops.equipos_extra) && ops.equipos_extra.some(eqId => eqId == idEquipo)) ||
+          (Array.isArray(crm.lineas_servicio) && crm.lineas_servicio.some(l => (l.equipo_asignado_id == idEquipo || l.id_equipo == idEquipo)))
+        if (match) {
+          docsFinales.push({
+            id_doc: ctr.id_doc,
+            name: `${ctr.folio || p.codi_proyecto + '-Contrato'}.pdf`,
+            tipo: `Contrato de Arrendamiento (${ctr.estado || 'Emitido'})`,
+            emisor: ctr.representante_nombre ? `Mandante: ${ctr.representante_nombre}` : (p.nombre_cliente || 'GSP'),
+            fecha_emision: ctr.fecha_firma || (ctr.fecha_emision ? String(ctr.fecha_emision).split('T')[0] : 'S/I'),
+            fecha_vencimiento: ctr.fecha_termino || 'Permanente',
+            size: ctr.estado === 'FIRMADO_DIGITAL' ? 'Firmado FES' : 'PDF Oficial'
+          })
+        }
+      }
+    })
+
+    certsEquiposCache.value.set(idEquipo, docsFinales)
   } catch (err) {
     certsEquiposCache.value.set(idEquipo, [])
   }
@@ -924,25 +1171,123 @@ const cargarDocumentosEmpresaDirecto = async (idEmpresa, forceReload = false) =>
   }
 }
 
+const cargarExpedienteProyectoDirecto = async (idProyecto) => {
+  const pId = Number(idProyecto)
+  if (!pId || expedientesProyectosCache.value.has(pId)) return
+  try {
+    const [repRes, viajeRes, itsRes, edpRes] = await Promise.allSettled([
+      apiAxios.get(`/operaciones/report/proyecto/${pId}`),
+      apiAxios.get(`/operaciones/viaje/proyecto/${pId}`),
+      apiAxios.get(`/operaciones/its/${pId}`),
+      apiAxios.get(`/operaciones/edp/proyecto/${pId}`)
+    ])
+
+    const reports = repRes.status === 'fulfilled'
+      ? (Array.isArray(repRes.value?.data?.data) ? repRes.value.data.data : (Array.isArray(repRes.value?.data) ? repRes.value.data : []))
+      : []
+
+    const viajes = viajeRes.status === 'fulfilled' && Array.isArray(viajeRes.value?.data)
+      ? viajeRes.value.data
+      : []
+
+    const its = (itsRes.status === 'fulfilled' && itsRes.value?.data?.success)
+      ? itsRes.value.data
+      : null
+
+    const edps = edpRes.status === 'fulfilled' && Array.isArray(edpRes.value?.data)
+      ? edpRes.value.data
+      : []
+
+    const newMap = new Map(expedientesProyectosCache.value)
+    newMap.set(pId, { reports, viajes, its, edps })
+    expedientesProyectosCache.value = newMap
+
+    const repMap = new Map(reportsProyectosCache.value)
+    repMap.set(pId, reports)
+    reportsProyectosCache.value = repMap
+
+    // Carga automática reactiva de certificados de flota y tripulación asignada
+    const pryObj = proyectosList.value.find(p => Number(p.id_proyecto) === pId)
+    if (pryObj) {
+      const jf = typeof pryObj.json_field === 'string' ? (tryJsonParse(pryObj.json_field) || {}) : (pryObj.json_field || {})
+      const ops = jf.ejecucion_v1 || jf.operaciones_v1 || {}
+      const crm = jf.crm_v1 || {}
+      const eqId = ops.equipo_id || crm.id_equipo || crm.equipo_asignado_id
+      if (eqId) cargarCertificadosEquipoDirecto(eqId)
+      const trip = Array.isArray(ops.tripulacion_asignada) ? ops.tripulacion_asignada : []
+      trip.forEach(t => { if (t.id_user) cargarCertificadosPersonaDirecto(t.id_user) })
+      if (ops.operador_id) cargarCertificadosPersonaDirecto(ops.operador_id)
+      if (ops.rigger_id) cargarCertificadosPersonaDirecto(ops.rigger_id)
+    }
+  } catch (err) {
+    console.warn(`[Expediente] Error cargando datos para OT ${pId}:`, err)
+    const newMap = new Map(expedientesProyectosCache.value)
+    newMap.set(pId, { reports: [], viajes: [], its: null, edps: [] })
+    expedientesProyectosCache.value = newMap
+  }
+}
+
+const cargarReportsProyectoDirecto = (idProyecto) => cargarExpedienteProyectoDirecto(idProyecto)
+
+const ETAPAS_CANONICAS = [
+  { num: 1, nombre: '1. Comercial & Preventa', icon: '💼', desc: 'Cotizaciones comerciales e informes de visita a terreno' },
+  { num: 2, nombre: '2. Asignación de Recursos & Orden de Trabajo (OT)', icon: '📋', desc: 'Órdenes de Trabajo formales emitidas con asignación de grúa y tripulación' },
+  { num: 3, nombre: '3. Logística, Despacho y Acreditaciones', icon: '🚛', desc: 'Hojas de ruta, evidencias de odómetros y acreditaciones técnicas/laborales de flota y tripulación' },
+  { num: 4, nombre: '4. Operación en Faena (Izaje)', icon: '⏱️', desc: 'Reportes diarios de izaje por jornada firmados en terreno y respaldos físicos' },
+  { num: 5, nombre: '5. Cierre Técnico, Liquidación & Facturación', icon: '💰', desc: 'Inspección Técnica de Salida (ITS), Carátulas de Estado de Pago (EDP) y Facturas DTE' },
+  { num: 6, nombre: '6. Arriendo de Plataformas & Contratos Especiales', icon: '🪜', desc: 'Contratos de arriendo con firma digital FES y actas de entrega/retiro 360°', condicional: true }
+]
+
+const getEtapasParaProyecto = (itemNode) => {
+  const allFiles = getFilesFiltrados(itemNode.files)
+  return ETAPAS_CANONICAS
+    .map(et => ({
+      ...et,
+      files: allFiles.filter(f => f.etapa_num === et.num)
+    }))
+    .filter(et => !et.condicional || et.files.length > 0)
+}
+
+const countEtapasConDocs = (itemNode) => {
+  return getEtapasParaProyecto(itemNode).filter(et => et.files.length > 0).length
+}
+
+const toggleSubEtapa = (otId, etapaNum) => {
+  const key = `${otId}-etapa-${etapaNum}`
+  if (subEtapasExpandidas.value.has(key)) subEtapasExpandidas.value.delete(key)
+  else subEtapasExpandidas.value.add(key)
+}
+
+const isSubEtapaExpanded = (otId, etapaNum) => {
+  const key = `${otId}-etapa-${etapaNum}`
+  // Si no se ha colapsado explícitamente, expandida por defecto para máxima visibilidad
+  return !subEtapasExpandidas.value.has(key)
+}
+
 // --- CONSTRUCCIÓN DEL ÁRBOL COMPLETO DE LAS 4 DIMENSIONES CON DATOS REALES ---
 const allTreeRoots = computed(() => {
   const roots = []
+  const activeEmpId = Number(navStore.activeEmpresa || 0)
 
   // 1. DIMENSIÓN EMPRESA / HOLDING (Expediente Institucional Real Spec 45)
+  const empresasFiltradas = activeEmpId > 0
+    ? empresasList.value.filter(emp => Number(emp.id_empresa) === activeEmpId)
+    : empresasList.value
+
   roots.push({
     id: 'dim-empresa',
     dimKey: 'empresa',
     label: '1. Dimensión Empresa & Holding',
     subtitle: 'Sociedades operativas del grupo San Pablo registradas en base de datos',
     icon: '🏛️',
-    badge: `${empresasList.value.length} Empresas`,
+    badge: `${empresasFiltradas.length} Empresas`,
     children: [
       {
         id: 'grupo-sociedades-holding',
         label: 'Sociedades Operativas del Holding San Pablo',
         icon: '🏛️',
         detail: '4 empresas con personería jurídica y RUT independiente',
-        children: empresasList.value.map(emp => ({
+        children: empresasFiltradas.map(emp => ({
           id: `emp-${emp.id_empresa}`,
           id_empresa: emp.id_empresa,
           label: `${emp.name} • RUT: ${emp.rut}`,
@@ -956,8 +1301,12 @@ const allTreeRoots = computed(() => {
   })
 
   // 2. DIMENSIÓN FLOTA Y EQUIPOS (110 EQUIPOS REALES + 289 CERTIFICADOS REALES)
+  const equiposFiltrados = activeEmpId > 0
+    ? equiposList.value.filter(eq => Number(eq.id_empresa) === activeEmpId)
+    : equiposList.value
+
   const gruposEquipos = {}
-  equiposList.value.forEach(eq => {
+  equiposFiltrados.forEach(eq => {
     const cat = eq.nombre_categoria || eq.tipo_equipo || 'OTROS EQUIPOS'
     if (!gruposEquipos[cat]) gruposEquipos[cat] = []
     gruposEquipos[cat].push(eq)
@@ -969,7 +1318,7 @@ const allTreeRoots = computed(() => {
     label: '2. Dimensión Flota & Equipos de Izaje',
     subtitle: '110 equipos reales con 289 certificados físicos almacenados en servidor',
     icon: '🚜',
-    badge: `${equiposList.value.length} Equipos`,
+    badge: `${equiposFiltrados.length} Equipos`,
     children: Object.keys(gruposEquipos).sort().map(cat => ({
       id: `cat-${cat}`,
       label: cat,
@@ -988,8 +1337,12 @@ const allTreeRoots = computed(() => {
   })
 
   // 3. DIMENSIÓN PERSONAS Y TRIPULACIÓN (RECURSOS HUMANOS + 286 CERTIFICADOS REALES)
+  const personasFiltradas = activeEmpId > 0
+    ? personasList.value.filter(p => !p.id_empresa || Number(p.id_empresa) === activeEmpId)
+    : personasList.value
+
   const gruposPersonas = {}
-  personasList.value.forEach(p => {
+  personasFiltradas.forEach(p => {
     const cargo = (p.cargo || p.json_data?.cargo || 'PERSONAL OPERATIVO').toUpperCase().trim()
     if (!gruposPersonas[cargo]) gruposPersonas[cargo] = []
     gruposPersonas[cargo].push(p)
@@ -1001,7 +1354,7 @@ const allTreeRoots = computed(() => {
     label: '3. Dimensión Personas & Tripulación',
     subtitle: 'Colaboradores registrados en plataforma con sus certificados laborales reales',
     icon: '👷',
-    badge: `${personasList.value.length} Colaboradores`,
+    badge: `${personasFiltradas.length} Colaboradores`,
     children: Object.keys(gruposPersonas).sort().map(cargo => ({
       id: `cargo-${cargo}`,
       label: cargo,
@@ -1023,8 +1376,12 @@ const allTreeRoots = computed(() => {
   })
 
   // 4. DIMENSIÓN CLIENTES Y PROCESOS COMERCIALES (OTS REALES)
+  const proyectosFiltrados = activeEmpId > 0
+    ? proyectosList.value.filter(pry => Number(pry.id_empresa) === activeEmpId)
+    : proyectosList.value
+
   const gruposProyectos = {}
-  proyectosList.value.forEach(pry => {
+  proyectosFiltrados.forEach(pry => {
     const cliente = pry.nombre_cliente || pry.name_empresa_cliente || 'CLIENTE MANDANTE DIRECTO'
     if (!gruposProyectos[cliente]) gruposProyectos[cliente] = []
     gruposProyectos[cliente].push(pry)
@@ -1034,9 +1391,9 @@ const allTreeRoots = computed(() => {
     id: 'dim-procesos',
     dimKey: 'procesos',
     label: '4. Dimensión Clientes & Procesos Comerciales OTs',
-    subtitle: `${proyectosList.value.length} OTs reales con sus cotizaciones, visitas técnicas, órdenes de trabajo y reportes de faena`,
+    subtitle: `${proyectosFiltrados.length} OTs reales con sus cotizaciones, visitas técnicas, órdenes de trabajo y reportes de faena`,
     icon: '🏢',
-    badge: `${proyectosList.value.length} OTs Registradas`,
+    badge: `${proyectosFiltrados.length} OTs Registradas`,
     children: Object.keys(gruposProyectos).sort().map(cliente => ({
       id: `clt-${cliente}`,
       label: cliente,
@@ -1044,36 +1401,140 @@ const allTreeRoots = computed(() => {
       detail: `${gruposProyectos[cliente].length} servicios`,
       children: gruposProyectos[cliente].map(pry => {
         const cod = pry.codi_proyecto || `OT-${pry.id_proyecto}`
-        const filesProy = []
+        const pIdNum = Number(pry.id_proyecto)
+        const expData = expedientesProyectosCache.value.get(pIdNum) || {
+          reports: reportsProyectosCache.value.get(pIdNum) || [],
+          viajes: [],
+          its: null,
+          edps: []
+        }
 
-        const jf = pry.json_field || {}
+        const jf = typeof pry.json_field === 'string' ? (tryJsonParse(pry.json_field) || {}) : (pry.json_field || {})
         const crm = jf.crm_v1 || jf.crm || {}
         const cotis = crm.cotizaciones_historicas || []
+        const cotizVig = crm.cotizacion_v1 || crm.cotizacion || null
         const ops = jf.ejecucion_v1 || jf.operaciones_v1 || {}
         const ots = ops.ot_versiones || []
 
-        // 1. Cotizaciones Comerciales Históricas en PDF
+        const filesProy = []
+
+        // ==========================================
+        // ETAPA 1: PREVENTA & COMERCIAL
+        // ==========================================
+        // Cotización Comercial Vigente
+        if (cotizVig && (cotizVig.url_pdf || cotizVig.id_doc || cotizVig.id_doc_pdf)) {
+          const idDoc = cotizVig.id_doc || cotizVig.id_doc_pdf || (cotizVig.url_pdf ? cotizVig.url_pdf.replace('/api/archivo/ver/', '').replace(/^\//, '') : null)
+          filesProy.push({
+            etapa_num: 1,
+            etapa_nombre: '1. Preventa & Comercial',
+            etapa_icon: '💼',
+            id_doc: idDoc,
+            url: cotizVig.url_pdf || (idDoc ? `/api/archivo/ver/${idDoc}` : null),
+            name: cotizVig.nombre_archivo || `${cod}-Cotizacion-Vigente.pdf`,
+            tipo: 'Cotización Comercial Vigente',
+            emisor: 'GSP Área Comercial',
+            fecha_emision: cotizVig.fecha_creacion ? cotizVig.fecha_creacion.split('T')[0] : (cotizVig.fecha || 'S/I'),
+            fecha_vencimiento: 'Permanente',
+            size: 'PDF Oficial'
+          })
+        }
+        // Cotizaciones Comerciales Históricas
         cotis.forEach(c => {
           const idDoc = c.id_doc || (c.url ? c.url.replace('/api/archivo/ver/', '').replace(/^\//, '') : null)
-          if (idDoc) {
+          if (idDoc && (!cotizVig || idDoc !== cotizVig.id_doc)) {
             filesProy.push({
+              etapa_num: 1,
+              etapa_nombre: '1. Preventa & Comercial',
+              etapa_icon: '💼',
               id_doc: idDoc,
               url: c.url,
-              name: c.nombre_archivo || `${cod}-Cotizacion-v${c.version}.pdf`,
-              tipo: `Cotización Comercial (v${c.version})`,
+              name: c.nombre_archivo || `${cod}-Cotizacion-v${c.version || 1}.pdf`,
+              tipo: `Cotización Comercial (v${c.version || 1})`,
               emisor: 'GSP Área Comercial',
               fecha_emision: c.fecha_creacion ? c.fecha_creacion.split('T')[0] : (c.fecha || 'S/I'),
               fecha_vencimiento: 'Permanente',
-              size: 'PDF Oficial'
+              size: 'PDF Histórico'
             })
           }
         })
+        // Visitas Técnicas a Terreno (Template 80)
+        const visitasDelProy = visitasTerrenoList.value.filter(v => v.id_proyecto === pry.id_proyecto && v.id_doc)
+        visitasDelProy.forEach(v => {
+          filesProy.push({
+            etapa_num: 1,
+            etapa_nombre: '1. Preventa & Comercial',
+            etapa_icon: '💼',
+            id_doc: v.id_doc,
+            url: `/api/archivo/ver/${v.id_doc}`,
+            name: `Informe-Visita-Terreno-${v.id_survey}.pdf`,
+            tipo: `Visita Técnica a Terreno (#${v.id_survey})`,
+            emisor: 'GSP Inspector Terreno',
+            fecha_emision: v.fecha_plan_ini ? v.fecha_plan_ini.split('T')[0] : 'S/I',
+            fecha_vencimiento: 'Permanente',
+            size: 'PDF Oficial'
+          })
+        })
 
-        // 2. Órdenes de Trabajo (OT) Oficiales Aprobadas
+        // ==========================================
+        // ETAPA 2: CONTRATACIÓN & FORMALIZACIÓN
+        // ==========================================
+        // Contrato de Arrendamiento de Maquinaria
+        const ctrCandidatos = [jf.contrato_arriendo, crm.contrato_arriendo, crm.contrato].filter(Boolean)
+        const ctrFirmado = ctrCandidatos.find(c => c.estado === 'FIRMADO_DIGITAL' || c.estado === 'FIRMADO_FISICO')
+        const ctrMejor = ctrFirmado || ctrCandidatos.find(c => c.url_pdf_firmado || c.url_pdf || c.id_doc) || null
+        if (ctrMejor && (ctrMejor.url_pdf_firmado || ctrMejor.url_pdf || ctrMejor.id_doc)) {
+          const esFirmado = ctrMejor.estado === 'FIRMADO_DIGITAL' || ctrMejor.estado === 'FIRMADO_FISICO' || Boolean(ctrMejor.url_pdf_firmado)
+          const pdfUrl = ctrMejor.url_pdf_firmado || ctrMejor.url_pdf || ''
+          const idDocCtr = ctrMejor.id_doc || (pdfUrl.includes('/archivo/ver/') ? pdfUrl.split('/archivo/ver/')[1] : null)
+          const firmanteNom = ctrMejor.firma_digital?.nombre || ctrMejor.firma_digital?.firmado_por_nombre || ctrMejor.representante_nombre || 'Cliente Mandante'
+          const fechaFirma = String(ctrMejor.firma_digital?.timestamp || ctrMejor.firma_digital?.fecha_hora_firma || ctrMejor.fecha_firma || ctrMejor.fecha_inicio || '').split('T')[0] || 'S/I'
+          filesProy.push({
+            etapa_num: 6,
+            etapa_nombre: '6. Arriendo de Plataformas & Contratos Especiales',
+            etapa_icon: '🪜',
+            id_doc: idDocCtr,
+            url: pdfUrl,
+            directUrl: !idDocCtr ? pdfUrl : null,
+            name: `${ctrMejor.folio || cod + '-Contrato'}-${esFirmado ? 'Firmado-FES' : 'Borrador'}.pdf`,
+            tipo: esFirmado ? `Contrato de Arrendamiento (Firmado FES ✅)` : `Contrato de Arrendamiento (${ctrMejor.estado || 'Emitido'})`,
+            emisor: esFirmado ? `Firmado por: ${firmanteNom}` : 'GSP / Royal Rental',
+            fecha_emision: fechaFirma,
+            fecha_vencimiento: ctrMejor.fecha_termino || 'Permanente',
+            size: esFirmado ? 'Firmado FES' : 'PDF Oficial'
+          })
+        }
+        // Versiones Históricas de Contratos
+        const ctrHistoricos = crm.contratos_historicos || jf.contratos_historicos || []
+        if (Array.isArray(ctrHistoricos)) {
+          ctrHistoricos.forEach((h, hIdx) => {
+            const hPdf = h.url_pdf_firmado || h.url_pdf || h.url
+            if (hPdf && hPdf !== (ctrMejor?.url_pdf_firmado || ctrMejor?.url_pdf)) {
+              const hIdDoc = h.id_doc || (hPdf.includes('/archivo/ver/') ? hPdf.split('/archivo/ver/')[1] : null)
+              filesProy.push({
+                etapa_num: 6,
+                etapa_nombre: '6. Arriendo de Plataformas & Contratos Especiales',
+                etapa_icon: '🪜',
+                id_doc: hIdDoc,
+                url: hPdf,
+                directUrl: !hIdDoc ? hPdf : null,
+                name: `${h.folio || cod + '-Contrato'}-v${h.version || (hIdx + 1)}.pdf`,
+                tipo: `Contrato de Arrendamiento (Versión v${h.version || (hIdx + 1)})`,
+                emisor: h.firmante || 'GSP / Royal Rental',
+                fecha_emision: h.fecha ? String(h.fecha).split('T')[0] : 'S/I',
+                fecha_vencimiento: h.fecha_termino || 'Permanente',
+                size: h.estado === 'FIRMADO_DIGITAL' ? 'Firmado FES' : 'PDF Histórico'
+              })
+            }
+          })
+        }
+        // Órdenes de Trabajo (OT)
         ots.forEach(o => {
           const idDoc = o.id_doc || (o.url ? o.url.replace('/api/archivo/ver/', '').replace(/^\//, '') : null)
           if (idDoc) {
             filesProy.push({
+              etapa_num: 2,
+              etapa_nombre: '2. Asignación de Recursos & Orden de Trabajo (OT)',
+              etapa_icon: '📋',
               id_doc: idDoc,
               url: o.url,
               name: o.nombre_archivo || `${cod}-OT-v${o.version}.pdf`,
@@ -1086,34 +1547,388 @@ const allTreeRoots = computed(() => {
           }
         })
 
-        // 3. Informes de Visitas Técnicas a Terreno
-        const visitasDelProy = visitasTerrenoList.value.filter(v => v.id_proyecto === pry.id_proyecto && v.id_doc)
-        visitasDelProy.forEach(v => {
-          filesProy.push({
-            id_doc: v.id_doc,
-            name: `Informe Visita Técnica #${v.id_survey} - ${v.name_template_srv || 'Inspección'}.pdf`,
-            tipo: `Visita Técnica a Terreno (#${v.id_survey})`,
-            emisor: 'GSP Inspector Terreno',
-            fecha_emision: v.fecha_plan_ini ? v.fecha_plan_ini.split('T')[0] : 'S/I',
-            fecha_vencimiento: 'Permanente',
-            size: 'PDF Oficial'
+        // ==========================================
+        // ETAPA 3: LOGÍSTICA, DESPACHO Y ACREDITACIONES
+        // ==========================================
+        if (Array.isArray(expData.viajes)) {
+          expData.viajes.forEach(v => {
+            // Hoja de Despacho / Salida de Base
+            if (v.fecha_salida_patio || v.estado_trayecto !== 'ASIGNADO') {
+              filesProy.push({
+                etapa_num: 3,
+                etapa_nombre: '3. Logística, Despacho y Acreditaciones',
+                etapa_icon: '🚛',
+                id_doc: null,
+                url: `/api/operaciones/viaje/${v.token_viaje}/resumen`,
+                name: `Hoja-Despacho-Salida-${v.patente || cod}.pdf`,
+                tipo: `Hoja de Despacho & Salida Base (${v.tipo_trayecto || 'IDA'})`,
+                emisor: `Conductor: ${v.chofer_nombre || 'GSP'}`,
+                fecha_emision: v.fecha_salida_patio ? String(v.fecha_salida_patio).split('T')[0] : 'S/I',
+                fecha_vencimiento: 'Permanente',
+                size: `Odóm: ${v.km_inicial || 'S/I'} km`,
+                token_viaje: v.token_viaje
+              })
+            }
+            // Vouchers Copec en Ruta
+            if (Number(v.total_litros || 0) > 0 || Number(v.total_gasto || 0) > 0) {
+              filesProy.push({
+                etapa_num: 3,
+                etapa_nombre: '3. Logística, Despacho y Acreditaciones',
+                etapa_icon: '🚛',
+                id_doc: null,
+                name: `Voucher-Copec-${v.patente || cod}.pdf`,
+                tipo: `Comprobante Carga Copec (${v.total_litros} L)`,
+                emisor: `Conductor: ${v.chofer_nombre || 'GSP'}`,
+                fecha_emision: v.fecha_salida_patio ? String(v.fecha_salida_patio).split('T')[0] : 'S/I',
+                fecha_vencimiento: 'Permanente',
+                size: `$${Number(v.total_gasto || 0).toLocaleString('es-CL')}`
+              })
+            }
+            // Evidencias Fotográficas de Checkpoints Odómetro y Tablero
+            if (v.foto_odometro_salida_path) {
+              filesProy.push({
+                etapa_num: 3,
+                etapa_nombre: '3. Logística, Despacho y Acreditaciones',
+                etapa_icon: '🚛',
+                id_doc: null,
+                url: v.foto_odometro_salida_path,
+                directUrl: v.foto_odometro_salida_path,
+                name: `Foto-Odometro-Salida-${v.patente || cod}.jpg`,
+                tipo: `Evidencia Checkpoint: Odómetro Salida Base (${v.km_inicial || 'S/I'} km)`,
+                emisor: `Conductor: ${v.chofer_nombre || 'GSP'}`,
+                fecha_emision: v.fecha_salida_patio ? String(v.fecha_salida_patio).split('T')[0] : 'S/I',
+                fecha_vencimiento: 'Permanente',
+                size: 'Foto Terreno'
+              })
+            }
+            if (v.foto_tablero_salida_path) {
+              filesProy.push({
+                etapa_num: 3,
+                etapa_nombre: '3. Logística, Despacho y Acreditaciones',
+                etapa_icon: '🚛',
+                id_doc: null,
+                url: v.foto_tablero_salida_path,
+                directUrl: v.foto_tablero_salida_path,
+                name: `Foto-Tablero-Salida-${v.patente || cod}.jpg`,
+                tipo: 'Evidencia Checkpoint: Tablero Control Salida',
+                emisor: `Conductor: ${v.chofer_nombre || 'GSP'}`,
+                fecha_emision: v.fecha_salida_patio ? String(v.fecha_salida_patio).split('T')[0] : 'S/I',
+                fecha_vencimiento: 'Permanente',
+                size: 'Foto Terreno'
+              })
+            }
+            if (v.foto_odometro_llegada_path) {
+              filesProy.push({
+                etapa_num: 3,
+                etapa_nombre: '3. Logística, Despacho y Acreditaciones',
+                etapa_icon: '🚛',
+                id_doc: null,
+                url: v.foto_odometro_llegada_path,
+                directUrl: v.foto_odometro_llegada_path,
+                name: `Foto-Odometro-Llegada-${v.patente || cod}.jpg`,
+                tipo: `Evidencia Checkpoint: Odómetro Llegada (${v.km_final || 'S/I'} km)`,
+                emisor: `Conductor: ${v.chofer_nombre || 'GSP'}`,
+                fecha_emision: v.fecha_llegada_patio ? String(v.fecha_llegada_patio).split('T')[0] : 'S/I',
+                fecha_vencimiento: 'Permanente',
+                size: 'Foto Terreno'
+              })
+            }
+            if (v.foto_tablero_llegada_path) {
+              filesProy.push({
+                etapa_num: 3,
+                etapa_nombre: '3. Logística, Despacho y Acreditaciones',
+                etapa_icon: '🚛',
+                id_doc: null,
+                url: v.foto_tablero_llegada_path,
+                directUrl: v.foto_tablero_llegada_path,
+                name: `Foto-Tablero-Llegada-${v.patente || cod}.jpg`,
+                tipo: 'Evidencia Checkpoint: Tablero Control Llegada',
+                emisor: `Conductor: ${v.chofer_nombre || 'GSP'}`,
+                fecha_emision: v.fecha_llegada_patio ? String(v.fecha_llegada_patio).split('T')[0] : 'S/I',
+                fecha_vencimiento: 'Permanente',
+                size: 'Foto Terreno'
+              })
+            }
+            // Hoja de Retorno / Llegada a Patio
+            if (v.fecha_llegada_patio || v.estado_trayecto === 'CONCLUIDO') {
+              filesProy.push({
+                etapa_num: 3,
+                etapa_nombre: '3. Logística, Despacho y Acreditaciones',
+                etapa_icon: '🚛',
+                id_doc: null,
+                name: `Hoja-Retorno-Patio-${v.patente || cod}.pdf`,
+                tipo: 'Hoja de Retorno & Cierre Patio',
+                emisor: `Conductor: ${v.chofer_nombre || 'GSP'}`,
+                fecha_emision: v.fecha_llegada_patio ? String(v.fecha_llegada_patio).split('T')[0] : 'S/I',
+                fecha_vencimiento: 'Permanente',
+                size: `Odóm: ${v.km_final || 'S/I'} km`
+              })
+            }
+          })
+        }
+
+        // Acreditaciones Técnicas y Legales de la Flota Asignada a la OT
+        const eqIdsAsignados = new Set()
+        if (ops.equipo_id) eqIdsAsignados.add(Number(ops.equipo_id))
+        if (crm.id_equipo) eqIdsAsignados.add(Number(crm.id_equipo))
+        if (crm.equipo_asignado_id) eqIdsAsignados.add(Number(crm.equipo_asignado_id))
+        if (Array.isArray(ops.equipos_extra)) ops.equipos_extra.forEach(id => eqIdsAsignados.add(Number(id)))
+        if (Array.isArray(crm.lineas_servicio)) {
+          crm.lineas_servicio.forEach(l => {
+            if (l.id_equipo) eqIdsAsignados.add(Number(l.id_equipo))
+            if (l.equipo_asignado_id) eqIdsAsignados.add(Number(l.equipo_asignado_id))
+          })
+        }
+
+        eqIdsAsignados.forEach(eqId => {
+          const docsEq = certsEquiposCache.value.get(eqId) || []
+          const eqObj = equiposList.value.find(e => Number(e.id_equipo) === eqId)
+          const eqLabel = eqObj ? (eqObj.patente || eqObj.codigo || `Equipo #${eqId}`) : `Equipo #${eqId}`
+          docsEq.forEach(c => {
+            if (c.id_certificado || (!c.tipo?.includes('Acta') && !c.tipo?.includes('Contrato'))) {
+              filesProy.push({
+                etapa_num: 3,
+                etapa_nombre: '3. Logística, Despacho y Acreditaciones',
+                etapa_icon: '🚛',
+                id_doc: c.id_doc,
+                url: c.url || (c.id_doc ? `/api/archivo/ver/${c.id_doc}` : null),
+                name: `[${eqLabel}] ${c.name}`,
+                tipo: `Acreditación Flota: ${c.tipo}`,
+                emisor: c.emisor || eqLabel,
+                fecha_emision: c.fecha_emision || 'S/I',
+                fecha_vencimiento: c.fecha_vencimiento || 'Permanente',
+                size: c.size || 'Certificado Técnico'
+              })
+            }
           })
         })
 
-        // 4. Reportes Diarios de Izaje (Jornadas PWA)
-        const reportsDelProy = reportsProyectosCache.value.get(pry.id_proyecto) || []
+        // Acreditaciones Laborales y HSEC de la Tripulación Asignada a la OT
+        const tripUserIds = new Set()
+        if (ops.operador_id) tripUserIds.add(Number(ops.operador_id))
+        if (ops.rigger_id) tripUserIds.add(Number(ops.rigger_id))
+        if (Array.isArray(ops.tripulacion_asignada)) {
+          ops.tripulacion_asignada.forEach(t => {
+            if (t.id_user) tripUserIds.add(Number(t.id_user))
+            if (t.user_id) tripUserIds.add(Number(t.user_id))
+          })
+        }
+
+        tripUserIds.forEach(uId => {
+          const docsPers = certsPersonasCache.value.get(uId) || []
+          const persObj = personasList.value.find(p => Number(p.id_user) === uId)
+          const persLabel = persObj ? (persObj.nombre_completo || persObj.name_user || `Personal #${uId}`) : `Personal #${uId}`
+          docsPers.forEach(c => {
+            filesProy.push({
+              etapa_num: 3,
+              etapa_nombre: '3. Logística, Despacho y Acreditaciones',
+              etapa_icon: '🚛',
+              id_doc: c.id_doc,
+              url: c.url || (c.id_doc ? `/api/archivo/ver/${c.id_doc}` : null),
+              name: `[${persLabel}] ${c.name}`,
+              tipo: `Acreditación Personal: ${c.tipo}`,
+              emisor: c.emisor || persLabel,
+              fecha_emision: c.fecha_emision || 'S/I',
+              fecha_vencimiento: c.fecha_vencimiento || 'Permanente',
+              size: c.size || 'Certificado Personal'
+            })
+          })
+        })
+
+        // ==========================================
+        // ETAPA 4: OPERACIONES PLATAFORMAS BSM
+        // ==========================================
+        const acta360 = ops.acta_plataforma_360 || jf.acta_plataforma_360 || null
+        if (acta360) {
+          const pdfEnt = acta360.url_pdf || (acta360.id_doc_pdf ? `/api/archivo/ver/${acta360.id_doc_pdf}` : null)
+          if (pdfEnt || acta360.id_doc_pdf) {
+            const idDocEnt = acta360.id_doc_pdf || (pdfEnt?.includes('/archivo/ver/') ? pdfEnt.split('/archivo/ver/')[1] : null)
+            filesProy.push({
+              etapa_num: 6,
+              etapa_nombre: '6. Arriendo de Plataformas & Contratos Especiales',
+              etapa_icon: '🪜',
+              id_doc: idDocEnt,
+              url: pdfEnt,
+              directUrl: !idDocEnt ? pdfEnt : null,
+              name: `${acta360.folio || cod}-Acta-Entrega-360.pdf`,
+              tipo: 'Acta Entrega Plataforma 360° (Terreno)',
+              emisor: 'Chofer / Operador Terreno',
+              fecha_emision: acta360.fecha_entrega ? String(acta360.fecha_entrega).split('T')[0] : 'S/I',
+              fecha_vencimiento: 'Permanente',
+              size: 'PDF Oficial'
+            })
+          }
+          const pdfRet = acta360.url_pdf_final || (acta360.id_doc_pdf_final ? `/api/archivo/ver/${acta360.id_doc_pdf_final}` : null)
+          if (pdfRet || acta360.id_doc_pdf_final) {
+            const idDocRet = acta360.id_doc_pdf_final || (pdfRet?.includes('/archivo/ver/') ? pdfRet.split('/archivo/ver/')[1] : null)
+            filesProy.push({
+              etapa_num: 6,
+              etapa_nombre: '6. Arriendo de Plataformas & Contratos Especiales',
+              etapa_icon: '🪜',
+              id_doc: idDocRet,
+              url: pdfRet,
+              directUrl: !idDocRet ? pdfRet : null,
+              name: `${acta360.folio || cod}-Acta-Retiro-Final-360.pdf`,
+              tipo: 'Acta Retiro y Devolución Plataforma 360°',
+              emisor: 'Chofer / Operador Terreno',
+              fecha_emision: acta360.fecha_retiro ? String(acta360.fecha_retiro).split('T')[0] : 'S/I',
+              fecha_vencimiento: 'Permanente',
+              size: 'PDF Oficial'
+            })
+          }
+        }
+        // Actas 360° Relacionales
+        const actasRel = actasProyectosMap.value.get(Number(pry.id_proyecto)) || []
+        actasRel.forEach(a => {
+          if (a.id_file_pdf_entrega && !filesProy.some(f => f.id_doc == a.id_file_pdf_entrega)) {
+            filesProy.push({
+              etapa_num: 6,
+              etapa_nombre: '6. Arriendo de Plataformas & Contratos Especiales',
+              etapa_icon: '🪜',
+              id_doc: a.id_file_pdf_entrega,
+              url: `/api/archivo/ver/${a.id_file_pdf_entrega}`,
+              name: `${a.folio_acta}_ENTREGA.pdf`,
+              tipo: 'Acta Entrega Plataforma 360° (Terreno)',
+              emisor: `Chofer: ${a.chofer_entrega_nombre || 'GSP'}`,
+              fecha_emision: a.fecha_entrega ? String(a.fecha_entrega).split('T')[0] : 'S/I',
+              fecha_vencimiento: 'Permanente',
+              size: 'PDF Oficial'
+            })
+          }
+          if (a.id_file_pdf_final && !filesProy.some(f => f.id_doc == a.id_file_pdf_final)) {
+            filesProy.push({
+              etapa_num: 6,
+              etapa_nombre: '6. Arriendo de Plataformas & Contratos Especiales',
+              etapa_icon: '🪜',
+              id_doc: a.id_file_pdf_final,
+              url: `/api/archivo/ver/${a.id_file_pdf_final}`,
+              name: `${a.folio_acta}_FINAL.pdf`,
+              tipo: 'Acta Retiro & Cierre Plataforma 360°',
+              emisor: `Chofer: ${a.chofer_retiro_nombre || 'GSP'}`,
+              fecha_emision: a.fecha_retiro ? String(a.fecha_retiro).split('T')[0] : 'S/I',
+              fecha_vencimiento: 'Permanente',
+              size: 'PDF Oficial'
+            })
+          }
+        })
+
+        // ==========================================
+        // ETAPA 5: OPERACIÓN EN FAENA (IZAJES)
+        // ==========================================
+        const planIzaje = jf.plan_izaje_v1 || ops.plan_izaje_v1 || null
+        if (planIzaje && (planIzaje.id_file_pdf || planIzaje.url_pdf)) {
+          const idDocPlan = planIzaje.id_file_pdf || null
+          filesProy.push({
+            etapa_num: 4,
+            etapa_nombre: '4. Operación en Faena (Izaje)',
+            etapa_icon: '⏱️',
+            id_doc: idDocPlan,
+            url: planIzaje.url_pdf || (idDocPlan ? `/api/archivo/ver/${idDocPlan}` : null),
+            name: `${planIzaje.folio_plan || cod + '-Plan-Izaje'}.pdf`,
+            tipo: `Plan de Izaje & Memoria de Cálculo (${planIzaje.porcentaje_utilizacion || 0}% Utilización)`,
+            emisor: 'Operador / Rigger / Supervisor (FES)',
+            fecha_emision: planIzaje.fecha_firma ? String(planIzaje.fecha_firma).split(',')[0] : 'S/I',
+            fecha_vencimiento: 'Permanente',
+            size: 'PDF Oficial + Croquis SVG'
+          })
+        }
+        const reportsDelProy = expData.reports || []
         reportsDelProy.forEach(r => {
           filesProy.push({
-            id_doc: r.id_doc || null,
+            etapa_num: 4,
+            etapa_nombre: '4. Operación en Faena (Izaje)',
+            etapa_icon: '⏱️',
+            id_doc: r.id_doc_pdf || r.id_doc || null,
+            url: (r.id_doc_pdf || r.id_doc) ? `/api/v1/storage/view/${r.id_doc_pdf || r.id_doc}` : null,
             rawReport: r,
-            name: `Report Diario Izaje - Día ${r.dia_correlativo || 1} (${r.equipo_patente || 'Grúa'}).pdf`,
-            tipo: `Report Diario Izaje (Día ${r.dia_correlativo || 1})`,
+            name: `Report Diario Izaje - Día ${r.dia_correlativo || 1} (#${r.id_reporte_avance}) - ${r.equipo_patente || 'Equipo'}.pdf`,
+            tipo: `Report Diario Izaje (#${r.id_reporte_avance})`,
             emisor: `Operador: ${r.operador_nombre || 'GSP'}`,
             fecha_emision: r.fecha_reporte ? r.fecha_reporte.split('T')[0] : 'S/I',
             fecha_vencimiento: 'Permanente',
-            size: r.estado_reporte === 'VALIDADO_ANALISTA' ? 'Validado Analista' : 'Firmado Mandante'
+            size: r.id_doc_pdf ? 'PDF Escaneado OK' : (r.estado_reporte === 'VALIDADO_ANALISTA' ? 'Validado FES' : 'Digital Terreno')
           })
         })
+
+        // Respaldos Físicos de Reportes Escaneados y Documentos Operacionales de Faena
+        const dossierDocs = ops.dossier_documentos || jf.dossier_documentos || []
+        if (Array.isArray(dossierDocs)) {
+          dossierDocs.forEach((d, idx) => {
+            const idDocFisico = d.id_doc || d.id_archivo || null
+            filesProy.push({
+              etapa_num: 4,
+              etapa_nombre: '4. Operación en Faena (Izaje)',
+              etapa_icon: '⏱️',
+              id_doc: idDocFisico,
+              url: idDocFisico ? `/api/archivo/ver/${idDocFisico}` : (d.url || null),
+              name: d.archivo_nombre || d.titulo || `Respaldo-Fisico-${cod}-${idx + 1}.pdf`,
+              tipo: d.titulo || (d.tipo_documento === 'REPORT_FISICO_RESPALDO' ? 'Respaldo Físico Reporte Escaneado' : 'Documento Faena Terreno'),
+              emisor: d.subido_por_nombre || 'Supervisor Faena GSP',
+              fecha_emision: d.fecha_subida ? String(d.fecha_subida).split('T')[0] : 'S/I',
+              fecha_vencimiento: 'Permanente',
+              size: 'PDF Escaneado'
+            })
+          })
+        }
+
+        // ==========================================
+        // ETAPA 5: CIERRE TÉCNICO, LIQUIDACIÓN & FACTURACIÓN
+        // ==========================================
+        if (expData.its && expData.its.its) {
+          const itsObj = expData.its.its
+          filesProy.push({
+            etapa_num: 5,
+            etapa_nombre: '5. Cierre Técnico, Liquidación & Facturación',
+            etapa_icon: '💰',
+            id_doc: itsObj.id_doc_pdf || null,
+            url: itsObj.id_doc_pdf ? `/api/archivo/ver/${itsObj.id_doc_pdf}` : `/api/operaciones/its/preview-pdf/${pIdNum}`,
+            name: `ITS-${cod}-Informe-Termino.pdf`,
+            tipo: `Inspección Técnica de Salida (${itsObj.estado || 'Emitido'})`,
+            emisor: itsObj.usuario_validador_nombre || 'Inspector Técnico GSP',
+            fecha_emision: itsObj.fecha_emision ? String(itsObj.fecha_emision).split('T')[0] : 'S/I',
+            fecha_vencimiento: 'Permanente',
+            size: 'ITS Oficial'
+          })
+        }
+
+        // ==========================================
+        // (continúa ETAPA 5): EDP Y FACTURACIÓN
+        // ==========================================
+        if (Array.isArray(expData.edps)) {
+          expData.edps.forEach(e => {
+            // Carátula de EDP
+            filesProy.push({
+              etapa_num: 5,
+              etapa_nombre: '5. Cierre Técnico, Liquidación & Facturación',
+              etapa_icon: '💰',
+              id_doc: e.id_doc_pdf || null,
+              url: `/api/operaciones/edp/${e.id_edp}/pdf`,
+              name: `EDP-${e.numero_edp || e.id_edp}-${cod}.pdf`,
+              tipo: `Carátula Estado de Pago (EDP #${e.numero_edp || e.id_edp})`,
+              emisor: 'PMO / Finanzas GSP',
+              fecha_emision: e.fecha_corte_fin ? String(e.fecha_corte_fin).split('T')[0] : (e.fecha_creacion ? String(e.fecha_creacion).split('T')[0] : 'S/I'),
+              fecha_vencimiento: 'Permanente',
+              size: `$${Number(e.monto_total || 0).toLocaleString('es-CL')}`
+            })
+            // Factura ERP si está adjunta
+            if (e.archivo_factura_pdf_path) {
+              filesProy.push({
+                etapa_num: 5,
+                etapa_nombre: '5. Cierre Técnico, Liquidación & Facturación',
+                etapa_icon: '💰',
+                id_doc: null,
+                url: e.archivo_factura_pdf_path,
+                directUrl: e.archivo_factura_pdf_path,
+                name: `Factura-${e.folio_factura_erp || 'DTE'}-${cod}.pdf`,
+                tipo: `Factura Electrónica DTE (Folio ${e.folio_factura_erp || 'S/F'})`,
+                emisor: 'Contabilidad GSP',
+                fecha_emision: e.fecha_facturacion_erp || 'S/I',
+                fecha_vencimiento: 'Permanente',
+                size: 'DTE Adjunto'
+              })
+            }
+          })
+        }
 
         return {
           id: `pry-${pry.id_proyecto}`,
@@ -1234,6 +2049,19 @@ const toggleNode = (id) => {
       const cargoName = strId.replace('cargo-', '')
       const persEnCargo = personasList.value.filter(p => (p.cargo || p.json_data?.cargo || 'PERSONAL OPERATIVO').toUpperCase().trim() === cargoName)
       persEnCargo.forEach(p => cargarCertificadosPersonaDirecto(p.id_user))
+    } else if (strId.startsWith('clt-')) {
+      const clienteName = strId.replace('clt-', '')
+      const proysDelCliente = proyectosList.value.filter(pry => (pry.nombre_cliente || pry.name_empresa_cliente || 'CLIENTE MANDANTE DIRECTO') === clienteName)
+      proysDelCliente.forEach(p => {
+        const pId = Number(p.id_proyecto)
+        cargarReportsProyectoDirecto(pId)
+        if (proysDelCliente.length === 1) {
+          expandedNodes.value.add(`pry-${pId}`)
+        }
+      })
+    } else if (strId.startsWith('pry-')) {
+      const pId = Number(strId.replace('pry-', ''))
+      cargarReportsProyectoDirecto(pId)
     }
   }
 }
@@ -1411,22 +2239,39 @@ const getDocLaboralCelda = (files = [], tipoNombre = '', idEmpresa = null) => {
 
 // --- ACCIÓN: ABRIR EL ARCHIVO PDF REAL EN NUEVA PESTAÑA DEL NAVEGADOR ---
 const abrirDocumentoNuevaPestana = (file) => {
-  // Si es un Report Diario Digital de Izaje, abrir el visor modal interactivo de faena
-  if (file.rawReport) {
-    reportSeleccionadoParaVisor.value = file.rawReport
-    modalVisorReportAbierto.value = true
+  // Si es Report Diario sin id_doc físico aún, dirigir al endpoint de auto-reparación y streaming
+  if (file.rawReport && !file.id_doc && !file.url) {
+    const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+    const base = (apiAxios.defaults.baseURL || (isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api' : 'https://servidor.leanglobal.cl/lg-gsp-dev/api')).replace(/\/$/, '')
+    const urlPdfDinamico = `${base}/operaciones/report/${file.rawReport.id_reporte_avance}/pdf`
+    window.open(urlPdfDinamico, '_blank', 'noopener,noreferrer')
     return
   }
 
-  if (!file.id_doc && !file.url) {
+  if (!file.id_doc && !file.url && !file.directUrl) {
     alert('Este requisito no cuenta con un archivo físico cargado en el servidor.')
     return
   }
 
-  // Abre el PDF binario real desde el servidor de almacenamiento de GSP
+  const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+  const base = (apiAxios.defaults.baseURL || (isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod/api' : 'https://servidor.leanglobal.cl/lg-gsp-dev/api')).replace(/\/$/, '')
+
+  if (file.directUrl || (file.url && !file.id_doc && (file.url.startsWith('http') || file.url.startsWith('/uploads/') || file.url.startsWith('/api/')))) {
+    const rawUrl = file.directUrl || file.url
+    const rootBase = base.replace(/\/api$/, '')
+    const fullUrl = rawUrl.startsWith('http') ? rawUrl : `${rootBase}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`
+    window.open(fullUrl, '_blank', 'noopener,noreferrer')
+    return
+  }
+
   const idDoc = file.id_doc || (file.url ? file.url.replace('/api/archivo/ver/', '').replace(/^\//, '') : '')
-  const url = `https://servidor.leanglobal.cl/lg-gsp/api/archivo/ver/${idDoc}`
+  const url = `${base}/archivo/ver/${idDoc}`
   window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+const abrirModalAuditoriaReport = (rawReport) => {
+  reportSeleccionadoParaVisor.value = rawReport
+  modalVisorReportAbierto.value = true
 }
 
 // --- FUNCIONES PARA GESTIÓN DE DOCUMENTOS DE EMPRESA (OPCIÓN A) ---

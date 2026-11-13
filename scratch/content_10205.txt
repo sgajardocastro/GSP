@@ -1,0 +1,354 @@
+Created At: 2026-11-08T21:18:34-03:00
+Completed At: 2026-11-08T21:18:34-03:00
+Showing lines 180-530 of 4023
+180:                 class="px-2 py-1 rounded-md font-bold transition-all cursor-pointer"
+181:                 :class="presetFechaKanbanPro === preset.id ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'"
+182:               >
+183:                 {{ preset.label }}
+184:               </button>
+185:             </div>
+186: 
+187:             <!-- Inputs Rango Desde / Hasta -->
+188:             <div class="flex items-center gap-1.5 bg-[#060a12] px-2 py-1 rounded-lg border border-white/10 text-[11px]">
+189:               <span class="text-slate-500 font-bold">Desde:</span>
+190:               <input
+191:                 v-model="fechaDesdeKanbanPro"
+192:                 @change="presetFechaKanbanPro = 'CUSTOM'"
+193:                 type="date"
+194:                 class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
+195:               />
+196:               <span class="text-slate-600">➔</span>
+197:               <span class="text-slate-500 font-bold">Hasta:</span>
+198:               <input
+199:                 v-model="fechaHastaKanbanPro"
+200:                 @change="presetFechaKanbanPro = 'CUSTOM'"
+201:                 type="date"
+202:                 class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
+203:               />
+204:             </div>
+205:           </div>
+206: 
+207:           <!-- Controles Derecha: Densidad + Agrupación -->
+208:           <div class="flex items-center gap-2">
+209:             <div class="flex items-center bg-[#060a12] p-0.5 rounded-lg border border-white/10 text-[11px]">
+210:               <button
+211:                 type="button"
+212:                 @click="densidadKanbanPro = 'expandida'"
+213:                 class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer"
+214:                 :class="densidadKanbanPro === 'expandida' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'"
+215:                 title="Tarjeta Operativa Detallada"
+216:               >
+217:                 ▤ Detallada
+218:               </button>
+219:               <button
+220:                 type="button"
+221:                 @click="densidadKanbanPro = 'compacta'"
+222:                 class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer"
+223:                 :class="densidadKanbanPro === 'compacta' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'"
+224:                 title="Tarjeta Compacta para Full Sucursal"
+225:               >
+226:                 ☰ Compacta (Full Sucursal)
+227:               </button>
+228:             </div>
+229:           </div>
+230:         </div>
+231: 
+232:         <!-- Fila 2: Selectores por Operador, Rigger, Equipo, Cliente y Comercial -->
+233:         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 pt-1 border-t border-white/5">
+234:           <!-- Filtro Operador -->
+235:           <div class="flex items-center gap-1.5 bg-[#060a12] px-2.5 py-1.5 rounded-lg border border-white/10">
+236:             <span class="text-xs">👷</span>
+237:             <select v-model="filtroOperadorKanbanPro" class="w-full bg-[#060a12] text-xs text-white focus:outline-none cursor-pointer">
+238:               <option value="">Operador: Todos</option>
+239:               <option value="__SIN_OPERADOR__">⚠️ Sin Operador Asignado</option>
+240:               <option v-for="op in opcionesOperadoresKanban" :key="op" :value="op">{{ op }}</option>
+241:             </select>
+242:           </div>
+243: 
+244:           <!-- Filtro Rigger -->
+245:           <div class="flex items-center gap-1.5 bg-[#060a12] px-2.5 py-1.5 rounded-lg border border-white/10">
+246:             <span class="text-xs">🦺</span>
+247:             <select v-model="filtroRiggerKanbanPro" class="w-full bg-[#060a12] text-xs text-white focus:outline-none cursor-pointer">
+248:               <option value="">Rigger: Todos</option>
+249:               <option value="__SOLO_RIGGER__">🦺 Servicio Solo Rigger</option>
+250:               <option value="__FALTA_RIGGER__">⚠️ Requiere Rigger (Sin Asignar)</option>
+251:               <option v-for="rg in opcionesRiggersKanban" :key="rg" :value="rg">{{ rg }}</option>
+252:             </select>
+253:           </div>
+254: 
+255:           <!-- Filtro Equipo / Patente -->
+256:           <div class="flex items-center gap-1.5 bg-[#060a12] px-2.5 py-1.5 rounded-lg border border-white/10">
+257:             <span class="text-xs">🚜</span>
+258:             <select v-model="filtroEquipoKanbanPro" class="w-full bg-[#060a12] text-xs text-white focus:outline-none cursor-pointer">
+259:               <option value="">Equipo / Patente: Todos</option>
+260:               <option v-for="eq in opcionesEquiposKanban" :key="eq" :value="eq">{{ eq }}</option>
+261:             </select>
+262:           </div>
+263: 
+264:           <!-- Filtro Cliente -->
+265:           <div class="flex items-center gap-1.5 bg-[#060a12] px-2.5 py-1.5 rounded-lg border border-white/10">
+266:             <span class="text-xs">🏢</span>
+267:             <select v-model="filtroClienteKanbanPro" class="w-full bg-[#060a12] text-xs text-white focus:outline-none cursor-pointer">
+268:               <option value="">Cliente: Todos</option>
+269:               <option v-for="cl in opcionesClientesKanban" :key="cl" :value="cl">{{ cl }}</option>
+270:             </select>
+271:           </div>
+272: 
+273:           <!-- Filtro Ejecutivo Comercial -->
+274:           <div class="flex items-center gap-1.5 bg-[#060a12] px-2.5 py-1.5 rounded-lg border border-white/10">
+275:             <span class="text-xs">👤</span>
+276:             <select v-model="filtroVendedorKanbanPro" class="w-full bg-[#060a12] text-xs text-white focus:outline-none cursor-pointer">
+277:               <option value="">Comercial: Todos</option>
+278:               <option v-for="ve in opcionesVendedoresKanban" :key="ve" :value="ve">{{ ve }}</option>
+279:             </select>
+280:           </div>
+281:         </div>
+282: 
+283:         <!-- Fila 3: Resumen de Filtros Activos -->
+284:         <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
+285:           <div class="flex flex-wrap items-center gap-1.5">
+286:             <span class="text-slate-400 font-semibold">
+287:               Mostrando <strong class="text-cyan-400 font-mono">{{ totalCoincidenciasKanbanPro }}</strong> de <strong class="text-white font-mono">{{ totalProyectosTablero }}</strong> negocios
+288:             </span>
+289:             <span v-if="presetFechaKanbanPro !== 'TODOS' || fechaDesdeKanbanPro || fechaHastaKanbanPro" class="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono text-[10px]">
+290:               {{ tipoFechaKanbanPro === 'EJECUCION' ? '📅 Ejecución' : '🏷️ Venta' }}: {{ presetFechaKanbanPro }} {{ fechaDesdeKanbanPro ? `(${fechaDesdeKanbanPro} ➔ ${fechaHastaKanbanPro || '...'})` : '' }}
+291:             </span>
+292:             <span v-if="filtroOperadorKanbanPro" class="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-[10px]">
+293:               👷 {{ filtroOperadorKanbanPro }}
+294:             </span>
+295:             <span v-if="filtroRiggerKanbanPro" class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px]">
+296:               🦺 {{ filtroRiggerKanbanPro }}
+297:             </span>
+298:             <span v-if="filtroEquipoKanbanPro" class="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 text-[10px]">
+299:               🚜 {{ filtroEquipoKanbanPro }}
+300:             </span>
+301:             <span v-if="filtroClienteKanbanPro" class="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[10px]">
+302:               🏢 {{ filtroClienteKanbanPro }}
+303:             </span>
+304:           </div>
+305:           <button
+306:             v-if="tieneFiltrosActivosKanbanPro"
+307:             type="button"
+308:             @click="limpiarFiltrosKanbanPro"
+309:             class="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+310:           >
+311:             ✕ Limpiar Filtros
+312:           </button>
+313:         </div>
+314:       </div>
+315: 
+316:       <!-- 6 Columnas del Kanban + Filtros (Con Tarjeta Operativa Enriquecida y Densidad Dual) -->
+317:       <div class="grid grid-cols-1 lg:grid-cols-6 gap-3.5 h-[calc(100vh-320px)] overflow-y-auto">
+318:         <div
+319:           v-for="col in columnasKanbanPro"
+320:           :key="col.id"
+321:           class="bg-[#0f1629] border-t-4 border border-white/5 rounded-xl p-2.5 flex flex-col min-h-0"
+322:           :class="col.borderTopClass"
+323:         >
+324:           <!-- Cabecera de Columna -->
+325:           <div class="flex justify-between items-center mb-3 px-0.5">
+326:             <div class="flex items-center gap-1.5 min-w-0">
+327:               <span class="w-2 h-2 rounded-full shrink-0" :class="col.dotClass"></span>
+328:               <span class="text-[11px] font-black uppercase text-white truncate" :title="col.titulo">{{ col.titulo }}</span>
+329:             </div>
+330:             <span class="bg-black/30 text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0" :class="col.badgeCountClass">
+331:               {{ col.items.length }}<span v-if="tieneFiltrosActivosKanbanPro" class="text-slate-500">/{{ col.totalSinFiltro }}</span>
+332:             </span>
+333:           </div>
+334: 
+335:           <!-- Botones rápidos en Columna 1 -->
+336:           <div v-if="col.id === 'preventa'" class="grid grid-cols-2 gap-1.5 mb-2.5">
+337:             <button @click="abrirCotizacion" class="py-1.5 bg-[#6366f1]/10 hover:bg-[#6366f1]/20 border border-[#6366f1]/30 text-[#818cf8] rounded-lg text-[10px] font-bold transition-all cursor-pointer">
+338:               + Oportunidad
+339:             </button>
+340:             <button @click="mostrarModalReqInterno = true" class="py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-dashed border-amber-400/60 text-amber-300 rounded-lg text-[10px] font-black transition-all cursor-pointer">
+341:               🔁 + Interno
+342:             </button>
+343:           </div>
+344: 
+345:           <!-- Lista de Tarjetas -->
+346:           <div class="space-y-2 flex-1 overflow-y-auto pr-0.5">
+347:             <div
+348:               v-for="p in col.items"
+349:               :key="p.id_proyecto"
+350:               @click="abrirProyecto(p.id_proyecto, col.subtab)"
+351:               class="bg-[#151d35] border rounded-lg transition-all cursor-pointer text-left hover:brightness-110"
+352:               :class="[
+353:                 densidadKanbanPro === 'compacta' ? 'p-2 space-y-1' : 'p-2.5 space-y-2',
+354:                 esProyectoInterno(p)
+355:                   ? 'border-l-4 border-dashed border-amber-400 bg-amber-500/5'
+356:                   : 'border-white/10 hover:border-cyan-400/50'
+357:               ]"
+358:             >
+359:               <!-- Línea 1: Folio + Indicador Acreditación Compacto + Badge Solo Rigger / Prioridad -->
+360:               <div class="flex items-center justify-between gap-1">
+361:                 <div class="flex items-center gap-1.5 min-w-0">
+362:                   <span class="text-[10px] font-mono font-black tracking-tight" :class="col.codeTextClass">
+363:                     {{ p.codi_proyecto || '—' }}
+364:                   </span>
+365:                   <span
+366:                     v-if="getFichaOperativa(p).esSoloRigger"
+367:                     class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/40"
+368:                   >
+369:                     🦺 SOLO RIGGER
+370:                   </span>
+371:                 </div>
+372:                 <div class="flex items-center gap-1 shrink-0">
+373:                   <!-- Píldora compacta de acreditación en vez del círculo gigante -->
+374:                   <span
+375:                     v-if="col.esOperativa && !esProyectoInterno(p)"
+376:                     @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
+377:                     class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border cursor-pointer"
+378:                     :class="calcularPorcentajeAcreditacion(p) === 100 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-red-500/15 text-red-300 border-red-500/30'"
+379:                     title="Porcentaje de Acreditación (Clic para abrir Acreditaciones)"
+380:                   >
+381:                     Acr: {{ calcularPorcentajeAcreditacion(p) }}%
+382:                   </span>
+383:                   <span v-if="densidadKanbanPro === 'compacta' && formatMonto(p)" class="text-[9px] font-mono font-bold text-emerald-300">
+384:                     {{ formatMonto(p) }}
+385:                   </span>
+386:                 </div>
+387:               </div>
+388: 
+389:               <!-- Línea 2: Cliente y Obra -->
+390:               <div>
+391:                 <h4 class="text-[11px] font-extrabold text-white leading-tight truncate" :title="p.nombre_cliente">
+392:                   {{ p.nombre_cliente || '—' }}
+393:                 </h4>
+394:                 <p v-if="densidadKanbanPro === 'expandida'" class="text-[10px] text-slate-400 truncate mt-0.5" :title="p.nombre_proyecto">
+395:                   {{ p.nombre_proyecto }}
+396:                 </p>
+397:               </div>
+398: 
+399:               <!-- Bloque Fechas (Siempre visible en Fase Operativa y Comercial) -->
+400:               <div class="bg-[#0a0f1d] border border-white/5 rounded px-2 py-1 text-[9.5px] font-mono space-y-0.5">
+401:                 <div class="flex items-center justify-between gap-1 text-cyan-300">
+402:                   <span class="text-slate-400 font-sans font-semibold">📅 Ejec:</span>
+403:                   <span class="font-bold truncate">{{ getFichaOperativa(p).fechaEjecIniLabel }} ➔ {{ getFichaOperativa(p).fechaEjecFinLabel }}</span>
+404:                 </div>
+405:                 <div v-if="densidadKanbanPro === 'expandida' || !col.esOperativa" class="flex items-center justify-between gap-1 text-indigo-300">
+406:                   <span class="text-slate-500 font-sans font-semibold">🏷️ Venta:</span>
+407:                   <span>{{ getFichaOperativa(p).fechaVentaLabel }}</span>
+408:                 </div>
+409:               </div>
+410: 
+411:               <!-- Bloque Recursos Operativos (Visible en Columnas Operativas 3, 4, 5 y 6) -->
+412:               <div v-if="col.esOperativa" class="bg-[#0b1324] border border-cyan-500/15 rounded px-2 py-1.5 text-[10px] space-y-1">
+413:                 <div v-if="densidadKanbanPro === 'expandida'" class="flex items-center justify-between gap-1">
+414:                   <span class="text-slate-400 text-[9px] uppercase font-bold">Equipo:</span>
+415:                   <span class="font-mono font-bold text-white truncate max-w-[160px]" :title="getFichaOperativa(p).equipoLabel">
+416:                     {{ getFichaOperativa(p).equipoLabel }}
+417:                   </span>
+418:                 </div>
+419:                 <div class="flex items-center justify-between gap-1">
+420:                   <span class="text-slate-400 text-[9px] uppercase font-bold">👷 Operador:</span>
+421:                   <span
+422:                     class="font-semibold truncate max-w-[155px]"
+423:                     :class="getFichaOperativa(p).sinOperador ? 'text-amber-400 font-bold' : 'text-cyan-200'"
+424:                     :title="getFichaOperativa(p).operadorLabel"
+425:                   >
+426:                     {{ getFichaOperativa(p).operadorLabel }}
+427:                   </span>
+428:                 </div>
+429:                 <div class="flex items-center justify-between gap-1">
+430:                   <span class="text-slate-400 text-[9px] uppercase font-bold">🦺 Rigger:</span>
+431:                   <span
+432:                     class="font-semibold truncate max-w-[155px]"
+433:                     :class="getFichaOperativa(p).faltaRigger ? 'text-red-400 font-bold' : 'text-emerald-300'"
+434:                     :title="getFichaOperativa(p).riggerLabel"
+435:                   >
+436:                     {{ getFichaOperativa(p).riggerLabel }}
+437:                   </span>
+438:                 </div>
+439:               </div>
+440: 
+441:               <!-- En Columnas Comerciales (1 y 2): Familia, Comercial y Monto -->
+442:               <div v-else class="text-[10px] text-slate-300 space-y-0.5">
+443:                 <p class="truncate text-slate-400">{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
+444:                 <div class="flex items-center justify-between pt-0.5">
+445:                   <span v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 truncate max-w-[130px]">👤 {{ getNombreVendedor(p) }}</span>
+446:                   <span v-if="formatMonto(p)" class="text-[10px] font-mono font-bold text-white">{{ formatMonto(p) }}</span>
+447:                 </div>
+448:               </div>
+449: 
+450:               <!-- Footer en modo expandido operativo -->
+451:               <div v-if="col.esOperativa && densidadKanbanPro === 'expandida'" class="flex items-center justify-between pt-1 border-t border-white/5 text-[9px]">
+452:                 <span v-if="getNombreVendedor(p)" class="text-indigo-400 truncate max-w-[130px]">👤 {{ getNombreVendedor(p) }}</span>
+453:                 <span v-else class="text-slate-500">{{ col.etiquetaPie }}</span>
+454:                 <span v-if="formatMonto(p)" class="font-mono font-bold text-white">{{ formatMonto(p) }}</span>
+455:               </div>
+456:             </div>
+457: 
+458:             <div v-if="col.items.length === 0" class="text-center py-8 text-[11px] text-slate-500 italic">
+459:               Sin fichas con los filtros actuales
+460:             </div>
+461:           </div>
+462:         </div>
+463:       </div>
+464:     </div>
+465: 
+466:     <!-- ========================================================================= -->
+467:     <!-- VISTA 1C: CARDEX 3D — MUEBLE TARJETERO INDEXADO CON ELEVACIÓN DE FICHAS   -->
+468:     <!-- ========================================================================= -->
+469:     <div v-else-if="activeView === 'kardex'" class="space-y-3 animate-fadeIn">
+470:       <!-- Panel de Control del Mueble Tarjetero Cardex 3D -->
+471:       <div class="bg-gradient-to-r from-[#0d1326] via-[#11182d] to-[#0d1326] border border-amber-500/35 rounded-xl p-3.5 space-y-3 shadow-xl">
+472:         <div class="flex flex-wrap items-center justify-between gap-3">
+473:           <div class="flex items-center gap-2.5">
+474:             <div class="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-lg shadow-inner">
+475:               🗄️
+476:             </div>
+477:             <div>
+478:               <div class="flex items-center gap-2">
+479:                 <h3 class="text-xs font-black uppercase tracking-wider text-amber-300">Mueble Tarjetero Cardex 3D</h3>
+480:                 <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30 font-mono font-bold">
+481:                   {{ totalLevantadasKardex }} fichas levantadas de {{ totalProyectosTablero }}
+482:                 </span>
+483:               </div>
+484:               <p class="text-[11px] text-slate-400">
+485:                 En reposo solo se asoma el <strong class="text-white">N° de Negocio y el Cliente</strong>. Selecciona criterios por <strong class="text-amber-300">Fecha, Operador o Rigger</strong> (o toca una pestaña) para que las tarjetas se levanten en 3D.
+486:               </p>
+487:             </div>
+488:           </div>
+489: 
+490:           <!-- Botones de Acción Rápida del Tarjetero -->
+491:           <div class="flex flex-wrap items-center gap-2">
+492:             <label class="inline-flex items-center gap-1.5 text-[11px] text-slate-300 bg-[#070b14] px-2.5 py-1.5 rounded-lg border border-white/10 cursor-pointer select-none">
+493:               <input type="checkbox" v-model="kardexSoloLevantadas" class="accent-amber-500 rounded cursor-pointer" />
+494:               <span>Ocultar fichas guardadas</span>
+495:             </label>
+496:             <button
+497:               type="button"
+498:               @click="kardexLevantarTodas = !kardexLevantarTodas"
+499:               class="px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer"
+500:               :class="kardexLevantarTodas ? 'bg-amber-500 text-slate-950 border-amber-400 font-black' : 'bg-[#070b14] text-amber-300 border-amber-500/30 hover:bg-amber-500/10'"
+501:             >
+502:               {{ kardexLevantarTodas ? '🔽 Guardar todas en el cajón' : '🔼 Levantar todas las fichas' }}
+503:             </button>
+504:             <button
+505:               v-if="tieneCriterioActivoKardex"
+506:               type="button"
+507:               @click="limpiarFiltrosKanbanPro"
+508:               class="px-2.5 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 font-bold text-[11px] transition-all cursor-pointer"
+509:             >
+510:               ✕ Bajar Fichas (Reset)
+511:             </button>
+512:           </div>
+513:         </div>
+514: 
+515:         <!-- Tira Interactiva de Fechas ("Teclado del Tarjetero") -->
+516:         <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
+517:           <!-- Selector Modo Fecha: Ejecución vs Venta -->
+518:           <div class="flex items-center bg-[#060a12] p-0.5 rounded-lg border border-white/10 text-[11px] shrink-0">
+519:             <button
+520:               type="button"
+521:               @click="tipoFechaKanbanPro = 'EJECUCION'"
+522:               class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer"
+523:               :class="tipoFechaKanbanPro === 'EJECUCION' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'"
+524:             >
+525:               📅 Por Fecha Ejecución
+526:             </button>
+527:             <button
+528:               type="button"
+529:               @click="tipoFechaKanbanPro = 'VENTA'"
+530:               class="px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer"

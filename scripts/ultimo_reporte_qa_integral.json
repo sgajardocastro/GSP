@@ -1,0 +1,193 @@
+{
+  "fecha": "2026-10-18T18:33:09.525Z",
+  "passRate": 100,
+  "passed": 23,
+  "failed": 0,
+  "total": 23,
+  "resultados": [
+    {
+      "bateria": "1. Biblioteca 360°",
+      "prueba": "Disponibilidad Web DEV",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/",
+      "esperado": "HTTP 200 OK",
+      "obtenido": "HTTP 200 (438ms)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "1. Biblioteca 360°",
+      "prueba": "Nómina Total de Equipos (Flota)",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/tequ-equipos",
+      "esperado": ">= 100 equipos (incluyendo PAD-22 en Bestmaq)",
+      "obtenido": "HTTP 200 (Total: 110, PAD-22 Empresa: 7)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "1. Biblioteca 360°",
+      "prueba": "Certificados Técnicos Equipo PAD-22",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/tequ-equipos/106/certificados",
+      "esperado": "HTTP 200 OK",
+      "obtenido": "HTTP 200 (Certificados: 1)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "1. Biblioteca 360°",
+      "prueba": "Actas 360° en Ficha Equipo PAD-22",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/operaciones/acta-plataforma/equipo/106",
+      "esperado": "HTTP 200 con ACT-2610-111 (PDFs 1508 y 1517)",
+      "obtenido": "HTTP 200 (Actas: 1, ACT-2610-111 vinculada: true)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "1. Biblioteca 360°",
+      "prueba": "Carga Universal de OTs en Biblioteca (Bypass Empresa)",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/proyectos?_bypass_empresa=true&_id_empresa=0",
+      "esperado": "HTTP 200 con OT 111 (BMQ-2610-4851-001) presente",
+      "obtenido": "HTTP 200 (Total OTs: 43, OT 111 presente: true)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "1. Biblioteca 360°",
+      "prueba": "Contrato Suscrito FES en OT 111",
+      "recurso": "tpry_proyecto.json_field (id_proyecto = 111)",
+      "esperado": "estado=FIRMADO_DIGITAL, id_doc > 0, folio=CTR-2026-0111",
+      "obtenido": "estado: FIRMADO_DIGITAL, id_doc: 1530, folio: CTR-2026-0111",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "1. Biblioteca 360°",
+      "prueba": "Expediente Institucional Empresa (GSP SpA)",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/acreditacion/empresa/9/documentos",
+      "esperado": "HTTP 200 OK con nómina de documentos",
+      "obtenido": "HTTP 200 (Documentos: 0)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "2. Storage Binario",
+      "prueba": "Descarga PDF Contrato Firmado OT 111 (Doc 1478)",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/archivo/ver/1478",
+      "esperado": "HTTP 200 con cabecera %PDF- y tamaño > 10 KB",
+      "obtenido": "HTTP 200 (57.2 KB, Cabecera: %PDF-)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "2. Storage Binario",
+      "prueba": "Descarga PDF Acta Entrega 360° (Doc 1508)",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/archivo/ver/1508",
+      "esperado": "HTTP 200 con cabecera %PDF- y tamaño > 10 KB",
+      "obtenido": "HTTP 200 (2604.8 KB, Cabecera: %PDF-)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "2. Storage Binario",
+      "prueba": "Descarga PDF Acta Retiro / Final 360° (Doc 1517)",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/archivo/ver/1517",
+      "esperado": "HTTP 200 con cabecera %PDF- y tamaño > 10 KB",
+      "obtenido": "HTTP 200 (8035.7 KB, Cabecera: %PDF-)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "2. Storage Binario",
+      "prueba": "Resolución Case-Insensitive Storage (Doc 767 GSP/Equipos)",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/archivo/ver/767",
+      "esperado": "HTTP 200 OK con %PDF- (supera divergencia mayúsculas)",
+      "obtenido": "HTTP 200 (19.1 KB)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "3. Comercial & Contratos",
+      "prueba": "Compilación Puppeteer Contrato Legal (3 Páginas a 10px)",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/proyectos/111/contrato/generar-pdf",
+      "esperado": "HTTP 200 con url_pdf emitido",
+      "obtenido": "HTTP 200 (URL: /api/archivo/ver/1531..., 4183ms)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "3. Comercial & Contratos",
+      "prueba": "Generación Token FES Seguro para Firma Móvil",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/proyectos/111/contrato/generar-token",
+      "esperado": "HTTP 200 con token alfanumérico SHA-256",
+      "obtenido": "HTTP 200 (Token: 1f1990f77cf0e23d..., 358ms)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "3. Comercial & Contratos",
+      "prueba": "Consulta Endpoint Público de Firma Móvil",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/proyectos/contrato/public/:token",
+      "esperado": "HTTP 200 con contrato listo para firmar",
+      "obtenido": "HTTP 200 (216ms, Folio: CTR-2026-0111)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "4. Actas Terreno 360°",
+      "prueba": "Listado Maestro de Actas Plataformas",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/operaciones/acta-plataforma",
+      "esperado": "HTTP 200 con Acta 2 (ACT-2610-111) en estado RECIBIDA_CONFORME",
+      "obtenido": "HTTP 200 (Total: 1, Estado Acta 2: RECIBIDA_CONFORME)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "4. Actas Terreno 360°",
+      "prueba": "Integridad Checklist 19 Ítems & Fotos 360° (Acta 2)",
+      "recurso": "tope_acta_plataforma (id_acta = 2)",
+      "esperado": ">=18 ítems checklist, >=7 fotos entrega, >=7 fotos retiro",
+      "obtenido": "Checklist: 19 ítems, Fotos Entrega: 7, Fotos Retiro: 7",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "5. Operaciones & Reports",
+      "prueba": "Cálculo Aritmético de Jornada Neta y Standby",
+      "recurso": "tedp_reporte_avance (PostgreSQL DEV)",
+      "esperado": "horas_operadas=5.00, standby_cliente=3.50, standby_gsp=0.50",
+      "obtenido": "id: 43, operadas: 5.00, cli: 3.50, gsp: 0.50",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "5. Operaciones & Reports",
+      "prueba": "Compilación Puppeteer PDF Reporte Diario",
+      "recurso": "reportDiarioPdfService.js (Puppeteer Headless)",
+      "esperado": "Buffer binario %PDF- > 10 KB con sellado FES",
+      "obtenido": "%PDF- generado (73.8 KB)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "6. PMO & Cierre Finanzas",
+      "prueba": "Consulta Endpoint ITS Transición OT 111",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/operaciones/its/proyecto/111",
+      "esperado": "HTTP 200 OK (o 404 controlado si no ha sido generado)",
+      "obtenido": "HTTP 404 (80ms)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "6. PMO & Cierre Finanzas",
+      "prueba": "Catálogo de Visitas Técnicas a Terreno",
+      "recurso": "https://servidor.leanglobal.cl/lg-gsp-dev/api/survey/visitas-terreno",
+      "esperado": "HTTP 200 con >= 50 visitas en base de datos",
+      "obtenido": "HTTP 200 (Visitas registradas: 70)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "7. Infraestructura & DB",
+      "prueba": "Salud Proceso PM2 10 (lean-services-gsp DEV)",
+      "recurso": "PM2 Process ID 10",
+      "esperado": "status=online, uptime activo",
+      "obtenido": "status: online (lean-services-gsp activo)",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "7. Infraestructura & DB",
+      "prueba": "Integridad Tablas Nucleares (sch_leangsp)",
+      "recurso": "PostgreSQL sch_leangsp",
+      "esperado": "5 tablas nucleares verificadas (actas, reports, viajes, wms, mnt)",
+      "obtenido": "5 de 5 tablas encontradas",
+      "veredicto": "PASA"
+    },
+    {
+      "bateria": "7. Infraestructura & DB",
+      "prueba": "Capacidad de Almacenamiento en Disco (Partición /)",
+      "recurso": "Filesystem / (138.255.103.18)",
+      "esperado": "Uso < 90%, espacio libre suficiente",
+      "obtenido": "Disponible: 27G, Uso: 45%",
+      "veredicto": "PASA"
+    }
+  ]
+}

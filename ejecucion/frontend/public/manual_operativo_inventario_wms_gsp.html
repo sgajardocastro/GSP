@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual Operativo & Arquitectura WMS-Lite | Grúas San Pablo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Mermaid JS para Diagramas de Flujo y Secuencia Técnicos Monocromos -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              amber: '#f59e0b',
+              amberLight: '#fbbf24',
+              amberDark: '#b45309',
+              blue: '#2563eb',
+              dark: '#030712',
+              card: '#0b1324',
+              cardHover: '#111e38',
+              border: 'rgba(255, 255, 255, 0.08)'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #030712;
+      color: #f3f4f6;
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0b1324;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; color: black !important; }
+      .print-card { border: 1px solid #ccc !important; background: white !important; color: black !important; }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col antialiased custom-scrollbar">
+
+  <!-- BARRA SUPERIOR DE ACCIONES -->
+  <header class="border-b border-brand-border bg-brand-dark/95 backdrop-blur sticky top-0 z-50 px-4 md:px-8 py-3.5 flex items-center justify-between no-print">
+    <div class="flex items-center space-x-3">
+      <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20">
+        <i data-lucide="package" class="w-5 h-5 text-slate-950"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-extrabold text-sm tracking-wider text-slate-100 uppercase">Grúas San Pablo</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">SPEC-048</span>
+        </div>
+        <p class="text-xs text-slate-400">Manual Maestro de Operaciones, Arquitectura & Transacciones WMS-Lite (Gestión MRO de Flota)</p>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <button onclick="window.print()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition-colors flex items-center space-x-1.5">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span>Imprimir / Guardar PDF</span>
+      </button>
+      <a href="./centro_documentacion_gsp.html" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-all flex items-center space-x-1.5 shadow-md shadow-amber-500/10">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        <span>Volver al Centro de Documentación</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 md:px-8 py-8 space-y-10">
+
+    <!-- HERO PRINCIPAL -->
+    <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/30 border border-slate-800 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
+      <div class="relative z-10 space-y-3">
+        <div class="inline-flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>Documento Canónico Oficial de Arquitectura & Operación WMS</span>
+        </div>
+        <h1 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight">
+          Gestión de Bodega MRO, Trazabilidad Kardex & Consumo de Flota (WMS-Lite)
+        </h1>
+        <p class="text-slate-300 text-sm md:text-base leading-relaxed max-w-3xl">
+          Este documento consolida la arquitectura de software, el modelo de datos tripartito (Base de Datos &harr; Backend &harr; Frontend), las 8 transacciones fundamentales y los flujos móviles con código QR para la administración de repuestos MRO destinados al mantenimiento de los <strong>110 equipos y camiones pluma</strong> de Grúas San Pablo.
+        </p>
+
+        <div class="pt-4 flex flex-wrap gap-4 text-xs font-mono">
+          <div class="bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span class="text-slate-400 block text-[10px]">VERSIÓN WEB</span>
+            <span class="text-amber-400 font-bold">Portal WMS v1.0.125</span>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span class="text-slate-400 block text-[10px]">VERSIÓN PWA</span>
+            <span class="text-amber-400 font-bold">Taller Móvil v1.0.39</span>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span class="text-slate-400 block text-[10px]">CATÁLOGO MAESTRO</span>
+            <span class="text-emerald-400 font-bold">2.801 SKU Canónicos</span>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span class="text-slate-400 block text-[10px]">ESTÁNDAR ETIQUETADO</span>
+            <span class="text-blue-400 font-bold">QR Térmico 50×30 mm</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 1: REGLAS FUNDAMENTALES Y FILOSOFÍA MRO -->
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <i data-lucide="git-branch" class="w-5 h-5 text-amber-400"></i>
+        <span>1. Filosofía Operacional MRO & Segregación de Dominios</span>
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+        <!-- Tarjeta A: Bodega MRO vs Retail -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <div class="flex items-center gap-2 text-amber-400 font-bold uppercase">
+            <i data-lucide="wrench" class="w-4 h-4"></i>
+            <span>Naturaleza de Bodega: Repuestos de Flota (MRO)</span>
+          </div>
+          <p class="text-slate-300 leading-relaxed">
+            La bodega de Grúas San Pablo <strong>no es un centro de distribución comercial para venta a público</strong>. Su misión estratégica es el abastecimiento continuo de repuestos, lubricantes y consumibles para asegurar la disponibilidad operativa de la flota pesada (grúas telescópicas, plumas y tractos).
+          </p>
+          <ul class="space-y-1.5 text-slate-400">
+            <li class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">&check;</span> <span><strong>Rotación por Horómetros:</strong> Consumos disparados por pautas de 250h / 500h o averías de terreno.</span></li>
+            <li class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">&check;</span> <span><strong>Piezas Rotables Reparables:</strong> Cilindros hidráulicos, motores y bombas con seguimiento por serie.</span></li>
+            <li class="flex items-start gap-1.5"><span class="text-emerald-400 font-bold">&check;</span> <span><strong>Criticidad MRO:</strong> Repuestos clase A cuyo quiebre paraliza un equipo de alta tarifa.</span></li>
+          </ul>
+        </div>
+
+        <!-- Tarjeta B: Segregación Estricta de OTs -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <div class="flex items-center gap-2 text-blue-400 font-bold uppercase">
+            <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            <span>Segregación Total: OTs Comerciales vs OTs Mantenimiento</span>
+          </div>
+          <p class="text-slate-300 leading-relaxed">
+            El sistema prohíbe taxativamente mezclar las dos tipologías de Orden de Trabajo que coexisten en la compañía:
+          </p>
+          <div class="space-y-2 font-mono text-[11px]">
+            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+              <span class="text-blue-400 font-bold">OT Comercial (tpry_orden_trabajo):</span>
+              <p class="text-slate-400 mt-0.5">Ingreso por arriendo a mandantes (Pocuro, Arauco). Folio <code>GSP-YYMM-XXXX-XXX</code>. Cadena ITS &rarr; EDP &rarr; Factura.</p>
+            </div>
+            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+              <span class="text-amber-400 font-bold">OT Mantenimiento (tmnt_ot):</span>
+              <p class="text-slate-400 mt-0.5">Costo interno de flota propia (tequ_equipo). Folio <code>MNT-YYMM-XXX</code>. Los repuestos se imputan aquí al costo PMP.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nuevo Estándar de SKU MRO -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 font-mono font-bold flex items-center justify-center text-sm">SKU</span>
+            <h3 class="text-base font-bold text-white uppercase">Estructura Canónica del SKU por Familia MRO</h3>
+          </div>
+          <span class="text-xs font-mono px-2.5 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            Formato: {FAMILIA}-{CORRELATIVO_5D}
+          </span>
+        </div>
+
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Se eliminó la codificación legada discontinua y duplicada. Los <strong>2.801 repuestos</strong> del catálogo oficial operan bajo códigos estructurados de 10 caracteres alfanuméricos inmutables. El código antiguo de GSP se mantiene registrado en <code>codigo_legado</code> para permitir búsquedas cruzadas automáticas en los buscadores y pistolas de código de barras.
+        </p>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <span class="text-amber-400 font-bold">FILT-00001 a 99999</span>
+            <span class="block text-[11px] text-slate-400 mt-1">Filtros (373 SKU)</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <span class="text-amber-400 font-bold">LUBR-00001 a 99999</span>
+            <span class="block text-[11px] text-slate-400 mt-1">Aceites y Grasas (27 SKU)</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <span class="text-amber-400 font-bold">MEC-00001 a 99999</span>
+            <span class="block text-[11px] text-slate-400 mt-1">Taller Mecánico (1.236 SKU)</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <span class="text-amber-400 font-bold">ELEC-00001 a 99999</span>
+            <span class="block text-[11px] text-slate-400 mt-1">Eléctricos y Sensores (217 SKU)</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <span class="text-amber-400 font-bold">DESG-00001 a 99999</span>
+            <span class="block text-[11px] text-slate-400 mt-1">Material de Desgaste (63 SKU)</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <span class="text-amber-400 font-bold">NEUM-00001 a 99999</span>
+            <span class="block text-[11px] text-slate-400 mt-1">Neumáticos y Ruedas (37 SKU)</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <span class="text-amber-400 font-bold">HERR-00001 a 99999</span>
+            <span class="block text-[11px] text-slate-400 mt-1">Herramientas Izaje (21 SKU)</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <span class="text-amber-400 font-bold">EPP-00001 a 99999</span>
+            <span class="block text-[11px] text-slate-400 mt-1">Protección Personal (198 SKU)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 2: MAPA DE LAS 8 TRANSACCIONES WMS -->
+    <section class="space-y-6">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <i data-lucide="layers" class="w-5 h-5 text-amber-400"></i>
+        <span>2. Catálogo de Vistas & Transacciones Operativas (Las 8 Vistas Canónicas)</span>
+      </h2>
+
+      <!-- VISTA 1: BODEGAS & UBICACIONES -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-mono font-bold flex items-center justify-center text-xs">01</span>
+            <h3 class="text-base font-bold text-white uppercase">Bodegas Físicas & Ubicaciones Matriciales</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">Ruta: /inventario/bodegas | Tabla: tinv_ubicacion</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Visualizador gráfico matricial de la bodega central de San Pablo (Racks metálicos E1 a E9). Cada estantería cuenta con 42 celdas canónicas (Niveles A-G &times; Posiciones 1-6 con codificación estándar <code>RACK-NIV-POS</code>, ej. <code>E4-C-2</code>). Incorpora las zonas especiales: Patio de Plumas y Contrapesos (Corral), Pañol de Herramientas, Bodega de Inflamables y Zona de Cuarentena.
+        </p>
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono space-y-2">
+          <div class="text-amber-400 font-bold uppercase text-[10px]">Funcionalidades Clave:</div>
+          <div>• Impresión Térmica de Etiquetas QR de Ubicación (50&times;30 mm) para vigas de racks.</div>
+          <div>• Indicador de Ocupación por Celda (% de capacidad y mezcla de SKUs permitida).</div>
+          <div>• Pestaña de Homologación de Códigos Legados para mapeo de ubicaciones históricas.</div>
+        </div>
+      </div>
+
+      <!-- VISTA 2: MAESTRO DE CATÁLOGO -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 font-mono font-bold flex items-center justify-center text-xs">02</span>
+            <h3 class="text-base font-bold text-white uppercase">Maestro de Catálogo 360° & Equivalencias OEM</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">Ruta: /inventario/productos | Tabla: tinv_producto</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Catálogo maestro con 2.801 repuestos e insumos indexados con búsqueda instantánea por SKU, código legado o número de parte de fabricante. Incluye el <strong>Drawer Lateral 360° con 6 pestañas de profundidad técnica</strong>:
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span class="text-amber-400 font-bold block mb-1">1. General & MRO</span>
+            <span class="text-slate-400 text-[11px]">PMP vigente, stock mín/seg/máx, lead time, criticidad de parada.</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span class="text-amber-400 font-bold block mb-1">2. UoM & Conversión</span>
+            <span class="text-slate-400 text-[11px]">Unidad base (L, m, kg, UN) vs compra (Tambor 208L, Balde 20L).</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span class="text-amber-400 font-bold block mb-1">3. Referencias OEM</span>
+            <span class="text-slate-400 text-[11px]">Equivalencias Donaldson, Liebherr, Mann, Bosch, Tadano.</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span class="text-amber-400 font-bold block mb-1">4. Compatibilidad Flota</span>
+            <span class="text-slate-400 text-[11px]">BOM y modelos de grúas compatibles (LTM 1100, ATF 220G, etc.).</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span class="text-amber-400 font-bold block mb-1">5. Stock por Rack</span>
+            <span class="text-slate-400 text-[11px]">Distribución física en tiempo real por estante, nivel y posición.</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span class="text-amber-400 font-bold block mb-1">6. Kardex del Ítem</span>
+            <span class="text-slate-400 text-[11px]">Asientos cronológicos inmutables de entradas, salidas y traspasos.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA 3: RECEPCIÓN E INGRESO OC -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-mono font-bold flex items-center justify-center text-xs">03</span>
+            <h3 class="text-base font-bold text-white uppercase">Recepción de Materiales & Costeo PMP</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">Ruta: /inventario/recepcion | Tabla: tinv_recepcion</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Flujo de ingreso físico con 5 tipologías operacionales: <em>Compra con OC</em>, <em>Carga Inicial/Migración</em>, <em>Garantía de Proveedor</em>, <em>Reingreso de Rotable Reparado</em> y <em>Devolución desde OT</em>. 
+        </p>
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono space-y-2">
+          <div class="text-emerald-400 font-bold uppercase text-[10px]">Mecánica de Costeo & Etiquetado:</div>
+          <div>• <strong>Momento del Costo:</strong> Se digita el costo de presentación (ej: \$226.800 por 2 cajas de 12 unidades) y el sistema deriva automáticamente el costo unitario base (\$18.900/UN).</div>
+          <div>• <strong>Recálculo Atómico de PMP:</strong> Al confirmar la recepción, se aplica en transacción ACID la fórmula de costo medio ponderado: <code>PMP = (Stock_Ant &times; PMP_Ant + Q_Ent &times; Costo_Ent) / (Stock_Ant + Q_Ent)</code>.</div>
+          <div>• <strong>Disparo de Etiquetas QR:</strong> Inmediatamente al presionar <em>Confirmar Recepción</em> se emiten las etiquetas térmicas adhesivas con SKU, lote y fecha para su pegado previo al almacenamiento en rack (Put-Away).</div>
+        </div>
+      </div>
+
+      <!-- VISTA 4: DESPACHO E IMPUTACIÓN A OT -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 font-mono font-bold flex items-center justify-center text-xs">04</span>
+            <h3 class="text-base font-bold text-white uppercase">Despacho & Imputación Directa a la OT</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">Ruta: /inventario/despacho | Tablas: tinv_movimiento & tmnt_ot_repuesto</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Salida física de repuestos vinculada indisolublemente a la Orden de Trabajo de mantenimiento de la grúa (<code>MNT-YYMM-XXX</code>) o por excepción a Centro de Costo (CC). Incluye el <strong>Simulador PWA Móvil de 5 Pasos</strong>:
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 text-xs font-mono">
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
+            <span class="text-amber-400 font-bold block">Paso 1</span>
+            <span class="text-slate-400 text-[10px]">Escanear QR de Repuesto</span>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
+            <span class="text-amber-400 font-bold block">Paso 2</span>
+            <span class="text-slate-400 text-[10px]">Validar OT Activa</span>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
+            <span class="text-amber-400 font-bold block">Paso 3</span>
+            <span class="text-slate-400 text-[10px]">Confirmar Cantidad</span>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
+            <span class="text-amber-400 font-bold block">Paso 4</span>
+            <span class="text-slate-400 text-[10px]">Firma Digital FES Mecánico</span>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-center">
+            <span class="text-amber-400 font-bold block">Paso 5</span>
+            <span class="text-slate-400 text-[10px]">Comprobante & Asiento Kardex</span>
+          </div>
+        </div>
+        <p class="text-[11px] text-slate-400">
+          <strong>Devolución de Excedentes:</strong> Si el mecánico solicitó 4 filtros y solo utilizó 3, la pestaña de devolución reingresa el filtro sobrante al stock con crédito de costo exacto a la OT respectiva.
+        </p>
+      </div>
+
+      <!-- VISTA 5: TRASPASOS ENTRE BODEGAS -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 font-mono font-bold flex items-center justify-center text-xs">05</span>
+            <h3 class="text-base font-bold text-white uppercase">Traspasos Logísticos Inter-Bodega & Holding</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">Ruta: /inventario/traspasos | Tabla: tinv_traspaso</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Movimiento de repuestos entre bodegas físicas (Central San Pablo, Taller Lampa, Bodega Móvil en Faena) o entre las 4 empresas del holding (San Pablo, Bestmaq, Logística del Sur, Royal Rental).
+        </p>
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono space-y-2">
+          <div class="text-indigo-400 font-bold uppercase text-[10px]">Stepper Logístico de 4 Fases:</div>
+          <div>• <code>1. Creado</code> &rarr; Solicitud generada con lista de empaque.</div>
+          <div>• <code>2. Despachado</code> &rarr; Salida física respaldada por Guía de Despacho Interna (GDI tributaria SII).</div>
+          <div>• <code>3. En Tránsito</code> &rarr; Stock sale del origen y pasa a la cuenta virtual de tránsito (no se pierde valorización contable).</div>
+          <div>• <code>4. Recibido</code> &rarr; Bodega de destino escanea y confirma recepción; el stock se libera en el nuevo rack.</div>
+        </div>
+      </div>
+
+      <!-- VISTA 6: ALERTAS & MONITOR DE QUIEBRES -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-mono font-bold flex items-center justify-center text-xs">06</span>
+            <h3 class="text-base font-bold text-white uppercase">Alertas, Quiebres & Matriz de Criticidad MRO</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">Ruta: /inventario/alertas | Monitoreo en Tiempo Real</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Tablero de control para la prevención de paradas no programadas por falta de repuestos. Integra la <strong>Matriz de Criticidad 3&times;3</strong> cruzando el impacto en la operación (Paralización de grúa vs Degradado vs Observación) contra la dificultad de abastecimiento (Importación vs Proveedor local).
+        </p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span class="text-rose-400 font-bold block mb-1">Críticos Bajo Mínimo</span>
+            <span class="text-slate-300 text-sm font-bold">14 Ítems</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span class="text-amber-400 font-bold block mb-1">En Punto de Reorden</span>
+            <span class="text-slate-300 text-sm font-bold">38 Ítems</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span class="text-blue-400 font-bold block mb-1">Valor en Riesgo</span>
+            <span class="text-slate-300 text-sm font-bold">$12.450.000 CLP</span>
+          </div>
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span class="text-emerald-400 font-bold block mb-1">Fill Rate Taller</span>
+            <span class="text-slate-300 text-sm font-bold">94.8%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA 7: CONTEO FÍSICO CIEGO & AUDITORÍA -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 font-mono font-bold flex items-center justify-center text-xs">07</span>
+            <h3 class="text-base font-bold text-white uppercase">Toma de Inventario Físico Ciego & Conciliación</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">Ruta: /inventario/procesos | Tablas: tinv_conteo & tinv_conteo_linea</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Protocolo de inventario cíclico por estantería o general de fin de año. El bodeguero ingresa las cantidades contadas físicamente en modo <strong>ciego</strong> (sin ver el saldo que tiene el sistema para evitar sesgos). La plataforma calcula las variaciones (sobrantes/faltantes) y el supervisor de bodega autoriza los ajustes en Kardex con segregación de funciones.
+        </p>
+      </div>
+
+      <!-- VISTA 8: EXISTENCIAS & BAJAS -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-slate-500/20 text-slate-300 font-mono font-bold flex items-center justify-center text-xs">08</span>
+            <h3 class="text-base font-bold text-white uppercase">Visor de Existencias & Desincorporaciones por Baja</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">Ruta: /inventario/bajas | Auditoría de Obsolescencia</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Control de existencias agrupadas por estado (Libre de Utilización, Reservado para OT, En Cuarentena, Dañado). Bitácora formal de bajas por merma, daño irreversible en faena o vencimiento químico con acta foliada y firma de jefatura técnica.
+        </p>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 3: OPERACIÓN MOBILE EN TERRENO (PWA) -->
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <i data-lucide="smartphone" class="w-5 h-5 text-amber-400"></i>
+        <span>3. Operación Móvil en Terreno (PWA & Escáner QR)</span>
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-2">
+          <div class="text-amber-400 font-bold uppercase flex items-center gap-1.5">
+            <i data-lucide="camera" class="w-4 h-4"></i>
+            <span>Cámara 60 FPS con Feedback</span>
+          </div>
+          <p class="text-slate-300">
+            Escaneo instantáneo mediante cámara trasera del smartphone. Al detectar el QR de repuesto o rack emite un <strong>tono de confirmación (BEEP) y una vibración háptica</strong> sin obligar al operador a mirar constantemente la pantalla.
+          </p>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-2">
+          <div class="text-emerald-400 font-bold uppercase flex items-center gap-1.5">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span>Doble Validación Anti-Error</span>
+          </div>
+          <p class="text-slate-300">
+            En el proceso de almacenamiento (Put-away), el pañolero escanea primero el QR de la viga del rack (ej: <code>E4-C-2</code>) y luego el repuesto. Si hay discrepancia de estante, el sistema alerta visual y acústicamente en rojo.
+          </p>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-2">
+          <div class="text-blue-400 font-bold uppercase flex items-center gap-1.5">
+            <i data-lucide="wifi-off" class="w-4 h-4"></i>
+            <span>Resiliencia Offline</span>
+          </div>
+          <p class="text-slate-300">
+            En galpones metálicos y patios con sombra de señal, la PWA almacena el catálogo y las OTs activas en memoria local (<code>IndexedDB</code>). Los escaneos se encolan y sincronizan automáticamente al recuperar cobertura.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 4: CALCE TRIBUTARIO & CONTABLE (OC -> GUÍA -> FACTURA) -->
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <i data-lucide="file-text" class="w-5 h-5 text-amber-400"></i>
+        <span>4. Circuito de Calce Tributario & Recepción Física (Three-Way Match)</span>
+      </h2>
+
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4 text-xs">
+        <p class="text-slate-300 leading-relaxed">
+          Para no frenar el trabajo de los mecánicos en el taller, el sistema desacopla el ingreso físico de la recepción de la factura tributaria:
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-[11px]">
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
+            <span class="text-amber-400 font-bold block">1. Orden de Compra (OC)</span>
+            <p class="text-slate-400">Generada por Adquisiciones con cantidades y precios pactados. Fija el costo de referencia en el sistema.</p>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
+            <span class="text-emerald-400 font-bold block">2. Guía de Despacho (GD)</span>
+            <p class="text-slate-400">Llega físicamente en el camión. El bodeguero valida bultos, ingresa al stock y genera etiquetas térmicas inmediatas.</p>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
+            <span class="text-blue-400 font-bold block">3. Factura Electrónica (DTE)</span>
+            <p class="text-slate-400">Llega días después al SII o Laudus. Finanzas calza la factura contra la recepción <code>REC-YYYY-XXXX</code> para pago.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 5: INFOGRAFÍAS DE COMPRENSIÓN FUNCIONAL (DIAGRAMAS TÉCNICOS DE FLUJO Y SECUENCIA) -->
+    <section id="infografias-compras-laudus" class="space-y-8 pt-6 border-t border-slate-800">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-slate-900 text-slate-200 border border-slate-700 mb-1.5">
+            INFOGRAFÍAS DE COMPRENSIÓN FUNCIONAL · DIAGRAMAS DE FLUJO Y SECUENCIA (SPEC-087 &amp; SPEC-048)
+          </span>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="git-merge" class="w-5 h-5 text-slate-200"></i>
+            <span>5. Ciclo Completo de Compras, Bodega WMS y Puente Contable Laudus ERP</span>
+          </h2>
+        </div>
+        <span class="text-xs font-mono text-slate-300 bg-slate-900 px-3 py-1.5 rounded border border-slate-700">
+          Pantallas: <strong>/compras-oc</strong> · <strong>/inventario/recepciones</strong> · <strong>/aprobacion-gerencia/:token</strong>
+        </span>
+      </div>
+
+      <!-- INFOGRAFÍA 1: EL MAPA MAESTRO END-TO-END (LAS 5 ESTACIONES DEL CICLO DE COMPRA) -->
+      <div class="bg-[#090d16] border border-slate-700 rounded-xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider font-mono">
+            INFOGRAFÍA 1: El Mapa Maestro End-to-End (Las 5 Estaciones del Ciclo de Compra)
+          </h3>
+          <span class="text-[11px] font-mono text-slate-400">Diagrama de Flujo Horizontal (E2E)</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Esta infografía muestra cómo viaja una compra desde que alguien detecta una necesidad en taller, bodega o faena, hasta que queda contabilizada en <strong>Laudus ERP</strong> y cargada en el <strong>ITS</strong> o en el <strong>Stock de Bodega</strong>:
+        </p>
+        <div class="bg-[#05080f] border border-slate-800 rounded-lg p-4 overflow-x-auto">
+          <pre class="mermaid text-center">
+flowchart LR
+    subgraph E1["ESTACIÓN 1: LA NECESIDAD (SOLPED)"]
+        A1["Mecánico / Jefe Taller<br/>(OT Mantenimiento)"] --> SP["Ticket Solicitud de Pedido<br/>Folio: SP-YYMM-XXXX"]
+        A2["Bodeguero / Alerta Quiebre<br/>(Bajo Punto Reorden)"] --> SP
+        A3["Coordinador Operaciones<br/>(Flete / Rigger / Pensión OT)"] --> SP
+    end
+
+    subgraph E2["ESTACIÓN 2: COTIZACIÓN Y EMISIÓN (EDUARDO)"]
+        SP --> OC["Orden de Compra Multi-Empresa<br/>OC-GSP | OC-RYL | OC-BMQ | OC-LDS"]
+        PLAN["Plan de Cuentas Laudus<br/>(Pegado desde Excel)"] -.->|"Asigna Cuenta + C. Costo"| OC
+        CAT["Catálogo WMS (2.854 SKUs)"] -.->|"Asigna SKU + ID Producto"| OC
+    end
+
+    subgraph E3["ESTACIÓN 3: VISACIÓN MÓVIL (OMAR)"]
+        OC -->|"WhatsApp / Email<br/>Magic Link 1 Uso"| OMAR["Celular de Omar (0% Login)<br/>[Aprobar] [Observar] [Rechazar]"]
+        OMAR -->|"Timbre Digital FES"| PDF["PDF Oficial A4 OC<br/>Con Logo del Holding y Firma"]
+    end
+
+    subgraph E4["ESTACIÓN 4: RECEPCIÓN FÍSICA / EJECUCIÓN"]
+        PDF -->|"Si es Repuesto / Insumo"| WMS["Recepción Bodega WMS<br/>+ Foto Guía + Sube Stock + Recalcula PMP"]
+        PDF -->|"Si es Flete / Servicio Faena"| ITS_DIR["Ejecución en OT Comercial"]
+    end
+
+    subgraph E5["ESTACIÓN 5: FACTURA Y PUENTE LAUDUS (MARITZA)"]
+        WMS --> TAB3["Pestaña 3: Puente Laudus ERP"]
+        ITS_DIR --> TAB3
+        TAB3 -->|"Copia 1-Clic o CSV Excel"| LAUDUS["Digitación / Importación en Laudus<br/>(Folio Laudus + Folio Factura DTE)"]
+        LAUDUS -->|"Sincronización Automática"| CIERRE["Estado: FACTURADA_LAUDUS<br/>+ Inyección de Costo en ITS"]
+    end
+          </pre>
+        </div>
+      </div>
+
+      <!-- INFOGRAFÍA 2: LOS 2 CAMINOS DE UNA COMPRA (¿VA A BODEGA WMS O VA DIRECTO AL ITS?) -->
+      <div class="bg-[#090d16] border border-slate-700 rounded-xl p-6 space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider font-mono">
+            INFOGRAFÍA 2: Los 2 Caminos de una Compra (¿Va a Bodega WMS o va directo al ITS?)
+          </h3>
+          <span class="text-[11px] font-mono text-slate-400">Árbol de Decisión Operativo y Contable</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          En Grúas San Pablo existen <strong>dos naturalezas de compra completamente distintas</strong>. Nuestro sistema las separa automáticamente según el <strong>Origen y Rubro</strong> elegido en la Solped/OC:
+        </p>
+        <div class="bg-[#05080f] border border-slate-800 rounded-lg p-4 overflow-x-auto">
+          <pre class="mermaid text-center">
+flowchart TD
+    OC_AUT["Orden de Compra Autorizada por Omar"] --> DECISION{"¿Qué se está comprando?"}
+
+    DECISION -->|"CAMINO A: Repuestos, Filtros, Aceites, EPP<br/>(Origen: TALLER_BODEGA)"| REC_WMS["1. Pasa por Recepción de Materiales (/inventario/recepciones)<br/>El bodeguero selecciona la OC, toma foto de la Guía/Factura y del repuesto"]
+    REC_WMS --> KARDEX["2. Entra al Kardex Inmutable (ENTRADA_COMPRA)<br/>Aumenta el Stock Físico en el casillero del Rack y recalcula el PMP"]
+    KARDEX --> SALIDA_OT["3. Cuando un mecánico lo usa en una grúa (SALIDA_OT)<br/>Rebaja el Stock de Bodega y carga el costo a la OTM y al Reporte Contable de Salidas"]
+
+    DECISION -->|"CAMINO B: Cama Baja Externa, Rigger Externo, Hotel, Peajes<br/>(Origen: OPERACIONES_OT)"| NO_WMS["1. NO pasa por Bodega Física<br/>(Porque es un servicio consumido directamente en la faena)"]
+    NO_WMS --> TAB3_SYNC["2. En Pestaña 3 (Puente Laudus), se registra la Factura DTE"]
+    TAB3_SYNC --> INY_ITS["3. El sistema inyecta automáticamente el Monto Neto<br/>en la Sección 3 del ITS de la OT Comercial (bajando el margen real del servicio)"]
+          </pre>
+        </div>
+
+        <div class="overflow-x-auto border border-slate-800 rounded-lg">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-900 border-b border-slate-700 text-slate-200 font-mono text-[11px] uppercase">
+                <th class="py-2.5 px-3 border-r border-slate-800">Característica</th>
+                <th class="py-2.5 px-3 border-r border-slate-800">Camino A: Repuestos e Insumos (<code>TALLER_BODEGA</code>)</th>
+                <th class="py-2.5 px-3">Camino B: Servicios de Faena (<code>OPERACIONES_OT</code>)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800 text-slate-300 bg-[#05080f]">
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-white border-r border-slate-800">¿Usa el Catálogo de 2.854 SKUs?</td>
+                <td class="py-2.5 px-3 border-r border-slate-800"><strong>Sí</strong>, vincula el <code>id_producto</code> y <code>SKU</code> (ej. <code>GSP-000158</code>).</td>
+                <td class="py-2.5 px-3"><strong>No requiere SKU</strong>, usa descripción de servicio (<code>SERV</code>).</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-white border-r border-slate-800">¿Se recibe en <code>/inventario/recepciones</code>?</td>
+                <td class="py-2.5 px-3 border-r border-slate-800"><strong>Sí, obligatorio</strong> (con foto de Guía/Factura y asignación de Rack).</td>
+                <td class="py-2.5 px-3"><strong>No</strong>, se valida con la ejecución del servicio en la OT.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-white border-r border-slate-800">¿Mueve el Stock y el Costo Promedio (PMP)?</td>
+                <td class="py-2.5 px-3 border-r border-slate-800"><strong>Sí</strong>, suma unidades al stock y recalcula el PMP en línea.</td>
+                <td class="py-2.5 px-3"><strong>No</strong> toca el inventario físico de bodega.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-white border-r border-slate-800">¿Dónde impacta financieramente?</td>
+                <td class="py-2.5 px-3 border-r border-slate-800">Entra a <strong>Activo de Bodega (<code>1106-01</code>)</strong> y pasa a Gasto (<code>5101-XX</code>) al despacharse a una grúa.</td>
+                <td class="py-2.5 px-3">Impacta directo en la <strong>Sección 3 de Costos del ITS</strong> de la OT comercial (<code>5102-XX</code>).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- INFOGRAFÍA 3: CÓMO FUNCIONA EL PUENTE LAUDUS (PLAN DE CUENTAS PEGADO A MANO + MULTIEMPRESA) -->
+      <div class="bg-[#090d16] border border-slate-700 rounded-xl p-6 space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider font-mono">
+            INFOGRAFÍA 3: Cómo funciona el "Puente Laudus" (Plan de Cuentas pegado a mano + Multiempresa)
+          </h3>
+          <span class="text-[11px] font-mono text-slate-400">Arquitectura de Pre-Imputación Contable</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Como Laudus maneja las <strong>4 empresas del holding en bases separadas</strong>, construimos un <strong>Puente Contable Asistido</strong> que resuelve la imputación sin doble digitación ciega:
+        </p>
+        <div class="bg-[#05080f] border border-slate-800 rounded-lg p-4 overflow-x-auto">
+          <pre class="mermaid text-center">
+flowchart TB
+    subgraph LAUDUS_EXCEL["1. LO QUE VIENE DE LAUDUS (UNA SOLA VEZ)"]
+        EX["Excel exportado de Laudus ERP<br/>(Código Cuenta | Nombre Cuenta)"] -->|"Copiar y Pegar (Ctrl+V)<br/>en Modal Plan Cuentas"| TABLA_CTA["Catálogo de Cuentas Laudus en GSP<br/>Ej: 5101-01 Mant. Maquinarias<br/>5101-02 Mant. Vehículos<br/>5102-01 Subcontrato Fletes"]
+    end
+
+    subgraph IMPUTACION_OC["2. LO QUE SE ASIGNA AL EMITIR LA OC"]
+        EMP["Selector de Razón Social Compradora<br/>• Grúas San Pablo (52.004.162-1)<br/>• Royal Rental (78.254.535-3)<br/>• Bestmaq (76.209.534-3)<br/>• Logística del Sur (76.218.576-8)"] --> FICHA
+        TABLA_CTA -->|"Sugiere cuenta automática<br/>según el Rubro"| FICHA["Imputación Completa en la OC<br/>Empresa + Cuenta Laudus + Centro de Costo"]
+        CC["Selector de Centro de Costo<br/>• Patente de los 110 Equipos (ej. DZXL.21-0)<br/>• OT Comercial (ej. GSP-2610-001)<br/>• Casa Matriz / Taller Central"] --> FICHA
+    end
+
+    subgraph SALIDA_CONTABLE["3. LO QUE RECIBE CONTABILIDAD (MARITZA)"]
+        FICHA --> PRINT["Impresión PDF A4 de la OC<br/>(Trae impresa la Cuenta Laudus y el C. Costo)"]
+        FICHA --> COPY["Botón [ Copiar ] en Pestaña 3<br/>(Copia la fila tabulada al portapapeles)"]
+        FICHA --> CSV["Botón [ Exportar Pre-Imputación Laudus .CSV ]<br/>(Descarga sábana completa lista para Laudus)"]
+    end
+          </pre>
+        </div>
+
+        <div class="bg-[#05080f] border border-slate-800 rounded-lg p-4 space-y-2 text-xs">
+          <div class="font-mono font-bold text-white uppercase text-[11px]">¿Por qué esto alivia a Contabilidad desde el Día 1?</div>
+          <p class="text-slate-400">Antes, cuando llegaba una factura de un proveedor a Contabilidad, Maritza tenía que preguntar:</p>
+          <ol class="list-decimal list-inside space-y-1 text-slate-300">
+            <li><em>¿De cuál de las 4 empresas es este gasto?</em> &rarr; <strong>Ahora viene definido en el folio (<code>OC-GSP</code>, <code>OC-RYL</code>, <code>OC-BMQ</code>, <code>OC-LDS</code>) y con el RUT exacto.</strong></li>
+            <li><em>¿Quién autorizó comprar esto?</em> &rarr; <strong>Viene con el timbre criptográfico FES de Omar Ghisellini.</strong></li>
+            <li><em>¿A qué cuenta contable y a qué grúa (centro de costo) lo cargo en Laudus?</em> &rarr; <strong>Viene pre-imputado con el código exacto del Plan de Cuentas de Laudus y la patente de la máquina.</strong></li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- INFOGRAFÍA 4: EL FLUJO DE PERSONAS Y PANTALLAS (¿DÓNDE HACE CLIC CADA ROL?) -->
+      <div class="bg-[#090d16] border border-slate-700 rounded-xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider font-mono">
+            INFOGRAFÍA 4: El Flujo de Personas y Pantallas (¿Dónde hace clic cada rol?)
+          </h3>
+          <span class="text-[11px] font-mono text-slate-400">Diagrama de Secuencia e Interacción por Actor</span>
+        </div>
+        <div class="bg-[#05080f] border border-slate-800 rounded-lg p-4 overflow-x-auto">
+          <pre class="mermaid text-center">
+sequenceDiagram
+    autonumber
+    actor Solicitante as Taller / Bodega / Operaciones
+    actor Eduardo as Eduardo (Adquisiciones)
+    actor Omar as Omar (Gerencia General)
+    actor Bodega as Bodeguero (Pañol WMS)
+    actor Maritza as Maritza (Contabilidad / Laudus)
+
+    Note over Solicitante,Eduardo: PESTAÑA 1 de /compras-oc (Solicitudes de Pedido)
+    Solicitante->>Eduardo: Crea Solped (SP-2610-XXXX) o pulsa [Sugerir Compra] en Alertas de Quiebre
+    
+    Note over Eduardo,Omar: PESTAÑA 2 de /compras-oc (Órdenes de Compra)
+    Eduardo->>Eduardo: Pulsa [Convertir en OC], elige Empresa (GSP/RYL/BMQ/LDS), Proveedor, Cuenta Laudus y C. Costo
+    Eduardo->>Omar: Pulsa [Enviar a V°B° Omar] (Genera Link Mágico de 1 Uso)
+    
+    Note over Omar: PANTALLA MÓVIL /aprobacion-gerencia/:token
+    Omar->>Eduardo: Revisa en su celular (sin login) y pulsa [APROBAR] en 1 toque
+    
+    alt Si es Repuesto o Insumo de Bodega
+        Note over Bodega: PANTALLA /inventario/recepciones
+        Bodega->>Bodega: Selecciona "Con Orden de Compra", elige la OC, sube fotos de Guía/Material y guarda en Rack
+    end
+
+    Note over Maritza: PESTAÑA 3 de /compras-oc (Integración Laudus ERP)
+    Maritza->>Maritza: Descarga [.CSV Pre-Imputación Laudus] o copia los datos ya imputados (Cuenta + C. Costo)
+    Maritza->>Maritza: Registra la Factura en Laudus y anota el Folio Laudus + Folio DTE en Pestaña 3
+    Maritza->>Eduardo: Pulsa [Sincronizar ITS / Laudus] -> Estado pasa a FACTURADA_LAUDUS y carga el gasto al ITS
+          </pre>
+        </div>
+      </div>
+
+      <!-- INFOGRAFÍA 5: GUÍA VISUAL DE TU PANTALLA /COMPRAS-OC (QUÉ HACE CADA BOTÓN) -->
+      <div class="bg-[#090d16] border border-slate-700 rounded-xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider font-mono">
+            INFOGRAFÍA 5: Guía Visual de tu Pantalla /compras-oc (Qué hace cada botón)
+          </h3>
+          <span class="text-[11px] font-mono text-slate-400">Mapa de Controles de Interfaz</span>
+        </div>
+        <div class="overflow-x-auto border border-slate-800 rounded-lg">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-900 border-b border-slate-700 text-slate-200 font-mono text-[11px] uppercase">
+                <th class="py-2.5 px-3 border-r border-slate-800">Zona de la Pantalla (<code>/compras-oc</code>)</th>
+                <th class="py-2.5 px-3 border-r border-slate-800">Botón / Control</th>
+                <th class="py-2.5 px-3">Qué hace exactamente en el sistema</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800 text-slate-300 bg-[#05080f]">
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-white border-r border-slate-800">Barra Superior (Cabecera)</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-100 border-r border-slate-800"><code>[ 📋 Plan Cuentas Laudus (13) ]</code></td>
+                <td class="py-2.5 px-3">Abre la ventana donde están las cuentas contables de Laudus. Ahí puedes <strong>pegar con <code>Ctrl+V</code> directamente desde un Excel de Laudus</strong> todas las cuentas nuevas que quieras agregar o editar las existentes.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-white border-r border-slate-800">Barra Superior (Cabecera)</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-100 border-r border-slate-800"><code>[ + Nueva Solicitud de Pedido ]</code></td>
+                <td class="py-2.5 px-3">Abre el formulario para que Taller, Bodega u Operaciones pidan un repuesto o servicio (genera folio <code>SP-YYMM-XXXX</code>). Incluye buscador predictivo de los <strong>2.854 SKUs</strong> de bodega.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-white border-r border-slate-800">Barra Superior (Cabecera)</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-100 border-r border-slate-800"><code>[ + Emitir Orden de Compra ]</code></td>
+                <td class="py-2.5 px-3">Permite a Eduardo emitir una OC directa (o desde una Solped) eligiendo cuál de las <strong>4 empresas del holding</strong> compra, el proveedor, la <strong>Cuenta Contable Laudus</strong>, el <strong>Centro de Costo (Patente/Sucursal)</strong> y los ítems.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-white border-r border-slate-800">Tarjetas Superiores por Empresa</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-100 border-r border-slate-800"><code>Grúas San Pablo</code> / <code>Royal Rental</code> / <code>Bestmaq</code> / <code>Logística del Sur</code></td>
+                <td class="py-2.5 px-3">Filtran con 1 clic todas las Solicitudes, OCs y montos comprometidos por cada razón social del holding.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-white border-r border-slate-800">Pestaña 1: Solicitudes (<code>SP</code>)</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-100 border-r border-slate-800"><code>[ Convertir en OC &rarr; ]</code></td>
+                <td class="py-2.5 px-3">Toma todos los datos e ítems del ticket de solicitud (incluyendo SKU, Cuenta Laudus y Centro de Costo) y los vuelca en el creador de Orden de Compra sin reescribir nada.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-white border-r border-slate-800">Pestaña 2: Órdenes de Compra (<code>OC</code>)</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-100 border-r border-slate-800"><code>[ 📱 Enviar V°B° Omar ]</code> / <code>[ 🖨️ PDF A4 ]</code></td>
+                <td class="py-2.5 px-3">Genera el link móvil estilo <em>RindeGastos</em> para que Omar apruebe desde WhatsApp/Correo, y abre el documento oficial A4 con el logo de la empresa, las líneas, la <strong>Cuenta Laudus</strong>, el <strong>Centro de Costo</strong> y el <strong>Timbre Digital FES</strong>.</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-semibold text-white border-r border-slate-800">Pestaña 3: Integración Laudus ERP</td>
+                <td class="py-2.5 px-3 font-mono font-bold text-slate-100 border-r border-slate-800"><code>[ Exportar Pre-Imputación Laudus (.CSV) ]</code> y <code>[ Sincronizar ITS / Laudus ]</code></td>
+                <td class="py-2.5 px-3">Descarga el Excel/CSV con todas las OCs pre-imputadas (RUT Holding, RUT Proveedor, Cuenta Laudus, Centro de Costo, Neto, IVA, Total) y permite guardar el <strong>N° OC Laudus</strong> y <strong>Folio Factura DTE</strong>, cerrando la compra e inyectando el costo en el <strong>ITS</strong>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER INFORMATIVO -->
+    <footer class="pt-6 border-t border-slate-800 text-center text-xs text-slate-500 space-y-1">
+      <p>Grúas San Pablo &copy; 2026 — Plataforma Integral de Gestión Operacional & Comercial</p>
+      <p class="font-mono text-[11px] text-slate-600">Módulo WMS-Lite &amp; Abastecimiento certificado según Spec Canónica 48 y Spec 87 ( sch_leangsp )</p>
+    </footer>
+
+  </main>
+
+  <script>
+    // Inicializar iconos Lucide
+    lucide.createIcons();
+
+    // Inicializar Mermaid con estética técnica monocroma de alto contraste (blanco, negro y escala de grises limpia)
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      fontFamily: 'JetBrains Mono, Inter, sans-serif',
+      themeVariables: {
+        darkMode: true,
+        background: '#05080f',
+        primaryColor: '#111827',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#cbd5e1',
+        lineColor: '#94a3b8',
+        secondaryColor: '#0f172a',
+        tertiaryColor: '#090d16',
+        clusterBkg: '#0b111e',
+        clusterBorder: '#64748b',
+        edgeLabelBackground: '#0f172a',
+        actorBkg: '#111827',
+        actorBorder: '#e2e8f0',
+        actorTextColor: '#f8fafc',
+        actorLineColor: '#64748b',
+        signalColor: '#e2e8f0',
+        signalTextColor: '#f8fafc',
+        labelBoxBkgColor: '#111827',
+        labelBoxBorderColor: '#94a3b8',
+        labelTextColor: '#f8fafc',
+        loopTextColor: '#f8fafc',
+        noteBkgColor: '#1e293b',
+        noteTextColor: '#f8fafc',
+        noteBorderColor: '#94a3b8'
+      }
+    });
+  </script>
+</body>
+</html>

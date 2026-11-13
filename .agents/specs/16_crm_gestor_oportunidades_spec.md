@@ -1,5 +1,5 @@
 # Especificación Técnica: Gestor de Oportunidades y Cotizaciones B2B (Spec 16)
-**Versión:** 4.7.0 (Consolidación SDD — REQ-1103 a REQ-1116: Condiciones Obligatorias, Relevos por Fecha, 3 Indicadores de Viáticos V2, Candado Anti-Regresión, Tipografía OT 14px–24px, Asignación/Reasignación de Ejecutivo Comercial y Edición Operativa en Validación & Diff — 04-Nov-2026)
+**Versión:** 5.0.0 (Consolidación SDD — REQ-1109: Rediseño Estructural en Árbol por Líneas de Servicio — Arquitectura de 2 Capas Servicio/Recurso, Proyección Dual-Write Retrocompatible y Feature Flag de Desacople en DEV — 05-Nov-2026)
 
 ## 1. Objetivo y Alcance
 Transformar el enfoque básico de "simulador de tarifas" en una herramienta **Enterprise (Gestor de Oportunidades & Pipeline Operacional)** capaz de estructurar negocios de alto valor (High-Ticket B2B). Este módulo modela de forma determinística la complejidad operativa, técnica y financiera desde la captación del prospecto comercial hasta la transferencia formal a Operaciones (Asignación de Recursos, Acreditaciones y Preparación de Salida en Patio).
@@ -1180,3 +1180,146 @@ Queda **estrictamente prohibido** evaluar el texto libre `l.descripcion` o depen
    - **`2. Indicadores de Traslado, Alimentación y Alojamiento`:** Permite a Operaciones asignar o modificar el responsable (`Costeado por Cliente` vs. `Costeado por San Pablo`) de **`Traslado`**, **`Alimentación`** (con sincronización automática `onChangeAlimentacionUnificada()` hacia `desayuno_costeado`, `almuerzo_costeado` y `cena_costeado`) y **`Alojamiento`**.
 2. **Detección Reactiva de Diferencias (`hasDiff`):**
    - El computed `hasDiff` compara `comercial.value.condicion_servicio` y `comercial.value.pensiones` (`traslado_costeado`, `alimentacion_costeado`, `alojamiento_costeado`) contra `snapshotComercial.value`. Si Operaciones corrige la condición del servicio o modifica la alimentación/viáticos respecto a lo enviado por Preventa, se activa el indicador de diferencia (`Diff`) para habilitar el flujo de solicitud de `V°B° Comercial` o confirmación de validación operativa.
+
+---
+
+## 26. Rediseño Estructural del Cotizador Comercial: Vista de Árbol Liviana por Líneas de Servicio (`REQ-1109` — 05-Nov-2026)
+
+### 26.1. Fundamento Arquitectónico: Separación entre "Línea de Servicio" (Capa 1) y "Recurso Físico" (Capa 2)
+1. **Diagnóstico del Modelo Plano Anterior:**
+   - El estructurador clásico (`lines: []`) modelaba la cotización únicamente a partir del catálogo físico de inventario (`tpar_categoria`: `GRUAS TELESCOPICAS`, `CAMIONES`, `GRUA HORQUILLA`, `TRASLADOS`, `PERSONAL CERTIFICADO`, `ACCESORIOS`).
+   - Este enfoque confundía el **Sustantivo (el activo físico)** con el **Verbo (la solución de negocio contratada)**, impidiendo distinguir cuándo un mismo activo (ej. un `CAMION PLUMA` o una `CAMA BAJA`) se vendía como maniobra de izaje, como servicio de transporte de carga de un cliente, o como arriendo mensual en faena, y dejando huérfanos los fletes, equipos de apoyo y personal respecto del equipo primario al que asistían.
+2. **Arquitectura Canónica de 2 Capas:**
+   - **Capa 1 — La Línea de Servicio (Unidad de Trabajo / Solución Comercial):** Entidad ordenadora de primer nivel que define qué solución contrata el cliente, cuál es su naturaleza operativa (`tipo_ot`) y qué ramas contextuales habilita.
+   - **Capa 2 — Los Recursos y Activos (`tpar_categoria` / `tpar_subcategoria`):** El nodo raíz (Equipo o Recurso Primario) y sus ramas subordinadas (`APOYO`, `TRASLADO`, `PERSONAL`, `ACCESORIO`) que materializan la ejecución de esa Unidad de Trabajo.
+
+### 26.2. Catálogo Oficial de las 4 Líneas de Servicio y sus Recetas Contextuales
+
+| Código Línea (`linea_servicio`) | Nombre Comercial | Tipo OT Handoff (`tipo_ot`) | Recurso Primario Típico (Nodo Raíz) | Política de Cobro Natural | Botones de Ramas Contextuales Directas (`├──` / `└──`) |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| **`TRANSPORTE`** | **Servicio de Transporte / Flete** | `OT-FLETE` | Cama Baja, Camión Rampa, Camión Pluma de Autocarga o Tractocamión (traslado de activo del cliente de Origen A $\rightarrow$ Destino B). | `Valor Fijo` (Suma Alzada por viaje) o `Traslado` | `[ + Camioneta Escolta ]`<br>`[ + Conductor Adicional ]`<br>`[ + Rampla / Flete Extra ]` |
+| **`RENTAL`** | **Arriendo de Equipos (Rental)** | `OT-RENTAL` | Grúa Horquilla, Manipulador Telescópico, Plataforma o Grúa cedida en obra por período continuo. | `Horas Mes Minimas` (ej. $180\text{ hrs/mes}$ sin mínimo diario, `REQ-1113`) o `Horas Diarias Minimas` | `[ + Flete de Entrega ]` (Día 1)<br>`[ + Flete de Retiro ]` (Pendiente aviso término)<br>`[ + Operador en Faena ]` |
+| **`PROFESIONAL`** | **Servicios Profesionales** | `OT-STAFF` | Rigger Acreditado, Asesor en Prevención de Riesgos (APR / Sernageomin) o Supervisor Técnico. | `Horas Diarias Minimas` (Jornada) o `Valor Fijo` (Estudio) | `[ + Viático Alojamiento ]`<br>`[ + Viático Alimentación ]`<br>`[ + Traslado de Personal ]`<br>`[ + Plan de Rigging / Memoria ]` |
+| **`IZAJE`** | **Servicio de Grúa / Izaje** | `OT-MANIOBRA` | Grúa Telescópica, Grúa Hidráulica o Camión Pluma en maniobra de levante y montaje. | `Horas Diarias Minimas` (con piso garantizado por jornada, ej. $8\text{ hrs}$) | `[ + Equipo de Apoyo (Contrapesos) ]`<br>`[ + Traslado Grúa ]`<br>`[ + Personal / Rigger ]`<br>`[ + Balancín / Canastillo ]` |
+
+### 26.3. Diseño Visual y Experiencia de Usuario: Tree Table Liviana
+1. **Principio de Ligereza Visual (Cero Saturación de Cajas):**
+   - Queda prohibido anidar tarjetas pesadas o múltiples contenedores con bordes gruesos y fondos saturados.
+   - Cada Unidad de Trabajo se presenta como una **Tabla Tipo Árbol (Tree Table)** sobria y continua:
+     - **Cabecera Compacta de la Unidad:** Muestra el correlativo (`1`, `2`...), el badge de la Línea de Servicio (`TRANSPORTE`, `RENTAL`, `PROFESIONAL`, `IZAJE`), el título editable del servicio, el código de traspaso (`OT-FLETE`, `OT-RENTAL`, `OT-STAFF`, `OT-MANIOBRA`) y el `Subtotal Servicio`.
+     - **Fila Raíz (Recurso Primario):** Destacada con indicador circular y etiqueta `Primario`. Permite seleccionar Categoría/Subcategoría desde `dbCategories`, definir la modalidad (`Horas Diarias Minimas`, `Horas Mes Minimas`, `Valor Fijo`, `Traslado`), ingresar las magnitudes físicas (Días/Meses $\times$ Horas o Cantidad) y la Tarifa Unitaria.
+     - **Filas Hijas (Ramas Subordinadas):** Sangradas bajo el equipo primario con conectores tipográficos de árbol (`├──` para ramas intermedias y `└──` para la última rama), etiqueta de rol (`[Apoyo]`, `[Traslado]`, `[Personal]`, `[Accesorio]`), selectores o descripción editable, modalidad/unidad, cantidad, tarifa unitaria, subtotal calculado en vivo y botón `[✕]` para podar la rama.
+     - **Barra de Ramas Directas:** Ubicada inmediatamente al pie de las ramas del equipo primario, exponiendo los botones contextuales livianos (`+ Equipo de Apoyo`, `+ Traslado`, `+ Personal`, `+ Accesorio`) según la Línea de Servicio.
+
+### 26.4. Modelo de Datos Canónico: `crm_v1.servicios` y Proyección Dual-Write hacia `crm_v1.lineas_servicio`
+Para garantizar **compatibilidad 100% hacia atrás (Zero Breaking Changes)** con todos los controladores backend, reportes financieros, ITS, Torre de Control y la PWA móvil (sin requerir migraciones DDL en PostgreSQL), se establece el patrón de **Persistencia Dual Sincronizada**:
+
+1. **Estructura Jerárquica Canónica (`json_field.crm_v1.servicios`):**
+```json
+[
+  {
+    "id_servicio": "srv_1762350001_1",
+    "linea_servicio": "IZAJE",
+    "tipo_ot": "OT-MANIOBRA",
+    "nombre_servicio": "Maniobra de Izaje Industrial con Grúa 70 Ton",
+    "origen": "Casa Matriz Temuco",
+    "destino": "Planta Celulosa Ránquil",
+    "primario": {
+      "id_linea": "lin_1762350001_root",
+      "rol_arbol": "PRIMARIO",
+      "tipo": "GRUAS TELESCOPICAS",
+      "subcategoria": "70 TONELADAS",
+      "descripcion": "Servicio de izaje con Grúa Telescópica 70 Ton",
+      "unidad": "Horas Diarias Minimas",
+      "cantidad_dias": 1,
+      "cantidad_horas": 8,
+      "cantidad_meses": 1,
+      "cantidad": 1,
+      "pisoMinimo": 8,
+      "valor_unitario": 150000,
+      "subtotal": 1200000
+    },
+    "ramas": [
+      {
+        "id_linea": "lin_1762350001_r1",
+        "id_padre": "lin_1762350001_root",
+        "rol_arbol": "TRASLADO",
+        "tipo": "TRASLADOS",
+        "subcategoria": "MOVILIZACIÓN GRÚA",
+        "descripcion": "Movilización Grúa 70T (Temuco -> Ránquil)",
+        "unidad": "TRASLADO IDA/VUELTA",
+        "cantidad": 2,
+        "valor_unitario": 120000,
+        "subtotal": 240000
+      },
+      {
+        "id_linea": "lin_1762350001_r2",
+        "id_padre": "lin_1762350001_root",
+        "rol_arbol": "APOYO",
+        "tipo": "CAMIONES",
+        "subcategoria": "CAMION RAMPLA",
+        "descripcion": "Camión Rampla para 20 Ton de Contrapesos",
+        "unidad": "Traslado",
+        "cantidad": 1,
+        "valor_unitario": 180000,
+        "subtotal": 180000
+      },
+      {
+        "id_linea": "lin_1762350001_r3",
+        "id_padre": "lin_1762350001_root",
+        "rol_arbol": "PERSONAL",
+        "tipo": "PERSONAL CERTIFICADO",
+        "subcategoria": "RIGGER",
+        "descripcion": "Rigger Certificado de Maniobra",
+        "unidad": "Horas Diarias Minimas",
+        "cantidad_dias": 1,
+        "cantidad_horas": 8,
+        "cantidad": 1,
+        "pisoMinimo": 8,
+        "valor_unitario": 15000,
+        "subtotal": 120000
+      }
+    ],
+    "subtotal_servicio": 1740000
+  }
+]
+```
+
+2. **Proyección Aplanada Sincronizada (`json_field.crm_v1.lineas_servicio`):**
+   - Toda modificación en el árbol `servicios` actualiza reactivamente `lines.value` (`crm_v1.lineas_servicio`) aplanando en orden determinista cada nodo `primario` seguido de sus `ramas`.
+   - Cada elemento del arreglo plano conserva el 100% de las propiedades clásicas (`tipo`, `subcategoria`, `descripcion`, `unidad`, `cantidad_dias`, `cantidad_horas`, `cantidad_meses`, `cantidad`, `pisoMinimo`, `valor_unitario`, `subtotal`, `equipo_asignado_id`, `operador_asignado_id`) e incluye los metadatos de trazabilidad:
+     - `id_linea`: Identificador único de la fila.
+     - `id_servicio`: Identificador de la Unidad de Trabajo a la que pertenece.
+     - `id_padre`: `null` para el nodo primario; `id_linea` del primario para las ramas hijas.
+     - `rol_arbol`: `'PRIMARIO'` | `'APOYO'` | `'TRASLADO'` | `'PERSONAL'` | `'ACCESORIO'`.
+     - `linea_servicio`: `'TRANSPORTE'` | `'RENTAL'` | `'PROFESIONAL'` | `'IZAJE'`.
+     - `tipo_ot`: `'OT-FLETE'` | `'OT-RENTAL'` | `'OT-STAFF'` | `'OT-MANIOBRA'`.
+   - Asimismo, `crm_v1.lineas_servicio_activas` almacena la lista de líneas presentes (ej. `["IZAJE", "TRANSPORTE"]`), manteniendo `crm_v1.familia_servicio` poblado con el equipo principal para compatibilidad con vistas legacy.
+
+### 26.5. Clasificador Heurístico de Hidratación para Cotizaciones Históricas (Retrocompatibilidad)
+Cuando se abre un proyecto histórico (ej. `GSP-2611-00001` a `00012`) o una cotización editada desde la vista clásica que posee `crm_v1.lineas_servicio` pero aún no cuenta con `crm_v1.servicios` (o cuyos ítems carecen de `id_servicio`):
+1. El hidratador (`hidratarArbolDesdeLineasPlanas(lines)`) reconstruye automáticamente el árbol sin pérdida de información:
+   - **Paso 1:** Si las filas ya traen `id_servicio` e `id_padre`, las agrupa directamente respetando su jerarquía exacta.
+   - **Paso 2 (Legado puro sin `id_servicio`):**
+     - Identifica como nodos `PRIMARIO` todas las filas de maquinaria principal (`!isPersonalLine(l) && !isTrasladoLine(l) && l.tipo !== 'ACCESORIOS'`).
+     - Clasifica la `linea_servicio` del nodo primario según su naturaleza:
+       - Si `l.unidad` contiene `'Mes'` $\rightarrow$ `'RENTAL'` (`OT-RENTAL`).
+       - Si `l.tipo === 'CAMIONES'` y (`l.subcategoria` incluye `'CAMA BAJA'` o `'RAMPLA'` o `l.unidad === 'Traslado'`) $\rightarrow$ `'TRANSPORTE'` (`OT-FLETE`).
+       - En cualquier otro caso de maquinaria $\rightarrow$ `'IZAJE'` (`OT-MANIOBRA`).
+     - Si la cotización solo contiene filas de `TRASLADOS` (sin máquina), la primera fila de traslado se promueve como raíz de `'TRANSPORTE'` (`OT-FLETE`).
+     - Si la cotización solo contiene filas de `PERSONAL CERTIFICADO`, la primera fila se promueve como raíz de `'PROFESIONAL'` (`OT-STAFF`).
+     - Las filas secundarias de `TRASLADOS`, `PERSONAL CERTIFICADO` y `ACCESORIOS` se cuelgan como ramas hijas del primer equipo primario compatible.
+
+### 26.6. Estrategia de Desacople y Convivencia en DEV (`Feature Flag` / Switch Dual)
+Para permitir la validación operativa en el ambiente de desarrollo (`DEV`) junto a Gerencia de Operaciones sin alterar la operación diaria de los usuarios que continúan utilizando la tabla clásica:
+1. **Interruptor de Modo (`modoEstructurador`: `'clasico'` | `'arbol'`):**
+   - En la barra superior de la pestaña *"Estructurador de Servicios"* (Pestaña 1: Preventa Comercial) de `GestorOportunidades.vue`, se incorpora el conmutador visual:
+     `Vista: [ 📋 Clásica (Plana) ] | [ 🌳 Árbol por Servicios ]`
+2. **Guardia de Visibilidad (`puedeUsarEstructuradorArbol`):**
+   - El conmutador y la vista en árbol se habilitan cuando se cumple cualquiera de las siguientes condiciones:
+     - El sistema corre en ambiente de desarrollo (`import.meta.env.DEV`, `window.location.pathname.includes('/lg-gsp-dev')` o `localStorage.getItem('gsp_enable_tree_cotizador') === 'true'`).
+     - El usuario autenticado corresponde a Gerencia / Dirección autorizada (`jponce@arriendosanpablo.cl`, `sgajardoc@gmail.com`) o posee rol de Administrador (`esUsuarioAdministrador`).
+   - Para el resto de los usuarios en Producción, la interfaz inicia por defecto en `'clasico'` sin exponer el cambio hasta el cierre de la marcha blanca.
+3. **Conmutación Instantánea Sin Pérdida (Round-Trip Safe):**
+   - Cambiar de `'arbol'` a `'clasico'` o viceversa en cualquier momento sincroniza en memoria `serviciosArbol.value` $\leftrightarrow$ `lines.value`.
+   - Todas las validaciones de guardado (`guardarOportunidad`), emisión de PDF (`generarPDF`) y paso a Operaciones (`generarRequerimiento`) operan indistintamente desde ambas vistas gracias a la proyección sincronizada en `lines.value`.

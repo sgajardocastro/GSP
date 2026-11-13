@@ -609,6 +609,125 @@ class InventarioModel {
     }
   }
 
+  // 5.1 Despacho de Línea Solicitada por Taller (SPEC-095: Eduardo Aguirre despacha picking físico a la OT)
+  async despacharLineaOt(empresaId = 9, userId = 1, data = {}) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { id_ot_repuesto, id_ubicacion, cantidad_despachar } = data;
+      if (!id_ot_repuesto) throw new Error('ID_OT_REPUESTO_REQUERIDO');
+      if (!id_ubicacion) throw new Error('ID_UBICACION_REQUERIDO');
+
+      // 1. Obtener la fila de repuesto solicitada con lock
+      const { rows: repRows } = await client.query(`
+        SELECT r.*, ot.numero_ot, ot.id_ot
+        FROM tmnt_ot_repuesto r
+        JOIN tmnt_ot ot ON r.id_ot = ot.id_ot
+        WHERE r.id_ot_repuesto = $1 FOR UPDATE;
+      `, [id_ot_repuesto]);
+
+      if (!repRows.length) throw new Error('REPUESTO_NO_ENCONTRADO');
+      const rep = repRows[0];
+
+      if (rep.estado === 'ENTREGADO') {
+        throw new Error('LINEA_YA_DESPACHADA');
+      }
+
+      const cantADespachar = parseFloat(cantidad_despachar || rep.cantidad_solicitada || rep.cantidad || 1);
+      if (cantADespachar <= 0) throw new Error('CANTIDAD_INVALIDA');
+
+      // 2. Obtener datos del producto
+      const { rows: prodRows } = await client.query(`
+        SELECT id_producto, sku, nombre, costo_pmp_vigente, unidad_medida_base
+        FROM tinv_producto
+        WHERE id_producto = $1;
+      `, [rep.id_producto]);
+
+      if (!prodRows.length) throw new Error('PRODUCTO_NO_ENCONTRADO');
+      const prod = prodRows[0];
+      const pmpCosto = parseFloat(prod.costo_pmp_vigente) || 0;
+
+      // 3. Validar stock en la ubicación de pañol
+      const { rows: stRows } = await client.query(`
+        SELECT s.id_stock, s.cantidad_fisica, u.id_bodega, u.codigo AS codigo_ubicacion
+        FROM tinv_stock s
+        JOIN tinv_ubicacion u ON u.id_ubicacion = s.id_ubicacion
+        WHERE s.id_empresa = $1 AND s.id_producto = $2 AND s.id_ubicacion = $3 AND s.estado_stock = 'LIBRE'
+        FOR UPDATE OF s;
+      `, [empresaId, rep.id_producto, id_ubicacion]);
+
+      if (!stRows.length || parseFloat(stRows[0].cantidad_fisica) < cantADespachar) {
+        const disponible = stRows.length ? parseFloat(stRows[0].cantidad_fisica) : 0;
+        throw new Error(`STOCK_INSUFICIENTE: Stock físico en casillero (${disponible}) es menor que la cantidad a despachar (${cantADespachar})`);
+      }
+
+      const st = stRows[0];
+      const stockAnt = parseFloat(st.cantidad_fisica);
+      const stockPost = stockAnt - cantADespachar;
+
+      // 4. Decrementar stock
+      await client.query(`
+        UPDATE tinv_stock
+        SET cantidad_fisica = $1, updated_at = NOW()
+        WHERE id_stock = $2;
+      `, [stockPost, st.id_stock]);
+
+      // 5. Asiento inmutable en Kardex
+      const { rows: movRows } = await client.query(`
+        INSERT INTO tinv_movimiento (
+          id_empresa, id_bodega, id_producto, tipo_movimiento,
+          cantidad, referencia, observacion, stock_anterior, stock_nuevo,
+          documento_tipo, documento_folio, id_ubicacion,
+          costo_unitario_pmp, stock_posterior, id_usuario, usuario_registro
+        ) VALUES (
+          $1, $2, $3, 'SALIDA_OT',
+          $4, $5, $6, $7, $8,
+          'OT_MNT', $9, $10,
+          $11, $12, $13, $14
+        ) RETURNING id_movimiento;
+      `, [
+        empresaId, st.id_bodega, rep.id_producto,
+        cantADespachar, `OT-${rep.id_ot}`, `Despacho de picking pañol a OT #${rep.id_ot} (${rep.numero_ot})`,
+        stockAnt, stockPost, `OT-${rep.id_ot}`, id_ubicacion,
+        pmpCosto, stockPost, userId, 'Eduardo Aguirre / Bodega Central'
+      ]);
+
+      const idMov = movRows[0].id_movimiento;
+      const costoTotalDevengado = cantADespachar * pmpCosto;
+
+      // 6. Actualizar tmnt_ot_repuesto a ENTREGADO
+      const { rows: updatedRep } = await client.query(`
+        UPDATE tmnt_ot_repuesto
+        SET estado = 'ENTREGADO',
+            cantidad = $1,
+            cantidad_entregada = $1,
+            costo_unitario = $2,
+            costo_total = $3,
+            id_ubicacion = $4,
+            id_movimiento_kardex = $5,
+            proveedor_o_documento = 'Bodega Central WMS'
+        WHERE id_ot_repuesto = $6
+        RETURNING *;
+      `, [
+        cantADespachar, pmpCosto, costoTotalDevengado,
+        id_ubicacion, idMov, id_ot_repuesto
+      ]);
+
+      await client.query('COMMIT');
+      return {
+        ...updatedRep[0],
+        sku: prod.sku,
+        codigo_ubicacion: st.codigo_ubicacion
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('Error en despacharLineaOt:', err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   async devolverOt(empresaId = 9, userId = 1, data = {}) {
     const client = await this.pool.connect();
     try {
@@ -670,9 +789,9 @@ class InventarioModel {
 
       // 4. Rebajar cantidad en tmnt_ot_repuesto
       if (Number(rep.cantidad) <= cantDev) {
-        await client.query(`UPDATE tmnt_ot_repuesto SET estado_despacho = 'DEVUELTO' WHERE id_ot_repuesto = $1;`, [id_ot_repuesto]);
+        await client.query(`UPDATE tmnt_ot_repuesto SET estado = 'DEVUELTO', costo_total = 0 WHERE id_ot_repuesto = $1;`, [id_ot_repuesto]);
       } else {
-        await client.query(`UPDATE tmnt_ot_repuesto SET cantidad = cantidad - $1 WHERE id_ot_repuesto = $2;`, [cantDev, id_ot_repuesto]);
+        await client.query(`UPDATE tmnt_ot_repuesto SET cantidad = cantidad - $1, costo_total = (cantidad - $1) * costo_unitario WHERE id_ot_repuesto = $2;`, [cantDev, id_ot_repuesto]);
       }
 
       await client.query('COMMIT');
@@ -683,6 +802,40 @@ class InventarioModel {
     } finally {
       client.release();
     }
+  }
+
+  async getConsumosOt(empresaId = 9) {
+    const query = `
+      SELECT 
+        r.id_ot_repuesto,
+        r.id_ot,
+        ot.numero_ot,
+        ot.estado AS ot_estado,
+        eq.marca AS equipo_marca,
+        COALESCE(eq.json_data->>'tipo_planilla', eq.modelo, eq.patente) AS equipo_nombre,
+        eq.patente,
+        r.id_producto,
+        p.sku,
+        COALESCE(r.descripcion_material, p.nombre) AS descripcion_material,
+        COALESCE(r.unidad_medida, p.unidad_medida_base, 'UN') AS unidad_medida,
+        r.cantidad,
+        r.costo_unitario,
+        r.costo_total,
+        r.origen_insumo,
+        r.id_ubicacion,
+        u.codigo AS codigo_ubicacion,
+        r.estado,
+        ot.fecha_creacion
+      FROM tmnt_ot_repuesto r
+      JOIN tmnt_ot ot ON ot.id_ot = r.id_ot
+      LEFT JOIN tequ_equipo eq ON eq.id_equipo = ot.id_equipo
+      LEFT JOIN tinv_producto p ON p.id_producto = r.id_producto
+      LEFT JOIN tinv_ubicacion u ON u.id_ubicacion = r.id_ubicacion
+      WHERE r.id_empresa = $1
+      ORDER BY r.id_ot_repuesto DESC;
+    `;
+    const { rows } = await this.pool.query(query, [empresaId]);
+    return rows;
   }
 
   // =========================================================================
@@ -713,6 +866,7 @@ class InventarioModel {
         m.tipo_movimiento,
         m.documento_tipo,
         m.documento_folio,
+        m.documento_folio AS documento_referencia,
         p.id_producto,
         p.sku,
         p.codigo_legado,
@@ -720,16 +874,19 @@ class InventarioModel {
         p.unidad_medida_base AS uom,
         u.codigo AS ubicacion_codigo,
         m.cantidad,
+        m.costo_unitario_pmp,
         m.costo_unitario_pmp AS costo_unitario,
         (m.cantidad * m.costo_unitario_pmp) AS costo_total,
         m.stock_anterior,
         m.stock_posterior,
         m.id_usuario,
+        COALESCE(NULLIF(m.usuario_registro, ''), TRIM(CONCAT(u_reg.name_frst, ' ', COALESCE(u_reg.apellido_pat, ''))), u_reg.email, 'Eduardo Bodega') AS usuario_registro,
         m.id_movimiento_reversado,
         m.observaciones
       FROM tinv_movimiento m
       JOIN tinv_producto p ON m.id_producto = p.id_producto
       JOIN tinv_ubicacion u ON m.id_ubicacion = u.id_ubicacion
+      LEFT JOIN tsec_users u_reg ON u_reg.id_user = m.id_usuario
       WHERE ${whereClauses.join(' AND ')}
       ORDER BY m.id_movimiento DESC
       LIMIT 150;
@@ -840,6 +997,342 @@ class InventarioModel {
     `;
     const { rows } = await this.pool.query(query, [empresaId]);
     return rows;
+  }
+
+  // =========================================================================
+  // 8. TRASPASOS & TRASLADOS ENTRE BODEGAS (SPEC-094 / REQ-1066)
+  // =========================================================================
+
+  async getTraspasos(empresaId = 9) {
+    const query = `
+      SELECT 
+        t.id_traspaso,
+        t.id_empresa,
+        COALESCE(t.numero_guia, 'GDI-' || LPAD(t.id_traspaso::text, 4, '0')) AS numero_guia,
+        t.tipo_traspaso,
+        t.id_bodega_origen,
+        bo.nombre AS bodega_origen_nombre,
+        bo.tipo_bodega AS bodega_origen_tipo,
+        t.id_bodega_destino,
+        bd.nombre AS bodega_destino_nombre,
+        bd.tipo_bodega AS bodega_destino_tipo,
+        t.empresa_destino_nombre,
+        t.chofer_transporte,
+        t.patente_transporte,
+        t.estado,
+        t.fecha_solicitud,
+        t.fecha_recepcion,
+        t.observaciones,
+        t.created_at,
+        COUNT(tl.id_traspaso_linea)::int AS total_lineas,
+        COALESCE(SUM(tl.cantidad), 0)::numeric AS total_unidades,
+        COALESCE(SUM(tl.costo_total), 0)::numeric AS valor_total_clp,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id_traspaso_linea', tl.id_traspaso_linea,
+              'id_producto', tl.id_producto,
+              'sku', p.sku,
+              'producto_nombre', p.nombre,
+              'unidad_medida', p.unidad_medida_base,
+              'cantidad', tl.cantidad,
+              'costo_unitario_pmp', tl.costo_unitario_pmp,
+              'costo_total', tl.costo_total,
+              'id_ubicacion_origen', tl.id_ubicacion_origen,
+              'codigo_ubicacion_origen', uo.codigo,
+              'id_ubicacion_destino', tl.id_ubicacion_destino,
+              'codigo_ubicacion_destino', ud.codigo
+            ) ORDER BY tl.id_traspaso_linea ASC
+          ) FILTER (WHERE tl.id_traspaso_linea IS NOT NULL),
+          '[]'::json
+        ) AS lineas
+      FROM tinv_traspaso t
+      JOIN tinv_bodega bo ON t.id_bodega_origen = bo.id_bodega
+      LEFT JOIN tinv_bodega bd ON t.id_bodega_destino = bd.id_bodega
+      LEFT JOIN tinv_traspaso_linea tl ON t.id_traspaso = tl.id_traspaso
+      LEFT JOIN tinv_producto p ON tl.id_producto = p.id_producto
+      LEFT JOIN tinv_ubicacion uo ON tl.id_ubicacion_origen = uo.id_ubicacion
+      LEFT JOIN tinv_ubicacion ud ON tl.id_ubicacion_destino = ud.id_ubicacion
+      WHERE t.id_empresa = $1
+      GROUP BY t.id_traspaso, bo.id_bodega, bd.id_bodega
+      ORDER BY t.id_traspaso DESC;
+    `;
+    const { rows } = await this.pool.query(query, [empresaId]);
+    return rows;
+  }
+
+  async crearTraspaso(empresaId = 9, userId = 1, data = {}) {
+    const {
+      id_bodega_origen,
+      id_bodega_destino,
+      tipo_traspaso = 'INTERBODEGA',
+      empresa_destino_nombre,
+      chofer_transporte,
+      patente_transporte,
+      observaciones,
+      lineas = []
+    } = data;
+
+    if (!id_bodega_origen) {
+      throw new Error('Debe especificar la bodega de origen.');
+    }
+    if (tipo_traspaso === 'INTERBODEGA' && !id_bodega_destino) {
+      throw new Error('Debe especificar la bodega de destino.');
+    }
+    if (tipo_traspaso === 'INTERBODEGA' && Number(id_bodega_origen) === Number(id_bodega_destino)) {
+      throw new Error('La bodega de destino no puede ser igual a la bodega de origen.');
+    }
+    if (tipo_traspaso === 'INTEREMPRESA' && !empresa_destino_nombre) {
+      throw new Error('Debe indicar el nombre de la empresa destino para traspasos interempresa.');
+    }
+    if (!Array.isArray(lineas) || lineas.length === 0) {
+      throw new Error('Debe incluir al menos un repuesto o insumo en el traspaso.');
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Obtener siguiente folio GDI
+      const { rows: seqRows } = await client.query(`SELECT nextval('seq_tinv_traspaso_folio') AS seq;`);
+      const nextSeq = seqRows[0]?.seq || Date.now();
+      const numeroGuia = `GDI-${String(nextSeq).padStart(4, '0')}`;
+
+      // 2. Insertar cabecera de tinv_traspaso
+      const { rows: trpRows } = await client.query(`
+        INSERT INTO tinv_traspaso (
+          id_empresa, id_bodega_origen, id_bodega_destino, tipo_traspaso,
+          empresa_destino_nombre, chofer_transporte, patente_transporte,
+          numero_guia, estado, id_usuario_creacion, observaciones, fecha_solicitud, created_at, updated_at
+        ) VALUES (
+          $1, $2, $3, $4,
+          $5, $6, $7,
+          $8, 'EN_TRANSITO', $9, $10, NOW(), NOW(), NOW()
+        ) RETURNING id_traspaso;
+      `, [
+        empresaId,
+        id_bodega_origen,
+        id_bodega_destino || null,
+        tipo_traspaso,
+        empresa_destino_nombre || null,
+        chofer_transporte || null,
+        patente_transporte || null,
+        numeroGuia,
+        userId,
+        observaciones || null
+      ]);
+
+      const idTraspaso = trpRows[0].id_traspaso;
+
+      // 3. Procesar cada línea: validar stock, decrementar en origen e insertar en Kardex
+      for (const lin of lineas) {
+        const cant = Number(lin.cantidad);
+        if (!cant || cant <= 0) {
+          throw new Error('La cantidad de cada ítem debe ser mayor a 0.');
+        }
+
+        // Consultar stock en casillero de origen
+        const { rows: stockRows } = await client.query(`
+          SELECT id_stock, cantidad_fisica, cantidad_reservada 
+          FROM tinv_stock 
+          WHERE id_empresa = $1 AND id_producto = $2 AND id_ubicacion = $3 AND estado_stock = 'LIBRE'
+          FOR UPDATE;
+        `, [empresaId, lin.id_producto, lin.id_ubicacion_origen]);
+
+        if (!stockRows.length || Number(stockRows[0].cantidad_fisica) < cant) {
+          const disponible = stockRows.length ? Number(stockRows[0].cantidad_fisica) : 0;
+          throw new Error(`Stock insuficiente para el producto ID ${lin.id_producto} en el casillero de origen seleccionado. Disponible: ${disponible}, Solicitado: ${cant}`);
+        }
+
+        const stockAnt = Number(stockRows[0].cantidad_fisica);
+        const stockPost = stockAnt - cant;
+
+        // Decrementar stock origen
+        await client.query(`
+          UPDATE tinv_stock 
+          SET cantidad_fisica = cantidad_fisica - $1, updated_at = NOW()
+          WHERE id_stock = $2;
+        `, [cant, stockRows[0].id_stock]);
+
+        // Obtener PMP del producto
+        const { rows: prodRows } = await client.query(`
+          SELECT sku, nombre, costo_pmp_vigente 
+          FROM tinv_producto 
+          WHERE id_producto = $1;
+        `, [lin.id_producto]);
+
+        const pmp = Number(prodRows[0]?.costo_pmp_vigente || 0);
+        const costoTotal = Math.round(pmp * cant);
+
+        // Insertar en tinv_traspaso_linea
+        await client.query(`
+          INSERT INTO tinv_traspaso_linea (
+            id_traspaso, id_producto, id_ubicacion_origen, cantidad,
+            costo_unitario_pmp, costo_total, created_at
+          ) VALUES (
+            $1, $2, $3, $4,
+            $5, $6, NOW()
+          );
+        `, [idTraspaso, lin.id_producto, lin.id_ubicacion_origen, cant, pmp, costoTotal]);
+
+        // Asiento Kardex SALIDA_TRASPASO
+        await client.query(`
+          INSERT INTO tinv_movimiento (
+            id_empresa, tipo_movimiento, documento_tipo, documento_folio,
+            id_producto, id_ubicacion, cantidad, costo_unitario_pmp,
+            stock_anterior, stock_posterior, id_usuario, observaciones
+          ) VALUES (
+            $1, 'SALIDA_TRASPASO', 'GDI', $2,
+            $3, $4, $5, $6,
+            $7, $8, $9, $10
+          );
+        `, [
+          empresaId,
+          numeroGuia,
+          lin.id_producto,
+          lin.id_ubicacion_origen,
+          -cant,
+          pmp,
+          stockAnt,
+          stockPost,
+          userId,
+          `Despacho GDI ${numeroGuia} (${tipo_traspaso})`
+        ]);
+      }
+
+      await client.query('COMMIT');
+      return { success: true, id_traspaso: idTraspaso, numero_guia: numeroGuia };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  async recepcionarTraspaso(idTraspaso, empresaId = 9, userId = 1, data = {}) {
+    const { lineas_recepcion = [], observaciones } = data;
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Obtener traspaso
+      const { rows: trpRows } = await client.query(`
+        SELECT * FROM tinv_traspaso 
+        WHERE id_traspaso = $1 AND id_empresa = $2
+        FOR UPDATE;
+      `, [idTraspaso, empresaId]);
+
+      if (!trpRows.length) {
+        throw new Error('Traspaso no encontrado.');
+      }
+
+      const traspaso = trpRows[0];
+      if (traspaso.estado === 'RECIBIDO') {
+        throw new Error('Este traspaso ya fue recibido y completado previamente.');
+      }
+
+      // 2. Obtener líneas del traspaso
+      const { rows: linRows } = await client.query(`
+        SELECT tl.*, p.sku, p.nombre
+        FROM tinv_traspaso_linea tl
+        JOIN tinv_producto p ON tl.id_producto = p.id_producto
+        WHERE tl.id_traspaso = $1;
+      `, [idTraspaso]);
+
+      if (!linRows.length) {
+        throw new Error('El traspaso no contiene líneas para recepcionar.');
+      }
+
+      // 3. Procesar cada línea: incrementar stock en destino y registrar Kardex
+      for (const lin of linRows) {
+        const matchingRec = lineas_recepcion.find(r => Number(r.id_traspaso_linea) === Number(lin.id_traspaso_linea));
+        const idUbicacionDestino = matchingRec?.id_ubicacion_destino || lin.id_ubicacion_destino;
+
+        if (!idUbicacionDestino) {
+          throw new Error(`Debe asignar un casillero de ubicación de destino para el producto [${lin.sku}] ${lin.nombre}.`);
+        }
+
+        // Actualizar línea con ubicación destino definitiva
+        await client.query(`
+          UPDATE tinv_traspaso_linea 
+          SET id_ubicacion_destino = $1 
+          WHERE id_traspaso_linea = $2;
+        `, [idUbicacionDestino, lin.id_traspaso_linea]);
+
+        const cant = Number(lin.cantidad);
+
+        // Upsert en tinv_stock para destino
+        const { rows: stRows } = await client.query(`
+          SELECT id_stock, cantidad_fisica 
+          FROM tinv_stock 
+          WHERE id_empresa = $1 AND id_producto = $2 AND id_ubicacion = $3 AND estado_stock = 'LIBRE'
+          FOR UPDATE;
+        `, [empresaId, lin.id_producto, idUbicacionDestino]);
+
+        let stockAnt = 0;
+        let stockPost = cant;
+
+        if (stRows.length) {
+          stockAnt = Number(stRows[0].cantidad_fisica);
+          stockPost = stockAnt + cant;
+          await client.query(`
+            UPDATE tinv_stock 
+            SET cantidad_fisica = cantidad_fisica + $1, updated_at = NOW()
+            WHERE id_stock = $2;
+          `, [cant, stRows[0].id_stock]);
+        } else {
+          await client.query(`
+            INSERT INTO tinv_stock (id_empresa, id_producto, id_ubicacion, estado_stock, cantidad_fisica, cantidad_reservada, updated_at)
+            VALUES ($1, $2, $3, 'LIBRE', $4, 0, NOW());
+          `, [empresaId, lin.id_producto, idUbicacionDestino, cant]);
+        }
+
+        // Asiento Kardex ENTRADA_TRASPASO
+        await client.query(`
+          INSERT INTO tinv_movimiento (
+            id_empresa, tipo_movimiento, documento_tipo, documento_folio,
+            id_producto, id_ubicacion, cantidad, costo_unitario_pmp,
+            stock_anterior, stock_posterior, id_usuario, observaciones
+          ) VALUES (
+            $1, 'ENTRADA_TRASPASO', 'GDI', $2,
+            $3, $4, $5, $6,
+            $7, $8, $9, $10
+          );
+        `, [
+          empresaId,
+          traspaso.numero_guia,
+          lin.id_producto,
+          idUbicacionDestino,
+          cant,
+          lin.costo_unitario_pmp,
+          stockAnt,
+          stockPost,
+          userId,
+          `Recepción conforme GDI ${traspaso.numero_guia} (${traspaso.tipo_traspaso})`
+        ]);
+      }
+
+      // 4. Actualizar estado del traspaso a RECIBIDO
+      await client.query(`
+        UPDATE tinv_traspaso 
+        SET estado = 'RECIBIDO', 
+            fecha_recepcion = NOW(), 
+            id_usuario_recepcion = $1, 
+            observaciones = COALESCE($2, observaciones),
+            updated_at = NOW()
+        WHERE id_traspaso = $3;
+      `, [userId, observaciones || null, idTraspaso]);
+
+      await client.query('COMMIT');
+      return { success: true, id_traspaso: idTraspaso, estado: 'RECIBIDO' };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 }
 

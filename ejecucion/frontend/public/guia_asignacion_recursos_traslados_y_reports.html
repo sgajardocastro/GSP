@@ -58,60 +58,126 @@
 </head>
 <body class="h-full flex flex-col antialiased custom-scrollbar selection:bg-amber-500 selection:text-black">
 
-  <!-- ENCABEZADO SUPERIOR -->
-  <header class="border-b border-brand-border bg-[#080d1a] px-4 md:px-8 py-3.5 sticky top-0 z-50 backdrop-blur flex items-center justify-between">
-    <div class="flex items-center space-x-3">
-      <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-lg">
-        <i data-lucide="truck" class="w-5 h-5"></i>
-      </div>
-      <div>
-        <div class="flex items-center space-x-2">
-          <span class="font-extrabold text-sm tracking-wider text-slate-100 uppercase">Grúas San Pablo</span>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold uppercase">Manual Operacional Nº 05</span>
-        </div>
-        <p class="text-xs text-slate-400">Guía Oficial de Asignación de Recursos, Traslados de Convoy y Emisión de Reports</p>
-      </div>
-    </div>
-    <div class="flex items-center space-x-3">
-      <a href="./centro_documentacion_gsp.html" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors flex items-center space-x-1.5">
-        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-        <span>Volver a Docs</span>
-      </a>
-      <span class="text-xs font-mono px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400">
-        Spec 65 Core
-      </span>
-    </div>
-  </header>
-
   <!-- CONTENIDO PRINCIPAL -->
-  <main class="flex-1 max-w-6xl w-full mx-auto px-4 md:px-8 py-8 space-y-10">
-
-    <!-- HERO / PRINCIPIO RECTOR -->
-    <div class="border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-slate-900 to-slate-900 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
-      <div class="absolute -right-10 -bottom-10 opacity-5 pointer-events-none">
-        <i data-lucide="shield-alert" class="w-96 h-96"></i>
-      </div>
-      <div class="max-w-3xl">
-        <div class="inline-flex items-center space-x-2 text-amber-400 text-xs font-mono uppercase tracking-widest mb-3">
-          <i data-lucide="alert-triangle" class="w-4 h-4"></i>
-          <span>Regla de Oro Constitucional del Ecosistema GSP</span>
-        </div>
-        <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight leading-snug">
-          Las Grúas Autopropulsadas No Se Asignan Dos Veces
-        </h1>
-        <p class="mt-3 text-sm md:text-base text-slate-300 leading-relaxed">
-          En Grúas San Pablo, las grúas telescópicas móviles y camiones pluma son <strong class="text-amber-400">vehículos autopropulsados</strong> conducidos por el propio operador de faena. El ítem comercial de "Traslado / Flete" facturado al cliente mandante es una <strong class="text-white">tarifa comercial de cobro</strong>, jamás una segunda máquina física ni una orden para un segundo chofer.
-        </p>
-        <div class="mt-5 flex flex-wrap items-center gap-3">
-          <span class="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5">
-            <i data-lucide="check-circle" class="w-4 h-4"></i> 1 Grúa = 1 Operador en Faena y Carretera
-          </span>
-          <span class="px-3 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/30 text-xs font-semibold flex items-center gap-1.5">
-            <i data-lucide="file-check" class="w-4 h-4"></i> 1 Servicio = 1 Único Report Firmado por Mandante
-          </span>
-        </div>
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 md:px-6 py-3 space-y-6">
+    <div class="border border-amber-500/30 bg-slate-900/90 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <span class="text-slate-200"><strong class="text-amber-400">Regla Base:</strong> Las grúas móviles y camiones pluma son autopropulsados (conducidos por el mismo operador). El ítem "Traslado/Flete" es un cobro comercial, no una segunda máquina física.</span>
+      <div class="flex items-center gap-2 font-mono text-[11px]">
+        <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">1 Grúa = 1 Operador</span>
+        <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/30">1 Servicio = 1 Report Diario</span>
       </div>
     </div>
+
+    <!-- SECCIÓN 0: TABLA OFICIAL DE CUÁNDO LLENAR ODÓMETRO Y HORÓMETRO EN VIAJES Y REPORTS -->
+    <section class="space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="gauge" class="w-5 h-5 text-amber-400"></i>
+            ¿Cuándo debe llenar el Operador el Odómetro y el Horómetro en los Viajes y en los Reports?
+          </h2>
+          <p class="text-xs text-slate-400">En carretera (Registros de Viaje) solo se pide Odómetro y Horómetro del Camión/Chasis. En obra (Report Diario) solo se pide el Horómetro de la Grúa/Pluma.</p>
+        </div>
+        <span class="text-[11px] font-mono px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold">
+          Regla de Instrumentos en Terreno
+        </span>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-800 bg-brand-card">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-900/90 border-b border-slate-800 text-slate-300 font-mono uppercase tracking-wider text-[11px]">
+              <th class="p-3">Paso / Hito en la App</th>
+              <th class="p-3">Dónde se registra</th>
+              <th class="p-3 text-center">Hora Reloj (<code class="text-amber-400">HH:MM</code>)</th>
+              <th class="p-3 text-center">Odómetro Camión (<code class="text-amber-400">KM</code>)</th>
+              <th class="p-3 text-center">Horómetro Camión / Chasis (<code class="text-amber-400">HRS</code>)</th>
+              <th class="p-3 text-center">Horómetro Grúa / Pluma (<code class="text-emerald-400">HRS</code>)</th>
+              <th class="p-3 text-center">Petróleo (<code class="text-cyan-400">%</code>)</th>
+              <th class="p-3">Fotos y Firma Exigidas</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 text-slate-300">
+            <tr class="hover:bg-slate-800/30">
+              <td class="p-3 font-bold text-white">1. Salida de Base GSP</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/30 font-mono text-[10px]">Registro de Viaje (Ida)</span></td>
+              <td class="p-3 text-center font-mono text-slate-400">Automática (App)</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold font-mono">SÍ (Inicial)</span></td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold font-mono">SÍ (Inicial)</span></td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold font-mono">SÍ (% Salida)</span></td>
+              <td class="p-3 font-mono text-[11px] text-slate-300"><strong>3 Fotos</strong> (Odómetro, Horómetro Camión, Petróleo) + <strong>PIN</strong></td>
+            </tr>
+            <tr class="hover:bg-slate-800/30">
+              <td class="p-3 font-bold text-white">2. Llegada a Obra / Faena</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/30 font-mono text-[10px]">Registro de Viaje (Ida)</span></td>
+              <td class="p-3 text-center font-mono text-slate-400">Automática (App)</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold font-mono">SÍ (Llegada)</span></td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold font-mono">SÍ (Llegada)</span></td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 font-mono text-[11px] text-slate-300"><strong>2 Fotos</strong> (Odómetro, Horómetro Camión) + <strong>PIN</strong></td>
+            </tr>
+            <tr class="bg-emerald-950/15 hover:bg-emerald-950/25">
+              <td class="p-3 font-bold text-emerald-300">3. Inicio de Report en Obra</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono text-[10px]">Report Diario (Obra)</span></td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold font-mono">SÍ (Hora Inicio)</span></td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/25 text-emerald-300 font-bold font-mono">SÍ (Inicial Pluma)</span></td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 font-mono text-[11px] text-emerald-200"><strong>1 Foto</strong> (Horómetro Grúa / Superestructura)</td>
+            </tr>
+            <tr class="bg-emerald-950/15 hover:bg-emerald-950/25">
+              <td class="p-3 font-bold text-emerald-300">4. Término de Report en Obra</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono text-[10px]">Report Diario (Obra)</span></td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold font-mono">SÍ (Término + Colación + StandBy)</span></td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/25 text-emerald-300 font-bold font-mono">SÍ (Final Pluma)</span></td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 font-mono text-[11px] text-emerald-200"><strong>1 Foto</strong> (Horómetro Grúa) + <strong>Firma Cliente</strong> + <strong>PIN</strong></td>
+            </tr>
+            <tr class="hover:bg-slate-800/30">
+              <td class="p-3 font-bold text-white">5. Salida desde Obra a Base <span class="text-[10px] text-slate-400 font-normal">(último día)</span></td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/30 font-mono text-[10px]">Registro de Viaje (Retorno)</span></td>
+              <td class="p-3 text-center font-mono text-slate-400">Automática (App)</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold font-mono">SÍ (Salida Obra)</span></td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold font-mono">SÍ (Salida Obra)</span></td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 font-mono text-[11px] text-slate-300"><strong>2 Fotos</strong> (Odómetro, Horómetro Camión) + <strong>PIN</strong></td>
+            </tr>
+            <tr class="hover:bg-slate-800/30">
+              <td class="p-3 font-bold text-white">6. Llegada Final a Base GSP <span class="text-[10px] text-slate-400 font-normal">(cierra servicio)</span></td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/30 font-mono text-[10px]">Registro de Viaje (Retorno)</span></td>
+              <td class="p-3 text-center font-mono text-slate-400">Automática (App)</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold font-mono">SÍ (Final Base)</span></td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold font-mono">SÍ (Final Base)</span></td>
+              <td class="p-3 text-center text-slate-500 font-mono">NO</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold font-mono">SÍ (% Recepción)</span></td>
+              <td class="p-3 font-mono text-[11px] text-slate-300"><strong>3 Fotos</strong> (Odómetro, Horómetro Camión, Petróleo) + <strong>PIN</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RESUMEN POR TIPO DE EQUIPO -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+          <div class="font-bold text-amber-400 mb-1">1. Grúa Telescópica / Camión Pluma</div>
+          <p class="text-slate-300">En <strong>Viajes (Carretera)</strong> llena <strong>Odómetro + Horómetro Camión + Petróleo</strong>. En <strong>Report Diario (Obra)</strong> llena <strong>Horómetro Grúa/Pluma (Inicial y Final) + Horas Reloj</strong>.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+          <div class="font-bold text-blue-400 mb-1">2. Camión Tracto / Cama Baja (Flete)</div>
+          <p class="text-slate-300">Solo hace <strong>Registros de Viaje</strong>: llena <strong>Odómetro + Horómetro Camión + Petróleo</strong> al salir y llegar. <strong>No emite Report Diario</strong> ni tiene Horómetro de Pluma.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+          <div class="font-bold text-emerald-400 mb-1">3. Horquilla / Alza Hombre (en Cama Baja)</div>
+          <p class="text-slate-300">Viaja cargada sobre la Cama Baja (no llena viaje en carretera). En obra llena su <strong>Report Diario</strong> con <strong>Horómetro Máquina (Inicial y Final) + Horas Reloj</strong>.</p>
+        </div>
+      </div>
+    </section>
 
     <!-- SECCIÓN 1: MATRIZ CANÓNICA DE LOS 5 CASOS DE NEGOCIO -->
     <section class="space-y-4">
@@ -281,6 +347,75 @@
                 <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold border border-slate-700">CERO Reports de Izaje</span><br>
                 <span class="text-[11px] text-slate-400">Se cierra con Guía de Despacho</span>
               </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 1B: MATRIZ DE VISIBILIDAD DE TRASLADOS EN SECCIÓN 2 (100% POR CATEGORÍA Y SUBCATEGORÍA) -->
+    <section class="border border-amber-500/30 bg-brand-card rounded-2xl p-6 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="layers" class="w-5 h-5 text-amber-400"></i>
+            Regla de Visibilidad de Líneas <code class="text-amber-400 font-mono">TRASLADOS</code> en Asignación (Sección 2)
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            La clasificación de líneas hacia Asignación se gobierna <strong>100% por los combos <code class="text-amber-300 font-mono">Categoría</code> y <code class="text-amber-300 font-mono">Subcategoría</code></strong> del Estructurador. Jamás se evalúa el texto libre de la <code class="text-slate-300 font-mono">Descripción</code>.
+          </p>
+        </div>
+        <span class="text-[11px] font-mono px-2.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/40 font-bold">
+          SPEC-065 §4.1 &bull; Cero Lectura de Descripción
+        </span>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-900 border-b border-slate-800 text-slate-300 font-mono uppercase tracking-wider text-[11px]">
+              <th class="p-3">#</th>
+              <th class="p-3">Composición de Equipos Principales (Sección 1)</th>
+              <th class="p-3">Línea en <code class="text-amber-400">Categoría = TRASLADOS</code></th>
+              <th class="p-3 text-center">¿Se muestra en Sección 2 (Vehículo + Chofer)?</th>
+              <th class="p-3">Razón de Negocio</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 text-slate-300">
+            <tr class="hover:bg-slate-900/40">
+              <td class="p-3 font-mono font-bold text-amber-400">1</td>
+              <td class="p-3 font-semibold text-white">Solo Camión (<code class="text-blue-300 font-mono">Categoría = CAMIONES</code>, ej. <code class="text-blue-300 font-mono">CAMION PLUMA</code>) sin Plataformas/Horquillas</td>
+              <td class="p-3 font-mono text-slate-300">Cualquier subcategoría</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono font-bold">NO (Se oculta)</span></td>
+              <td class="p-3">El Camión Pluma es autopropulsado (viaja con su propio operador) y no lleva camión auxiliar de contrapesos. Su línea de traslado es solo cobro comercial.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40">
+              <td class="p-3 font-mono font-bold text-amber-400">2</td>
+              <td class="p-3 font-semibold text-white">Grúa Telescópica (<code class="text-blue-300 font-mono">Categoría = GRUAS TELESCOPICAS</code>)</td>
+              <td class="p-3 font-mono text-slate-300">Subcategoría de Grúa (<code class="text-amber-300">GRUA ... TON</code>)</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono font-bold">NO (Se oculta)</span></td>
+              <td class="p-3">Es el cobro de movilización de la propia Grúa Telescópica (autopropulsada, viaja con su operador de Sección 1).</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40 bg-slate-900/25">
+              <td class="p-3 font-mono font-bold text-amber-400">3</td>
+              <td class="p-3 font-semibold text-white">Grúa Telescópica (<code class="text-blue-300 font-mono">Categoría = GRUAS TELESCOPICAS</code>)</td>
+              <td class="p-3 font-mono text-slate-300">Subcategoría de Camión Auxiliar (<code class="text-purple-300">CAMA BAJA</code>, <code class="text-purple-300">CAMIÓN PLATAFORMA</code>, <code class="text-purple-300">RAMPLA</code>, <code class="text-purple-300">TRACTOCAMIÓN</code>)</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono font-bold">SÍ (Se asigna)</span></td>
+              <td class="p-3">Cuando una Grúa Telescópica lleva además una línea de <code class="font-mono">TRASLADOS</code> con subcategoría de camión/rampla, corresponde al vehículo auxiliar que transporta sus contrapesos/aparejos y requiere asignar camión + chofer.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40 bg-slate-900/25">
+              <td class="p-3 font-mono font-bold text-amber-400">4</td>
+              <td class="p-3 font-semibold text-white">Equipos No Autopropulsados (<code class="text-blue-300 font-mono">Categoría = PLATAFORMAS</code>, Alza Hombre, Horquilla)</td>
+              <td class="p-3 font-mono text-slate-300">Subcategoría de Camión (<code class="text-purple-300">CAMA BAJA</code>, <code class="text-purple-300">CAMIÓN PLATAFORMA</code>)</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono font-bold">SÍ (Se asigna)</span></td>
+              <td class="p-3">Las plataformas/horquillas no se desplazan solas por carretera; requieren asignar el camión de traslado y su chofer en Sección 2.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40 bg-slate-900/25">
+              <td class="p-3 font-mono font-bold text-amber-400">5</td>
+              <td class="p-3 font-semibold text-white">Ningún equipo en Sección 1 (solo venta de <code class="text-purple-300 font-mono">TRASLADOS</code>)</td>
+              <td class="p-3 font-mono text-slate-300">Cualquier subcategoría</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono font-bold">SÍ (Se asigna)</span></td>
+              <td class="p-3">Es un servicio de Flete/Transporte puro; requiere asignar en Sección 2 el camión y el chofer que realizará el viaje.</td>
             </tr>
           </tbody>
         </table>

@@ -106,7 +106,7 @@ async function deploy() {
     updateReleaseLog(webVer, pwaVer, customChanges);
 
     // 3. Compilar Web App (Vite)
-    console.log('\n🏗️ 3.1. Compilando Web App (Vite) en ejecucion/frontend...');
+    console.log('\n📦 3.1. Compilando Web App (Vite) en ejecucion/frontend...');
     const localWebDist = path.join(frontendRoot, 'dist');
     if (fs.existsSync(localWebDist)) {
       fs.rmSync(localWebDist, { recursive: true, force: true });
@@ -114,7 +114,7 @@ async function deploy() {
     execSync('npm run build', { cwd: frontendRoot, stdio: 'inherit' });
 
     // 3.2. Compilar PWA (Vue CLI)
-    console.log('\n🏗️ 3.2. Compilando PWA (Vue CLI) en ejecucion/pwa...');
+    console.log('\n📦 3.2. Compilando PWA (Vue CLI) en ejecucion/pwa...');
     const localPwaDist = path.join(pwaRoot, 'dist');
     if (fs.existsSync(localPwaDist)) {
       fs.rmSync(localPwaDist, { recursive: true, force: true });

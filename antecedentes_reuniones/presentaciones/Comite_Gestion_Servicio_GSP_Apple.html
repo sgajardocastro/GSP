@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-black">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comité Ejecutivo de Gestión de Servicio | Grúas San Pablo & LeanGlobal</title>
+  
+  <!-- Apple Font Stack & Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'system-ui', 'sans-serif'],
+            mono: ['"SF Mono"', 'ui-monospace', 'Menlo', 'monospace']
+          },
+          colors: {
+            apple: {
+              bg: '#000000',
+              card: '#121215',
+              cardSubtle: 'rgba(25, 25, 30, 0.65)',
+              border: 'rgba(255, 255, 255, 0.08)',
+              borderHover: 'rgba(255, 255, 255, 0.18)',
+              text: '#f5f5f7',
+              muted: '#86868b',
+              amber: '#f59e0b',
+              blue: '#2997ff',
+              green: '#30d158',
+              purple: '#bf5af2',
+              red: '#ff453a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #000000;
+      color: #f5f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Apple-style Frosted Glass */
+    .apple-glass {
+      background: rgba(18, 18, 22, 0.75);
+      backdrop-filter: blur(40px) saturate(190%);
+      -webkit-backdrop-filter: blur(40px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .apple-glass-hover:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+      background: rgba(26, 26, 32, 0.85);
+    }
+
+    /* Segmented Control iOS / macOS */
+    .segmented-control {
+      background: rgba(30, 30, 35, 0.7);
+      backdrop-filter: blur(20px);
+      border-radius: 9999px;
+      padding: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .segmented-btn {
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #86868b;
+    }
+
+    .segmented-btn:hover {
+      color: #f5f5f7;
+    }
+
+    .segmented-btn.active {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Slide animation */
+    .tab-pane {
+      display: none;
+      opacity: 0;
+      transform: scale(0.99) translateY(6px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tab-pane.active {
+      display: block;
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    /* Clean Keynote Typography */
+    .hero-stat {
+      letter-spacing: -0.04em;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #000;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #26262b;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+  <!-- Top Apple Navigation -->
+  <header class="sticky top-0 z-50 apple-glass border-b border-white/[0.06] px-6 lg:px-12 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center font-bold text-black text-xs tracking-tighter shadow-md">
+        LG
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-apple-amber tracking-tight">Grúas San Pablo</span>
+          <span class="text-[10px] text-apple-muted font-medium">•</span>
+          <span class="text-[11px] text-apple-muted">Comité Ejecutivo de Servicio</span>
+        </div>
+        <h1 class="text-sm font-semibold text-white tracking-tight">
+          Alineación Estratégica & Estado de Operación
+        </h1>
+      </div>
+    </div>
+
+    <!-- Apple Segmented Control -->
+    <nav class="segmented-control flex items-center gap-1">
+      <button class="segmented-btn active px-4 py-1.5" onclick="switchView('view-estrategia')">
+        1. Estrategia & Caja
+      </button>
+      <button class="segmented-btn px-4 py-1.5" onclick="switchView('view-operacion')">
+        2. Comercial & Operaciones
+      </button>
+      <button class="segmented-btn px-4 py-1.5" onclick="switchView('view-mantenimiento')">
+        3. Taller (Flota)
+      </button>
+      <button class="segmented-btn px-4 py-1.5" onclick="switchView('view-bodega')">
+        4. Pañol (Bodega)
+      </button>
+      <button class="segmented-btn px-4 py-1.5" onclick="switchView('view-itil')">
+        5. Servicio TI (ITIL)
+      </button>
+      <button class="segmented-btn px-4 py-1.5" onclick="switchView('view-gobernanza')">
+        6. Gobernanza & Horas
+      </button>
+    </nav>
+
+    <!-- Key Participant Badges -->
+    <div class="hidden xl:flex items-center gap-2 text-xs">
+      <div class="px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-apple-muted text-[11px]">
+        Sponsor: <span class="text-white font-medium">Jorge Ponce</span>
+      </div>
+      <div class="px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-apple-muted text-[11px]">
+        PM GSP: <span class="text-white font-medium">Alfonso Porperrello</span>
+      </div>
+      <div class="px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-apple-muted text-[11px]">
+        LeanGlobal: <span class="text-white font-medium">Sergio Gajardo</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-6 lg:px-10 py-10">
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 1: ESTRATEGIA & MAPA DE CAJA                                    -->
+    <!-- ===================================================================== -->
+    <section id="view-estrategia" class="tab-pane active space-y-8">
+      
+      <!-- Headline Keynote -->
+      <div class="max-w-3xl">
+        <h2 class="text-4xl lg:text-5xl font-semibold tracking-tight text-white leading-tight hero-stat">
+          Cerrar el flujo de caja hoy.<br/>
+          <span class="text-apple-muted">Gobernar costos y flota mañana.</span>
+        </h2>
+        <p class="text-apple-muted text-base lg:text-lg mt-3 leading-relaxed">
+          Nuestra prioridad operacional se concentró en asegurar que las grúas operaran sin detención y que la facturación de noviembre quede blindada. Este es el mapa de valor del negocio.
+        </p>
+      </div>
+
+      <!-- 4 Hero Metrics Cards (Data Real Exacta) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        <div class="apple-glass rounded-3xl p-6 flex flex-col justify-between apple-glass-hover transition-all">
+          <div>
+            <div class="text-xs uppercase tracking-wider font-medium text-apple-muted">Pipeline Total CRM</div>
+            <div class="text-3xl lg:text-4xl font-semibold text-white mt-3 hero-stat">$ 15.237.750</div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs text-apple-muted">
+            <span>36 Cotizaciones</span>
+            <span class="text-apple-amber font-medium">Preventa Comercial</span>
+          </div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6 flex flex-col justify-between apple-glass-hover transition-all">
+          <div>
+            <div class="text-xs uppercase tracking-wider font-medium text-apple-muted">Cartera OTs Ganadas</div>
+            <div class="text-3xl lg:text-4xl font-semibold text-white mt-3 hero-stat">$ 9.947.750</div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs text-apple-muted">
+            <span>14 OTs en Faena</span>
+            <span class="text-apple-blue font-medium">Adjudicado</span>
+          </div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6 flex flex-col justify-between apple-glass-hover transition-all">
+          <div>
+            <div class="text-xs uppercase tracking-wider font-medium text-apple-muted">Devengado Real Terreno</div>
+            <div class="text-3xl lg:text-4xl font-semibold text-apple-green mt-3 hero-stat">$ 8.696.000</div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs text-apple-muted">
+            <span>26 Reports • 214.1 hrs</span>
+            <span class="text-apple-green font-medium">87% Ejecutado</span>
+          </div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6 flex flex-col justify-between apple-glass-hover transition-all border-apple-amber/30">
+          <div>
+            <div class="text-xs uppercase tracking-wider font-medium text-apple-amber">Listo para Facturar (EDP)</div>
+            <div class="text-3xl lg:text-4xl font-semibold text-white mt-3 hero-stat">$ 7.946.000</div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs text-apple-muted">
+            <span>8 Servicios Listos</span>
+            <span class="text-apple-amber font-medium">Por Cobrar</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Roadmap de Dos Fases -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <div class="apple-glass rounded-3xl p-8 space-y-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-apple-green/10 text-apple-green text-xs font-semibold">
+            <span>Fase 1 · En Marcha (Prioridad de Caja)</span>
+          </div>
+          <h3 class="text-2xl font-semibold text-white tracking-tight">Comercial & Operaciones de Faena</h3>
+          <p class="text-apple-muted text-sm leading-relaxed">
+            Concentramos los esfuerzos en asegurar el motor de ingresos: digitalización de cotizaciones, despacho de grúas en Torre de Control, captura de reportes móviles PWA y cuadratura del ITS.
+          </p>
+          <div class="pt-2 space-y-2 text-xs text-apple-muted">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-apple-green"></span>
+              <span><strong>Objetivo Inmediato:</strong> Liberar los <strong>$7.946.000</strong> retenidos para emisión de factura DTE.</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-apple-green"></span>
+              <span><strong>Actores Clave:</strong> Equipo Comercial GSP, Alfonso Porperrello, Jonathan y Yiara Mendoza.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-8 space-y-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-apple-purple/10 text-apple-purple text-xs font-semibold">
+            <span>Fase 2 · En Régimen (Gobernanza de Costos)</span>
+          </div>
+          <h3 class="text-2xl font-semibold text-white tracking-tight">Mantenimiento & Pañol de Bodega</h3>
+          <p class="text-apple-muted text-sm leading-relaxed">
+            Una vez blindado el flujo de cobros, el sistema pasa a controlar la fuga de costos internos: órdenes de trabajo mecánicas, horómetros de flota y custodia física de repuestos de pañol.
+          </p>
+          <div class="pt-2 space-y-2 text-xs text-apple-muted">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-apple-purple"></span>
+              <span><strong>Base Calibrada:</strong> 111 grúas en catálogo y 2.801 repuestos cargados en bodega.</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-apple-purple"></span>
+              <span><strong>Actores Clave:</strong> Leonel Vergara (Taller) y Eduardo Aguirre (Pañol Central).</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 2: COMERCIAL & OPERACIONES (FASE 1)                              -->
+    <!-- ===================================================================== -->
+    <section id="view-operacion" class="tab-pane space-y-8">
+      
+      <div class="max-w-3xl">
+        <div class="text-xs uppercase tracking-wider font-semibold text-apple-blue mb-1">Fase 1 · Motor de Ingresos</div>
+        <h2 class="text-4xl font-semibold tracking-tight text-white hero-stat">
+          Comercial, Torre de Control & Terreno
+        </h2>
+        <p class="text-apple-muted text-base mt-2">
+          De las 36 cotizaciones generadas en CRM, 14 se convirtieron en faenas adjudicadas con un devengado del 87%.
+        </p>
+      </div>
+
+      <!-- Cuadro de Embudo Operativo -->
+      <div class="apple-glass rounded-3xl p-8 space-y-6">
+        <h3 class="text-lg font-semibold text-white">Embudo de Conversión Operacional a Caja</h3>
+        
+        <div class="space-y-4">
+          <!-- Step 1 -->
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span class="text-apple-muted">1. Prospección Comercial CRM (Equipo Comercial GSP)</span>
+              <span class="text-white font-medium">36 Cotizaciones • $15.237.750</span>
+            </div>
+            <div class="w-full bg-white/[0.04] h-2 rounded-full overflow-hidden">
+              <div class="bg-apple-blue h-full rounded-full" style="width: 100%;"></div>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span class="text-apple-muted">2. OTs Adjudicadas en Faena Activa (Alfonso / Jonathan)</span>
+              <span class="text-white font-medium">14 OTs Ganadas • $9.947.750</span>
+            </div>
+            <div class="w-full bg-white/[0.04] h-2 rounded-full overflow-hidden">
+              <div class="bg-apple-blue h-full rounded-full" style="width: 65%;"></div>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span class="text-apple-muted">3. Devengado Validado en Terreno (26 Reports Diarios • 214.1h)</span>
+              <span class="text-apple-green font-medium">87% Ejecutado • $8.696.000</span>
+            </div>
+            <div class="w-full bg-white/[0.04] h-2 rounded-full overflow-hidden">
+              <div class="bg-apple-green h-full rounded-full" style="width: 57%;"></div>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span class="text-apple-amber font-semibold">4. Concluido y Listo para Facturar (En Espera de EDP)</span>
+              <span class="text-apple-amber font-semibold">8 Servicios • $7.946.000</span>
+            </div>
+            <div class="w-full bg-white/[0.04] h-2 rounded-full overflow-hidden">
+              <div class="bg-apple-amber h-full rounded-full" style="width: 52%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-between text-xs">
+          <div class="text-apple-muted">
+            ITS Formalmente Cerrado: <span class="text-white font-medium">1 Folio ($120.000, costo $54.000, margen 55%)</span>
+          </div>
+          <div class="text-apple-muted">
+            Facturas DTE Emitidas: <span class="text-apple-red font-medium">$0 (Brecha total: $9.947.750)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparativa Operacional de Rendimiento: Nueva Plataforma vs Geralsoft -->
+      <div class="apple-glass rounded-3xl p-8 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-white">Comparativa Operacional: Rendimiento en Régimen vs. Sistema Anterior</h3>
+            <p class="text-xs text-apple-muted mt-0.5">Contraste empírico de productividad entre la plataforma digital y el sistema legado (Geralsoft)</p>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-apple-green/10 text-apple-green border border-apple-green/30">
+            Semana 1 Go-Live
+          </span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div class="text-apple-blue font-semibold text-sm">Capacidad de OTs Simultáneas</div>
+            <div class="text-2xl font-bold text-white">14 OTs Activas</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              <strong>En Plataforma:</strong> 14 frentes de trabajo ejecutándose en paralelo con asignación digital de grúa, operador y rigger.<br>
+              <strong>En Geralsoft:</strong> Gestión fragmentada en planillas individuales sin visibilidad central en tiempo real.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div class="text-apple-green font-semibold text-sm">Velocidad de Reportes Diarios</div>
+            <div class="text-2xl font-bold text-apple-green">26 Reports / Semana</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              <strong>En Plataforma:</strong> 26 reportes cerrados desde la app móvil en faena con foto de horómetro y firma mandante.<br>
+              <strong>En Geralsoft:</strong> Rendimiento limitado a <em>2 a 3 informes cada 4 horas</em> vía escritorio remoto por re-digitación manual.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div class="text-apple-amber font-semibold text-sm">Agilidad de Cierre Financiero</div>
+            <div class="text-2xl font-bold text-white">$ 7.946.000 EDP</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              <strong>En Plataforma:</strong> 8 servicios concluidos listos para emitir Estado de Pago el mismo día de término de faena.<br>
+              <strong>En Geralsoft:</strong> Desfases de 2 a 3 semanas para conciliar horas mínimas, viáticos y recopilar papeles firmados.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 3: TALLER DE MANTENIMIENTO (FASE 2)                             -->
+    <!-- ===================================================================== -->
+    <section id="view-mantenimiento" class="tab-pane space-y-8">
+      
+      <div class="max-w-3xl">
+        <div class="text-xs uppercase tracking-wider font-semibold text-apple-purple mb-1">Fase 2 · Control de Activos</div>
+        <h2 class="text-4xl font-semibold tracking-tight text-white hero-stat">
+          Taller Mecánico & Mantenimiento de Flota
+        </h2>
+        <p class="text-apple-muted text-base mt-2">
+          Liderado por Leonel Vergara y Alan Sarpi. La base técnica está probada en producción con 111 grúas integradas.
+        </p>
+      </div>
+
+      <!-- KPIs Reales de Taller Extraídos en Vivo de Producción -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+        
+        <div class="apple-glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-muted">Flota Total Monitoreada</div>
+          <div class="text-3xl font-semibold text-white mt-2 hero-stat">111 Equipos</div>
+          <div class="text-xs text-apple-green mt-2 font-medium">100% Operacional en Vivo</div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-muted">Historial de OTs en Sistema</div>
+          <div class="text-3xl font-semibold text-white mt-2 hero-stat">41 OTs</div>
+          <div class="text-xs text-apple-muted mt-2">29 Cerradas • 12 Activas/Proceso</div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6 border-apple-red/30">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-red">Ratio Correctivo vs Preventivo</div>
+          <div class="text-3xl font-semibold text-apple-red mt-2 hero-stat">90% / 10%</div>
+          <div class="text-xs text-apple-muted mt-2">90% Correctivo (Fallas reactivas)</div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-muted">Gasto Acumulado Mes Taller</div>
+          <div class="text-3xl font-semibold text-white mt-2 hero-stat">$ 967.500</div>
+          <div class="text-xs text-apple-muted mt-2">HH Mecánicos ($15k/h) + Insumos</div>
+        </div>
+
+      </div>
+
+      <!-- Evidencia Operacional Validada en Producción -->
+      <div class="apple-glass rounded-3xl p-8 space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-white">Ciclo de Taller Validado de Punta a Punta</h3>
+            <p class="text-xs text-apple-muted mt-0.5">Caso real ejecutado en sesión con Leonel Vergara y Alan Sarpi</p>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-mono font-medium bg-apple-purple/10 text-apple-purple border border-apple-purple/30">
+            OT #MNT-2610-004 · ID #8
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="space-y-2">
+            <div class="text-xs uppercase font-medium text-apple-muted">Equipo Intervenido</div>
+            <div class="text-lg font-semibold text-white">Liebherr LTM-1400 (400 Ton)</div>
+            <div class="text-xs text-apple-blue font-mono">Patente: CHGC.99-4</div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="text-xs uppercase font-medium text-apple-muted">Medidores & Mano de Obra</div>
+            <div class="text-sm text-apple-muted leading-relaxed">
+              Captura de horómetros de entrada/salida y registro de 3 horas de mano de obra de mecánicos con tarifa oficial ($45.000 CLP).
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="text-xs uppercase font-medium text-apple-muted">Cierre & PIN FES</div>
+            <div class="text-sm text-apple-muted leading-relaxed">
+              Cierre supervisado con firma electrónica (PIN FES) y balance liquidado de $46.950 CLP (HH + insumo de pañol).
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-apple-red/5 border border-apple-red/20 text-xs text-apple-muted leading-relaxed">
+          <strong class="text-apple-red font-semibold">Diagnóstico Operacional del Taller:</strong> El registro empírico de un <strong>90% de mantenimiento correctivo</strong> (vs 10% preventivo) evidencia que la flota opera reactivamente ante fallas. La meta es consolidar el plan preventivo por horómetros (pautas PM250 / PM500 / PM1000) para anticipar detenciones no programadas y reducir costos de faena.
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 4: PAÑOL & ADQUISICIONES (PLAN DE ACTIVACIÓN)                 -->
+    <!-- ===================================================================== -->
+    <section id="view-bodega" class="tab-pane space-y-8">
+      
+      <div class="max-w-3xl">
+        <div class="text-xs uppercase tracking-wider font-semibold text-apple-amber mb-1">Fase 2 · Control de Materiales</div>
+        <h2 class="text-4xl font-semibold tracking-tight text-white hero-stat">
+          Pañol Central, Bodega & Adquisiciones
+        </h2>
+        <p class="text-apple-muted text-base mt-2">
+          Catálogo maestro y módulos WMS habilitados en producción; etapa de despliegue operacional y ordenamiento físico de pañol.
+        </p>
+      </div>
+
+      <!-- Datos Reales del ETL de Inventario -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+        
+        <div class="apple-glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-muted">Catálogo Maestro Cargado</div>
+          <div class="text-3xl font-semibold text-white mt-2 hero-stat">2.801 SKUs</div>
+          <div class="text-xs text-apple-muted mt-2">Repuestos, filtros, EPP y lubricantes</div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-muted">Valorización Total Bodega</div>
+          <div class="text-3xl font-semibold text-apple-green mt-2 hero-stat">$ 72.282.414</div>
+          <div class="text-xs text-apple-muted mt-2">9.426 unidades físicas en stock</div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-muted">Ítems con Stock Físico</div>
+          <div class="text-3xl font-semibold text-white mt-2 hero-stat">660 Ítems</div>
+          <div class="text-xs text-apple-muted mt-2">2.141 ítems sin stock registrado</div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6 border-apple-amber/30">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-amber">Repuestos sin Ubicar (Patio/Suelo)</div>
+          <div class="text-3xl font-semibold text-apple-amber mt-2 hero-stat">2.407 SKUs</div>
+          <div class="text-xs text-apple-muted mt-2">Solo 384 ubicados en racks exactos</div>
+        </div>
+
+      </div>
+
+      <!-- Diagnóstico de Implementación & Plan de Activación -->
+      <div class="apple-glass rounded-3xl p-8 space-y-6">
+        <h3 class="text-lg font-semibold text-white">Diagnóstico de Implementación & Hoja de Ruta de Bodega</h3>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <div class="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+            <div class="text-apple-amber font-semibold text-sm">Estado Actual de la Plataforma & Bodega</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              La plataforma cuenta con los flujos de recepción de órdenes de compra, catálogo maestro de 2.801 repuestos y mecanismo de rebaja directa hacia las OTs de taller con costeo por Precio Medio Ponderado (PMP).
+            </p>
+            <p class="text-xs text-apple-amber leading-relaxed">
+              <strong>Oportunidad de Mejora:</strong> Para materializar el control de costos, se requiere la transición de los registros físicos manuales hacia la digitación sistemática de entradas y salidas en el sistema.
+            </p>
+          </div>
+
+          <div class="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+            <div class="text-apple-green font-semibold text-sm">Plan de Activación Operacional Recomendado</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Secuencia estratégica recomendada para asegurar una adopción efectiva sin fricciones operativas:
+            </p>
+            <ul class="text-xs text-apple-muted space-y-2 list-disc list-inside">
+              <li><strong>Prioridad Inmediata:</strong> Consolidar y estabilizar el flujo de Comercial y Operaciones para resguardar la facturación.</li>
+              <li><strong>Ordenamiento Físico:</strong> Clasificar la ubicación en racks/casilleros de los 2.407 repuestos actualmente sin casillero asignado.</li>
+              <li><strong>Corte Operacional:</strong> Vincular formalmente toda entrega de repuestos de pañol a una OT activa de taller en la plataforma.</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 5: GESTIÓN DE SERVICIO TI & ENTREGAS ITIL V4                   -->
+    <!-- ===================================================================== -->
+    <section id="view-itil" class="tab-pane space-y-8">
+      
+      <div class="max-w-3xl">
+        <div class="text-xs uppercase tracking-wider font-semibold text-apple-blue mb-1">Gestión de Servicio TI · ITIL v4 Delivery</div>
+        <h2 class="text-4xl font-semibold tracking-tight text-white hero-stat">
+          Mantenimiento de Software & Entregas de la Semana
+        </h2>
+        <p class="text-apple-muted text-base mt-2">
+          Auditoría de 46.5 horas de ingeniería y 14 versiones desplegadas en producción (v1.0.188 a v1.0.201).
+        </p>
+      </div>
+
+      <!-- 4 KPI Cards Taxonomía ITIL -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+        <div class="apple-glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-muted">Total Versiones Desplegadas</div>
+          <div class="text-3xl font-semibold text-white mt-2 hero-stat">14 Versiones</div>
+          <div class="text-xs text-apple-blue mt-2 font-medium">v1.0.188 a v1.0.201 (5 días)</div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6 border-apple-green/30">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-green">Incidentes / Bugs (Garantía $0)</div>
+          <div class="text-3xl font-semibold text-apple-green mt-2 hero-stat">6 Versiones</div>
+          <div class="text-xs text-apple-muted mt-2">43% del total • 100% cubierto por LeanGlobal</div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6 border-apple-purple/30">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-purple">Requerimientos / Mejoras GSP</div>
+          <div class="text-3xl font-semibold text-apple-purple mt-2 hero-stat">4 Versiones</div>
+          <div class="text-xs text-apple-muted mt-2">29% del total • Ajustes solicitados por GSP</div>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-6">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-amber">Blindajes & Arquitectura ($0)</div>
+          <div class="text-3xl font-semibold text-apple-amber mt-2 hero-stat">3 Versiones</div>
+          <div class="text-xs text-apple-muted mt-2">21% del total • Candado anti-regresión y turnos</div>
+        </div>
+      </div>
+
+      <!-- Esfuerzo de Ingeniería Desplegado (Garantía vs Imputable) -->
+      <div class="apple-glass rounded-3xl p-8 space-y-4 border-apple-green/30">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-white">Balance de Capacidad de Ingeniería Invertida</h3>
+            <p class="text-xs text-apple-muted mt-0.5">Distribución contractual del esfuerzo de ingeniería durante la semana del Go-Live</p>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-apple-green/10 text-apple-green border border-apple-green/30">
+            46.5 Horas Totales
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-1">
+            <div class="text-xs text-apple-muted uppercase font-medium">Garantía Técnica LeanGlobal ($0)</div>
+            <div class="text-2xl font-bold text-apple-green">26.5 Horas (57%)</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Corrección de fórmulas de pisos mensuales, blindajes de concurrencia y rescate forense asumidos 100% a costo cero para GSP.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-1">
+            <div class="text-xs text-apple-muted uppercase font-medium">Estabilización y Mejoras de Proceso</div>
+            <div class="text-2xl font-bold text-white">20.0 Horas (43%)</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Ajustes a formatos de reportes en faena, parametrización de viáticos y adaptación a dinámicas operativas de GSP.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-1">
+            <div class="text-xs text-apple-muted uppercase font-medium">Impacto Equivalente</div>
+            <div class="text-2xl font-bold text-apple-blue">> 2 Meses</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Las 46.5 horas ejecutadas en 5 días equivalen a más de 2 meses de bolsa contractual estándar entregados en una sola semana.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros de Taxonomía y Tabla de Versiones Apple Style -->
+      <div class="apple-glass rounded-3xl p-8 space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-semibold text-white">Auditoría Detallada de Versiones en Producción</h3>
+            <p class="text-xs text-apple-muted mt-0.5">Registro cronológico de despliegues con trazabilidad a requerimientos e imputación contractual</p>
+          </div>
+          <div class="segmented-control flex items-center gap-1 text-xs">
+            <button class="itil-filter-btn active px-3 py-1 rounded-full text-white font-medium bg-white/[0.14]" onclick="filterItilVersions('ALL', this)">Todas (14)</button>
+            <button class="itil-filter-btn px-3 py-1 rounded-full text-apple-muted font-medium hover:text-white" onclick="filterItilVersions('BUG', this)">Incidentes ($0)</button>
+            <button class="itil-filter-btn px-3 py-1 rounded-full text-apple-muted font-medium hover:text-white" onclick="filterItilVersions('REQ', this)">Mejoras GSP</button>
+            <button class="itil-filter-btn px-3 py-1 rounded-full text-apple-muted font-medium hover:text-white" onclick="filterItilVersions('DEBT', this)">Blindajes ($0)</button>
+            <button class="itil-filter-btn px-3 py-1 rounded-full text-apple-muted font-medium hover:text-white" onclick="filterItilVersions('L2', this)">Soporte L2</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs" id="itil-versions-table">
+            <thead>
+              <tr class="border-b border-white/[0.08] text-apple-muted uppercase tracking-wider text-[11px]">
+                <th class="py-3 px-3">Versión</th>
+                <th class="py-3 px-3">Fecha</th>
+                <th class="py-3 px-3">Requerimiento</th>
+                <th class="py-3 px-3">Taxonomía ITIL</th>
+                <th class="py-3 px-3">Solución Técnica Desplegada</th>
+                <th class="py-3 px-3">Imputación</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/[0.04]">
+              <tr data-type="BUG" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.201</td>
+                <td class="py-3 px-3 text-apple-muted">06-Nov 17:55</td>
+                <td class="py-3 px-3 font-mono text-apple-blue">REQ-1125</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green border border-apple-green/20">Incident Mgmt</span></td>
+                <td class="py-3 px-3 text-apple-muted">Resolución integral de piso mensual en Reports e ITS (imputa horas reales operadas a bolsa pactada, elimina sobretiempos falsos). Datafix y 13 PDFs regenerados.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green">Garantía ($0)</span></td>
+              </tr>
+              <tr data-type="BUG" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.200</td>
+                <td class="py-3 px-3 text-apple-muted">05-Nov 18:45</td>
+                <td class="py-3 px-3 font-mono text-apple-blue">REQ-1124</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green border border-apple-green/20">Incident Mgmt</span></td>
+                <td class="py-3 px-3 text-apple-muted">Corrección de colación (0m vs 60m). Doble columna de cobro izaje: HRS SERVICIO (máquina Urbano/Rural) vs HRS VIÁTICOS (personal puerta a puerta).</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green">Garantía ($0)</span></td>
+              </tr>
+              <tr data-type="REQ" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.199</td>
+                <td class="py-3 px-3 text-apple-muted">05-Nov 12:50</td>
+                <td class="py-3 px-3 font-mono text-apple-purple">REQ-1120-1123</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-purple/10 text-apple-purple border border-apple-purple/20">Request Fulfilment</span></td>
+                <td class="py-3 px-3 text-apple-muted">Proyección de obs_validador en tarjeta PMO. Horas formato reloj HH:mm. Ocultamiento de márgenes P&L para secretarías y email automático en visitas.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-purple/10 text-apple-purple">Solicitud GSP (Bolsa)</span></td>
+              </tr>
+              <tr data-type="BUG" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.198</td>
+                <td class="py-3 px-3 text-apple-muted">05-Nov 12:00</td>
+                <td class="py-3 px-3 font-mono text-apple-blue">REQ-1117-1119</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green border border-apple-green/20">Incident Mgmt</span></td>
+                <td class="py-3 px-3 text-apple-muted">Prioridad de horarios validados por Operaciones sobre GPS chofer (Caso FEPASA: 07:30 vs 08:35). Asignación operador por rango fechas en PMO.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green">Garantía ($0)</span></td>
+              </tr>
+              <tr data-type="REQ" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.197</td>
+                <td class="py-3 px-3 text-apple-muted">04-Nov 16:20</td>
+                <td class="py-3 px-3 font-mono text-apple-purple">REQ-1116</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-purple/10 text-apple-purple border border-apple-purple/20">Request Fulfilment</span></td>
+                <td class="py-3 px-3 text-apple-muted">Habilitación en Pestaña 2 Validación Operaciones para que Jonathan/Alfonso editen viáticos y condición sin trabar la emisión de la OT.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-purple/10 text-apple-purple">Solicitud Operaciones</span></td>
+              </tr>
+              <tr data-type="BUG" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.196</td>
+                <td class="py-3 px-3 text-apple-muted">04-Nov 16:00</td>
+                <td class="py-3 px-3 font-mono text-apple-blue">REQ-1113-1115</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green border border-apple-green/20">Incident Mgmt</span></td>
+                <td class="py-3 px-3 text-apple-muted">Eliminación de piso mínimo 8.0 hrs en servicios mensuales. Tipografía grande en OT con parámetros wkhtmltopdf y reasignación de comercial.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green">Garantía ($0)</span></td>
+              </tr>
+              <tr data-type="DEBT" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.195 (Web)</td>
+                <td class="py-3 px-3 text-apple-muted">04-Nov 14:40</td>
+                <td class="py-3 px-3 font-mono text-apple-amber">REQ-1112</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-amber/10 text-apple-amber border border-apple-amber/20">Problem Mgmt</span></td>
+                <td class="py-3 px-3 text-apple-muted">Rescate Forense FEPASA: Candado anti-regresión inmutable en backend y verificador automático de versión en cliente que recarga ante nuevas liberaciones.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green">Garantía ($0)</span></td>
+              </tr>
+              <tr data-type="REQ" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.195 (PWA)</td>
+                <td class="py-3 px-3 text-apple-muted">04-Nov 15:18</td>
+                <td class="py-3 px-3 font-mono text-apple-purple">REQ-1106-1108</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-purple/10 text-apple-purple border border-apple-purple/20">Request Fulfilment</span></td>
+                <td class="py-3 px-3 text-apple-muted">Eliminación de tarjeta Copec en OT. Anexión automática de fotos y documentos adjuntos al PDF de Reportes vía pdf-lib y limpieza de horómetros sugeridos.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-purple/10 text-apple-purple">Mejora de Terreno (Bolsa)</span></td>
+              </tr>
+              <tr data-type="DEBT" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.194</td>
+                <td class="py-3 px-3 text-apple-muted">04-Nov 14:10</td>
+                <td class="py-3 px-3 font-mono text-apple-amber">REQ-1110-1111</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-amber/10 text-apple-amber border border-apple-amber/20">Architecture Mgmt</span></td>
+                <td class="py-3 px-3 text-apple-muted">Motor estructural de relevos de chofer por fecha (turnos_operadores) y nueva tabla de 3 viáticos con convivencia dual V1/V2.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-purple/10 text-apple-purple">Evolutivo Operacional</span></td>
+              </tr>
+              <tr data-type="BUG" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.193</td>
+                <td class="py-3 px-3 text-apple-muted">04-Nov 11:50</td>
+                <td class="py-3 px-3 font-mono text-apple-blue">REQ-1105</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green border border-apple-green/20">Incident Mgmt</span></td>
+                <td class="py-3 px-3 text-apple-muted">Exclusión estricta de personal certificado (riggers) y fletes del cálculo de piso mínimo de maquinaria en el PDF oficial de la OT.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green">Garantía ($0)</span></td>
+              </tr>
+              <tr data-type="REQ" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.192</td>
+                <td class="py-3 px-3 text-apple-muted">04-Nov 11:32</td>
+                <td class="py-3 px-3 font-mono text-apple-purple">REQ-1103-1104</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-purple/10 text-apple-purple border border-apple-purple/20">Request Fulfilment</span></td>
+                <td class="py-3 px-3 text-apple-muted">Supresión de "No Aplica" en viáticos (obliga a definir si costea Mandante o GSP) y obligatoriedad de descripción de servicio en preventa.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-purple/10 text-apple-purple">Regla Negocio GSP</span></td>
+              </tr>
+              <tr data-type="L2" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.191</td>
+                <td class="py-3 px-3 text-apple-muted">04-Nov 09:50</td>
+                <td class="py-3 px-3 font-mono text-apple-muted">REQ-1091</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/10 text-apple-muted border border-white/20">Soporte L2 / RBAC</span></td>
+                <td class="py-3 px-3 text-apple-muted">Desacople de alias cruzados en base de datos entre cuentas de Alfonso y Dominique Torres. Refresco dinámico de roles RBAC en Sidebar.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/10 text-white">Soporte Usuarios</span></td>
+              </tr>
+              <tr data-type="BUG" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.189</td>
+                <td class="py-3 px-3 text-apple-muted">04-Nov 00:58</td>
+                <td class="py-3 px-3 font-mono text-apple-blue">REQ-1102</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green border border-apple-green/20">Incident Mgmt</span></td>
+                <td class="py-3 px-3 text-apple-muted">Corrección de fórmula en ITS donde el flete cotizado era pisado por los fletes diarios. Incorporación de botón "Abrir OT" directo en PMO.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green">Garantía ($0)</span></td>
+              </tr>
+              <tr data-type="DEBT" class="itil-row hover:bg-white/[0.02]">
+                <td class="py-3 px-3 font-semibold text-white">v1.0.188</td>
+                <td class="py-3 px-3 text-apple-muted">03-Nov 23:00</td>
+                <td class="py-3 px-3 font-mono text-apple-amber">REQ-1101</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-amber/10 text-apple-amber border border-apple-amber/20">Problem Mgmt</span></td>
+                <td class="py-3 px-3 text-apple-muted">Erradicación de parseo frágil por texto libre en estructurador comercial; taxonomía determinista por Categoría/Subcategoría de BD para Camión Pluma en Fundo Caracas.</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-apple-green/10 text-apple-green">Garantía ($0)</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Los 5 Pilares de Valor Entregados en la Semana -->
+      <div class="apple-glass rounded-3xl p-8 space-y-6">
+        <h3 class="text-lg font-semibold text-white">Los 5 Pilares de Valor de Ingeniería Entregados esta Semana</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div class="text-apple-green font-semibold text-sm">1. Certeza en Contratos Mensuales</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Cero cobro espurio de sobretiempos diarios en faenas de mes (Inarco, Mettco). Las horas reales operadas se acumulan limpiamente a la bolsa acordada.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div class="text-apple-blue font-semibold text-sm">2. Candado Anti-Regresión Inmutable</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Blindaje en base de datos que impide a usuarios con pestañas obsoletas degradar estados de proyectos o pisar cotizaciones en curso.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div class="text-apple-amber font-semibold text-sm">3. Doble Cómputo de Izaje Chileno</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Separación formal de la hora de máquina al cliente (<code>HRS SERVICIO</code> Urbano/Rural) de la hora de permanencia de tripulación (<code>HRS VIÁTICOS</code> puerta a puerta).
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div class="text-apple-purple font-semibold text-sm">4. PWA Móvil 100% Blindada</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Cámara WebRTC in-app sin caídas de memoria en Android, eliminación de horómetros sugeridos para evitar disputas y anexos de fotos directos en el PDF oficial.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div class="text-white font-semibold text-sm">5. Gobernanza de Relevos de Operadores</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Soporte estructural para faenas extendidas con recambio de operador por fecha, manteniendo la trazabilidad de bonos e incentivos individuales.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VISTA 6: GOBERNANZA & BOLSA DE HORAS                                  -->
+    <!-- ===================================================================== -->
+    <section id="view-gobernanza" class="tab-pane space-y-8">
+      
+      <div class="max-w-3xl">
+        <div class="text-xs uppercase tracking-wider font-semibold text-apple-green mb-1">Continuidad Sostenible</div>
+        <h2 class="text-4xl font-semibold tracking-tight text-white hero-stat">
+          Gobernanza de Capacidad & Régimen Mensual
+        </h2>
+        <p class="text-apple-muted text-base mt-2">
+          De la dedicación extraordinaria de puesta en marcha a un modelo mensual transparente y predecible.
+        </p>
+      </div>
+
+      <!-- Comparativa Hypercare vs Régimen -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <div class="apple-glass rounded-3xl p-8 space-y-4 border-apple-green/30">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-green">Garantía de Puesta en Marcha (Hypercare)</div>
+          <div class="text-3xl font-semibold text-white hero-stat">46.5 Horas Desplegadas</div>
+          <p class="text-xs text-apple-muted leading-relaxed">
+            Durante la semana de salida a producción, LeanGlobal dedicó 46.5 horas de ingeniería en solo 5 días para estabilizar el sistema.
+          </p>
+          <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-apple-green font-medium">Asumido por LeanGlobal ($0 para GSP):</span>
+              <strong class="text-apple-green">26.5 Horas (57%)</strong>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-apple-muted">Imputadas a Estabilización de Procesos:</span>
+              <strong class="text-white">20.0 Horas (43%)</strong>
+            </div>
+          </div>
+          <p class="text-[11px] text-apple-muted italic">
+            * LeanGlobal absorbió más de dos meses de soporte estándar bajo garantía técnica para no afectar la operación de GSP.
+          </p>
+        </div>
+
+        <div class="apple-glass rounded-3xl p-8 space-y-4">
+          <div class="text-xs uppercase tracking-wider font-medium text-apple-blue">Régimen Mensual de Continuidad (Sección 12)</div>
+          <div class="text-3xl font-semibold text-white hero-stat">9.795 UF / mes ($400k)</div>
+          <p class="text-xs text-apple-muted leading-relaxed">
+            Contrato formal adjudicado en la propuesta técnica: fee mensual sustentable para soporte continuo y evolutivos menores.
+          </p>
+          <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-apple-muted">Capacidad Mensual Sostenible:</span>
+              <strong class="text-apple-green">20 a 25 Horas / Mes</strong>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-apple-muted">Promedio de Dedicación:</span>
+              <strong class="text-apple-blue">5 a 6 Horas / Semana</strong>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-apple-muted">Tarifa Preferencial Equivalente:</span>
+              <strong class="text-white">$16.000 a $20.000 / HH</strong>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- El Rol de Alfonso como Gatekeeper y Protocolo de Horas Extra -->
+      <div class="apple-glass rounded-3xl p-8 space-y-6">
+        <h3 class="text-lg font-semibold text-white">Reglas Claras: ¿Qué Consume Horas y Cómo se Aprueba?</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div class="text-xs font-semibold text-apple-green uppercase">Garantía ($0)</div>
+            <div class="text-white font-medium text-sm">Errores de Código / Bugs</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Fallas en fórmulas, bugs de la plataforma o caídas de servidor no consumen horas. Son cubiertos al 100% por LeanGlobal.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div class="text-xs font-semibold text-apple-amber uppercase">Bolsa Base (20-25h)</div>
+            <div class="text-white font-medium text-sm">Ajustes & Soporte a Usuarios</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Nuevos campos, cambios de plantilla, capacitaciones y soporte funcional se imputan a la bolsa mensual vía tickets en Backlog.
+            </p>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+            <div class="text-xs font-semibold text-apple-purple uppercase">Aprobación Previa</div>
+            <div class="text-white font-medium text-sm">Horas Adicionales (Overage)</div>
+            <p class="text-xs text-apple-muted leading-relaxed">
+              Requerimientos adicionales o proyectos de mayor envergadura son presupuestados previamente por LeanGlobal, priorizados por Contraparte Operativa (Alfonso Porperrello) y aprobados formalmente por Gerencia General antes de su ejecución. Cero cobros imprevistos.
+            </p>
+          </div>
+
+        </div>
+
+        <div class="pt-4 border-t border-white/[0.06] text-xs text-apple-muted flex items-center justify-between">
+          <span>Alfonso Porperrello administra el Backlog y prioriza en qué tareas invertir la capacidad mensual de GSP.</span>
+          <span class="text-white font-medium">Semáforo preventivo al 75% de consumo</span>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Clean Minimalist Footer -->
+  <footer class="apple-glass border-t border-white/[0.06] px-6 lg:px-12 py-5 text-center text-xs text-apple-muted flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <span class="text-white font-medium">LeanGlobal Services</span> • Ecosistema Digital de Gestión Integral GSP
+    </div>
+    <div class="flex items-center gap-4">
+      <span>Datos Auditados en Base de Datos de Producción</span>
+      <span>•</span>
+      <span class="text-apple-amber">Navegación por Teclado: Teclas 1 a 6</span>
+    </div>
+  </footer>
+
+  <script>
+    // Tab switching logic (Apple segmented style)
+    function switchView(viewId) {
+      document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('active');
+      });
+      document.querySelectorAll('.segmented-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      const selected = document.getElementById(viewId);
+      if (selected) {
+        selected.classList.add('active');
+      }
+
+      const buttons = document.querySelectorAll('.segmented-btn');
+      buttons.forEach(btn => {
+        if (btn.getAttribute('onclick').includes(viewId)) {
+          btn.classList.add('active');
+        }
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Keyboard navigation (1 to 6)
+    document.addEventListener('keydown', (e) => {
+      const views = ['view-estrategia', 'view-operacion', 'view-mantenimiento', 'view-bodega', 'view-itil', 'view-gobernanza'];
+      if (e.key >= '1' && e.key <= '6') {
+        const index = parseInt(e.key) - 1;
+        switchView(views[index]);
+      }
+    });
+
+    // ITIL Version Filtering Logic
+    function filterItilVersions(type, btn) {
+      const rows = document.querySelectorAll('#itil-versions-table tbody tr');
+      const buttons = document.querySelectorAll('.itil-filter-btn');
+      buttons.forEach(b => {
+        b.classList.remove('active', 'bg-white/[0.14]', 'text-white');
+        b.classList.add('text-apple-muted');
+      });
+      btn.classList.add('active', 'bg-white/[0.14]', 'text-white');
+      btn.classList.remove('text-apple-muted');
+      rows.forEach(row => {
+        const rowType = row.getAttribute('data-type');
+        row.style.display = (type === 'ALL' || rowType === type) ? '' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>

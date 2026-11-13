@@ -1,0 +1,472 @@
+{
+  "timestamp": "2026-11-02T02:08:13.487Z",
+  "requirement": "REQ-1083 / SPEC-016 v3.9.0",
+  "environment": "https://servidor.leanglobal.cl/lg-gsp-dev/api",
+  "database_schema": "sch_leangsp",
+  "assertions": [
+    {
+      "code": "CORR-TRUNCATE-INIT",
+      "description": "Tabla sch_leangsp.tpry_correlativos truncada en 0 antes del primer negocio del nuevo formato",
+      "passed": true,
+      "details": {
+        "total": 0
+      }
+    },
+    {
+      "code": "C1-CREATE-SERIAL-5DIG",
+      "description": "Creación de Caso 1 genera serial exacto GSP-2611-00001 (5 dígitos continuos, sin id_cliente en el código)",
+      "passed": true,
+      "details": {
+        "id_proyecto": 167,
+        "codi_proyecto": "GSP-2611-00001",
+        "expected": "GSP-2611-00001"
+      }
+    },
+    {
+      "code": "C1-DB-CORRELATIVO-1",
+      "description": "Auditoría BD en sch_leangsp.tpry_correlativos: prefijo=\"GSP\", anio_mes=\"0000\" (continuo), ultimo_valor=1",
+      "passed": true,
+      "details": {
+        "prefijo": "GSP",
+        "anio_mes": "0000",
+        "ultimo_valor": 1
+      }
+    },
+    {
+      "code": "C1-IMMUTABLE-CLIENT-CHANGE",
+      "description": "Inmutabilidad del serial GSP-2611-00001 al editar el proyecto y cambiar de cliente (13 -> 12 -> 13) sin consumir nuevo correlativo",
+      "passed": true,
+      "details": {
+        "codiAfterClient12": "GSP-2611-00001",
+        "codiAfterClient13": "GSP-2611-00001",
+        "ultimo_valor": 1
+      }
+    },
+    {
+      "code": "C1-COT-PDF-SERIAL",
+      "description": "Cotización PDF generada con código derivado GSP-2611-00001V1-...",
+      "passed": true,
+      "details": {
+        "id_cotizacion": 220,
+        "version": 1,
+        "nombre_archivo": "GSP-2611-00001V1-220.pdf",
+        "monto": 0,
+        "fecha": "2026-11-02T02:08:29.250Z",
+        "url": "/api/archivo/ver/1614"
+      }
+    },
+    {
+      "code": "C1-STATE3-GOVERNANCE",
+      "description": "En estado 3 (Verificación Operaciones) conserva serial de 5 dígitos y exige selección manual de Política Urbana/Rural",
+      "passed": true,
+      "details": {
+        "id_proyecto": 167,
+        "codi_proyecto": "GSP-2611-00001",
+        "id_proyecto_estado": 3,
+        "regimen_ejec": "",
+        "confirmado_ejec": false
+      }
+    },
+    {
+      "code": "C1-OT-PDF-SERIAL",
+      "description": "Orden de Trabajo (OT) PDF generada con código derivado OT-GSP-2611-00001V1-...",
+      "passed": true,
+      "details": {
+        "id_ot": 22,
+        "version": 1,
+        "nombre_archivo": "OT-GSP-2611-00001V1-22.pdf",
+        "fecha": "2026-11-02T02:08:38.322Z",
+        "url": "/api/archivo/ver/1615",
+        "id_doc": 1615,
+        "total_equipos": 1,
+        "total_tripulacion": 1
+      }
+    },
+    {
+      "code": "C1-REPORT-SAVE",
+      "description": "Guardado de Report Diario en Caso 1 (8.0 hrs facturables, 2.0 hrs sobretiempo)",
+      "passed": true,
+      "details": {
+        "id_reporte_avance": "78",
+        "horas_facturables": "8.00"
+      }
+    },
+    {
+      "code": "C1-REPORT-VALIDAR-FES",
+      "description": "Validación FES de Report Diario en Caso 1 (horas_faena_pagar=8.0, horas_flete_pagar=0, monto=$48.000)",
+      "passed": true,
+      "details": {
+        "regimen": "URBANO",
+        "distancia_km": 15,
+        "glosa_comercial": "70 TON",
+        "toneladas_comercial": 70,
+        "hora_salida": "08:00",
+        "hora_llegada": "08:45",
+        "hora_inicio": "08:45",
+        "hora_termino": "17:00",
+        "hora_retorno": "17:45",
+        "colacion_horas": 1,
+        "condicion_dia": "IDA_Y_REGRESO",
+        "condicion_label": "Ida y Regreso en el Día",
+        "desde_viatico": "08:00",
+        "hasta_viatico": "17:45",
+        "horas_efectivas_viatico": 8.75,
+        "horas_redondeadas_viatico": 9,
+        "horas_faena_sugeridas": 8,
+        "horas_flete_sugeridas": 0,
+        "horas_totales_sugeridas": 8,
+        "tarifa_sugerida": 6000,
+        "viatico_sugerido": 8000,
+        "horas_faena_pagar": 8,
+        "horas_flete_pagar": 0,
+        "horas_totales_pagar": 8,
+        "precio_unitario": 6000,
+        "monto_faena_total": 48000,
+        "monto_flete_total": 0,
+        "monto_total_hora_operador": 48000,
+        "monto_viatico_operador": 8000,
+        "total_dia_operador": 56000,
+        "tiene_rigger": false,
+        "horas_totales_rigger": 0,
+        "monto_viatico_rigger": 0,
+        "tarifa_modificada": false,
+        "horas_modificadas": false,
+        "viatico_modificado": false,
+        "validado_rrhh": true,
+        "modificado_por": null,
+        "fecha_validacion_rrhh": "2026-11-02T02:08:44.000Z",
+        "id_user_operador": 66,
+        "operador_nombre": "Omar Ghiselini",
+        "id_user_rigger": null,
+        "rigger_nombre": null,
+        "monto_viatico_sugerido_operador": 8000,
+        "monto_viatico_sugerido_rigger": 0,
+        "viatico_rigger_modificado": false,
+        "id_user_validador_rrhh": 55,
+        "nombre_validador_rrhh": "Sergio Gajardo"
+      }
+    },
+    {
+      "code": "C1-ITS-FOLIO-AND-MATH",
+      "description": "Conciliación ITS con folio derivado ITS-GSP-2611-00001-001, numero_ot=GSP-2611-00001, ingreso cliente $680.000 e incentivo operador $48.000",
+      "passed": true,
+      "details": {
+        "folio_its": "ITS-GSP-2611-00001-001",
+        "numero_ot_jornada": "GSP-2611-00001",
+        "total_ingresos_facturables": 680000,
+        "costo_hora_operador": {
+          "id_costo_item": null,
+          "id_its": null,
+          "id_reporte_avance": "78",
+          "report_validado": true,
+          "categoria": "COSTO_HORA_OPERADOR",
+          "fecha": "2026-11-01",
+          "id_personal": 66,
+          "nombre_personal": "OMAR GHISELINI",
+          "rol_personal": "OPERADOR",
+          "id_equipo": 38,
+          "patente": "STDD.68-4",
+          "equipo_modelo": "LTM-1070",
+          "glosa_comercial": "70 TON",
+          "toneladas_comercial": 70,
+          "numero_oc": null,
+          "concepto_detalle": "Liquidación Diaria Operador (2026-11-01) — Cotizado: 70 TON",
+          "tipo_calculo": "HORA_OPERADOR",
+          "hora_salida": "08:00",
+          "hora_llegada": "08:45",
+          "hora_termino": "17:00",
+          "hora_retorno": "17:45",
+          "colacion_minutos": 60,
+          "colacion_horas": 1,
+          "horas_reales_equipo": 8,
+          "horas_standby_gsp": 0,
+          "horas_standby_cliente": 0,
+          "horas_faena_pagar": 8,
+          "horas_flete_pagar": 0,
+          "cantidad_unidades": 8,
+          "precio_unitario": 6000,
+          "monto_total": 48000,
+          "tarifa_sugerida": 6000,
+          "tarifa_no_aplica": false,
+          "tarifa_modificada": false,
+          "modificado_por": null,
+          "vb_validado": true,
+          "monto_desayuno": 0,
+          "monto_almuerzo": 0,
+          "monto_cena": 0,
+          "monto_alojamiento": 0,
+          "monto_traslado": 0,
+          "tipo_estanque": null,
+          "archivo_comprobante_url": null
+        }
+      }
+    },
+    {
+      "code": "C2-CREATE-SERIAL-00002",
+      "description": "Creación de Caso 2 con cliente distinto (id_empresa_cliente=12) genera GSP-2611-00002 continuo",
+      "passed": true,
+      "details": {
+        "id_proyecto": 168,
+        "codi_proyecto": "GSP-2611-00002",
+        "expected": "GSP-2611-00002"
+      }
+    },
+    {
+      "code": "C2-DB-CORRELATIVO-2",
+      "description": "Auditoría BD en sch_leangsp.tpry_correlativos: prefijo=\"GSP\", anio_mes=\"0000\", ultimo_valor=2",
+      "passed": true,
+      "details": {
+        "prefijo": "GSP",
+        "anio_mes": "0000",
+        "ultimo_valor": 2
+      }
+    },
+    {
+      "code": "C2-COT-PDF-00002",
+      "description": "Cotización PDF de Caso 2 generada como GSP-2611-00002V1-...",
+      "passed": true,
+      "details": {
+        "id_cotizacion": 221,
+        "version": 1,
+        "nombre_archivo": "GSP-2611-00002V1-221.pdf",
+        "monto": 0,
+        "fecha": "2026-11-02T02:08:49.613Z",
+        "url": "/api/archivo/ver/1618"
+      }
+    },
+    {
+      "code": "C3-CREATE-BMQ-00001",
+      "description": "Creación de Caso 3 con id_empresa=7 (Bestmaq) genera serial independiente BMQ-2611-00001",
+      "passed": true,
+      "details": {
+        "id_proyecto": 169,
+        "codi_proyecto": "BMQ-2611-00001",
+        "expected": "BMQ-2611-00001"
+      }
+    },
+    {
+      "code": "C3-DB-CORRELATIVO-BMQ",
+      "description": "Auditoría BD en sch_leangsp.tpry_correlativos: (BMQ, 0000, 1) y (GSP, 0000, 2)",
+      "passed": true,
+      "details": [
+        {
+          "prefijo": "BMQ",
+          "anio_mes": "0000",
+          "ultimo_valor": 1
+        },
+        {
+          "prefijo": "GSP",
+          "anio_mes": "0000",
+          "ultimo_valor": 2
+        }
+      ]
+    },
+    {
+      "code": "C4-RETROCOMPAT-3DIG",
+      "description": "Proyecto histórico 158 preserva intacto su código de 3 dígitos (PRY-2610-13-019) tras PUT /api/proyectos/158",
+      "passed": true,
+      "details": {
+        "before": "PRY-2610-13-019",
+        "after": "PRY-2610-13-019"
+      }
+    },
+    {
+      "code": "FINAL-WITNESSES-ALIVE",
+      "description": "Los proyectos testigo de REQ-1083 y el proyecto histórico 158 permanecen vivos e íntegros en sch_leangsp (DEV)",
+      "passed": true,
+      "details": [
+        {
+          "id_proyecto": 158,
+          "codi_proyecto": "PRY-2610-13-019",
+          "nombre_proyecto": "[QA-REQ1082-DEVUELTO] Montaje Industrial Planta Osorno",
+          "id_proyecto_estado": 2,
+          "id_empresa": null,
+          "id_empresa_cliente": 13
+        },
+        {
+          "id_proyecto": 167,
+          "codi_proyecto": "GSP-2611-00001",
+          "nombre_proyecto": "[QA-REQ1083-C1-GSP00001] Izaje Industrial Planta Prolesur Temuco",
+          "id_proyecto_estado": 6,
+          "id_empresa": 9,
+          "id_empresa_cliente": 13
+        },
+        {
+          "id_proyecto": 168,
+          "codi_proyecto": "GSP-2611-00002",
+          "nombre_proyecto": "[QA-REQ1083-C2-GSP00002] Montaje Estructural Cliente Corporativo Sur",
+          "id_proyecto_estado": 2,
+          "id_empresa": 9,
+          "id_empresa_cliente": 12
+        },
+        {
+          "id_proyecto": 169,
+          "codi_proyecto": "BMQ-2611-00001",
+          "nombre_proyecto": "[QA-REQ1083-C3-BMQ00001] Maniobra Camión Pluma Bestmaq Planta Osorno",
+          "id_proyecto_estado": 3,
+          "id_empresa": 7,
+          "id_empresa_cliente": 13
+        }
+      ]
+    }
+  ],
+  "casos_testigo": {
+    "caso_1_gsp_00001": {
+      "id_proyecto": 167,
+      "codi_proyecto": "GSP-2611-00001",
+      "nombre_proyecto": "[QA-REQ1083-C1-GSP00001] Izaje Industrial Planta Prolesur Temuco",
+      "estado_final_bd": 6,
+      "cotizacion_pdf": "GSP-2611-00001V1-220.pdf",
+      "ot_pdf": "OT-GSP-2611-00001V1-22.pdf",
+      "id_reporte_avance": "78",
+      "codigo_validacion_fes": "FES-REP-78-MVYME57K",
+      "folio_its": "ITS-GSP-2611-00001-001",
+      "cobro_cliente": {
+        "horas_facturables": 8,
+        "tarifa_hora": 85000,
+        "total_ingresos_facturables": 680000
+      },
+      "incentivo_trabajador_rrhh": {
+        "regimen": "URBANO",
+        "distancia_km": 15,
+        "glosa_comercial": "70 TON",
+        "toneladas_comercial": 70,
+        "hora_salida": "08:00",
+        "hora_llegada": "08:45",
+        "hora_inicio": "08:45",
+        "hora_termino": "17:00",
+        "hora_retorno": "17:45",
+        "colacion_horas": 1,
+        "condicion_dia": "IDA_Y_REGRESO",
+        "condicion_label": "Ida y Regreso en el Día",
+        "desde_viatico": "08:00",
+        "hasta_viatico": "17:45",
+        "horas_efectivas_viatico": 8.75,
+        "horas_redondeadas_viatico": 9,
+        "horas_faena_sugeridas": 8,
+        "horas_flete_sugeridas": 0,
+        "horas_totales_sugeridas": 8,
+        "tarifa_sugerida": 6000,
+        "viatico_sugerido": 8000,
+        "horas_faena_pagar": 8,
+        "horas_flete_pagar": 0,
+        "horas_totales_pagar": 8,
+        "precio_unitario": 6000,
+        "monto_faena_total": 48000,
+        "monto_flete_total": 0,
+        "monto_total_hora_operador": 48000,
+        "monto_viatico_operador": 8000,
+        "total_dia_operador": 56000,
+        "tiene_rigger": false,
+        "horas_totales_rigger": 0,
+        "monto_viatico_rigger": 0,
+        "tarifa_modificada": false,
+        "horas_modificadas": false,
+        "viatico_modificado": false,
+        "validado_rrhh": true,
+        "modificado_por": null,
+        "fecha_validacion_rrhh": "2026-11-02T02:08:44.000Z",
+        "id_user_operador": 66,
+        "operador_nombre": "Omar Ghiselini",
+        "id_user_rigger": null,
+        "rigger_nombre": null,
+        "monto_viatico_sugerido_operador": 8000,
+        "monto_viatico_sugerido_rigger": 0,
+        "viatico_rigger_modificado": false,
+        "id_user_validador_rrhh": 55,
+        "nombre_validador_rrhh": "Sergio Gajardo"
+      }
+    },
+    "caso_2_gsp_00002": {
+      "id_proyecto": 168,
+      "codi_proyecto": "GSP-2611-00002",
+      "nombre_proyecto": "[QA-REQ1083-C2-GSP00002] Montaje Estructural Cliente Corporativo Sur",
+      "id_empresa": 9,
+      "id_empresa_cliente": 12,
+      "estado_final_bd": 2,
+      "cotizacion_pdf": "GSP-2611-00002V1-221.pdf"
+    },
+    "caso_3_bmq_00001": {
+      "id_proyecto": 169,
+      "codi_proyecto": "BMQ-2611-00001",
+      "nombre_proyecto": "[QA-REQ1083-C3-BMQ00001] Maniobra Camión Pluma Bestmaq Planta Osorno",
+      "id_empresa": 7,
+      "id_empresa_cliente": 13,
+      "estado_final_bd": 3
+    },
+    "caso_4_retrocompatibilidad_3_digitos": {
+      "id_proyecto": 158,
+      "codi_proyecto_antes": "PRY-2610-13-019",
+      "codi_proyecto_despues": "PRY-2610-13-019",
+      "nombre_proyecto": "[QA-REQ1082-DEVUELTO] Montaje Industrial Planta Osorno"
+    }
+  },
+  "correlativos_bd": [
+    {
+      "prefijo": "BMQ",
+      "anio_mes": "0000",
+      "ultimo_valor": 1
+    },
+    {
+      "prefijo": "GSP",
+      "anio_mes": "0000",
+      "ultimo_valor": 2
+    }
+  ],
+  "screenshots": [
+    {
+      "fileName": "01_torre_control_serial_5_digitos.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1083_Serial_Negocio_5_Digitos_DEV\\evidencia\\01_torre_control_serial_5_digitos.png",
+      "description": "Torre de Control mostrando tarjetas con el nuevo formato de 5 dígitos (GSP-2611-00001, GSP-2611-00002, BMQ-2611-00001)"
+    },
+    {
+      "fileName": "02_preventa_cabecera_y_cotizacion_gsp_00001.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1083_Serial_Negocio_5_Digitos_DEV\\evidencia\\02_preventa_cabecera_y_cotizacion_gsp_00001.png",
+      "description": "Vista Preventa Comercial de GSP-2611-00001 con cabecera e historial de Cotización PDF (GSP-2611-00001V1-220.pdf)"
+    },
+    {
+      "fileName": "03_operaciones_validacion_y_ot_gsp_00001.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1083_Serial_Negocio_5_Digitos_DEV\\evidencia\\03_operaciones_validacion_y_ot_gsp_00001.png",
+      "description": "Vista de Operaciones y Orden de Trabajo para GSP-2611-00001 con OT generada (OT-GSP-2611-00001V1-22.pdf)"
+    },
+    {
+      "fileName": "04_its_folio_gsp_00001.png",
+      "fullPath": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1083_Serial_Negocio_5_Digitos_DEV\\evidencia\\04_its_folio_gsp_00001.png",
+      "description": "Vista de Valorización e ITS mostrando el folio derivado ITS-GSP-2611-00001-001 y conciliación de ingresos/costos"
+    }
+  ],
+  "proyectos_vivos_verificacion_final": [
+    {
+      "id_proyecto": 158,
+      "codi_proyecto": "PRY-2610-13-019",
+      "nombre_proyecto": "[QA-REQ1082-DEVUELTO] Montaje Industrial Planta Osorno",
+      "id_proyecto_estado": 2,
+      "id_empresa": null,
+      "id_empresa_cliente": 13
+    },
+    {
+      "id_proyecto": 167,
+      "codi_proyecto": "GSP-2611-00001",
+      "nombre_proyecto": "[QA-REQ1083-C1-GSP00001] Izaje Industrial Planta Prolesur Temuco",
+      "id_proyecto_estado": 6,
+      "id_empresa": 9,
+      "id_empresa_cliente": 13
+    },
+    {
+      "id_proyecto": 168,
+      "codi_proyecto": "GSP-2611-00002",
+      "nombre_proyecto": "[QA-REQ1083-C2-GSP00002] Montaje Estructural Cliente Corporativo Sur",
+      "id_proyecto_estado": 2,
+      "id_empresa": 9,
+      "id_empresa_cliente": 12
+    },
+    {
+      "id_proyecto": 169,
+      "codi_proyecto": "BMQ-2611-00001",
+      "nombre_proyecto": "[QA-REQ1083-C3-BMQ00001] Maniobra Camión Pluma Bestmaq Planta Osorno",
+      "id_proyecto_estado": 3,
+      "id_empresa": 7,
+      "id_empresa_cliente": 13
+    }
+  ]
+}

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manejo de Excepciones: De Torre de Control a ITS y EDP | Grúas San Pablo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              amber: '#f59e0b',
+              amberLight: '#fbbf24',
+              amberDark: '#b45309',
+              dark: '#030712',
+              card: '#0b1324',
+              border: 'rgba(255, 255, 255, 0.08)'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #030712;
+      color: #f3f4f6;
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0b1324;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col antialiased custom-scrollbar selection:bg-amber-500 selection:text-black">
+
+  <!-- ENCABEZADO SUPERIOR -->
+  <header class="border-b border-brand-border bg-[#080d1a] px-4 md:px-8 py-3.5 sticky top-0 z-50 backdrop-blur flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg">
+        <i data-lucide="shield-alert" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">GRÚAS SAN PABLO</span>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 font-mono border border-emerald-500/30 font-bold">POLÍTICA Nº 04</span>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono border border-slate-700">SPEC 63 §12</span>
+        </div>
+        <h1 class="text-sm font-extrabold text-white">Manejo de Excepciones: De Torre de Control a ITS y Estado de Pago (EDP)</h1>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2">
+      <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 flex items-center space-x-1 transition-all">
+        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">Imprimir / PDF</span>
+      </button>
+      <a href="./centro_documentacion_gsp.html" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center space-x-1 transition-all">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+        <span>Volver al Centro de Documentación</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="max-w-6xl mx-auto w-full p-4 md:p-8 flex-1 space-y-8">
+
+    <!-- RESUMEN EJECUTIVO / CONTEXTO -->
+    <section class="bg-gradient-to-r from-emerald-500/10 via-[#0b1324] to-slate-900 border border-emerald-500/30 rounded-2xl p-6 shadow-xl">
+      <div class="max-w-3xl">
+        <span class="text-xs font-mono uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2.5 py-0.5 rounded font-bold tracking-wider">
+          CONTROL DE GESTIÓN & LIQUIDACIÓN
+        </span>
+        <h2 class="text-2xl font-black text-white mt-2 tracking-tight">
+          Gobernanza de Trazabilidad: Separación entre Monitoreo y Respaldo Legal de Cobro
+        </h2>
+        <p class="text-xs md:text-sm text-slate-300 mt-2 leading-relaxed">
+          Establece el procedimiento operativo y financiero ante desvíos u omisiones de registro de terreno en faenas de izaje y grúas móviles. Define cómo interactúa la Torre de Control con la mesa de liquidación del Informe de Término de Servicio (ITS) y la emisión del Estado de Pago (EDP).
+        </p>
+      </div>
+
+      <!-- Matriz de Cargos Involucrados -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/10 text-xs">
+        <div class="bg-black/40 border border-white/10 rounded-xl p-3">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Torre de Control</div>
+          <div class="font-bold text-white mt-0.5">Analista Operaciones</div>
+          <div class="text-[11px] text-slate-400 mt-1">Supervisión SLAs y horas reales en vivo.</div>
+        </div>
+        <div class="bg-black/40 border border-white/10 rounded-xl p-3">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Faena / Terreno</div>
+          <div class="font-bold text-white mt-0.5">Operador / Chofer</div>
+          <div class="text-[11px] text-slate-400 mt-1">Ejecución y captura de firmas con mandante.</div>
+        </div>
+        <div class="bg-black/40 border border-white/10 rounded-xl p-3">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Liquidación & Control</div>
+          <div class="font-bold text-white mt-0.5">Control de Gestión</div>
+          <div class="text-[11px] text-slate-400 mt-1">Auditoría, regularización y emisión de ITS.</div>
+        </div>
+        <div class="bg-black/40 border border-white/10 rounded-xl p-3">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Administración</div>
+          <div class="font-bold text-white mt-0.5">Facturación / Finanzas</div>
+          <div class="text-[11px] text-slate-400 mt-1">Carátula EDP y facturación sin glosas.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRINCIPIO OPERACIONAL -->
+    <section class="space-y-4">
+      <div class="flex items-center space-x-2 border-b border-slate-800 pb-2">
+        <i data-lucide="split" class="w-5 h-5 text-amber-400"></i>
+        <h3 class="text-base font-bold text-white uppercase tracking-wider">1. El Principio de Separación de Capas</h3>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-[#0b1324] border border-slate-800 rounded-xl p-5 space-y-2">
+          <div class="flex items-center space-x-2 text-amber-400 font-bold text-xs uppercase font-mono">
+            <i data-lucide="activity" class="w-4 h-4"></i>
+            <span>Capa 1: Monitoreo en Vivo (Torre de Control)</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Responde a la necesidad inmediata de saber si la flota se movilizó, si la grúa arribó a la faena y si la maniobra inició a tiempo. 
+          </p>
+          <ul class="text-xs text-slate-400 space-y-1 list-disc list-inside pt-1">
+            <li>Permite ingresar o corregir horas reales estimadas directamente en la tarjeta.</li>
+            <li>Actualiza el semáforo operativo (de Rojo a Verde o Negro) según cumplimiento del plan.</li>
+            <li><strong>Regla estricta:</strong> Esta corrección interna apaga alarmas operativas, pero <strong>no genera por sí sola título legal de cobro</strong> frente al mandante.</li>
+          </ul>
+        </div>
+
+        <div class="bg-[#0b1324] border border-slate-800 rounded-xl p-5 space-y-2">
+          <div class="flex items-center space-x-2 text-emerald-400 font-bold text-xs uppercase font-mono">
+            <i data-lucide="scale" class="w-4 h-4"></i>
+            <span>Capa 2: Fe Pública Legal (Mesa de Liquidación ITS / EDP)</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Responde a la exigencia comercial y contable de los departamentos de Adquisiciones y Finanzas de los clientes mandantes.
+          </p>
+          <ul class="text-xs text-slate-400 space-y-1 list-disc list-inside pt-1">
+            <li>Toda hora liquidada debe contar con respaldo probatorio auditable.</li>
+            <li>Si el operador no emitió reporte digital, el sistema no inventa datos; exige regularización formal.</li>
+            <li><strong>Regla estricta:</strong> Cero horas liquidadas "en el aire". Se protege a Grúas San Pablo de rechazos de estados de pago o retenciones de facturas.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROCEDIMIENTO OPERATIVO POR CARGO -->
+    <section class="space-y-4">
+      <div class="flex items-center space-x-2 border-b border-slate-800 pb-2">
+        <i data-lucide="git-branch" class="w-5 h-5 text-emerald-400"></i>
+        <h3 class="text-base font-bold text-white uppercase tracking-wider">2. Procedimiento de Manejo de Excepciones</h3>
+      </div>
+
+      <div class="space-y-4 text-xs">
+
+        <!-- PASO 1 -->
+        <div class="bg-[#0b1324] border border-slate-800 rounded-xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 font-mono font-bold text-[11px] border border-amber-500/20">PASO 1: EN TORRE DE CONTROL</span>
+            <span class="text-slate-400 font-mono text-[10px]">Rol: Analista de Operaciones</span>
+          </div>
+          <h4 class="text-sm font-bold text-white">Detección y Registro de Hora Real en Control en Vivo</h4>
+          <p class="text-slate-300 leading-relaxed">
+            Si por falta de conectividad móvil, rotura de teléfono o contingencia de faena el operador no marcó la salida, llegada o inicio de faena:
+          </p>
+          <div class="bg-black/50 border border-white/5 rounded-lg p-3 space-y-1 font-mono text-[11px] text-slate-300">
+            <div>1. El Analista de Operaciones hace clic en el lápiz <span class="text-amber-400">✏️</span> en la fila correspondiente de la tarjeta de servicio.</div>
+            <div>2. Digita la hora real observada (ej: <span class="text-cyan-400">07:30</span>) y confirma con <span class="text-emerald-400">[✓]</span>.</div>
+            <div>3. El semáforo recalcula el desvío horario y la tarjeta queda clasificada internamente como:</div>
+            <div class="text-amber-300 font-bold pl-3 mt-1">➔ ⚠️ Hito Estimado • Pendiente de Regularización Documental</div>
+          </div>
+        </div>
+
+        <!-- PASO 2 -->
+        <div class="bg-[#0b1324] border border-emerald-500/30 rounded-xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 font-mono font-bold text-[11px] border border-emerald-500/20">PASO 2: EN MESA DE LIQUIDACIÓN (ITS)</span>
+            <span class="text-slate-400 font-mono text-[10px]">Rol: Analista de Control de Gestión</span>
+          </div>
+          <h4 class="text-sm font-bold text-white">Conciliación de Jornadas Faltantes al Cierre del Servicio</h4>
+          <p class="text-slate-300 leading-relaxed">
+            Al concluir la faena, el Analista de Control de Gestión abre el <strong>Informe de Término de Servicio (ITS)</strong>. El sistema contrasta los días planificados versus los reportes recibidos. Si existe una jornada sin Reporte Digital FES, el sistema habilita dos vías formales de resolución:
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+            <!-- Vía A -->
+            <div class="bg-black/60 border border-slate-700 rounded-xl p-4 space-y-2">
+              <div class="font-bold text-white flex items-center space-x-1.5 text-xs text-emerald-300">
+                <i data-lucide="file-check" class="w-4 h-4"></i>
+                <span>Vía A: Reporte Físico de Terreno</span>
+              </div>
+              <p class="text-slate-300 text-[11px] leading-relaxed">
+                Aplica cuando el operador ejecutó el izaje utilizando una boleta de reporte manual en papel firmada a mano por el supervisor mandante (ITO), o el mandante remitió conformidad vía correo.
+              </p>
+              <div class="text-slate-400 text-[10px] space-y-1 border-t border-white/5 pt-2">
+                <div>• Se digitan los horómetros leídos de la boleta física.</div>
+                <div>• Se adjunta obligatoriamente la <strong>fotografía o archivo PDF escaneado</strong>.</div>
+                <div>• La jornada se marca como <span class="text-emerald-400 font-bold">[📄 DOC FÍSICO REGULARIZADO]</span> y se indexa como anexo formal del ITS.</div>
+              </div>
+            </div>
+
+            <!-- Vía B -->
+            <div class="bg-black/60 border border-slate-700 rounded-xl p-4 space-y-2">
+              <div class="font-bold text-white flex items-center space-x-1.5 text-xs text-blue-300">
+                <i data-lucide="clock" class="w-4 h-4"></i>
+                <span>Vía B: Piso Mínimo Contractual (Standby)</span>
+              </div>
+              <p class="text-slate-300 text-[11px] leading-relaxed">
+                Aplica cuando la grúa y tripulación estuvieron a disposición en obra en el horario pactado, pero no pudieron operar o no recibieron firma por causas imputables al mandante (lluvia, accesos bloqueados, demoras de permisos).
+              </p>
+              <div class="text-slate-400 text-[10px] space-y-1 border-t border-white/5 pt-2">
+                <div>• El sistema aplica la cláusula de <strong>Horas Mínimas Diarias (8 horas)</strong> pactadas en la cotización comercial y Orden de Compra.</div>
+                <div>• No exige firma de terreno ni horómetro de izaje.</div>
+                <div>• La jornada se clasifica como <span class="text-blue-400 font-bold">[⚖️ PISO MÍNIMO CONTRACTUAL]</span>, citando la cláusula de reserva de equipo.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 3 -->
+        <div class="bg-[#0b1324] border border-slate-800 rounded-xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 font-mono font-bold text-[11px] border border-blue-500/20">PASO 3: EN FACTURACIÓN Y CONTABILIDAD</span>
+            <span class="text-slate-400 font-mono text-[10px]">Rol: Administración y Facturación</span>
+          </div>
+          <h4 class="text-sm font-bold text-white">Carátula de Liquidación del Estado de Pago (EDP)</h4>
+          <p class="text-slate-300 leading-relaxed">
+            Una vez sellado el ITS, el departamento de Administración genera el Estado de Pago (EDP). Cada línea del expediente presenta su procedencia documental inalterable:
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+            <div class="bg-black/40 border border-emerald-500/20 rounded p-2.5">
+              <span class="text-emerald-400 font-bold font-mono">🟢 Reporte Digital FES</span>
+              <p class="text-slate-400 mt-1">Firma en pantalla + código de verificación FES + coordenadas GPS.</p>
+            </div>
+            <div class="bg-black/40 border border-amber-500/20 rounded p-2.5">
+              <span class="text-amber-400 font-bold font-mono">📄 Doc Físico Regularizado</span>
+              <p class="text-slate-400 mt-1">Copia escaneada de boleta de papel firmada por ITO adjunta al dossier.</p>
+            </div>
+            <div class="bg-black/40 border border-blue-500/20 rounded p-2.5">
+              <span class="text-blue-400 font-bold font-mono">⚖️ Piso Mínimo Contractual</span>
+              <p class="text-slate-400 mt-1">Cláusula de tarifa base diaria por equipo a disposición en obra.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TRATAMIENTO DE REGISTRO DE VIAJE (FLETES) -->
+    <section class="bg-[#0b1324] border border-slate-800 rounded-xl p-5 space-y-3">
+      <div class="flex items-center space-x-2 text-white font-bold text-xs uppercase font-mono">
+        <i data-lucide="truck" class="w-4 h-4 text-purple-400"></i>
+        <span>3. Tratamiento de Fletes y Registro de Viaje (Traslados)</span>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        En Grúas San Pablo los traslados de convoy (grúas telescópicas y camiones pluma) se cotizan a <strong>suma alzada fija</strong> en la propuesta comercial (ej. $400.000 Flete Ida y Regreso).
+      </p>
+      <ul class="text-xs text-slate-400 space-y-1 list-disc list-inside">
+        <li>Si el conductor no completó el registro de viaje en la app móvil, el cobro del flete <strong>no se pierde ni se anula</strong>, ya que su base legal es la línea de servicio contratada en CRM y aceptada por el cliente.</li>
+        <li>El ITS incorpora automáticamente la fila de flete pactada.</li>
+        <li>Para efectos de control de mantenimiento de taller, el sistema registra el kilometraje teórico de la cotización para evitar descalces en la pauta de mantención del vehículo.</li>
+      </ul>
+    </section>
+
+    <!-- MATRIZ RESUMEN DE DECISIÓN -->
+    <section class="space-y-4">
+      <div class="flex items-center space-x-2 border-b border-slate-800 pb-2">
+        <i data-lucide="table" class="w-5 h-5 text-amber-400"></i>
+        <h3 class="text-base font-bold text-white uppercase tracking-wider">4. Matriz Resumen de Auditoría y Liquidación</h3>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-800">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-900/90 text-slate-400 font-mono text-[11px] uppercase border-b border-slate-800">
+            <tr>
+              <th class="p-3">Escenario de Faena</th>
+              <th class="p-3">Acción Torre de Control</th>
+              <th class="p-3">Respaldo Exigido para Cobro</th>
+              <th class="p-3">Tratamiento en Facturación</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 font-sans text-slate-200">
+            <tr class="hover:bg-slate-900/40">
+              <td class="p-3 font-semibold text-white">Operación Normal con App</td>
+              <td class="p-3 text-slate-400">Supervisa avance en tiempo real.</td>
+              <td class="p-3"><span class="text-emerald-400 font-mono font-bold">Firma FES + GPS + Fotos Horómetros</span></td>
+              <td class="p-3">Cobro de horas efectivas según reporte digital.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40">
+              <td class="p-3 font-semibold text-white">Contingencia en Terreno (Sin App)</td>
+              <td class="p-3 text-slate-400">Ingresa hora real para semáforos matinales.</td>
+              <td class="p-3"><span class="text-amber-400 font-mono font-bold">Boleta de papel firmada por ITO (escaneada)</span></td>
+              <td class="p-3">Cobro de horas efectivas con anexo físico en ITS.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40">
+              <td class="p-3 font-semibold text-white">Paralización / Standby Mandante</td>
+              <td class="p-3 text-slate-400">Registra equipo a disposición en faena.</td>
+              <td class="p-3"><span class="text-blue-400 font-mono font-bold">Cláusula de Horas Mínimas en Cotización y OC</span></td>
+              <td class="p-3">Cobro de piso mínimo diario contratado (ej. 8 hrs).</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-brand-border bg-[#080d1a] py-4 px-4 md:px-8 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+    <div>
+      <span class="font-semibold text-slate-400">Grúas San Pablo S.A.</span> &bull; Política Oficial de Operaciones &bull; Ecosistema LeanGlobal
+    </div>
+    <div class="font-mono text-[11px] text-slate-400">
+      Spec 63 §12 &bull; Gobernanza Financiera
+    </div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

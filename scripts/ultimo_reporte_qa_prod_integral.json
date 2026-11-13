@@ -1,0 +1,135 @@
+{
+  "timestamp": "2026-10-22T04:36:00.531Z",
+  "entorno": "PRODUCCION (PROD)",
+  "servidor": "138.255.103.18:1295",
+  "esquema": "sch_leangsp_prod",
+  "dictamen": "CERTIFICADO PARA PRODUCCION (100% OK)",
+  "metricas": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "porcentaje": 100
+  },
+  "resultados": [
+    {
+      "code": "TC-P01",
+      "name": "Crear OT de prueba con equipo real en PROD",
+      "expected": "HTTP 200/201 con ID OT generado",
+      "actual": "HTTP 201 | ID: 7 | Folio: MNT-2610-004",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P02",
+      "name": "Registro de Medidores de Entrada en la OT",
+      "expected": "HTTP 200 con persistencia en tmnt_ot",
+      "actual": "HTTP 200 | Horómetros: 5010h / 3500h | Odómetro: 120500km",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P03",
+      "name": "Imputación de Mano de Obra HH con tarifa oficial",
+      "expected": "HTTP 200/201 con cálculo costo = horas * tarifa ($45.000)",
+      "actual": "HTTP 201 | ID HH: 4 | Horas: 2.5 | Costo: $45.000",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P04",
+      "name": "Asignación de Insumo Bodega WMS y descuento físico",
+      "expected": "Descuento 1 un (de 14 a 13) y asiento SALIDA_OT",
+      "actual": "HTTP 201 | Stock actual: 13 | Kardex ID: 6 (SALIDA_OT)",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P05",
+      "name": "Regla dura de Stock Insuficiente WMS (> stock libre)",
+      "expected": "HTTP 400/422 STOCK_INSUFICIENTE sin corromper datos",
+      "actual": "HTTP 400 | Error controlado: \"Stock insuficiente en bodega para el producto VARI-00082. Solicitado: 999999, Disponible: 13.\"",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P06",
+      "name": "Imputación de Compra Directa con número de factura",
+      "expected": "Registro exitoso sin generar movimiento Kardex ni tocar stock",
+      "actual": "HTTP 201 | ID: 8 | Factura: FAC-PROD-98124 | Kardex: null",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P07",
+      "name": "Reversión / Anulación de Insumo WMS",
+      "expected": "Restitución de stock exacto (14) y asiento DEVOLUCION_OT",
+      "actual": "HTTP 200 | Stock restituido: 14 | Contracuenta Kardex ID: 7",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P08",
+      "name": "Cierre supervisado de OT con PIN FES y balance de costos",
+      "expected": "HTTP 200 con estado CERRADA y liquidación financiera",
+      "actual": "HTTP 200 | Estado OT: CERRADA | Costo Total Liquidado: $73.500 CLP",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P09",
+      "name": "Consulta de Catálogo y Existencias en sch_leangsp_prod",
+      "expected": "HTTP 200 con catálogos poblados (> 1000 registros)",
+      "actual": "HTTP 200 | Catálogo: 2854 SKUs | Existencias: 2834 registros",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P10",
+      "name": "Emisión de Guía de Despacho Interno GDI y salida Kardex",
+      "expected": "Folio GDI, estado EN_TRANSITO, descuento origen (-1) y asiento SALIDA_TRASPASO",
+      "actual": "HTTP 201 | Folio: GDI-0002 | Estado: EN_TRANSITO | Stock Origen: 2 (antes 3)",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P11",
+      "name": "Recepción Física de Traspaso en Destino (ANF-R1-A1)",
+      "expected": "Estado RECIBIDO, incremento destino (+1) y asiento ENTRADA_TRASPASO",
+      "actual": "HTTP 200 | Estado: RECIBIDO | Stock Destino: 1 (antes 0) | Kardex: ENTRADA_TRASPASO",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P12",
+      "name": "Auditoría de Kardex Inmutable y trazabilidad GDI",
+      "expected": "HTTP 200 con trazabilidad completa (SALIDA y ENTRADA vinculadas)",
+      "actual": "HTTP 200 | Encontrados 2 movimientos para folio GDI-0002",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P13",
+      "name": "Disponibilidad Web PROD (https://servidor.leanglobal.cl/lg-gsp-prod/)",
+      "expected": "HTTP 200 OK con Content-Type text/html",
+      "actual": "HTTP 200 OK | Tamaño: 1248 bytes | Servidor: nginx",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P14",
+      "name": "Disponibilidad PWA PROD (https://servidor.leanglobal.cl/pwa-gsp-prod/)",
+      "expected": "HTTP 200 OK con Content-Type text/html",
+      "actual": "HTTP 200 OK | Tamaño: 2184 bytes | Servidor: nginx",
+      "status": "PASA",
+      "details": ""
+    },
+    {
+      "code": "TC-P15",
+      "name": "Rollback y Restauración Determinista de BD PROD",
+      "expected": "Cero datos huérfanos y stocks idénticos a la línea base previa",
+      "actual": "OTs: 0 | Traspasos: 0 | Movs: 0 | Stock 3654: 14 | Stock 4984 Orig: 3 | Destino Prístino: true",
+      "status": "PASA",
+      "details": "Base de datos sch_leangsp_prod verificada 100% limpia sin registros huérfanos"
+    }
+  ]
+}

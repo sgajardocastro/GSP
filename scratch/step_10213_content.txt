@@ -1,0 +1,3 @@
+Created At: 2026-11-08T21:21:08-03:00
+Completed At: 2026-11-08T21:21:11-03:00
+Made 1 replacement in d:\SGajardo\Google Drive\Antigravity\Grúas San Pablo\Propuesta Gestión Operación Grúas\ejecucion\frontend\src\views\Torre.vue starting at line 1593 (+271/-130 lines).

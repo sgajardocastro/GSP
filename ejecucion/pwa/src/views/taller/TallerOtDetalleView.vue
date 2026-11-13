@@ -1680,12 +1680,27 @@ const actividadesCompletadas = computed(() => {
 })
 
 const guardarMedidoresInicio = async () => {
+  const otActual = otDetalle.value?.ot || {}
+  const minGrua = Number(otActual.horometro_grua_inicio || otActual.horometro_inicio || 0)
+  const minChasis = Number(otActual.horometro_chasis_inicio || 0)
+  const minOdo = Number(otActual.odometro_inicio || 0)
+
+  if (minGrua > 0 && Number(formMedidoresInicio.value.horometro_grua_inicio || 0) < minGrua) {
+    alert(`El horómetro de grúa (${formMedidoresInicio.value.horometro_grua_inicio} hrs) no puede ser menor al registrado (${minGrua} hrs).`)
+    return
+  }
+  if (minChasis > 0 && Number(formMedidoresInicio.value.horometro_chasis_inicio || 0) < minChasis) {
+    alert(`El horómetro de chasis (${formMedidoresInicio.value.horometro_chasis_inicio} hrs) no puede ser menor al registrado (${minChasis} hrs).`)
+    return
+  }
+  if (minOdo > 0 && Number(formMedidoresInicio.value.odometro_inicio || 0) < minOdo) {
+    alert(`El odómetro de entrada (${formMedidoresInicio.value.odometro_inicio} km) no puede ser menor al registrado (${minOdo} km).`)
+    return
+  }
+
   guardandoMedidores.value = true
   try {
-    const res = await api.put(`/mantenimiento/ots/${idOt.value}/medidores-inicio`, formMedidoresInicio.value).catch(async () => {
-      // Fallback tolerante en caso de no reiniciar backend
-      return { data: { success: true } }
-    })
+    const res = await api.put(`/mantenimiento/ots/${idOt.value}/medidores-inicio`, formMedidoresInicio.value)
     if (res.data?.success || res.status === 200) {
       alert('¡Medidores de entrada guardados correctamente!')
       cargarDetalleOt()
@@ -2316,7 +2331,7 @@ const confirmarCierre = async () => {
 
   const odoInicio = Number(formMedidoresInicio.value.odometro_inicio || 0)
   const odoCierre = Number(formCierre.value.odometro_cierre || 0)
-  if (odoCierre > 0 && odoCierre < odoInicio) {
+  if (odoInicio > 0 && odoCierre < odoInicio) {
     errorCierre.value = `El odómetro de cierre (${odoCierre} km) no puede ser menor al de inicio (${odoInicio} km).`
     return
   }

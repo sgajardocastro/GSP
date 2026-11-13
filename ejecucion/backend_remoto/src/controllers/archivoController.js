@@ -279,9 +279,20 @@ module.exports = {
       if (!id) return res.status(400).send('ID de archivo no proporcionado');
 
       const cleanId = String(id).replace(/\.[^/.]+$/, '');
-      
-      // Si el ID corresponde a una encuesta (id_survey) en tsrv_survey, generar y servir el PDF de la inspección en caliente
+
+      let archivo;
       if (!isNaN(cleanId)) {
+        archivo = await archivoM.getArchivoById(cleanId);
+      }
+      if (!archivo) {
+        const pool = require('../config/postgresPool');
+        const sql = 'SELECT * FROM tfmg_file WHERE name_doc_interno = $1 OR name_doc_interno LIKE $2 OR id_doc::text = $3 LIMIT 1';
+        const result = await pool.query(sql, [id, `%${cleanId}%`, cleanId]);
+        archivo = result.rows[0];
+      }
+
+      // Fallback: solo si NO existe en tfmg_file, verificar si corresponde a un id_survey en tsrv_survey
+      if (!archivo && !isNaN(cleanId)) {
         try {
           const pool = require('../config/postgresPool');
           const survResult = await pool.query('SELECT id_survey FROM tsrv_survey WHERE id_survey = $1 LIMIT 1', [cleanId]);
@@ -296,17 +307,6 @@ module.exports = {
         } catch (errSurv) {
           console.warn(`⚠️ No se pudo generar PDF en caliente para id_survey ${cleanId}:`, errSurv.message);
         }
-      }
-
-      let archivo;
-      if (!isNaN(cleanId)) {
-        archivo = await archivoM.getArchivoById(cleanId);
-      }
-      if (!archivo) {
-        const pool = require('../config/postgresPool');
-        const sql = 'SELECT * FROM tfmg_file WHERE name_doc_interno = $1 OR name_doc_interno LIKE $2 OR id_doc::text = $3 LIMIT 1';
-        const result = await pool.query(sql, [id, `%${cleanId}%`, cleanId]);
-        archivo = result.rows[0];
       }
 
       if (!archivo) return res.status(404).send('Archivo no encontrado en la base de datos');

@@ -125,6 +125,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { X, FileCheck, FileText, Upload, Check, XCircle, Download } from 'lucide-vue-next'
+import apiAxios from '../../services/api'
 
 const props = defineProps({
   isOpen: Boolean,
@@ -142,10 +143,8 @@ watch(() => props.acreditacionId, (newId) => {
 
 const cargarDetalle = async (id) => {
   try {
-    const res = await fetch(`https://servidor.leanglobal.cl/lg-gsp/api/acreditaciones/${id}`)
-    if (res.ok) {
-      detalle.value = await res.json()
-    }
+    const res = await apiAxios.get(`/acreditaciones/${id}`)
+    detalle.value = res.data
   } catch(e) {
     console.error("Error cargando detalle acreditacion:", e)
   }
@@ -177,15 +176,12 @@ const simularSubida = async (doc) => {
 
 const auditar = async (doc, estado, obs = '') => {
   try {
-    const res = await fetch(`https://servidor.leanglobal.cl/lg-gsp/api/acreditaciones/documento/${doc.id_acreditacion_doc}/auditar`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estado_doc: estado, observacion_analista: obs })
+    await apiAxios.put(`/acreditaciones/documento/${doc.id_acreditacion_doc}/auditar`, {
+      estado_doc: estado,
+      observacion_analista: obs
     })
-    if (res.ok) {
-      await cargarDetalle(props.acreditacionId)
-      emit('updated')
-    }
+    await cargarDetalle(props.acreditacionId)
+    emit('updated')
   } catch(e) {
     console.error("Error al auditar:", e)
   }

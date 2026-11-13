@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GSP - Maquetas SST: AST Grúa Móvil (6 Secciones) & Plan de Izaje Digital (App + PDF)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    
+    /* Custom Scrollbar for Phone Simulator */
+    .phone-scroll::-webkit-scrollbar { width: 5px; }
+    .phone-scroll::-webkit-scrollbar-track { background: #0f172a; }
+    .phone-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+
+    /* A4 Paper Look */
+    .a4-sheet {
+      width: 100%;
+      max-width: 860px;
+      min-height: 1080px;
+      background: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      border-radius: 4px;
+      padding: 28px 32px;
+      position: relative;
+    }
+
+    @media print {
+      body { background: #fff !important; }
+      .no-print { display: none !important; }
+      .print-only-full { width: 100% !important; max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+      .a4-sheet { box-shadow: none !important; padding: 12px !important; min-height: auto !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="no-print border-b border-slate-800 bg-slate-900/95 backdrop-blur sticky top-0 z-50 px-4 py-2.5">
+    <div class="max-w-[1640px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center text-slate-950 font-black text-base shadow">
+          GSP
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm font-bold text-white">Seguridad y Prevención de Riesgos (HSE): App Operador (PWA) ➔ Documento PDF Oficial</h1>
+            <span class="text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">Sincronización en Tiempo Real</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Interactúa con la App móvil a la izquierda y visualiza en vivo el documento PDF oficial a la derecha</p>
+        </div>
+      </div>
+
+      <!-- Document Selector Tabs (Solo AST y Plan de Izaje) -->
+      <div class="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
+        <button id="btn-doc-ast" onclick="switchDoc('ast')" class="px-4 py-1.5 rounded-lg text-xs font-bold transition bg-amber-500 text-slate-950 shadow">
+          📋 1. AST / ART Grúa Móvil (App + PDF)
+        </button>
+        <button id="btn-doc-plan" onclick="switchDoc('plan')" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition text-slate-300 hover:text-white">
+          📐 2. Plan de Izaje Validado (App + PDF)
+        </button>
+      </div>
+
+      <!-- Print / Export Action -->
+      <div class="flex items-center gap-2">
+        <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>🖨️ Imprimir / Ver PDF A4</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE: SPLIT SCREEN (LEFT: MOBILE APP | RIGHT: A4 PDF) -->
+  <main class="max-w-[1640px] mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- ======================================================================= -->
+    <!-- COLUMNA IZQUIERDA: SIMULADOR DE APP MÓVIL (PWA) - 5 COLUMNAS -->
+    <!-- ======================================================================= -->
+    <div class="no-print lg:col-span-5 flex flex-col items-center lg:sticky lg:top-16">
+      
+      <div class="mb-2 flex items-center gap-2 text-xs text-slate-400">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span class="font-semibold text-slate-200">VISTA 1: App Móvil del Operador / Rigger por Equipo</span>
+      </div>
+
+      <!-- PHONE FRAME (Smartphone Simulator) -->
+      <div class="w-[395px] sm:w-[415px] bg-slate-900 rounded-[44px] p-3 border-[6px] border-slate-800 shadow-2xl relative">
+        
+        <!-- Phone Top Notch & Status Bar -->
+        <div class="bg-slate-950 rounded-t-[34px] pt-2 pb-2 px-6 flex items-center justify-between text-[11px] text-slate-400 font-mono border-b border-slate-800/80">
+          <span>08:15</span>
+          <div class="w-20 h-4 bg-black rounded-full mx-auto flex items-center justify-center">
+            <div class="w-2 h-2 rounded-full bg-slate-800 mr-2"></div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-emerald-400 font-bold">GPS</span>
+            <span>5G</span>
+            <span>🔋98%</span>
+          </div>
+        </div>
+
+        <!-- App Top Header inside Phone -->
+        <div class="bg-slate-900 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 font-black flex items-center justify-center text-xs">
+              GSP
+            </div>
+            <div>
+              <div class="text-xs font-bold text-white leading-tight">LgGsp Mobile PWA</div>
+              <div class="text-[10px] text-emerald-400 flex items-center gap-1">
+                <span>● Conectado</span> • <span>OT #GSP-2610-4851</span>
+              </div>
+            </div>
+          </div>
+          <span id="phone-badge-mode" class="text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded">
+            ART Grúa Móvil
+          </span>
+        </div>
+
+        <!-- PHONE SCROLLABLE BODY -->
+        <div class="bg-slate-950 h-[680px] overflow-y-auto phone-scroll p-3.5 space-y-3.5 text-xs">
+
+          <!-- ======================================================== -->
+          <!-- MODO 1 EN APP: AST / ART GRÚA MÓVIL (6 SECCIONES DAYANA) -->
+          <!-- ======================================================== -->
+          <div id="app-content-ast" class="space-y-3.5">
+            
+            <!-- SECCIÓN 1: Identificación del servicio, faena y trabajadores -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">1. Servicio, Faena y Trabajadores</span>
+                <span class="text-[9px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono">Por Equipo</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+                  <span class="text-slate-500 block text-[9px] uppercase">Cliente / Faena</span>
+                  <input id="ast-inp-faena" type="text" value="Planta Celulosa Arauco - Línea 3" oninput="syncAst()" class="w-full bg-transparent text-white font-semibold focus:outline-none">
+                </div>
+                <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+                  <span class="text-slate-500 block text-[9px] uppercase">Equipo Asignado</span>
+                  <input id="ast-inp-equipo" type="text" value="Liebherr LTM 1100 • DXGG-17" oninput="syncAst()" class="w-full bg-transparent text-amber-400 font-mono font-bold focus:outline-none">
+                </div>
+              </div>
+
+              <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+                <span class="text-slate-500 block text-[9px] uppercase">Operador de Grúa (Firma Obligatoria)</span>
+                <input id="ast-inp-operador" type="text" value="Carlos Valenzuela Rojas (15.842.910-K)" oninput="syncAst()" class="w-full bg-transparent text-white font-semibold text-[11px] focus:outline-none">
+              </div>
+
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-white font-bold block text-[11px]">¿Participa Rigger en el equipo?</span>
+                    <span class="text-[9px] text-slate-400">Si participa, también debe firmar el AST</span>
+                  </div>
+                  <select id="ast-sel-con-rigger" onchange="syncAst()" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg px-2 py-1 text-[10px] font-bold">
+                    <option value="SI">SÍ • Con Rigger</option>
+                    <option value="NO">NO • Solo Operador</option>
+                  </select>
+                </div>
+                <div id="app-box-rigger-name" class="pt-1 border-t border-slate-800/80">
+                  <span class="text-slate-500 block text-[9px] uppercase">Rigger Asignado (Firma Obligatoria)</span>
+                  <input id="ast-inp-rigger" type="text" value="Marcos Almonacid Pérez (17.319.402-5)" oninput="syncAst()" class="w-full bg-transparent text-emerald-300 font-semibold text-[11px] focus:outline-none">
+                </div>
+              </div>
+            </div>
+
+            <!-- SECCIÓN 2: Etapas Previas del Trabajo (12 preguntas documento adjunto) -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">2. Etapas Previas del Trabajo</span>
+                <span class="text-[9px] text-slate-400 font-mono">12 Verificaciones</span>
+              </div>
+              <p class="text-[10px] text-slate-400 leading-tight">Marque <strong class="text-white">SI / NO / N/A</strong> antes de iniciar labores. Las preguntas 7 y 12 exigen medidas de control en caso de marcar SÍ.</p>
+
+              <div id="app-etapas-previas-list" class="space-y-1.5 max-h-64 overflow-y-auto phone-scroll pr-1">
+                <!-- Se renderiza dinámicamente por JS con las 12 preguntas exactas del PDF -->
+              </div>
+            </div>
+
+            <!-- SECCIÓN 3: EPP (Elementos de Protección Personal) -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">3. EPP a Utilizar</span>
+                <span id="app-epp-count" class="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">9 seleccionados</span>
+              </div>
+              <div id="app-epp-grid" class="grid grid-cols-2 gap-1.5">
+                <!-- Renderizado por JS con los 16 EPP del PDF -->
+              </div>
+              <div class="pt-1">
+                <label class="text-[9px] text-slate-400 uppercase block mb-0.5">Otros EPP:</label>
+                <input id="ast-inp-epp-otros" type="text" value="Bloqueador solar FPS 50+" oninput="syncAst()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-white">
+              </div>
+            </div>
+
+            <!-- SECCIÓN 4: Riesgos -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">4. Riesgos Identificados</span>
+                <span id="app-riesgos-count" class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono">10 seleccionados</span>
+              </div>
+              <div id="app-riesgos-grid" class="grid grid-cols-2 gap-1.5 max-h-52 overflow-y-auto phone-scroll pr-1">
+                <!-- Renderizado por JS con los 24 Riesgos del PDF -->
+              </div>
+            </div>
+
+            <!-- SECCIÓN 5: AST Predeterminado según Equipo + Observaciones -->
+            <div class="bg-slate-900 border border-amber-500/40 rounded-2xl p-3 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-400">5. AST Predeterminado por Equipo</span>
+                <span class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-bold">14 Etapas</span>
+              </div>
+
+              <div>
+                <label class="text-[10px] text-slate-300 font-semibold block mb-1">Seleccione Familia de Equipo a Operar:</label>
+                <select id="ast-sel-familia-equipo" onchange="syncAst()" class="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-2.5 py-2 text-xs text-amber-300 font-bold">
+                  <option value="GRUA_MOVIL">Grúa Móvil (14 Etapas Oficiales Cargadas)</option>
+                  <option value="CAMION_PLUMA" disabled>Camión Pluma (En parametrización HSE)</option>
+                  <option value="GRUA_HORQUILLA" disabled>Grúa Horquilla / Manipulador Telescópico (En parametrización)</option>
+                  <option value="TRACTO_CAMION" disabled>Tracto Camión (En parametrización)</option>
+                </select>
+              </div>
+
+              <!-- Tarjeta de Descarga / Lectura del AST en el Teléfono (Lo que pidió Dayana) -->
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 space-y-2">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-[11px] font-bold text-white">Pauta AST: Uso de Grúa Móvil (2026)</div>
+                    <div class="text-[9px] text-slate-400">Incluye las 14 etapas, riesgos potenciales y controles</div>
+                  </div>
+                  <button onclick="toggleDetalleEtapasApp()" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold text-[10px] transition">
+                    📥 <span id="btn-ver-etapas-txt">Ver / Descargar</span>
+                  </button>
+                </div>
+
+                <!-- Acordeón desplegable en la App para que el Operador lea las 14 etapas -->
+                <div id="app-modal-14-etapas" class="hidden border-t border-slate-800 pt-2 space-y-1.5 max-h-60 overflow-y-auto phone-scroll pr-1">
+                  <div class="text-[9px] font-mono text-emerald-400 uppercase font-bold">Listado Oficial para Lectura de Operador y Rigger:</div>
+                  <div id="app-lista-14-etapas-body" class="space-y-1.5"></div>
+                </div>
+
+                <label class="flex items-start gap-2 pt-1 cursor-pointer">
+                  <input id="ast-chk-lectura" type="checkbox" checked onchange="syncAst()" class="mt-0.5 accent-amber-500">
+                  <span class="text-[10px] text-slate-300 leading-tight">
+                    El Operador <span id="app-lbl-rigger-lectura">y el Rigger</span> confirman haber descargado, leído y tomado conocimiento de las <strong>14 etapas del AST de Grúa Móvil</strong>, las cuales se imprimen íntegras en el PDF oficial.
+                  </span>
+                </label>
+              </div>
+
+              <!-- Espacio de Observación solicitado por Dayana -->
+              <div>
+                <label class="text-[10px] text-amber-300 font-bold block mb-1">Espacio de Observaciones / Condiciones Particulares:</label>
+                <textarea id="ast-inp-obs" rows="2" oninput="syncAst()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-1.5 text-[11px] text-white">Área de posicionamiento nivelada y segregada con conos. Verificación de línea eléctrica a más de 15 metros fuera del radio de giro.</textarea>
+              </div>
+            </div>
+
+            <!-- SECCIÓN 6: Aprobación y Firmas (Por Equipo: Operador + Rigger condicional) -->
+            <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-3 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">6. Aprobación y Firmas del Equipo</span>
+                <span id="app-firmantes-badge" class="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">2 Firmas Requeridas</span>
+              </div>
+
+              <div class="space-y-1.5 text-[10px]">
+                <div class="flex items-center justify-between bg-slate-950 p-2 rounded-lg border border-emerald-500/30">
+                  <div>
+                    <span class="text-white font-bold block">1. Firma Operador de Grúa</span>
+                    <span id="app-firma-op-name" class="text-slate-400">Carlos Valenzuela Rojas</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[9px]">PIN FES OK ✓</span>
+                </div>
+
+                <div id="app-firma-rigger-card" class="flex items-center justify-between bg-slate-950 p-2 rounded-lg border border-emerald-500/30">
+                  <div>
+                    <span class="text-white font-bold block">2. Firma Rigger Asignado</span>
+                    <span id="app-firma-rig-name" class="text-slate-400">Marcos Almonacid Pérez</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[9px]">PIN FES OK ✓</span>
+                </div>
+              </div>
+
+              <button class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow-lg transition">
+                ✍️ Emitir AST y Estampar Firmas en PDF Oficial
+              </button>
+            </div>
+
+          </div>
+
+          <!-- ======================================================== -->
+          <!-- MODO 2 EN APP: PLAN DE IZAJE DIGITAL (INTACTO Y VALIDADO) -->
+          <!-- ======================================================== -->
+          <div id="app-content-plan" class="space-y-3.5 hidden">
+            
+            <!-- Geometría -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2.5">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-blue-400 block">1. Configuración Geométrica de Grúa</span>
+              <div class="grid grid-cols-3 gap-2">
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800 text-center">
+                  <label class="text-[10px] text-slate-400 block">Radio Máx (m)</label>
+                  <input id="plan-inp-radio" type="number" value="16" step="1" oninput="syncPlan()" class="w-full bg-transparent text-center font-mono font-bold text-sm text-white focus:outline-none">
+                </div>
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800 text-center">
+                  <label class="text-[10px] text-slate-400 block">Largo Pluma (m)</label>
+                  <input id="plan-inp-pluma" type="number" value="38" step="1" oninput="syncPlan()" class="w-full bg-transparent text-center font-mono font-bold text-sm text-white focus:outline-none">
+                </div>
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800 text-center">
+                  <label class="text-[10px] text-slate-400 block">Ángulo (°)</label>
+                  <input id="plan-inp-angulo" type="number" value="64" step="1" oninput="syncPlan()" class="w-full bg-transparent text-center font-mono font-bold text-sm text-amber-400 focus:outline-none">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                  <label class="text-[10px] text-slate-400 block">Elemento a Izar</label>
+                  <input id="plan-inp-elemento" type="text" value="Transformador ABB 14 Ton" oninput="syncPlan()" class="w-full bg-transparent text-[11px] font-semibold text-white focus:outline-none">
+                </div>
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                  <label class="text-[10px] text-slate-400 block">Viento Actual (km/h)</label>
+                  <input id="plan-inp-viento" type="number" value="18" step="1" oninput="syncPlan()" class="w-full bg-transparent font-mono text-[11px] font-bold text-emerald-400 focus:outline-none">
+                </div>
+              </div>
+            </div>
+
+            <!-- Calculadora de Pesos -->
+            <div class="bg-slate-900 border border-blue-500/30 rounded-2xl p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-400">2. Calculadora Reactiva de Carga</span>
+                <span class="text-[9px] text-slate-400 font-mono">Edita para probar el 85%</span>
+              </div>
+
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                  <span class="text-[11px] text-slate-300">1. Peso Neto de la Carga (kg)</span>
+                  <input id="plan-inp-neto" type="number" value="13500" step="500" oninput="syncPlan()" class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-right font-mono font-bold text-white">
+                </div>
+                <div class="flex items-center justify-between bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                  <span class="text-[11px] text-slate-400">2. Peso Gancho + Pasteca (kg)</span>
+                  <input id="plan-inp-gancho" type="number" value="650" step="50" oninput="syncPlan()" class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-right font-mono text-white">
+                </div>
+                <div class="flex items-center justify-between bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                  <span class="text-[11px] text-slate-400">3. Peso Yugo / Separador (kg)</span>
+                  <input id="plan-inp-yugo" type="number" value="300" step="50" oninput="syncPlan()" class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-right font-mono text-white">
+                </div>
+                <div class="flex items-center justify-between bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                  <span class="text-[11px] text-slate-400">4. Peso Eslingas y Grilletes (kg)</span>
+                  <input id="plan-inp-aparejos" type="number" value="150" step="50" oninput="syncPlan()" class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-right font-mono text-white">
+                </div>
+                <div class="flex items-center justify-between bg-blue-950/40 px-3 py-2 rounded-lg border border-blue-500/40">
+                  <span class="text-[11px] font-bold text-blue-300">PESO BRUTO TOTAL (kg)</span>
+                  <span id="app-plan-total" class="font-mono font-extrabold text-sm text-white">14.600 kg</span>
+                </div>
+                <div class="flex items-center justify-between bg-slate-950 px-3 py-1.5 rounded-lg border border-amber-500/30">
+                  <span class="text-[11px] text-amber-300 font-semibold">5. Capacidad Tabla al Radio (kg)</span>
+                  <input id="plan-inp-tabla" type="number" value="20000" step="500" oninput="syncPlan()" class="w-24 bg-slate-900 border border-amber-500/50 rounded px-2 py-0.5 text-right font-mono font-bold text-amber-400">
+                </div>
+              </div>
+
+              <!-- Semáforo en vivo en la App -->
+              <div id="app-plan-semaforo" class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-center space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-slate-300">% Utilización Grúa:</span>
+                  <span id="app-plan-pct" class="text-lg font-black font-mono text-emerald-400">73.0%</span>
+                </div>
+                <div class="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-slate-800">
+                  <div id="app-plan-bar" class="h-full bg-emerald-500 transition-all" style="width: 73%"></div>
+                </div>
+                <div id="app-plan-msg" class="text-[10px] font-bold text-emerald-300 pt-1">
+                  🟢 IZAJE ESTÁNDAR SEGURO (≤ 75%)
+                </div>
+              </div>
+
+              <!-- Botones rápidos de simulación para la reunión -->
+              <div class="pt-1 flex gap-1.5">
+                <button onclick="setEscenarioPlan(13500, 20000)" class="flex-1 py-1 bg-emerald-950/60 border border-emerald-500/40 rounded text-[10px] text-emerald-300 font-bold">
+                  Simular 73% (OK)
+                </button>
+                <button onclick="setEscenarioPlan(15200, 20000)" class="flex-1 py-1 bg-amber-950/60 border border-amber-500/40 rounded text-[10px] text-amber-300 font-bold">
+                  Simular 81.5% (Alerta)
+                </button>
+                <button onclick="setEscenarioPlan(17500, 20000)" class="flex-1 py-1 bg-rose-950/60 border border-rose-500/40 rounded text-[10px] text-rose-300 font-bold">
+                  Simular 93% (Bloqueo)
+                </button>
+              </div>
+            </div>
+
+            <!-- Botón de Firma en App -->
+            <button id="app-plan-btn-firma" class="w-full py-3 rounded-xl bg-blue-600 text-white font-extrabold text-xs shadow-lg">
+              ✍️ Firmar Plan de Izaje (Rigger + Operador)
+            </button>
+
+          </div>
+
+        </div>
+
+        <!-- Phone Bottom Home Indicator -->
+        <div class="bg-slate-950 rounded-b-[34px] py-2.5 flex justify-center border-t border-slate-900">
+          <div class="w-32 h-1 bg-slate-700 rounded-full"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- COLUMNA DERECHA: DOCUMENTO PDF OFICIAL A4 - 7 COLUMNAS -->
+    <!-- ======================================================================= -->
+    <div class="print-only-full lg:col-span-7 flex flex-col items-center">
+      
+      <div class="no-print mb-2 flex items-center justify-between w-full max-w-[860px] text-xs text-slate-400">
+        <span class="font-semibold text-slate-200">📄 VISTA 2: Documento PDF Oficial A4 (Con las 6 Secciones y las 14 Etapas Completas en el Sistema)</span>
+        <span class="font-mono text-[11px] text-amber-400">Formato Oficial HSE Grúas San Pablo</span>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- HOJA A4 #1: PDF OFICIAL DEL AST / ART GRÚA MÓVIL (6 SECCIONES DAYANA) -->
+      <!-- ===================================================================== -->
+      <div id="pdf-sheet-ast" class="a4-sheet flex flex-col justify-between space-y-3">
+        <div class="space-y-3">
+          <!-- Encabezado Corporativo GSP -->
+          <div class="border-2 border-slate-800 grid grid-cols-12">
+            <div class="col-span-3 p-2.5 border-r-2 border-slate-800 flex flex-col justify-center items-center text-center bg-slate-50">
+              <div class="w-11 h-11 rounded bg-amber-500 text-slate-950 font-black flex items-center justify-center text-base tracking-tighter mb-0.5">
+                GSP
+              </div>
+              <div class="text-[10px] font-extrabold uppercase tracking-tight text-slate-900">Grúas San Pablo</div>
+              <div class="text-[8px] text-slate-500">Prevención de Riesgos HSE</div>
+            </div>
+            <div class="col-span-6 p-2.5 border-r-2 border-slate-800 flex flex-col justify-center items-center text-center">
+              <div class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Sistema de Gestión de Seguridad y Salud Ocupacional</div>
+              <h2 class="text-sm font-black text-slate-900 uppercase tracking-tight mt-0.5">ANÁLISIS DE SEGURIDAD DEL TRABAJO (AST / ART)</h2>
+              <div class="text-[10px] font-bold text-amber-700 mt-0.5">ESPECÍFICO POR EQUIPO: USO DE GRÚA MÓVIL (2026)</div>
+            </div>
+            <div class="col-span-3 p-2 text-[9px] font-mono flex flex-col justify-between bg-slate-50">
+              <div class="flex justify-between"><span>CÓDIGO:</span><strong class="text-slate-900">HSE-ART-GM-2026</strong></div>
+              <div class="flex justify-between"><span>FOLIO:</span><strong class="text-amber-700">#ART-2026-0841</strong></div>
+              <div class="flex justify-between"><span>FECHA:</span><strong>22-10-2026</strong></div>
+              <div class="flex justify-between"><span>ESTADO:</span><strong id="pdf-ast-status-top" class="text-emerald-700">FIRMADO FES</strong></div>
+            </div>
+          </div>
+
+          <!-- 1. IDENTIFICACIÓN DEL SERVICIO, FAENA Y TRABAJADORES -->
+          <div>
+            <div class="bg-slate-800 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">
+              1. Identificación del Servicio, Faena y Trabajadores del Equipo
+            </div>
+            <div class="border border-t-0 border-slate-300 grid grid-cols-12 text-[10px]">
+              <div class="col-span-3 p-1.5 border-b border-r border-slate-300">
+                <span class="text-slate-500 text-[9px] block">Orden de Trabajo (OT):</span>
+                <strong class="font-mono text-slate-900">OT GSP-2610-4851</strong>
+              </div>
+              <div class="col-span-5 p-1.5 border-b border-r border-slate-300">
+                <span class="text-slate-500 text-[9px] block">Cliente / Faena / Lugar de Trabajo:</span>
+                <strong id="pdf-ast-faena" class="text-slate-900">Planta Celulosa Arauco - Línea 3</strong>
+              </div>
+              <div class="col-span-4 p-1.5 border-b border-slate-300">
+                <span class="text-slate-500 text-[9px] block">Equipo Seleccionado / Patente:</span>
+                <strong id="pdf-ast-equipo" class="font-mono text-slate-900">Liebherr LTM 1100 • DXGG-17</strong>
+              </div>
+              <div class="col-span-6 p-1.5 border-r border-slate-300 bg-slate-50/60">
+                <span class="text-slate-500 text-[9px] block">Trabajador 1 — Operador de Grúa (Obligatorio):</span>
+                <strong id="pdf-ast-operador" class="text-slate-900">Carlos Valenzuela Rojas (15.842.910-K)</strong>
+              </div>
+              <div class="col-span-6 p-1.5 bg-slate-50/60">
+                <span class="text-slate-500 text-[9px] block">Trabajador 2 — Rigger / Señalero (Cuando participa en maniobra):</span>
+                <strong id="pdf-ast-rigger" class="text-slate-900">Marcos Almonacid Pérez (17.319.402-5)</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. ETAPAS PREVIAS DEL TRABAJO (12 PREGUNTAS DOCUMENTO ADJUNTO) -->
+          <div>
+            <div class="bg-slate-800 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex justify-between">
+              <span>2. Etapas Previas del Trabajo (Verificación Pre-Operacional)</span>
+              <span>SI / NO / N/A • Observaciones</span>
+            </div>
+            <table class="w-full border-collapse border border-slate-300 text-[9.5px]">
+              <thead class="bg-slate-100 text-slate-700 uppercase text-[8.5px]">
+                <tr class="border-b border-slate-300">
+                  <th class="p-1 text-center border-r border-slate-300 w-6">N°</th>
+                  <th class="p-1 text-left border-r border-slate-300">Pregunta de Verificación Previa</th>
+                  <th class="p-1 text-center border-r border-slate-300 w-8">SI</th>
+                  <th class="p-1 text-center border-r border-slate-300 w-8">NO</th>
+                  <th class="p-1 text-center border-r border-slate-300 w-9">N/A</th>
+                  <th class="p-1 text-left w-56">Observaciones / Medidas de Control</th>
+                </tr>
+              </thead>
+              <tbody id="pdf-etapas-previas-tbody">
+                <!-- Renderizado dinámico por JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 3. EPP & 4. RIESGOS (LADO A LADO O APILADOS COMO EN PÁG 1 DEL PDF) -->
+          <div class="grid grid-cols-12 gap-2.5">
+            <!-- 3. EPP -->
+            <div class="col-span-5 flex flex-col">
+              <div class="bg-slate-800 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">
+                3. EPP (Elementos de Protección Personal)
+              </div>
+              <div class="border border-t-0 border-slate-300 p-2 flex-1 flex flex-col justify-between bg-white">
+                <div id="pdf-epp-grid" class="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px]">
+                  <!-- Renderizado por JS -->
+                </div>
+                <div class="mt-1.5 pt-1 border-t border-slate-200 text-[9px]">
+                  <span class="font-bold text-slate-600">Otros EPP:</span>
+                  <span id="pdf-epp-otros" class="font-mono text-slate-900 ml-1">Bloqueador solar FPS 50+</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. RIESGOS -->
+            <div class="col-span-7 flex flex-col">
+              <div class="bg-slate-800 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">
+                4. Riesgos Asociados a la Actividad
+              </div>
+              <div class="border border-t-0 border-slate-300 p-2 flex-1 bg-white">
+                <div id="pdf-riesgos-grid" class="grid grid-cols-3 gap-x-2 gap-y-1 text-[8.5px]">
+                  <!-- Renderizado por JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. AST PREDETERMINADO POR EQUIPO (14 ETAPAS GRÚA MÓVIL + OBSERVACIONES) -->
+          <div>
+            <div class="bg-slate-800 text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex justify-between items-center">
+              <span>5. Matriz AST Predeterminada según Equipo: GRÚA MÓVIL (14 Etapas Secuenciales)</span>
+              <span id="pdf-lectura-badge" class="text-[8.5px] bg-emerald-500 text-slate-950 px-1.5 py-0.2 rounded font-extrabold">✓ LECTURA CONFIRMADA EN APP</span>
+            </div>
+            <table class="w-full border-collapse border border-slate-300 text-[8.3px] leading-snug">
+              <thead class="bg-slate-100 text-slate-800 uppercase text-[8px]">
+                <tr class="border-b border-slate-300">
+                  <th class="p-1 text-center border-r border-slate-300 w-6">N°</th>
+                  <th class="p-1 text-left border-r border-slate-300 w-44">Etapas de Trabajo</th>
+                  <th class="p-1 text-left border-r border-slate-300 w-44">Riesgos Potenciales</th>
+                  <th class="p-1 text-left">Medidas de Control</th>
+                </tr>
+              </thead>
+              <tbody id="pdf-ast-14-etapas-tbody">
+                <!-- Renderizado íntegro con las 14 etapas de ART GRÚA MÓVIL 2026.pdf -->
+              </tbody>
+            </table>
+
+            <!-- Espacio de Observación -->
+            <div class="border border-t-0 border-slate-300 p-2 bg-amber-50/40 text-[9.5px]">
+              <span class="font-bold uppercase text-slate-700 text-[9px]">Observaciones de Terreno / Medidas de Control Adicionales:</span>
+              <p id="pdf-ast-obs" class="text-slate-900 italic mt-0.5">
+                "Área de posicionamiento nivelada y segregada con conos. Verificación de línea eléctrica a más de 15 metros fuera del radio de giro."
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. APROBACIÓN Y FIRMAS POR EQUIPO (OPERADOR + RIGGER CONDICIONAL) -->
+        <div class="pt-2 border-t-2 border-slate-800">
+          <div class="text-[9px] font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+            6. Aprobación y Firmas del Equipo (Suscripción mediante Firma Electrónica Simple FES — Toma de Conocimiento)
+          </div>
+          <div class="grid grid-cols-12 gap-3 text-[9.5px]">
+            <!-- Firma 1: Operador (Siempre obligatoria) -->
+            <div class="col-span-5 border border-slate-300 rounded p-2 bg-slate-50">
+              <div class="flex items-center justify-between">
+                <span class="text-[8px] font-bold uppercase text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">Firma 1 • Operador Equipo</span>
+                <span class="text-[8px] font-mono text-emerald-700 font-bold">● FIRMADO FES</span>
+              </div>
+              <div id="pdf-firma-op-nombre" class="font-bold text-slate-900 mt-1">Carlos Valenzuela Rojas (15.842.910-K)</div>
+              <div class="text-[8.5px] text-slate-600">Operador de Grúa Móvil • Liebherr LTM 1100</div>
+              <div class="my-1 py-1 px-1.5 bg-white border border-slate-200 rounded font-mono text-[8px] text-slate-700">
+                PIN FES + OTP VALIDADO • Hash: <span class="text-indigo-700">8f94e2c1a409</span> • TSA RFC 3161
+              </div>
+            </div>
+
+            <!-- Firma 2: Rigger (Condicional según si está presente en la maniobra) -->
+            <div id="pdf-firma-rigger-box" class="col-span-5 border border-slate-300 rounded p-2 bg-slate-50">
+              <div class="flex items-center justify-between">
+                <span class="text-[8px] font-bold uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">Firma 2 • Rigger Asignado</span>
+                <span id="pdf-firma-rig-status" class="text-[8px] font-mono text-emerald-700 font-bold">● FIRMADO FES</span>
+              </div>
+              <div id="pdf-firma-rig-nombre" class="font-bold text-slate-900 mt-1">Marcos Almonacid Pérez (17.319.402-5)</div>
+              <div id="pdf-firma-rig-cargo" class="text-[8.5px] text-slate-600">Rigger / Señalero de Maniobra</div>
+              <div id="pdf-firma-rig-hash" class="my-1 py-1 px-1.5 bg-white border border-slate-200 rounded font-mono text-[8px] text-slate-700">
+                PIN FES + OTP VALIDADO • Hash: <span class="text-indigo-700">3b71d9a0e112</span> • TSA RFC 3161
+              </div>
+            </div>
+
+            <!-- Sello QR Verificación -->
+            <div class="col-span-2 border border-slate-300 rounded p-1.5 bg-slate-50 flex flex-col items-center justify-center text-center">
+              <svg class="w-11 h-11 border border-slate-300 bg-white p-0.5" viewBox="0 0 36 36">
+                <rect x="2" y="2" width="10" height="10" fill="#0f172a"/>
+                <rect x="4" y="4" width="6" height="6" fill="#fff"/>
+                <rect x="6" y="6" width="2" height="2" fill="#0f172a"/>
+                <rect x="24" y="2" width="10" height="10" fill="#0f172a"/>
+                <rect x="26" y="4" width="6" height="6" fill="#fff"/>
+                <rect x="28" y="6" width="2" height="2" fill="#0f172a"/>
+                <rect x="2" y="24" width="10" height="10" fill="#0f172a"/>
+                <rect x="4" y="26" width="6" height="6" fill="#fff"/>
+                <rect x="6" y="28" width="2" height="2" fill="#0f172a"/>
+                <rect x="15" y="12" width="6" height="6" fill="#0f172a"/>
+                <rect x="24" y="24" width="8" height="8" fill="#0f172a"/>
+              </svg>
+              <div class="text-[7.5px] font-mono text-slate-500 mt-1 leading-tight">Verificación<br>QR SGI-HSE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- HOJA A4 #2: PDF OFICIAL DEL PLAN DE IZAJE (INTACTO Y VALIDADO) -->
+      <!-- ===================================================================== -->
+      <div id="pdf-sheet-plan" class="a4-sheet hidden flex-col justify-between">
+        <div>
+          <!-- Encabezado Corporativo GSP -->
+          <div class="border-2 border-slate-800 grid grid-cols-12 mb-4">
+            <div class="col-span-3 p-3 border-r-2 border-slate-800 flex flex-col justify-center items-center text-center bg-slate-50">
+              <div class="w-12 h-12 rounded bg-amber-500 text-slate-950 font-black flex items-center justify-center text-lg tracking-tighter mb-1">
+                GSP
+              </div>
+              <div class="text-[10px] font-extrabold uppercase tracking-tight text-slate-900">Grúas San Pablo</div>
+              <div class="text-[8px] text-slate-500">Ingeniería & Operaciones</div>
+            </div>
+            <div class="col-span-6 p-3 border-r-2 border-slate-800 flex flex-col justify-center items-center text-center">
+              <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Memoria Técnica de Maniobra</div>
+              <h2 class="text-base font-black text-slate-900 uppercase tracking-tight mt-0.5">PLAN DE IZAJE Y CÁLCULO DE CAPACIDAD</h2>
+              <div class="text-[10px] font-semibold text-blue-700 mt-0.5">Estándar de Seguridad con Compuerta Mandatoria al 85%</div>
+            </div>
+            <div class="col-span-3 p-2.5 text-[10px] font-mono flex flex-col justify-between bg-slate-50">
+              <div class="flex justify-between"><span>CÓDIGO:</span><strong class="text-slate-900">SGI-OP-PIZ-02</strong></div>
+              <div class="flex justify-between"><span>FOLIO:</span><strong class="text-blue-700">#PIZ-2026-0419</strong></div>
+              <div class="flex justify-between"><span>OT:</span><strong>GSP-2610-4851</strong></div>
+              <div class="flex justify-between"><span>DICTAMEN:</span><strong id="pdf-plan-top-status" class="text-emerald-700">AUTORIZADO</strong></div>
+            </div>
+          </div>
+
+          <!-- Sección 1: Datos de la Grúa y Carga -->
+          <div class="mb-4">
+            <div class="bg-slate-800 text-white px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
+              1. Identificación de Equipo, Cuadrilla y Carga a Izar
+            </div>
+            <div class="border border-t-0 border-slate-300 grid grid-cols-3 text-[11px]">
+              <div class="p-2 border-b border-r border-slate-300">
+                <span class="text-slate-500 text-[10px] block">Equipo de Izaje:</span>
+                <strong class="text-slate-900">Liebherr LTM 1100 (Cap. 100 Ton)</strong>
+              </div>
+              <div class="p-2 border-b border-r border-slate-300">
+                <span class="text-slate-500 text-[10px] block">Patente / Código Interno:</span>
+                <strong class="font-mono text-slate-900">DXGG-17 • GR-100-04</strong>
+              </div>
+              <div class="p-2 border-b border-slate-300">
+                <span class="text-slate-500 text-[10px] block">Elemento / Carga a Levantar:</span>
+                <strong id="pdf-plan-elemento" class="text-blue-900">Transformador ABB 14 Ton</strong>
+              </div>
+              <div class="p-2 border-r border-slate-300">
+                <span class="text-slate-500 text-[10px] block">Operador de Grúa:</span>
+                <strong class="text-slate-900">Carlos Valenzuela R.</strong>
+              </div>
+              <div class="p-2 border-r border-slate-300">
+                <span class="text-slate-500 text-[10px] block">Rigger Encargado de Maniobra:</span>
+                <strong class="text-slate-900">Marcos Almonacid P.</strong>
+              </div>
+              <div class="p-2">
+                <span class="text-slate-500 text-[10px] block">Velocidad de Viento Registrada:</span>
+                <strong id="pdf-plan-viento" class="font-mono text-emerald-700">18 km/h (Máx: 32 km/h)</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección 2: Esquema Geométrico + Tabla de Pesos -->
+          <div class="mb-4 grid grid-cols-12 gap-3">
+            
+            <!-- Croquis Técnico Dinámico SVG (5 cols) -->
+            <div class="col-span-5 border border-slate-300 p-2.5 bg-slate-50 flex flex-col justify-between">
+              <div class="text-[10px] font-bold uppercase text-slate-700 border-b border-slate-200 pb-1">
+                2. Croquis de Geometría de Operación
+              </div>
+              <div class="my-1 bg-white border border-slate-200 rounded p-2 flex items-center justify-center">
+                <svg class="w-full h-44" viewBox="0 0 260 180">
+                  <line x1="10" y1="155" x2="250" y2="155" stroke="#334155" stroke-width="2"/>
+                  <rect x="25" y="135" width="45" height="20" rx="3" fill="#f59e0b" stroke="#0f172a" stroke-width="1.5"/>
+                  <circle cx="35" cy="155" r="5" fill="#0f172a"/>
+                  <circle cx="60" cy="155" r="5" fill="#0f172a"/>
+                  <line x1="48" y1="135" x2="175" y2="25" stroke="#eab308" stroke-width="6" stroke-linecap="round"/>
+                  <line x1="48" y1="135" x2="175" y2="25" stroke="#0f172a" stroke-width="1" stroke-dasharray="3,3"/>
+                  <line x1="175" y1="25" x2="175" y2="95" stroke="#475569" stroke-width="1.5"/>
+                  <rect x="155" y="95" width="40" height="26" fill="#1e40af" rx="2"/>
+                  <text x="175" y="111" text-anchor="middle" font-size="8" font-weight="bold" fill="#ffffff">CARGA</text>
+                  <line x1="48" y1="168" x2="175" y2="168" stroke="#dc2626" stroke-width="1.5"/>
+                  <text id="svg-txt-radio" x="112" y="177" text-anchor="middle" font-size="9" font-weight="bold" fill="#dc2626">Radio = 16 m</text>
+                  <text id="svg-txt-pluma" x="95" y="68" text-anchor="middle" font-size="9" font-weight="bold" fill="#0f172a" transform="rotate(-38 95,68)">Pluma = 38 m</text>
+                  <text id="svg-txt-angulo" x="78" y="130" font-size="8" font-weight="bold" fill="#0284c7">64°</text>
+                </svg>
+              </div>
+              <div class="grid grid-cols-3 gap-1 text-center text-[10px] font-mono bg-white p-1.5 border border-slate-200 rounded">
+                <div><span class="text-slate-400 block text-[8px]">RADIO</span><strong id="pdf-plan-radio">16.0 m</strong></div>
+                <div><span class="text-slate-400 block text-[8px]">PLUMA</span><strong id="pdf-plan-pluma">38.0 m</strong></div>
+                <div><span class="text-slate-400 block text-[8px]">ÁNGULO</span><strong id="pdf-plan-angulo">64.0°</strong></div>
+              </div>
+            </div>
+
+            <!-- Tabla Memoria de Cálculo (7 cols) -->
+            <div class="col-span-7 flex flex-col justify-between">
+              <div>
+                <div class="bg-slate-800 text-white px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
+                  3. Memoria de Cálculo de Pesos y Factor de Utilización
+                </div>
+                <table class="w-full border-collapse border border-slate-300 text-[11px]">
+                  <tbody>
+                    <tr class="border-b border-slate-200">
+                      <td class="p-2 text-slate-600">1. Peso Neto de la Carga</td>
+                      <td id="pdf-plan-neto" class="p-2 text-right font-mono font-bold text-slate-900">13.500 kg</td>
+                    </tr>
+                    <tr class="border-b border-slate-200">
+                      <td class="p-2 text-slate-600">2. Peso de Gancho / Pasteca Principal</td>
+                      <td id="pdf-plan-gancho" class="p-2 text-right font-mono text-slate-800">650 kg</td>
+                    </tr>
+                    <tr class="border-b border-slate-200">
+                      <td class="p-2 text-slate-600">3. Peso de Yugo / Balancín Separador</td>
+                      <td id="pdf-plan-yugo" class="p-2 text-right font-mono text-slate-800">300 kg</td>
+                    </tr>
+                    <tr class="border-b border-slate-300">
+                      <td class="p-2 text-slate-600">4. Peso de Aparejos: Eslingas y Grilletes</td>
+                      <td id="pdf-plan-aparejos" class="p-2 text-right font-mono text-slate-800">150 kg</td>
+                    </tr>
+                    <tr class="border-b-2 border-slate-800 bg-blue-50">
+                      <td class="p-2 font-extrabold text-blue-950">PESO BRUTO TOTAL A IZAR</td>
+                      <td id="pdf-plan-total" class="p-2 text-right font-mono font-black text-sm text-blue-900">14.600 kg</td>
+                    </tr>
+                    <tr class="border-b border-slate-300 bg-amber-50/60">
+                      <td class="p-2 font-bold text-slate-800">Capacidad Nominal según Tabla al Radio Máx.</td>
+                      <td id="pdf-plan-tabla" class="p-2 text-right font-mono font-extrabold text-amber-900">20.000 kg</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Box de Porcentaje de Utilización y Compuerta 85% -->
+              <div id="pdf-plan-box-dictamen" class="mt-2 p-3 rounded border-2 border-emerald-600 bg-emerald-50 flex items-center justify-between">
+                <div>
+                  <div class="text-[10px] font-bold uppercase text-emerald-900">Índice de Utilización de Capacidad:</div>
+                  <div id="pdf-plan-dictamen-txt" class="text-xs font-extrabold text-emerald-800 mt-0.5">
+                    🟢 CONFORME — MANIOBRA DENTRO DEL LÍMITE SEGURO (≤ 85%)
+                  </div>
+                  <div class="text-[10px] text-slate-600 mt-0.5">Fórmula: (Peso Bruto Total / Capacidad de Tabla) × 100</div>
+                </div>
+                <div class="text-right">
+                  <span id="pdf-plan-pct" class="text-2xl font-black font-mono text-emerald-700">73.0%</span>
+                  <span class="block text-[9px] font-mono text-slate-500">Máx Permitido: 85.0%</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Sección 4: Aparejos y Condiciones de Terreno -->
+          <div class="mb-4">
+            <div class="bg-slate-800 text-white px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
+              4. Especificación de Elementos de Estrobado y Condiciones de Soporte
+            </div>
+            <table class="w-full border-collapse border border-slate-300 text-[11px]">
+              <thead class="bg-slate-100 text-[10px] uppercase text-slate-700">
+                <tr class="border-b border-slate-300">
+                  <th class="p-1.5 text-left border-r border-slate-300">Elemento / Criterio</th>
+                  <th class="p-1.5 text-left border-r border-slate-300">Especificación Técnica</th>
+                  <th class="p-1.5 text-center border-r border-slate-300">Factor Seg.</th>
+                  <th class="p-1.5 text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b border-slate-200">
+                  <td class="p-1.5 font-semibold border-r border-slate-300">Eslingas Sintéticas</td>
+                  <td class="p-1.5 border-r border-slate-300">4 Ramales × 8 Ton c/u • Ángulo Estrobamiento > 60°</td>
+                  <td class="p-1.5 text-center font-mono border-r border-slate-300">7 : 1</td>
+                  <td class="p-1.5 text-center font-bold text-emerald-700">CONFORME</td>
+                </tr>
+                <tr class="border-b border-slate-200">
+                  <td class="p-1.5 font-semibold border-r border-slate-300">Grilletes Lira Certificados</td>
+                  <td class="p-1.5 border-r border-slate-300">4 Unid. Crosby 1 1/4" (WLL 12 Ton c/u) con pasador</td>
+                  <td class="p-1.5 text-center font-mono border-r border-slate-300">5 : 1</td>
+                  <td class="p-1.5 text-center font-bold text-emerald-700">CONFORME</td>
+                </tr>
+                <tr>
+                  <td class="p-1.5 font-semibold border-r border-slate-300">Estabilidad y Outriggers</td>
+                  <td class="p-1.5 border-r border-slate-300">Vigas extendidas al 100% sobre almohadillas de reparto</td>
+                  <td class="p-1.5 text-center font-mono border-r border-slate-300">100%</td>
+                  <td class="p-1.5 text-center font-bold text-emerald-700">CONFORME</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pie de Firmas FES Plan de Izaje -->
+        <div class="pt-2 border-t-2 border-slate-800">
+          <div class="text-[9px] font-bold uppercase tracking-wider text-slate-600 mb-2">
+            5. Aprobación Técnica y Firmas Electrónicas (FES) — Trazabilidad DT
+          </div>
+          <div class="grid grid-cols-3 gap-3 text-[10px]">
+            <div class="border border-slate-300 rounded p-2 bg-slate-50">
+              <div class="font-bold text-slate-900">Marcos Almonacid P.</div>
+              <div class="text-[9px] text-slate-600">Rigger / Elaborador Plan</div>
+              <div class="my-1 py-1 px-2 bg-white border border-slate-200 rounded font-mono text-[8px] text-slate-700">
+                FIRMADO FES • PIN + OTP<br>Hash: <span class="text-blue-700">9a12c4f0...77b1</span>
+              </div>
+              <div class="text-[8px] text-slate-500 font-mono">19-10-2026 15:05:10</div>
+            </div>
+            <div class="border border-slate-300 rounded p-2 bg-slate-50">
+              <div class="font-bold text-slate-900">Carlos Valenzuela R.</div>
+              <div class="text-[9px] text-slate-600">Operador de Grúa</div>
+              <div class="my-1 py-1 px-2 bg-white border border-slate-200 rounded font-mono text-[8px] text-slate-700">
+                FIRMADO FES • PIN + OTP<br>Hash: <span class="text-blue-700">4c88e1d2...09a3</span>
+              </div>
+              <div class="text-[8px] text-slate-500 font-mono">19-10-2026 15:05:22</div>
+            </div>
+            <div class="border border-slate-300 rounded p-2 bg-slate-50">
+              <div class="font-bold text-slate-900">Dayana • Prevención HSE</div>
+              <div class="text-[9px] text-slate-600">V°B° Seguridad y Prevención GSP</div>
+              <div class="my-1 py-1 px-2 bg-white border border-slate-200 rounded font-mono text-[8px] text-emerald-700 font-bold">
+                VALIDACIÓN AUTOMÁTICA SGI<br>Sello TSA RFC 3161
+              </div>
+              <div class="text-[8px] text-slate-500 font-mono">Verificación QR Activa</div>
+            </div>
+          </div>
+          <div class="mt-2 text-[8px] text-slate-500 text-center">
+            Documento electrónico generado por plataforma LeanGlobal®, acreditada ante la Dirección del Trabajo (DT) de Chile. Georreferenciado y sellado criptográficamente.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- INTERACTIVE JAVASCRIPT LOGIC -->
+  <script>
+    // 1. CATÁLOGO OFICIAL: 12 ETAPAS PREVIAS DEL TRABAJO (De ART GRÚA MÓVIL 2026.pdf)
+    const etapasPreviasData = [
+      { id: 1, texto: "¿Se ha realizado la inspección de equipos de izaje y estos se encuentran en condiciones operativas?", resp: "SI", obs: "Check list diario conforme" },
+      { id: 2, texto: "¿Se han inspeccionado los accesorios y estos se encuentran en condiciones operativas?", resp: "SI", obs: "Eslingas y grilletes certificados" },
+      { id: 3, texto: "¿Se cuenta con personal autorizado y certificado para el trabajo?", resp: "SI", obs: "Operador y Rigger acreditados" },
+      { id: 4, texto: "¿Personal se encuentra capacitado para la actividad?", resp: "SI", obs: "Charla operacional previa" },
+      { id: 5, texto: "¿Se ha verificado que no exista personal ajeno al trabajo?", resp: "SI", obs: "Área despejada" },
+      { id: 6, texto: "¿Se ha señalizado el perímetro del área por donde se moverá la carga?", resp: "SI", obs: "Conos y cadenas perimetrales" },
+      { id: 7, texto: "¿Existe tendido eléctrico? (En caso de responder SI, especificar medidas de control en observaciones)", resp: "NO", obs: "Sin líneas eléctricas en el radio", requiereObsSi: true },
+      { id: 8, texto: "¿Cuenta con un anemómetro para monitorear la velocidad del viento?", resp: "SI", obs: "Anemómetro operativo (18 km/h)" },
+      { id: 9, texto: "¿Superficie del terreno se encuentra en condiciones de trabajo?", resp: "SI", obs: "Suelo compactado y nivelado" },
+      { id: 10, texto: "¿Se dispone de medios de comunicación en caso de requerir?", resp: "SI", obs: "Radios portátiles canal dedicado" },
+      { id: 11, texto: "¿Se identificó el EPP necesario para realizar la actividad y estos se encuentran en condiciones?", resp: "SI", obs: "EPP verificado completo" },
+      { id: 12, texto: "¿El trabajo presenta interacción con otras especialidades? (En caso de responder SI, indicar medidas de control)", resp: "NO", obs: "Área exclusiva para maniobra", requiereObsSi: true }
+    ];
+
+    // 2. CATÁLOGO OFICIAL: 16 EPP (De ART GRÚA MÓVIL 2026.pdf)
+    const eppCatalogo = [
+      { id: 'casco', label: 'Casco', checked: true },
+      { id: 'barbiquejo', label: 'Barbiquejo', checked: true },
+      { id: 'arnes', label: 'Arnés de seguridad', checked: true },
+      { id: 'calzado', label: 'Calzado seguridad', checked: true },
+      { id: 'chaleco', label: 'Chaleco reflectante', checked: true },
+      { id: 'cabovida', label: 'Cabo de vida', checked: true },
+      { id: 'antiparras_claras', label: 'Antiparras claras', checked: true },
+      { id: 'impermeable', label: 'Traje impermeable', checked: false },
+      { id: 'prot_facial', label: 'Protección facial', checked: false },
+      { id: 'antiparras_oscuras', label: 'Antiparras oscuras', checked: true },
+      { id: 'bota', label: 'Bota seguridad', checked: false },
+      { id: 'traje_soldador', label: 'Traje soldador', checked: false },
+      { id: 'auditivo', label: 'Protector auditivo', checked: true },
+      { id: 'overol', label: 'Overol', checked: false },
+      { id: 'guantes_cabritilla', label: 'Guantes cabritilla', checked: true },
+      { id: 'guantes_nitrilo', label: 'Guantes Nitrilo', checked: false }
+    ];
+
+    // 3. CATÁLOGO OFICIAL: 24 RIESGOS (De ART GRÚA MÓVIL 2026.pdf)
+    const riesgosCatalogo = [
+      { id: 'r1', label: 'APLASTAMIENTO', checked: true },
+      { id: 'r2', label: 'CONTACTO OBJETO CORTANTE', checked: false },
+      { id: 'r3', label: 'EXPOSICIÓN A RUIDO', checked: true },
+      { id: 'r4', label: 'ATRAPAMIENTO', checked: true },
+      { id: 'r5', label: 'CONTACTO OBJETO PUNZANTE', checked: false },
+      { id: 'r6', label: 'EXPOSICIÓN A VIBRACIONES', checked: true },
+      { id: 'r7', label: 'ATROPELLO', checked: true },
+      { id: 'r8', label: 'EXPLOSIÓN', checked: false },
+      { id: 'r9', label: 'EXPOSICIÓN RADIACIÓN UV', checked: true },
+      { id: 'r10', label: 'CAÍDA DISTINTO NIVEL', checked: true },
+      { id: 'r11', label: 'EXPOSICIÓN A POLVOS', checked: false },
+      { id: 'r12', label: 'EXPOSICIÓN SUST. PELIGROSA', checked: false },
+      { id: 'r13', label: 'CAÍDA A MISMO NIVEL', checked: true },
+      { id: 'r14', label: 'EXPOSICIÓN A GASES', checked: false },
+      { id: 'r15', label: 'EXP. TEMPERATURAS EXTREMAS', checked: false },
+      { id: 'r16', label: 'INCENDIO', checked: false },
+      { id: 'r17', label: 'SOBRECARGA FÍSICA', checked: true },
+      { id: 'r18', label: 'CONTACTO CON ELECTRICIDAD', checked: false },
+      { id: 'r19', label: 'INMERSIÓN', checked: false },
+      { id: 'r20', label: 'GOLPEADO CON/POR/CONTRA', checked: true },
+      { id: 'r21', label: 'CONTACTO BIOLÓGICO', checked: false },
+      { id: 'r22', label: 'TERRENO INESTABLE', checked: true },
+      { id: 'r23', label: 'VOLCAMIENTO', checked: true },
+      { id: 'r24', label: 'COLISIÓN', checked: true }
+    ];
+
+    // 4. CATÁLOGO OFICIAL: 14 ETAPAS DE GRÚA MÓVIL (Páginas 2, 3 y 4 de ART GRÚA MÓVIL 2026.pdf)
+    const etapasGruaMovil14 = [
+      {
+        n: 1,
+        etapa: "POSICIONAMIENTO EN TERRENO DE EQUIPOS (GRÚA - CAMIÓN CONTRAPESOS)",
+        riesgos: "Terreno inestable, Volcamiento, Colisión, Atropello, Exposición a T°",
+        controles: "Revisión del estado del terreno y suelos compactados. Verificación de no existir tuberías subterráneas. Cierre de perímetro de trabajo, señalética, cinta peligro o conos. Uso de ropa reflectante. Solo personal autorizado. Uso de EPP adecuado a condiciones climáticas (frío/calor, bloqueador solar, antiparras). Prohibido uso de elementos distractores (celulares)."
+      },
+      {
+        n: 2,
+        etapa: "EXTENSIÓN DE ESTABILIZADORES E INSTALACIÓN DE ALMOHADILLAS (OPERADOR Y RIGGER)",
+        riesgos: "Atrapamiento, Golpeado por, Caída mismo nivel",
+        controles: "Uso de EPP. Capacitación sobre exposición de extremidades y línea de fuego. Proteger extremidades. Capacitación PTS Grúa Móvil. Lugar libre de obstáculos, orden y aseo. Prohibido usar joyas, ropa ancha y pelo suelto. Operador y Rigger certificados."
+      },
+      {
+        n: 3,
+        etapa: "ESTROBADO DE CONTRAPESOS DESDE CAMIÓN",
+        riesgos: "Atrapamiento, Sobrecarga física, Caída distinto nivel, Exposición a radiación UV",
+        controles: "Mantener contacto visual y/o radio entre Operador y Rigger. Difusión protocolo TMERT y pausas activas. Uso de EPP y arnés. Utilizar 3 puntos de apoyo al subir/bajar. Pasamanos y peldaños en buen estado. Ley 20.096 (bloqueador solar, manga larga, hidratación)."
+      },
+      {
+        n: 4,
+        etapa: "IZAJE CONTRAPESOS",
+        riesgos: "Caída de carga suspendida, Aplastamiento, Muerte",
+        controles: "Operador y Rigger certificados y con exámenes al día. Contacto visual/radio. Material de izaje adecuado, certificado y con check list. Toma de carga en su CG evitando péndulo. Prohibido pasar bajo carga suspendida. Uso de vientos/cuerdas guía (prohibido usar manos sobre 30 cm del suelo). Cierre de perímetro."
+      },
+      {
+        n: 5,
+        etapa: "DESESTROBADO DEL CONTRAPESOS DESDE LA GRÚA",
+        riesgos: "Atrapamiento, Caída distinto nivel, Golpeado con, Exposición a radiación UV",
+        controles: "Contacto visual y/o radio entre Operador y Rigger. Protocolo TMERT y pausas activas. Rigger con examen de altura al día. Uso de arnés y 3 puntos de apoyo. Pasamanos y peldaños en buen estado. Protección UV e hidratación."
+      },
+      {
+        n: 6,
+        etapa: "INSTALACIÓN DE CONTRAPESOS",
+        riesgos: "Atrapamiento, Caída distinto nivel, Golpeado con, Exposición a radiación UV",
+        controles: "Contacto visual y/o radio. Capacitación exposición de extremidades y línea de fuego. PTS Grúa Móvil. Uso de EPP y arnés de seguridad. Prohibido pasar bajo carga suspendida. Uso de vientos o cuerdas guías."
+      },
+      {
+        n: 7,
+        etapa: "INSTALACIÓN DE GANCHO",
+        riesgos: "Aplastamiento, Golpeado con",
+        controles: "Mantener contacto visual y/o radio de comunicación entre Operador y Rigger. Capacitación sobre exposición de extremidades y línea de fuego. Proteger extremidades. Uso de EPP."
+      },
+      {
+        n: 8,
+        etapa: "TELESCOPAJE DE LA PLUMA (OPERADOR DE GRÚA)",
+        riesgos: "Dolor articular, Vibración del equipo, Contacto eléctrico, Incendio",
+        controles: "Protocolo TMERT, pausas activas y posturas correctas. Mantención de equipo y asiento con amortiguación. Revisar radio de trabajo para evitar contacto con cableado eléctrico y respetar distancias de seguridad. Aterrizar equipo con barra Cooper. PTS Grúa Móvil y uso de extintor."
+      },
+      {
+        n: 9,
+        etapa: "ESTROBADO DE CARGA",
+        riesgos: "Atrapamiento, Sobrecarga física, Caída distinto nivel, Exposición a radiación UV",
+        controles: "Contacto visual y/o radio Operador-Rigger. Protocolo TMERT y pausas activas. Uso de EPP y arnés. Realizar 3 puntos de apoyo al subir o bajar. Mantener pasamanos y peldaños en buen estado. Protección UV e hidratación."
+      },
+      {
+        n: 10,
+        etapa: "IZAJE DE CARGA",
+        riesgos: "Caída de carga suspendida, Aplastamiento, Muerte, Contacto eléctrico, Incendio",
+        controles: "Operador y Rigger certificados con exámenes al día. Realizar Plan de Izaje (radios de trabajo). Material de izaje certificado con check list. Toma en CG sin péndulo. Uso de silbato (aviso carga suspendida). Prohibido pasar bajo carga suspendida. Uso de vientos/cuerdas guía. Perímetro cerrado. Respetar distancia a tendidos eléctricos, aterrizar barra Cooper y extintor."
+      },
+      {
+        n: 11,
+        etapa: "DESESTROBADO DE LA CARGA",
+        riesgos: "Atrapamiento, Caída distinto nivel, Golpeado con, Exposición a radiación UV",
+        controles: "Contacto visual y/o radio entre Operador y Rigger. Protocolo TMERT y pausas activas. Rigger con examen de altura al día. Uso de EPP, arnés y 3 puntos de apoyo. Protección UV."
+      },
+      {
+        n: 12,
+        etapa: "GUARDAR PLUMA",
+        riesgos: "Dolor articular, Vibración del equipo, Contacto eléctrico, Incendio",
+        controles: "Protocolo TMERT y posturas correctas. Revisar radio de trabajo para evitar contacto con cableado eléctrico y respetar distancias de seguridad. Aterrizar equipo con barra Cooper. PTS Grúa Móvil y manejo de extintor."
+      },
+      {
+        n: 13,
+        etapa: "DESINSTALAR CONTRAPESOS",
+        riesgos: "Atrapamiento, Caída distinto nivel, Golpeado con, Caída de carga suspendida, Aplastamiento, Muerte",
+        controles: "Contacto visual y/o radio Operador-Rigger. Control de línea de fuego y extremidades. Uso de arnés. Prohibido pasar bajo carga suspendida. Uso de vientos/cuerdas guía sobre 30 cm. Material de izaje certificado. Prohibido uso de distractores. Cierre de perímetro."
+      },
+      {
+        n: 14,
+        etapa: "GUARDAR ESTABILIZADORES Y ALMOHADILLAS",
+        riesgos: "Atrapamiento, Golpeado por, Caída mismo nivel",
+        controles: "Uso de EPP. Capacitación sobre exposición de extremidades y línea de fuego. PTS Grúa Móvil. Mantener lugar libre de obstáculos, orden y aseo. Prohibido usar joyas, ropa ancha o pelo suelto. Operador y Rigger certificados."
+      }
+    ];
+
+    function renderAppControls() {
+      // Renderizar las 12 Etapas Previas en la App
+      const prevContainer = document.getElementById('app-etapas-previas-list');
+      prevContainer.innerHTML = etapasPreviasData.map((item, idx) => `
+        <div class="bg-slate-950 p-2 rounded-xl border ${item.requiereObsSi && item.resp === 'SI' ? 'border-amber-500' : 'border-slate-800'} space-y-1">
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-[10px] text-slate-200 leading-snug"><strong class="text-amber-400">${item.id}.</strong> ${item.texto}</span>
+            <div class="flex gap-0.5 shrink-0">
+              ${['SI', 'NO', 'N/A'].map(opt => `
+                <button onclick="setEtapaPrevia(${idx}, '${opt}')" class="px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                  item.resp === opt
+                    ? (opt === 'SI' ? 'bg-emerald-600 text-white' : (opt === 'NO' ? 'bg-rose-600 text-white' : 'bg-slate-600 text-white'))
+                    : 'bg-slate-900 text-slate-400 border border-slate-800'
+                }">${opt}</button>
+              `).join('')}
+            </div>
+          </div>
+          <input type="text" value="${item.obs}" oninput="setObsPrevia(${idx}, this.value)" placeholder="Observación / Medida de control..." class="w-full bg-slate-900/90 border border-slate-800 rounded px-2 py-0.5 text-[9.5px] text-slate-300">
+        </div>
+      `).join('');
+
+      // Renderizar los 16 EPP en la App
+      const eppContainer = document.getElementById('app-epp-grid');
+      eppContainer.innerHTML = eppCatalogo.map((item, idx) => `
+        <button onclick="toggleEpp(${idx})" class="flex items-center justify-between px-2 py-1 rounded-lg border text-left text-[10px] transition ${
+          item.checked
+            ? 'bg-emerald-950/50 border-emerald-500/50 text-emerald-200 font-semibold'
+            : 'bg-slate-950 border-slate-800 text-slate-400'
+        }">
+          <span class="truncate">${item.label}</span>
+          <span class="font-mono text-[9px]">${item.checked ? '✓' : '○'}</span>
+        </button>
+      `).join('');
+
+      // Renderizar los 24 Riesgos en la App
+      const riesgosContainer = document.getElementById('app-riesgos-grid');
+      riesgosContainer.innerHTML = riesgosCatalogo.map((item, idx) => `
+        <button onclick="toggleRiesgo(${idx})" class="flex items-center justify-between px-2 py-1 rounded-lg border text-left text-[9.5px] transition ${
+          item.checked
+            ? 'bg-amber-950/50 border-amber-500/50 text-amber-200 font-semibold'
+            : 'bg-slate-950 border-slate-800 text-slate-400'
+        }">
+          <span class="truncate">${item.label}</span>
+          <span class="font-mono text-[9px]">${item.checked ? '✓' : '○'}</span>
+        </button>
+      `).join('');
+
+      // Renderizar las 14 Etapas en el acordeón descargable de la App
+      const app14Body = document.getElementById('app-lista-14-etapas-body');
+      app14Body.innerHTML = etapasGruaMovil14.map(e => `
+        <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 text-[9.5px] space-y-0.5">
+          <div class="font-bold text-amber-300">${e.n}. ${e.etapa}</div>
+          <div class="text-rose-300"><strong class="text-slate-400">Riesgos:</strong> ${e.riesgos}</div>
+          <div class="text-slate-300"><strong class="text-emerald-400">Controles:</strong> ${e.controles}</div>
+        </div>
+      `).join('');
+
+      // Renderizar las 14 Etapas en el PDF Oficial A4
+      const pdf14Tbody = document.getElementById('pdf-ast-14-etapas-tbody');
+      pdf14Tbody.innerHTML = etapasGruaMovil14.map(e => `
+        <tr class="border-b border-slate-300 align-top">
+          <td class="p-1 text-center font-mono font-bold text-slate-700 border-r border-slate-300 bg-slate-50">${e.n}</td>
+          <td class="p-1 font-bold text-slate-900 border-r border-slate-300">${e.etapa}</td>
+          <td class="p-1 text-slate-800 border-r border-slate-300">${e.riesgos}</td>
+          <td class="p-1 text-slate-700">${e.controles}</td>
+        </tr>
+      `).join('');
+    }
+
+    function setEtapaPrevia(idx, val) {
+      etapasPreviasData[idx].resp = val;
+      if (etapasPreviasData[idx].requiereObsSi && val === 'SI' && etapasPreviasData[idx].obs.startsWith('Sin ')) {
+        etapasPreviasData[idx].obs = 'MEDIDA DE CONTROL OBLIGATORIA: Coordinación y distancia de seguridad verificada';
+      }
+      renderAppControls();
+      syncAst();
+    }
+
+    function setObsPrevia(idx, val) {
+      etapasPreviasData[idx].obs = val;
+      syncAst();
+    }
+
+    function toggleEpp(idx) {
+      eppCatalogo[idx].checked = !eppCatalogo[idx].checked;
+      renderAppControls();
+      syncAst();
+    }
+
+    function toggleRiesgo(idx) {
+      riesgosCatalogo[idx].checked = !riesgosCatalogo[idx].checked;
+      renderAppControls();
+      syncAst();
+    }
+
+    function toggleDetalleEtapasApp() {
+      const box = document.getElementById('app-modal-14-etapas');
+      const txt = document.getElementById('btn-ver-etapas-txt');
+      if (box.classList.contains('hidden')) {
+        box.classList.remove('hidden');
+        txt.textContent = 'Ocultar Detalle';
+      } else {
+        box.classList.add('hidden');
+        txt.textContent = 'Ver / Descargar';
+      }
+    }
+
+    function syncAst() {
+      // 1. Identificación y Trabajadores (Operador + Rigger condicional)
+      const faena = document.getElementById('ast-inp-faena').value;
+      const equipo = document.getElementById('ast-inp-equipo').value;
+      const operador = document.getElementById('ast-inp-operador').value;
+      const conRigger = document.getElementById('ast-sel-con-rigger').value === 'SI';
+      const rigger = document.getElementById('ast-inp-rigger').value;
+
+      document.getElementById('pdf-ast-faena').textContent = faena;
+      document.getElementById('pdf-ast-equipo').textContent = equipo;
+      document.getElementById('pdf-ast-operador').textContent = operador;
+      document.getElementById('app-firma-op-name').textContent = operador;
+      document.getElementById('pdf-firma-op-nombre').textContent = operador;
+
+      const appRiggerBox = document.getElementById('app-box-rigger-name');
+      const appFirmaRigCard = document.getElementById('app-firma-rigger-card');
+      const appFirmantesBadge = document.getElementById('app-firmantes-badge');
+      const appLblRigLectura = document.getElementById('app-lbl-rigger-lectura');
+
+      const pdfRiggerCell = document.getElementById('pdf-ast-rigger');
+      const pdfFirmaRigBox = document.getElementById('pdf-firma-rigger-box');
+      const pdfFirmaRigNombre = document.getElementById('pdf-firma-rig-nombre');
+      const pdfFirmaRigStatus = document.getElementById('pdf-firma-rig-status');
+      const pdfFirmaRigHash = document.getElementById('pdf-firma-rig-hash');
+
+      if (conRigger) {
+        appRiggerBox.classList.remove('hidden');
+        appFirmaRigCard.classList.remove('hidden');
+        appFirmantesBadge.textContent = '2 Firmas (Operador + Rigger)';
+        appLblRigLectura.textContent = 'y el Rigger';
+        document.getElementById('app-firma-rig-name').textContent = rigger;
+
+        pdfRiggerCell.textContent = rigger;
+        pdfFirmaRigBox.className = 'col-span-5 border border-slate-300 rounded p-2 bg-slate-50';
+        pdfFirmaRigNombre.textContent = rigger;
+        pdfFirmaRigStatus.textContent = '● FIRMADO FES';
+        pdfFirmaRigStatus.className = 'text-[8px] font-mono text-emerald-700 font-bold';
+        pdfFirmaRigHash.innerHTML = 'PIN FES + OTP VALIDADO • Hash: <span class="text-indigo-700">3b71d9a0e112</span> • TSA RFC 3161';
+      } else {
+        appRiggerBox.classList.add('hidden');
+        appFirmaRigCard.classList.add('hidden');
+        appFirmantesBadge.textContent = '1 Firma (Solo Operador)';
+        appLblRigLectura.textContent = '';
+
+        pdfRiggerCell.textContent = 'NO APLICA (Maniobra sin Rigger asignado)';
+        pdfFirmaRigBox.className = 'col-span-5 border border-dashed border-slate-300 rounded p-2 bg-slate-100/70 opacity-75';
+        pdfFirmaRigNombre.textContent = 'SIN RIGGER EN EL EQUIPO';
+        pdfFirmaRigStatus.textContent = 'N/A';
+        pdfFirmaRigStatus.className = 'text-[8px] font-mono text-slate-500 font-bold';
+        pdfFirmaRigHash.textContent = 'Equipo operado únicamente por Operador titular.';
+      }
+
+      // 2. Sincronizar Tabla de 12 Etapas Previas en PDF
+      const pdfPrevTbody = document.getElementById('pdf-etapas-previas-tbody');
+      pdfPrevTbody.innerHTML = etapasPreviasData.map(item => `
+        <tr class="border-b border-slate-200">
+          <td class="p-1 text-center font-mono font-bold text-slate-600 border-r border-slate-300 bg-slate-50">${item.id}</td>
+          <td class="p-1 text-slate-800 border-r border-slate-300">${item.texto}</td>
+          <td class="p-1 text-center font-mono font-bold border-r border-slate-300 ${item.resp === 'SI' ? 'bg-emerald-100 text-emerald-900' : 'text-slate-300'}">${item.resp === 'SI' ? 'X' : ''}</td>
+          <td class="p-1 text-center font-mono font-bold border-r border-slate-300 ${item.resp === 'NO' ? 'bg-rose-100 text-rose-900' : 'text-slate-300'}">${item.resp === 'NO' ? 'X' : ''}</td>
+          <td class="p-1 text-center font-mono font-bold border-r border-slate-300 ${item.resp === 'N/A' ? 'bg-slate-200 text-slate-800' : 'text-slate-300'}">${item.resp === 'N/A' ? 'X' : ''}</td>
+          <td class="p-1 font-mono text-[8.5px] text-slate-700">${item.obs || '-'}</td>
+        </tr>
+      `).join('');
+
+      // 3. Sincronizar EPP en PDF
+      const eppCount = eppCatalogo.filter(e => e.checked).length;
+      document.getElementById('app-epp-count').textContent = `${eppCount} seleccionados`;
+      document.getElementById('pdf-epp-otros').textContent = document.getElementById('ast-inp-epp-otros').value || 'Ninguno';
+      document.getElementById('pdf-epp-grid').innerHTML = eppCatalogo.map(e => `
+        <div class="flex items-center gap-1.5">
+          <span class="w-3.5 h-3.5 inline-flex items-center justify-center border rounded text-[8px] font-mono font-bold ${
+            e.checked ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-transparent border-slate-300'
+          }">X</span>
+          <span class="${e.checked ? 'font-bold text-slate-900' : 'text-slate-500'}">${e.label}</span>
+        </div>
+      `).join('');
+
+      // 4. Sincronizar Riesgos en PDF
+      const riesgosCount = riesgosCatalogo.filter(r => r.checked).length;
+      document.getElementById('app-riesgos-count').textContent = `${riesgosCount} seleccionados`;
+      document.getElementById('pdf-riesgos-grid').innerHTML = riesgosCatalogo.map(r => `
+        <div class="flex items-center gap-1">
+          <span class="w-3.5 h-3.5 shrink-0 inline-flex items-center justify-center border rounded text-[8px] font-mono font-bold ${
+            r.checked ? 'bg-amber-600 text-white border-amber-700' : 'bg-white text-transparent border-slate-300'
+          }">X</span>
+          <span class="truncate ${r.checked ? 'font-bold text-slate-900' : 'text-slate-500'}">${r.label}</span>
+        </div>
+      `).join('');
+
+      // 5. Observaciones y Toma de Conocimiento
+      document.getElementById('pdf-ast-obs').textContent = '"' + document.getElementById('ast-inp-obs').value + '"';
+      const chkLectura = document.getElementById('ast-chk-lectura').checked;
+      const badgeLectura = document.getElementById('pdf-lectura-badge');
+      if (chkLectura) {
+        badgeLectura.textContent = '✓ LECTURA CONFIRMADA EN APP';
+        badgeLectura.className = 'text-[8.5px] bg-emerald-400 text-slate-950 px-1.5 py-0.5 rounded font-extrabold';
+      } else {
+        badgeLectura.textContent = '⚠️ PENDIENTE LECTURA';
+        badgeLectura.className = 'text-[8.5px] bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-extrabold';
+      }
+    }
+
+    // Cambiar entre los 2 Documentos (AST y Plan de Izaje)
+    function switchDoc(doc) {
+      document.getElementById('app-content-ast').classList.add('hidden');
+      document.getElementById('app-content-plan').classList.add('hidden');
+
+      document.getElementById('pdf-sheet-ast').classList.add('hidden');
+      document.getElementById('pdf-sheet-ast').classList.remove('flex');
+      document.getElementById('pdf-sheet-plan').classList.add('hidden');
+      document.getElementById('pdf-sheet-plan').classList.remove('flex');
+
+      document.getElementById('btn-doc-ast').className = "px-4 py-1.5 rounded-lg text-xs font-semibold transition text-slate-300 hover:text-white";
+      document.getElementById('btn-doc-plan').className = "px-4 py-1.5 rounded-lg text-xs font-semibold transition text-slate-300 hover:text-white";
+
+      const badge = document.getElementById('phone-badge-mode');
+
+      if (doc === 'ast') {
+        document.getElementById('app-content-ast').classList.remove('hidden');
+        document.getElementById('pdf-sheet-ast').classList.remove('hidden');
+        document.getElementById('pdf-sheet-ast').classList.add('flex');
+        document.getElementById('btn-doc-ast').className = "px-4 py-1.5 rounded-lg text-xs font-bold transition bg-amber-500 text-slate-950 shadow";
+        badge.textContent = "ART Grúa Móvil";
+        badge.className = "text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded";
+      } else if (doc === 'plan') {
+        document.getElementById('app-content-plan').classList.remove('hidden');
+        document.getElementById('pdf-sheet-plan').classList.remove('hidden');
+        document.getElementById('pdf-sheet-plan').classList.add('flex');
+        document.getElementById('btn-doc-plan').className = "px-4 py-1.5 rounded-lg text-xs font-bold transition bg-blue-500 text-white shadow";
+        badge.textContent = "Plan Izaje";
+        badge.className = "text-[10px] font-mono bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded";
+        syncPlan();
+      }
+    }
+
+    function syncPlan() {
+      const radio = parseFloat(document.getElementById('plan-inp-radio').value) || 0;
+      const pluma = parseFloat(document.getElementById('plan-inp-pluma').value) || 0;
+      const angulo = parseFloat(document.getElementById('plan-inp-angulo').value) || 0;
+      const elemento = document.getElementById('plan-inp-elemento').value;
+      const viento = parseFloat(document.getElementById('plan-inp-viento').value) || 0;
+
+      const pNeto = parseFloat(document.getElementById('plan-inp-neto').value) || 0;
+      const pGancho = parseFloat(document.getElementById('plan-inp-gancho').value) || 0;
+      const pYugo = parseFloat(document.getElementById('plan-inp-yugo').value) || 0;
+      const pAparejos = parseFloat(document.getElementById('plan-inp-aparejos').value) || 0;
+      const capTabla = parseFloat(document.getElementById('plan-inp-tabla').value) || 1;
+
+      const pTotal = pNeto + pGancho + pYugo + pAparejos;
+      const pct = (pTotal / capTabla) * 100;
+      const pctClamped = Math.min(Math.max(pct, 0), 100);
+
+      document.getElementById('app-plan-total').textContent = pTotal.toLocaleString('es-CL') + ' kg';
+      document.getElementById('app-plan-pct').textContent = pct.toFixed(1) + '%';
+      document.getElementById('app-plan-bar').style.width = pctClamped + '%';
+
+      document.getElementById('pdf-plan-elemento').textContent = elemento;
+      document.getElementById('pdf-plan-viento').textContent = `${viento} km/h (Máx: 32 km/h)`;
+      document.getElementById('pdf-plan-radio').textContent = radio.toFixed(1) + ' m';
+      document.getElementById('pdf-plan-pluma').textContent = pluma.toFixed(1) + ' m';
+      document.getElementById('pdf-plan-angulo').textContent = angulo.toFixed(0) + '°';
+      document.getElementById('svg-txt-radio').textContent = `Radio = ${radio} m`;
+      document.getElementById('svg-txt-pluma').textContent = `Pluma = ${pluma} m`;
+      document.getElementById('svg-txt-angulo').textContent = `${angulo}°`;
+
+      document.getElementById('pdf-plan-neto').textContent = pNeto.toLocaleString('es-CL') + ' kg';
+      document.getElementById('pdf-plan-gancho').textContent = pGancho.toLocaleString('es-CL') + ' kg';
+      document.getElementById('pdf-plan-yugo').textContent = pYugo.toLocaleString('es-CL') + ' kg';
+      document.getElementById('pdf-plan-aparejos').textContent = pAparejos.toLocaleString('es-CL') + ' kg';
+      document.getElementById('pdf-plan-total').textContent = pTotal.toLocaleString('es-CL') + ' kg';
+      document.getElementById('pdf-plan-tabla').textContent = capTabla.toLocaleString('es-CL') + ' kg';
+      document.getElementById('pdf-plan-pct').textContent = pct.toFixed(1) + '%';
+
+      const appSemaforo = document.getElementById('app-plan-semaforo');
+      const appPct = document.getElementById('app-plan-pct');
+      const appBar = document.getElementById('app-plan-bar');
+      const appMsg = document.getElementById('app-plan-msg');
+      const appBtn = document.getElementById('app-plan-btn-firma');
+
+      const pdfBox = document.getElementById('pdf-plan-box-dictamen');
+      const pdfTxt = document.getElementById('pdf-plan-dictamen-txt');
+      const pdfPct = document.getElementById('pdf-plan-pct');
+      const pdfTopStatus = document.getElementById('pdf-plan-top-status');
+
+      if (pct <= 75.0) {
+        appSemaforo.className = "p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-center space-y-1";
+        appPct.className = "text-lg font-black font-mono text-emerald-400";
+        appBar.className = "h-full bg-emerald-500 transition-all";
+        appMsg.className = "text-[10px] font-bold text-emerald-300 pt-1";
+        appMsg.textContent = "🟢 IZAJE ESTÁNDAR SEGURO (≤ 75%)";
+        appBtn.className = "w-full py-3 rounded-xl bg-blue-600 text-white font-extrabold text-xs shadow-lg";
+        appBtn.textContent = "✍️ Firmar Plan de Izaje (Rigger + Operador)";
+
+        pdfBox.className = "mt-2 p-3 rounded border-2 border-emerald-600 bg-emerald-50 flex items-center justify-between";
+        pdfTxt.className = "text-xs font-extrabold text-emerald-800 mt-0.5";
+        pdfTxt.textContent = "🟢 CONFORME — MANIOBRA DENTRO DEL LÍMITE SEGURO (≤ 85%)";
+        pdfPct.className = "text-2xl font-black font-mono text-emerald-700";
+        pdfTopStatus.textContent = "AUTORIZADO";
+        pdfTopStatus.className = "text-emerald-700 font-bold";
+      } else if (pct > 75.0 && pct <= 85.0) {
+        appSemaforo.className = "p-3 rounded-xl bg-amber-950/40 border border-amber-500/40 text-center space-y-1";
+        appPct.className = "text-lg font-black font-mono text-amber-400";
+        appBar.className = "h-full bg-amber-500 transition-all";
+        appMsg.className = "text-[10px] font-bold text-amber-300 pt-1";
+        appMsg.textContent = "🟡 CONDICIÓN LÍMITE (75% - 85%) • EXIGE DOBLE CHECK";
+        appBtn.className = "w-full py-3 rounded-xl bg-amber-500 text-slate-950 font-extrabold text-xs shadow-lg";
+        appBtn.textContent = "⚠️ Confirmar y Firmar Bajo Precaución";
+
+        pdfBox.className = "mt-2 p-3 rounded border-2 border-amber-500 bg-amber-50 flex items-center justify-between";
+        pdfTxt.className = "text-xs font-extrabold text-amber-900 mt-0.5";
+        pdfTxt.textContent = "🟡 PRECAUCIÓN — CAPACIDAD EN RANGO LÍMITE (75% A 85%)";
+        pdfPct.className = "text-2xl font-black font-mono text-amber-700";
+        pdfTopStatus.textContent = "CON PRECAUCIÓN";
+        pdfTopStatus.className = "text-amber-700 font-bold";
+      } else {
+        appSemaforo.className = "p-3 rounded-xl bg-rose-950/60 border border-rose-500 text-center space-y-1 animate-pulse";
+        appPct.className = "text-lg font-black font-mono text-rose-400";
+        appBar.className = "h-full bg-rose-500 transition-all";
+        appMsg.className = "text-[10px] font-bold text-rose-300 pt-1";
+        appMsg.textContent = "⛔ BLOQUEO MANDATORIO (> 85% CAPACIDAD TABLA)";
+        appBtn.className = "w-full py-3 rounded-xl bg-slate-800 text-rose-400 border border-rose-500/40 font-extrabold text-xs cursor-not-allowed";
+        appBtn.textContent = "🔒 FIRMA BLOQUEADA EN APP (SUPERA 85%)";
+
+        pdfBox.className = "mt-2 p-3 rounded border-2 border-rose-600 bg-rose-50 flex items-center justify-between";
+        pdfTxt.className = "text-xs font-extrabold text-rose-800 mt-0.5";
+        pdfTxt.textContent = "⛔ RECHAZADO / BLOQUEADO — SUPERA EL 85% DE CAPACIDAD";
+        pdfPct.className = "text-2xl font-black font-mono text-rose-700";
+        pdfTopStatus.textContent = "BLOQUEADO (>85%)";
+        pdfTopStatus.className = "text-rose-600 font-bold";
+      }
+    }
+
+    function setEscenarioPlan(neto, tabla) {
+      document.getElementById('plan-inp-neto').value = neto;
+      document.getElementById('plan-inp-tabla').value = tabla;
+      syncPlan();
+    }
+
+    // Inicializar al cargar
+    renderAppControls();
+    syncAst();
+  </script>
+</body>
+</html>

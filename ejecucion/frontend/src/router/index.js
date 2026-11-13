@@ -365,6 +365,37 @@ router.beforeEach((to, from, next) => {
     return next({ name: 'enrolamiento' })
   }
 
+  // Regla RBAC GSP (SPEC-106): Aislamiento de rutas y redirección al Home operativo
+  if (token && user && !to.meta?.public && to.meta?.layout !== 'public' && to.meta?.layout !== 'print') {
+    const roles = Array.isArray(user.roles)
+      ? user.roles.map(r => String(r?.name || r?.codi_rol || r?.name_rol || r || '').trim().toUpperCase()).filter(r => r && r !== 'USR-CONSENT')
+      : []
+
+    if (roles.length > 0 && !roles.includes('ADMIN')) {
+      if (to.name === 'mantenedores' || to.name === 'backlog') {
+        return next({ name: 'documentacion' })
+      }
+
+      const isOnlyTaller = roles.every(r => r.startsWith('GSP_TALLER_'))
+      const isOnlyBodega = roles.every(r => r === 'GSP_BODEGA')
+      const isOnlyPrev = roles.every(r => r === 'GSP_PREV')
+      const isOnlyEjec = roles.every(r => r === 'GSP_EJEC')
+
+      if (isOnlyTaller && ['dashboard', 'torre', 'crm', 'clientes', 'its_transicion', 'acreditacion'].includes(to.name)) {
+        return next({ name: 'mantenimiento' })
+      }
+      if (isOnlyBodega && ['dashboard', 'torre', 'crm', 'clientes', 'its_transicion', 'acreditacion'].includes(to.name)) {
+        return next({ name: 'inventario_bodegas' })
+      }
+      if (isOnlyPrev && ['dashboard', 'clientes', 'its_transicion', 'compras_oc'].includes(to.name)) {
+        return next({ name: 'acreditacion' })
+      }
+      if (isOnlyEjec && to.name !== 'documentacion') {
+        return next({ name: 'documentacion' })
+      }
+    }
+  }
+
   next()
 })
 

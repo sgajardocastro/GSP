@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4. Cierre de Servicio (ITS): Cálculo de Horas Operador, Rigger y Viáticos — Grúas San Pablo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-alt: #162032;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --blue: #3b82f6;
+      --purple: #a855f7;
+      --rose: #f43f5e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding: 8px 16px 36px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Barra Superior Compacta (Sin Hero Banner de relleno) */
+    .top-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-bottom: 16px;
+    }
+
+    .top-bar h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .top-bar .subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .nav-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .nav-pill {
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 7px 13px;
+      border-radius: 8px;
+      background: var(--card);
+      color: #cbd5e1;
+      border: 1px solid var(--border);
+      transition: all 0.15s ease;
+    }
+
+    .nav-pill:hover {
+      border-color: var(--amber);
+      color: #ffffff;
+      background: #26354d;
+    }
+
+    .btn-print {
+      background: var(--amber);
+      color: #0f172a;
+      border: none;
+      border-radius: 7px;
+      padding: 7px 14px;
+      font-weight: 700;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+
+    /* Secciones */
+    .section-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      margin-bottom: 20px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-num {
+      background: var(--amber);
+      color: #0f172a;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 0.78rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .badge-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .rule-card {
+      background: var(--card-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .rule-card h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #ffffff;
+    }
+
+    .rule-card p, .rule-card li {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+    }
+
+    .rule-card ul {
+      padding-left: 18px;
+      margin-top: 6px;
+    }
+
+    .rule-card li {
+      margin-bottom: 4px;
+    }
+
+    .formula-box {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      background: #0b1120;
+      border: 1px solid #334155;
+      border-left: 4px solid var(--amber);
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin: 8px 0;
+      color: #fde68a;
+    }
+
+    .alert-box {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-top: 12px;
+      font-size: 0.82rem;
+      color: #fef3c7;
+    }
+
+    .alert-box strong {
+      color: #fbbf24;
+    }
+
+    /* Tablas */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    th {
+      background: #0b1120;
+      color: #94a3b8;
+      text-align: left;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+      color: #e2e8f0;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .price-green {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: #34d399;
+    }
+
+    .price-zero {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: #f87171;
+    }
+
+    @media print {
+      body { background: #ffffff; color: #000000; padding: 0; }
+      .nav-pills, .btn-print { display: none; }
+      .section-box, .rule-card, .top-bar { border-color: #cbd5e1; background: #ffffff; color: #000000; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- NAVEGACIÓN DIRECTA A LAS 5 SECCIONES -->
+    <div class="nav-pills" style="align-items: center; justify-content: space-between; margin-bottom: 12px;">
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        <a href="#sec-flujo-rrhh" class="nav-pill" style="border-color: var(--emerald); color: #34d399;">0. Flujo Report Diario &rarr; ITS &rarr; Cierre Mensual RRHH</a>
+        <a href="#sec-tiempos" class="nav-pill">1. Datos de Viaje, Report, Odómetro y Horómetro</a>
+        <a href="#sec-horas" class="nav-pill">2. Cálculo Horas Operador, Rigger, Colación y Stand By</a>
+        <a href="#sec-tarifas" class="nav-pill">3. Tabla Valor Hora Operador (19 Categorías)</a>
+        <a href="#sec-viaticos" class="nav-pill">4. Tabla Viático Alimentación ($0 a $18.000)</a>
+      </div>
+      <button class="btn-print" onclick="window.print()">Imprimir / PDF</button>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- SECCIÓN 0: VERIFICACIÓN ANTICIPADA EN REPORT DIARIO, TRASPASO AL ITS Y CIERRE MENSUAL RRHH -->
+    <!-- ======================================================================= -->
+    <section id="sec-flujo-rrhh" class="section-box" style="border-color: rgba(16, 185, 129, 0.45);">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="badge-num" style="background: var(--emerald); color: #052e16;">FLUJO OFICIAL RRHH</span>
+          <span>Dónde se Calculan y Validan las Horas y Viáticos: Del Report Diario al ITS y al Cierre de Sueldos</span>
+        </div>
+        <span class="badge-tag">Cierre Mensual Independiente del ITS</span>
+      </div>
+
+      <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 14px;">
+        Para que <strong>RRHH y Remuneraciones (Tesalia Malatesta)</strong> pueda cerrar y pagar las remuneraciones el <strong>último día calendario de cada mes</strong> (incluso si una grúa lleva 10 días trabajando en obra y le quedan otros 10 días del mes siguiente con el ITS abierto), la verificación de horas de personal y viáticos se realiza <strong>día a día dentro de cada Report Diario</strong>:
+      </p>
+
+      <div class="grid-3">
+        <div class="rule-card" style="border-top: 3px solid var(--emerald);">
+          <h3 style="color: #34d399;">Paso 1: Se Calcula y Valida en el Report Diario</h3>
+          <p>
+            Al abrir cualquier Report Diario, en la <strong>Sección 3 (Liquidación Diaria de Personal y Viáticos)</strong> el sistema pre-calcula las <strong>Horas Operador</strong>, las <strong>Horas Rigger</strong>, la <strong>Tarifa $/hr</strong> y el <strong>Viático de Alimentación</strong> del día.<br><br>
+            <strong>Control de Gestión (Yiara)</strong> revisa o ajusta esos valores y valida el report con su PIN FES <strong>antes de las 13:00 hrs del día hábil siguiente</strong>.
+          </p>
+        </div>
+
+        <div class="rule-card" style="border-top: 3px solid var(--blue);">
+          <h3 style="color: #60a5fa;">Paso 2: Se Traspasa Automáticamente al ITS</h3>
+          <p>
+            Cuando se abre el <strong>Informe de Término de Servicio (ITS)</strong>, el sistema <strong>no vuelve a pedir digitación manual</strong>: traspasa automáticamente las horas, tarifas y viáticos ya verificados desde cada Report Diario con el sello <code class="mono" style="color:#34d399;">&check; Report</code>.<br><br>
+            En el ITS los valores quedan listos y solo se editan por excepción justificada.
+          </p>
+        </div>
+
+        <div class="rule-card" style="border-top: 3px solid var(--amber);">
+          <h3 style="color: #fbbf24;">Paso 3: Liquidación RRHH con Filtro Desde-Hasta</h3>
+          <p>
+            En <strong>Perspectiva Contabilidad &rarr; 2. Horas Operadores / Riggers</strong>, RRHH y Contabilidad filtran por rango de fechas (<strong>Desde &mdash; Hasta</strong>) y revisan la última columna <strong><code class="mono">Report Validado (SÍ / NO)</code></strong>.<br><br>
+            Así se liquidan todos los días trabajados hasta el día 30/31 del mes sin esperar el cierre del ITS.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- SECCIÓN 1: QUÉ SE REPORTA EN CADA VIAJE Y REPORT (RELOJ, ODÓMETRO, HORÓMETRO) -->
+    <!-- ======================================================================= -->
+    <section id="sec-tiempos" class="section-box">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="badge-num">SECCIÓN 1</span>
+          <span>Qué se ingresa en cada Registro de Viaje y en cada Report Diario (Reloj, Odómetros y Horómetros)</span>
+        </div>
+        <span class="badge-tag">Cruce Automático por Día</span>
+      </div>
+
+      <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 14px;">
+        El Informe de Término de Servicio (ITS) consolida una fila por cada trabajador y por cada día en que hubo movimiento. Para calcular tanto las <strong>Horas de Operador</strong> como el <strong>Viático de Alimentación</strong>, el sistema cruza automáticamente dos registros de terreno:
+      </p>
+
+      <div class="grid-2" style="margin-bottom: 16px;">
+        <div class="rule-card" style="border-left: 4px solid var(--blue);">
+          <h3>A. Registro de Viaje (Salida y Regreso de Planta)</h3>
+          <p>Proviene de los hitos de traslado del equipo (<code class="mono">tequ_log_desplazamiento</code>):</p>
+          <ul>
+            <li><strong>Hora Salida Planta:</strong> Hora en que el equipo sale de la base GSP hacia la obra (Hito <code class="mono">SALIDA_PLANTA_IDA</code>).</li>
+            <li><strong>Hora Llegada a Obra:</strong> Hora en que el equipo arriba a faena (Hito <code class="mono">LLEGADA_DESTINO_IDA</code>).</li>
+            <li><strong>Hora Retorno a Planta:</strong> Hora en que el equipo ingresa de vuelta a la base GSP (Hito <code class="mono">LLEGADA_PLANTA_RETORNO</code>).</li>
+            <li><strong>Odómetro Salida / Llegada / Retorno (km):</strong> Kilometraje del tablero al salir de planta, al llegar a obra y al regresar a planta (calcula los <strong>Km reales recorridos</strong>).</li>
+            <li><strong>Horómetro Camión (hrs):</strong> Horas de motor del camión/chasis al salir y regresar (cuando aplica).</li>
+          </ul>
+        </div>
+
+        <div class="rule-card" style="border-left: 4px solid var(--emerald);">
+          <h3>B. Report Diario de Trabajo en Obra</h3>
+          <p>Proviene del Report Diario firmado en faena (<code class="mono">tedp_reporte_avance</code>):</p>
+          <ul>
+            <li><strong>Hora Inicio Obra y Hora Término Obra:</strong> Jornada operativa ejecutada dentro de la obra del cliente.</li>
+            <li><strong>Horómetro Inicial y Final de Grúa (hrs):</strong> Lectura del cuentahoras del motor/pluma al iniciar y terminar la maniobra (ej. <code class="mono">4.250,5 hrs</code> a <code class="mono">4.257,0 hrs</code> = <code class="mono">6,5 hrs motor</code>).</li>
+            <li><strong>Odómetro en Report (km):</strong> Kilometraje registrado en la papeleta diaria si hubo desplazamiento en faena.</li>
+            <li><strong>Horas de Colación:</strong> Tiempo real de colación anotado en el report (ej. <code class="mono">1.0 hr</code>).</li>
+            <li><strong>Horas Stand By (Cliente o GSP):</strong> Horas de espera en obra registradas en el report.</li>
+            <li><strong>Petróleo (Litros) y Firma Cliente:</strong> Carga de combustible en terreno y firma digital del mandante que aprueba el report.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- TABLA: PARA QUÉ SIRVE CADA MEDIDOR (RELOJ VS ODÓMETRO VS HORÓMETRO) -->
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Medidor / Dato</th>
+              <th>Dónde se ingresa</th>
+              <th>Unidad</th>
+              <th>Para qué lo usa el sistema (Regla de Negocio)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Horas Reloj</strong><br><span style="font-size:0.75rem;color:#94a3b8;">(Salida, Llegada, Inicio, Término, Retorno, Colación)</span></td>
+              <td>Registro de Viaje + Report Diario</td>
+              <td class="mono">Horas (HH:MM)</td>
+              <td>Define las <strong>Horas a Pagar al Operador/Rigger</strong> y el <strong>Viático de Alimentación</strong> en el ITS, y las <strong>Horas Comerciales a Facturar al Cliente</strong> en el EDP.</td>
+            </tr>
+            <tr>
+              <td><strong>2. Odómetro</strong><br><span style="font-size:0.75rem;color:#94a3b8;">(Odómetro Inicial, Llegada y Final)</span></td>
+              <td>Registro de Viaje (y Report)</td>
+              <td class="mono">Kilómetros (km)</td>
+              <td>Calcula los <strong>Km reales recorridos</strong> (<code class="mono">Odómetro Final - Odómetro Inicial</code>) para auditar en el ITS el kilometraje real frente a la <strong>Distancia Km cotizada</strong> (Urbano &le; 30 km vs. Rural &gt; 30 km).</td>
+            </tr>
+            <tr>
+              <td><strong>3. Horómetro</strong><br><span style="font-size:0.75rem;color:#94a3b8;">(Horómetro Inicial y Final Grúa / Camión)</span></td>
+              <td>Report Diario y Registro de Viaje</td>
+              <td class="mono">Horas Motor (hrs)</td>
+              <td>Mide el <strong>desgaste real de motor/pluma de la máquina</strong> (<code class="mono">Horómetro Final - Horómetro Inicial</code>) para control de combustible y alertas de <strong>Mantenimiento Preventivo en Taller</strong>. <em>No reemplaza las horas reloj para el pago del operador.</em></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- SECCIÓN 2: REGLAS DE CÁLCULO DE HORAS OPERADOR Y RIGGER                 -->
+    <!-- ======================================================================= -->
+    <section id="sec-horas" class="section-box">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="badge-num">SECCIÓN 2</span>
+          <span>Reglas de Cálculo de Horas Operador y Rigger</span>
+        </div>
+        <span class="badge-tag">Pestaña: Hora Operador</span>
+      </div>
+
+      <div class="grid-2" style="margin-bottom: 14px;">
+        <!-- URBANO -->
+        <div class="rule-card" style="border-top: 3px solid var(--blue);">
+          <h3>1. Servicio Urbano (Distancia &le; 30 km)</h3>
+          <p>En radio urbano no se separa el flete. El tiempo del operador corre desde que sale de la planta GSP hasta que termina el trabajo en la obra, descontando su colación:</p>
+          <div class="formula-box">
+            Horas Operador = (Hora Término Obra &minus; Hora Salida Planta) &minus; Horas Colación<br>
+            Horas Flete = 0 hrs
+          </div>
+          <p><strong>Ejemplo Urbano:</strong> Sale de planta a las <code class="mono">08:00</code>, llega a obra <code class="mono">08:45</code>, termina en obra a las <code class="mono">17:30</code> con <code class="mono">1 hr</code> de colación &rarr; Total entre <code class="mono">08:00</code> y <code class="mono">17:30</code> = <code class="mono">9,5 hrs</code> menos <code class="mono">1 hr</code> colación = <strong>8,5 hrs a pagar</strong>.</p>
+        </div>
+
+        <!-- RURAL -->
+        <div class="rule-card" style="border-top: 3px solid var(--amber);">
+          <h3>2. Servicio Rural (Distancia &gt; 30 km)</h3>
+          <p>En servicio fuera de radio urbano (&gt; 30 km) se separan las <strong>Horas en Obra</strong> (respetando el mínimo de horas garantizadas en la cotización) y las <strong>Horas de Flete (Traslado Ida + Regreso)</strong>:</p>
+          <div class="formula-box">
+            Horas Faena = Máximo(Mínimo Cotizado, (Hora Término &minus; Hora Llegada) &minus; Colación)<br>
+            Horas Flete = Horas Traslado Ida + Horas Traslado Retorno<br>
+            Horas Totales a Pagar = Horas Faena + Horas Flete
+          </div>
+          <p><strong>Regla de Valorización del Flete:</strong> Las horas de traslado (flete) se pagan al operador exactamente <strong>al mismo valor hora de la grúa</strong>.</p>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <!-- COLACIÓN -->
+        <div class="rule-card">
+          <h3 style="color: #fbbf24;">3. Regla de Colación</h3>
+          <p>
+            La colación registrada en el Report Diario <strong>siempre se descuenta</strong> de las horas trabajadas.<br><br>
+            Si en el report no se registró colación (<code class="mono">0 hrs</code>), no se descuenta nada. El tiempo de colación no se paga como hora de servicio ni suma horas para el viático.
+          </p>
+        </div>
+
+        <!-- STAND BY -->
+        <div class="rule-card">
+          <h3 style="color: #38bdf8;">4. Regla de Horas Stand By</h3>
+          <p>
+            Al operador <strong>siempre se le pagan las horas de Stand By</strong> en que estuvo disponible en obra, sin importar si el Stand By fue por causa del Cliente o por causa interna de GSP.<br><br>
+            <em>(La distinción entre Stand By Cliente vs. GSP solo afecta el cobro comercial al cliente en el EDP, nunca el pago al trabajador).</em>
+          </p>
+        </div>
+
+        <!-- RIGGER -->
+        <div class="rule-card">
+          <h3 style="color: #c084fc;">5. Regla del Rigger (Control RRHH)</h3>
+          <p>
+            El Rigger tiene sueldo fijo mensual, por lo que en el ITS su columna <strong>Valor Hora es <code class="mono">$0</code> y su Total es <code class="mono">$0</code></strong>.<br><br>
+            Sin embargo, el sistema <strong>consolida igual todas sus filas diarias con sus horas reales</strong> (Salida, Inicio, Término, Retorno, Colación y Total Horas) para que RRHH y Contabilidad realicen su análisis posterior.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- SECCIÓN 3: TABLA OFICIAL DE VALOR HORA OPERADOR (19 CATEGORÍAS)         -->
+    <!-- ======================================================================= -->
+    <section id="sec-tarifas" class="section-box">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="badge-num">SECCIÓN 3</span>
+          <span>Tabla Oficial de Valor Hora Operador (<code class="mono">tpar_tarifa_operador</code>)</span>
+        </div>
+        <span class="badge-tag">19 Categorías Oficiales en BD</span>
+      </div>
+
+      <div class="alert-box" style="margin-top: 0; margin-bottom: 16px;">
+        <strong>REGLA DE ORO COMERCIAL (Manda la Grúa Vendida en la Cotización, NO la Grúa Física):</strong><br>
+        El valor de la hora del operador se determina según el <strong>equipo o tonelaje comprometido comercialmente en la cotización</strong> (<code class="mono">crm_v1.lineas_servicio</code>), y <strong>NO</strong> por la grúa física que Operaciones haya despachado por disponibilidad.<br>
+        <em>Ejemplo práctico:</em> Si el cliente contrató una <strong>Grúa de 70 Ton</strong> (tarifa operador <code class="mono">$6.000/h</code>), pero por falta de disponibilidad GSP envió físicamente una <strong>Grúa de 150 Ton</strong>, el sistema pre-asigna <code class="mono">$6.000/h</code> (lo vendido). Si Control de Gestión decide pagar una tarifa distinta por excepción, puede editar el monto en el ITS dejando observación obligatoria de auditoría.
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 70px;">ID BD</th>
+              <th>Categoría de Equipo / Grúa (Según Cotización Comercial)</th>
+              <th style="width: 140px;">Tonelaje Ref.</th>
+              <th style="width: 180px;">Valor Hora Operador</th>
+              <th>Tramo / Agrupación</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono">17</td>
+              <td><strong>MANIPULADOR TELESCÓPICO</strong></td>
+              <td class="mono">—</td>
+              <td class="price-green">$3.000 / hora</td>
+              <td>Equipos de Apoyo y Maniobra</td>
+            </tr>
+            <tr>
+              <td class="mono">18</td>
+              <td><strong>GRÚA HORQUILLA</strong></td>
+              <td class="mono">—</td>
+              <td class="price-green">$3.000 / hora</td>
+              <td>Equipos de Apoyo y Maniobra</td>
+            </tr>
+            <tr>
+              <td class="mono">16</td>
+              <td><strong>CAMIÓN PLUMA</strong></td>
+              <td class="mono">—</td>
+              <td class="price-green">$3.500 / hora</td>
+              <td>Camiones Pluma</td>
+            </tr>
+            <tr>
+              <td class="mono">1</td>
+              <td><strong>GRÚAS TELESCÓPICAS 40 TON</strong></td>
+              <td class="mono">40 Ton</td>
+              <td class="price-green">$5.000 / hora</td>
+              <td>Grúas 40 a 55 Ton ($5.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">2</td>
+              <td><strong>GRÚAS TELESCÓPICAS 50 TON</strong></td>
+              <td class="mono">50 Ton</td>
+              <td class="price-green">$5.000 / hora</td>
+              <td>Grúas 40 a 55 Ton ($5.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">3</td>
+              <td><strong>GRÚAS TELESCÓPICAS 55 TON</strong></td>
+              <td class="mono">55 Ton</td>
+              <td class="price-green">$5.000 / hora</td>
+              <td>Grúas 40 a 55 Ton ($5.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">4</td>
+              <td><strong>GRÚAS TELESCÓPICAS 60 TON</strong></td>
+              <td class="mono">60 Ton</td>
+              <td class="price-green">$6.000 / hora</td>
+              <td>Grúas 60 a 90 Ton ($6.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">5</td>
+              <td><strong>GRÚAS TELESCÓPICAS 70 TON</strong></td>
+              <td class="mono">70 Ton</td>
+              <td class="price-green">$6.000 / hora</td>
+              <td>Grúas 60 a 90 Ton ($6.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">6</td>
+              <td><strong>GRÚAS TELESCÓPICAS 75 TON</strong></td>
+              <td class="mono">75 Ton</td>
+              <td class="price-green">$6.000 / hora</td>
+              <td>Grúas 60 a 90 Ton ($6.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">7</td>
+              <td><strong>GRÚAS TELESCÓPICAS 80 TON</strong></td>
+              <td class="mono">80 Ton</td>
+              <td class="price-green">$6.000 / hora</td>
+              <td>Grúas 60 a 90 Ton ($6.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">8</td>
+              <td><strong>GRÚAS TELESCÓPICAS 90 TON</strong></td>
+              <td class="mono">90 Ton</td>
+              <td class="price-green">$6.000 / hora</td>
+              <td>Grúas 60 a 90 Ton ($6.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">9</td>
+              <td><strong>GRÚAS TELESCÓPICAS 100 TON</strong></td>
+              <td class="mono">100 Ton</td>
+              <td class="price-green">$7.000 / hora</td>
+              <td>Grúas 100 a 120 Ton ($7.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">10</td>
+              <td><strong>GRÚAS TELESCÓPICAS 120 TON</strong></td>
+              <td class="mono">120 Ton</td>
+              <td class="price-green">$7.000 / hora</td>
+              <td>Grúas 100 a 120 Ton ($7.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">11</td>
+              <td><strong>GRÚAS TELESCÓPICAS 150 TON</strong></td>
+              <td class="mono">150 Ton</td>
+              <td class="price-green">$10.000 / hora</td>
+              <td>Grúas 150 a 160 Ton ($10.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">12</td>
+              <td><strong>GRÚAS TELESCÓPICAS 160 TON</strong></td>
+              <td class="mono">160 Ton</td>
+              <td class="price-green">$10.000 / hora</td>
+              <td>Grúas 150 a 160 Ton ($10.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">13</td>
+              <td><strong>GRÚAS TELESCÓPICAS 220 TON</strong></td>
+              <td class="mono">220 Ton</td>
+              <td class="price-green">$13.000 / hora</td>
+              <td>Grúas 220 a 300 Ton ($13.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">14</td>
+              <td><strong>GRÚAS TELESCÓPICAS 250 TON</strong></td>
+              <td class="mono">250 Ton</td>
+              <td class="price-green">$13.000 / hora</td>
+              <td>Grúas 220 a 300 Ton ($13.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">19</td>
+              <td><strong>GRÚA TELESCÓPICA 300 TON</strong></td>
+              <td class="mono">300 Ton</td>
+              <td class="price-green">$13.000 / hora</td>
+              <td>Grúas 220 a 300 Ton ($13.000/h)</td>
+            </tr>
+            <tr>
+              <td class="mono">15</td>
+              <td><strong>GRÚAS TELESCÓPICAS 400 TON</strong></td>
+              <td class="mono">400 Ton</td>
+              <td class="price-green">$20.000 / hora</td>
+              <td>Grúas Alto Tonelaje 400 Ton ($20.000/h)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- SECCIÓN 4: TABLA OFICIAL DE VIÁTICO DE ALIMENTACIÓN                     -->
+    <!-- ======================================================================= -->
+    <section id="sec-viaticos" class="section-box">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="badge-num">SECCIÓN 4</span>
+          <span>Tabla Oficial de Viático de Alimentación (Operador y Rigger)</span>
+        </div>
+        <span class="badge-tag">Pestaña: Viático Alimentación</span>
+      </div>
+
+      <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 14px;">
+        El <strong>Viático de Alimentación</strong> aplica tanto para el <strong>Operador</strong> como para el <strong>Rigger</strong>. Se calcula por cada día trabajado midiendo las horas efectivas del trabajador (descontando siempre las horas de colación y redondeando fracciones al entero más cercano):
+      </p>
+
+      <!-- LOS 4 ESCENARIOS DE MEDICIÓN DE HORAS PARA VIÁTICO -->
+      <div class="grid-2" style="margin-bottom: 18px;">
+        <div class="rule-card">
+          <h3>Caso 1: Sale de planta y regresa en el mismo día</h3>
+          <div class="formula-box">(Hora Retorno Planta &minus; Hora Salida Planta) &minus; Colación</div>
+          <p>Se mide desde que sale de la base GSP hasta que ingresa de regreso a la base GSP.</p>
+        </div>
+
+        <div class="rule-card">
+          <h3>Caso 2: Día de salida desde planta, pero pernocta fuera</h3>
+          <div class="formula-box">(Hora Término Obra &minus; Hora Salida Planta) &minus; Colación</div>
+          <p>El primer día de un servicio de varios días: desde que sale de planta hasta que cierra faena en obra.</p>
+        </div>
+
+        <div class="rule-card">
+          <h3>Caso 3: Día intermedio de permanencia en obra</h3>
+          <div class="formula-box">(Hora Término Obra &minus; Hora Inicio Obra) &minus; Colación</div>
+          <p>Días en que el equipo ya amaneció en faena y continúa en la obra sin viaje a planta.</p>
+        </div>
+
+        <div class="rule-card">
+          <h3>Caso 4: Último día con retorno a planta GSP</h3>
+          <div class="formula-box">(Hora Retorno Planta &minus; Hora Inicio Obra) &minus; Colación</div>
+          <p>Desde que inicia la jornada en obra hasta que el equipo entra de vuelta a la planta GSP.</p>
+        </div>
+      </div>
+
+      <!-- REGLA RESUMEN ANTES DE LA TABLA -->
+      <div class="alert-box" style="margin-top: 0; margin-bottom: 16px;">
+        <strong>REGLA DE CÁLCULO DE LA ESCALA DE VIÁTICO:</strong><br>
+        &bull; <strong>Menos de 8 horas reales efectivas (&lt; 8,0 hrs):</strong> <code class="mono">$0</code> (No genera derecho a viático; ej. <code class="mono">7,8 hrs</code> reales = <code class="mono">$0</code>).<br>
+        &bull; <strong>8 horas efectivas:</strong> Base de <strong><code class="mono">$7.000</code></strong>.<br>
+        &bull; <strong>Por cada hora adicional sobre 8 horas:</strong> Se suman <strong><code class="mono">+$1.000 por hora</code></strong> hasta el <strong>tope máximo diario de <code class="mono">$18.000</code></strong> (19 horas o más).
+      </div>
+
+      <!-- TABLA HORA POR HORA -->
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 220px;">Horas Efectivas (Sin Colación)</th>
+              <th style="width: 200px;">Monto Viático Diario</th>
+              <th>Explicación de la Regla</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono">&lt; 8 horas (0 a 7,9 hrs)</td>
+              <td class="price-zero">$0 (Sin Viático)</td>
+              <td>No cumple el mínimo de 8 horas efectivas fuera/en faena.</td>
+            </tr>
+            <tr>
+              <td class="mono">8 horas</td>
+              <td class="price-green">$7.000</td>
+              <td>Monto base al cumplir las 8 horas efectivas.</td>
+            </tr>
+            <tr>
+              <td class="mono">9 horas</td>
+              <td class="price-green">$8.000</td>
+              <td>Base $7.000 + 1 hora adicional ($1.000).</td>
+            </tr>
+            <tr>
+              <td class="mono">10 horas</td>
+              <td class="price-green">$9.000</td>
+              <td>Base $7.000 + 2 horas adicionales ($2.000).</td>
+            </tr>
+            <tr>
+              <td class="mono">11 horas</td>
+              <td class="price-green">$10.000</td>
+              <td>Base $7.000 + 3 horas adicionales ($3.000).</td>
+            </tr>
+            <tr>
+              <td class="mono">12 horas</td>
+              <td class="price-green">$11.000</td>
+              <td>Base $7.000 + 4 horas adicionales ($4.000).</td>
+            </tr>
+            <tr>
+              <td class="mono">13 horas</td>
+              <td class="price-green">$12.000</td>
+              <td>Base $7.000 + 5 horas adicionales ($5.000).</td>
+            </tr>
+            <tr>
+              <td class="mono">14 horas</td>
+              <td class="price-green">$13.000</td>
+              <td>Base $7.000 + 6 horas adicionales ($6.000).</td>
+            </tr>
+            <tr>
+              <td class="mono">15 horas</td>
+              <td class="price-green">$14.000</td>
+              <td>Base $7.000 + 7 horas adicionales ($7.000).</td>
+            </tr>
+            <tr>
+              <td class="mono">16 horas</td>
+              <td class="price-green">$15.000</td>
+              <td>Base $7.000 + 8 horas adicionales ($8.000).</td>
+            </tr>
+            <tr>
+              <td class="mono">17 horas</td>
+              <td class="price-green">$16.000</td>
+              <td>Base $7.000 + 9 horas adicionales ($9.000).</td>
+            </tr>
+            <tr>
+              <td class="mono">18 horas</td>
+              <td class="price-green">$17.000</td>
+              <td>Base $7.000 + 10 horas adicionales ($10.000).</td>
+            </tr>
+            <tr>
+              <td class="mono">19 horas o más (&ge; 19 hrs)</td>
+              <td class="price-green">$18.000 (Tope Máximo)</td>
+              <td>Tope máximo diario de viático de alimentación ($18.000).</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>

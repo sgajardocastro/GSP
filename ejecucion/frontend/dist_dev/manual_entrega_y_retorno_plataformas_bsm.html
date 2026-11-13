@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proceso Completo de Plataformas (Caso 5): Estructuración, Entrega, Retorno Asíncrono & Acta 360° | Bestmaq / Royal Rental / GSP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              amber: '#f59e0b',
+              amberLight: '#fbbf24',
+              amberDark: '#b45309',
+              dark: '#030712',
+              card: '#0b1324',
+              cardHover: '#111e38',
+              border: 'rgba(255, 255, 255, 0.08)'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #030712;
+      color: #f3f4f6;
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0b1324;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; color: black !important; }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col antialiased custom-scrollbar selection:bg-amber-500 selection:text-black">
+
+  <!-- ENCABEZADO SUPERIOR -->
+  <header class="border-b border-brand-border bg-[#080d1a] px-4 md:px-8 py-3.5 sticky top-0 z-50 backdrop-blur flex items-center justify-between no-print">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg">
+        <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-extrabold text-sm tracking-wider text-slate-100 uppercase">Bestmaq (BSM) &bull; Royal Rental &bull; GSP</span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/40 font-bold uppercase">Manual Operacional Nº 09</span>
+        </div>
+        <p class="text-xs text-slate-400">Proceso E2E de Plataformas: Estructuración Comercial (Caso 5 + Traslado Ida/Vuelta), Entrega 360°, Retorno Asíncrono y Liquidación</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-3">
+      <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors hidden sm:flex items-center space-x-1.5">
+        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+        <span>Imprimir PDF</span>
+      </button>
+      <a href="./centro_documentacion_gsp.html" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-colors flex items-center space-x-1.5">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+        <span>Volver al Centro de Documentación</span>
+      </a>
+      <span class="text-xs font-mono px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-blue-400">
+        SPEC-081
+      </span>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 md:px-8 py-8 space-y-12">
+
+    <!-- HERO / PRINCIPIO RECTOR E2E -->
+    <div class="border border-blue-500/30 bg-gradient-to-br from-blue-500/10 via-slate-900 to-slate-900 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
+      <div class="absolute -right-10 -bottom-10 opacity-5 pointer-events-none">
+        <i data-lucide="clipboard-check" class="w-96 h-96"></i>
+      </div>
+      <div class="max-w-4xl">
+        <div class="inline-flex items-center space-x-2 text-blue-400 text-xs font-mono uppercase tracking-widest mb-3">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>Arquitectura E2E Canónica — Caso 5: Servicio de Plataformas + Traslado Ida y Vuelta</span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight leading-snug">
+          Ciclo Completo de Arriendo de Plataformas: Desde el Estructurador Comercial hasta las Actas 360° y Retorno Asíncrono
+        </h1>
+        <p class="mt-3 text-sm md:text-base text-slate-300 leading-relaxed">
+          Las plataformas elevadoras (<strong class="text-white">Alzahombres, Tijeras y Brazos Articulados</strong> de <strong class="text-blue-400">Bestmaq BSM / Royal Rental</strong>) son maquinarias con ruedas diseñadas para desplazarse únicamente dentro de un galpón o instalación del cliente para trabajos en altura, permaneciendo arrendadas <strong class="text-amber-400">sin operador por días, semanas o meses</strong> bajo un Contrato de Arrendamiento (<code class="text-blue-300 font-mono">SPEC-076</code>). Por esta razón, el servicio se estructura en el CRM como un <strong class="text-white">Caso 5</strong> que incluye obligatoriamente <strong class="text-amber-300">(1) el Arriendo de la Plataforma</strong> más <strong class="text-emerald-300">(2) el Servicio de Traslado Ida y Vuelta</strong> en camión. El camión de traslado debe asignar un <strong class="text-white">Chofer</strong>, quien ejecuta el registro de viaje estándar y levanta las <strong class="text-white">Actas de Entrega y de Retiro 360° con firma manual del cliente</strong>.
+        </p>
+        <div class="mt-5 flex flex-wrap items-center gap-2.5">
+          <span class="px-3 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5">
+            <i data-lucide="layers" class="w-4 h-4"></i> Estructurador Caso 5: Plataforma + Traslado Ida/Vuelta
+          </span>
+          <span class="px-3 py-1 rounded-lg bg-blue-500/10 text-blue-300 border border-blue-500/30 text-xs font-semibold flex items-center gap-1.5">
+            <i data-lucide="truck" class="w-4 h-4"></i> Camión de Flete = Chofer Obligatorio
+          </span>
+          <span class="px-3 py-1 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5">
+            <i data-lucide="clock" class="w-4 h-4"></i> Asignación de Retorno Asíncrona (Días/Meses Después)
+          </span>
+          <span class="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5">
+            <i data-lucide="lock" class="w-4 h-4"></i> Candado Previo al Retorno: Acta Recuperación 360° + Firma Manual
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 1: MAPA VISUAL DEL PROCESO COMPLETO E2E (6 FASES)             -->
+    <!-- ===================================================================== -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="git-merge" class="w-5 h-5 text-amber-400"></i>
+            1. Mapa del Proceso Completo End-to-End (6 Fases del Ciclo de Plataformas)
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Trazabilidad continua desde la cotización en el Estructurador de Servicios hasta el cierre del Estado de Pago (EDP).</p>
+        </div>
+        <span class="text-xs font-mono px-2.5 py-1 rounded bg-slate-900 text-amber-400 border border-slate-800">
+          Flujo E2E 6 Etapas
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+        <!-- FASE 1 -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-2 border-t-4 border-t-amber-500 shadow-lg flex flex-col justify-between">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-mono text-amber-400 font-black text-[11px]">FASE 1 &bull; CRM</span>
+              <i data-lucide="calculator" class="w-4 h-4 text-amber-400"></i>
+            </div>
+            <h3 class="font-bold text-white text-sm leading-snug">Estructurador (Caso 5) &amp; Contrato</h3>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              Se cotiza como <strong>Caso 5</strong> incluyendo dos líneas obligatorias: <strong>1) Arriendo Plataforma</strong> (sin operador) + <strong>2) Traslado Ida/Vuelta</strong>. Se firma el Contrato (<code class="text-amber-300">SPEC-076</code>).
+            </p>
+          </div>
+          <div class="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-amber-300">
+            GestorOportunidades.vue
+          </div>
+        </div>
+
+        <!-- FASE 2 -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-2 border-t-4 border-t-blue-500 shadow-lg flex flex-col justify-between">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-mono text-blue-400 font-black text-[11px]">FASE 2 &bull; T0</span>
+              <i data-lucide="user-check" class="w-4 h-4 text-blue-400"></i>
+            </div>
+            <h3 class="font-bold text-white text-sm leading-snug">Asignación de Recursos (Ida)</h3>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              En Sub-tab 2 se asigna la <strong>Plataforma</strong> (Segmento 1, sin operador) y el <strong>Camión Plataforma / Cama Baja</strong> (Segmento 2) con un <strong>Chofer de Ida obligatorio</strong>.
+            </p>
+          </div>
+          <div class="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-blue-300">
+            Sub-tab 2 (Despacho T0)
+          </div>
+        </div>
+
+        <!-- FASE 3 -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-2 border-t-4 border-t-cyan-500 shadow-lg flex flex-col justify-between">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-mono text-cyan-400 font-black text-[11px]">FASE 3 &bull; T0</span>
+              <i data-lucide="clipboard-signature" class="w-4 h-4 text-cyan-400"></i>
+            </div>
+            <h3 class="font-bold text-white text-sm leading-snug">Viaje de Ida + Acta de Entrega 360°</h3>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              El Chofer ejecuta el viaje de ida (Odómetro Salida &rarr; Llegada) y al concluir levanta el <strong>Acta de Entrega</strong> (19 ítems, Fotos 360° y Firma Manual Cliente).
+            </p>
+          </div>
+          <div class="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-emerald-400">
+            Devenga 50% Flete Ida
+          </div>
+        </div>
+
+        <!-- FASE 4 -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-2 border-t-4 border-t-purple-500 shadow-lg flex flex-col justify-between">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-mono text-purple-400 font-black text-[11px]">FASE 4 &bull; T1</span>
+              <i data-lucide="calendar-clock" class="w-4 h-4 text-purple-400"></i>
+            </div>
+            <h3 class="font-bold text-white text-sm leading-snug">Estadía y Asignación Asíncrona</h3>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              La plataforma opera días o meses donde el cliente. Al finalizar el arriendo, Operaciones asigna de forma <strong>asíncrona</strong> el camión y el <strong>Chofer de Retorno</strong>.
+            </p>
+          </div>
+          <div class="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-purple-300">
+            Otro Camión / Otro Chofer
+          </div>
+        </div>
+
+        <!-- FASE 5 -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-2 border-t-4 border-t-emerald-500 shadow-lg flex flex-col justify-between">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-mono text-emerald-400 font-black text-[11px]">FASE 5 &bull; T1</span>
+              <i data-lucide="lock" class="w-4 h-4 text-emerald-400"></i>
+            </div>
+            <h3 class="font-bold text-white text-sm leading-snug">Candado Acta Retiro + Viaje Retorno</h3>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              El Chofer de Retorno debe completar el <strong>Acta de Recuperación</strong> (19 ítems, Fotos 360° y Firma Cliente) como <strong>candado previo</strong> para activar el Viaje de Retorno.
+            </p>
+          </div>
+          <div class="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-emerald-300">
+            Desbloquea Retorno a Base
+          </div>
+        </div>
+
+        <!-- FASE 6 -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-2 border-t-4 border-t-amber-400 shadow-lg flex flex-col justify-between">
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="font-mono text-amber-300 font-black text-[11px]">FASE 6 &bull; EDP</span>
+              <i data-lucide="badge-dollar-sign" class="w-4 h-4 text-amber-300"></i>
+            </div>
+            <h3 class="font-bold text-white text-sm leading-snug">Cierre 100% Flete y Liquidación EDP</h3>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              Concluido el retorno en base, se devenga el <strong>100% del Traslado Ida/Vuelta</strong>, se consolida el PDF de Entrega/Recepción y se liquida en el EDP.
+            </p>
+          </div>
+          <div class="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-amber-300">
+            100% Traslado + Arriendo
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 2: CÓMO SE ESTRUCTURA EL SERVICIO EN EL ESTRUCTURADOR (CASO 5)-->
+    <!-- ===================================================================== -->
+    <section class="border border-amber-500/30 bg-brand-card rounded-2xl p-6 md:p-8 space-y-6 shadow-xl">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <i data-lucide="sliders" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl font-bold text-white">2. Cómo se Estructura el Servicio en Preventa Comercial (Estructurador Caso 5)</h2>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase">Paso Obligatorio</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Configuración en <code class="text-amber-300 font-mono">GestorOportunidades.vue</code> (Sub-tab 1: Cotización &amp; Estructurador de Servicios)</p>
+          </div>
+        </div>
+        <span class="text-xs font-mono px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+          Empresa Emisora: <strong class="text-blue-400">Bestmaq (ID 7)</strong> / <strong class="text-emerald-400">Royal Rental (ID 11)</strong>
+        </span>
+      </div>
+
+      <!-- Explicación de Negocio del Estructurador -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 text-xs">
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold text-[11px]">REGLA 1 &bull; CASO DE NEGOCIO</span>
+            <i data-lucide="settings-2" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <h3 class="text-sm font-bold text-white">Selección del Caso 5 (Especial / Mixto Libre)</h3>
+          <p class="text-slate-300 leading-relaxed">
+            A diferencia de las grúas móviles que van y vuelven en el día con un operador de izaje (Casos 1 al 4), el arriendo de plataformas de <strong class="text-white">Bestmaq (BSM)</strong> se configura en el Estructurador de Servicios bajo el <strong class="text-amber-400">Caso 5</strong>, permitiendo combinar libremente la estadía prolongada del equipo sin operador con su logística de transporte en camión.
+          </p>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono font-bold text-[11px]">REGLA 2 &bull; PARTIDA OBLIGATORIA DE TRASLADO</span>
+            <i data-lucide="truck" class="w-4 h-4 text-blue-400"></i>
+          </div>
+          <h3 class="text-sm font-bold text-white">Inclusión Obligatoria de Traslado Ida / Vuelta</h3>
+          <p class="text-slate-300 leading-relaxed">
+            Dado que las plataformas elevadoras no pueden circular por calles ni carreteras por sus propios medios, <strong class="text-white">toda cotización de Plataformas debe estructurarse obligatoriamente con dos ítems comerciales</strong>:
+            <br>1) La línea de <strong class="text-blue-300">Arriendo de la Plataforma</strong> (estadía).
+            <br>2) La línea de <strong class="text-emerald-300">Servicio de Traslado Ida/Vuelta</strong> (en Camión Plataforma, Cama Baja o Rampla).
+          </p>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold text-[11px]">REGLA 3 &bull; CONTRATO DE ARRENDAMIENTO</span>
+            <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <h3 class="text-sm font-bold text-white">Formalización Contractual Previa (<code class="font-mono">SPEC-076</code>)</h3>
+          <p class="text-slate-300 leading-relaxed">
+            Como la maquinaria quedará durante muchos días o meses dentro de las instalaciones del cliente y será operada por personal del propio mandante, al adjudicar la cotización se emite y firma electrónicamente el <strong class="text-emerald-300">Contrato de Arrendamiento de Maquinaria</strong> antes de despachar el camión de entrega.
+          </p>
+        </div>
+      </div>
+
+      <!-- Simulación Visual Fiel de la Tabla del Estructurador de Servicios -->
+      <div class="space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
+            <i data-lucide="layout-list" class="w-4 h-4"></i>
+            Ejemplo Canónico de Configuración en el Estructurador de Servicios (Caso 5 — Plataformas BSM)
+          </span>
+          <span class="text-[11px] font-mono text-slate-400">Vista: Cotización &rarr; Estructurador de Servicios GSP</span>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-700/80 bg-[#060a14]">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-900 border-b border-slate-800 text-slate-400 font-mono text-[11px] uppercase">
+                <th class="p-3"># Línea</th>
+                <th class="p-3">Categoría</th>
+                <th class="p-3">Subcategoría / Tipo de Equipo</th>
+                <th class="p-3">Glosa Comercial en Cotización</th>
+                <th class="p-3">Modalidad / Unidad</th>
+                <th class="p-3 text-center">Operador GSP</th>
+                <th class="p-3">Impacto en Despacho y Facturación</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/80 text-slate-200">
+              <!-- LÍNEA 1: ARRIENDO DE PLATAFORMA -->
+              <tr class="bg-blue-950/10 hover:bg-blue-950/20 transition-colors">
+                <td class="p-3 font-mono font-bold text-blue-400">Línea 1</td>
+                <td class="p-3">
+                  <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-mono font-bold text-[11px]">PLATAFORMAS</span>
+                </td>
+                <td class="p-3 font-semibold text-white">
+                  PLATAFORMA TIJERA / ARTICULADA / ALZAHOMBRE
+                  <div class="text-[11px] font-normal text-slate-400">Ej: JLG 1930ES / Genie GS-4047 (12m a 40m)</div>
+                </td>
+                <td class="p-3 text-slate-300">
+                  Arriendo Mensual Plataforma Elevadora en Obra (Estadía Prolongada)
+                </td>
+                <td class="p-3 font-mono text-amber-300">
+                  Horas Mes Mínimas (180 hrs) / Valor Fijo Mensual
+                </td>
+                <td class="p-3 text-center">
+                  <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono text-[10px]">SIN OPERADOR</span>
+                </td>
+                <td class="p-3 text-[11px] text-slate-300">
+                  Habilita el <strong>Segmento 1</strong> en Sub-tab 2 (asignación de serie/patente de plataforma) y se cobra por vigencia contractual en el EDP.
+                </td>
+              </tr>
+
+              <!-- LÍNEA 2: TRASLADO IDA Y VUELTA -->
+              <tr class="bg-amber-950/10 hover:bg-amber-950/20 transition-colors">
+                <td class="p-3 font-mono font-bold text-amber-400">Línea 2</td>
+                <td class="p-3">
+                  <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono font-bold text-[11px]">TRASLADOS</span>
+                </td>
+                <td class="p-3 font-semibold text-white">
+                  CAMIÓN PLATAFORMA / CAMA BAJA / RAMPLA
+                  <div class="text-[11px] font-normal text-slate-400">Flete de Entrega en Obra + Flete de Retiro al Término</div>
+                </td>
+                <td class="p-3 text-slate-300">
+                  Servicio de Traslado Ida y Vuelta de Plataforma Elevadora (Entrega y Retiro)
+                </td>
+                <td class="p-3 font-mono text-emerald-300 font-bold">
+                  TRASLADO IDA/VUELTA (1 Servicio Completo)
+                </td>
+                <td class="p-3 text-center">
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold text-[10px]">CHOFER OBLIGATORIO</span>
+                </td>
+                <td class="p-3 text-[11px] text-slate-300">
+                  Habilita el <strong>Segmento 2</strong> (Logística Ida en $T_0$ y Retorno Asíncrono en $T_1$). Devenga <strong>50% al entregar</strong> y <strong>50% al retirar</strong>.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 3: MATRIZ DE ASIGNACIÓN DE RECURSOS EN SUB-TAB 2 (T0 Y T1)    -->
+    <!-- ===================================================================== -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="table-2" class="w-5 h-5 text-blue-400"></i>
+            3. Matriz de Asignación de Recursos y Desacoplamiento Temporal (Ida $T_0$ vs. Retorno Asíncrono $T_1$)
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Cómo se traducen las 2 líneas del Estructurador de Servicios en la asignación física de equipos y choferes en la Sub-tab 2.</p>
+        </div>
+        <span class="text-xs font-mono px-2.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800">
+          Sub-tab 2 &bull; Asignación OT
+        </span>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-800 bg-brand-card shadow-lg">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-900/90 border-b border-slate-800 text-slate-400 font-mono uppercase tracking-wider">
+              <th class="p-3.5">Componente en la OT</th>
+              <th class="p-3.5">Origen en Estructurador</th>
+              <th class="p-3.5">Asignación en Sub-tab 2</th>
+              <th class="p-3.5">Hito de Ida ($T_0$: Entrega)</th>
+              <th class="p-3.5">Estadía en Obra</th>
+              <th class="p-3.5">Hito de Vuelta ($T_1$: Retiro Asíncrono)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 text-slate-300">
+            <!-- FILA 1: PLATAFORMA -->
+            <tr class="hover:bg-slate-900/40 transition-colors">
+              <td class="p-3.5 font-bold text-white">
+                <div class="text-blue-400 font-mono">1. PLATAFORMA ELEVADORA</div>
+                Alzahombre / Tijera / Brazo
+                <div class="text-[11px] font-normal text-slate-400">Segmento 1 (Equipo Principal)</div>
+              </td>
+              <td class="p-3.5 font-mono text-[11px] text-blue-300">
+                Línea 1: Categoría <code class="bg-slate-900 px-1 py-0.5 rounded">PLATAFORMAS</code>
+              </td>
+              <td class="p-3.5">
+                <span class="px-2 py-0.5 bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded font-mono">Patente / N° Interno</span><br>
+                <span class="text-slate-400 text-[11px]">Sin Operador GSP en faena</span>
+              </td>
+              <td class="p-3.5">
+                Se descarga e inspecciona en instalación del cliente (<code class="text-amber-300 font-mono">HOROM. IN</code>)
+              </td>
+              <td class="p-3.5">
+                Permanece días, semanas o meses donde el cliente.<br>
+                <span class="text-slate-400 text-[11px]">Cero Reports diarios de izaje</span>
+              </td>
+              <td class="p-3.5">
+                Se inspecciona en <strong class="text-emerald-400">Acta de Recuperación</strong> (<code class="text-amber-300 font-mono">HOROM. OUT</code>) antes de subirse al camión
+              </td>
+            </tr>
+
+            <!-- FILA 2: CAMIÓN IDA -->
+            <tr class="hover:bg-slate-900/40 transition-colors bg-slate-900/20">
+              <td class="p-3.5 font-bold text-white">
+                <div class="text-amber-400 font-mono">2. FLETE DE ENTREGA (IDA)</div>
+                Camión Plataforma / Cama Baja
+                <div class="text-[11px] font-normal text-slate-400">Segmento 2 (Momento $T_0$)</div>
+              </td>
+              <td class="p-3.5 font-mono text-[11px] text-amber-300">
+                Línea 2: <code class="bg-slate-900 px-1 py-0.5 rounded">TRASLADO IDA/VUELTA</code> (Tramo Ida)
+              </td>
+              <td class="p-3.5">
+                <span class="px-2 py-0.5 bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded font-mono">Camión + Chofer Ida</span><br>
+                <span class="text-emerald-400 text-[11px] font-semibold">Obligatorio al despachar OT</span>
+              </td>
+              <td class="p-3.5 space-y-1">
+                <div>1&deg; Registro de Viaje Ida (Odómetro Salida &rarr; Llegada)</div>
+                <div>2&deg; <strong class="text-amber-300">Acta de Entrega + Fotos 360° + Firma Manual Cliente</strong></div>
+              </td>
+              <td class="p-3.5">
+                Viaje de Ida Concluido.<br>
+                <span class="text-emerald-400 font-mono text-[11px]">50% Flete Devengado</span>
+              </td>
+              <td class="p-3.5 text-slate-400">
+                Su ciclo finaliza el Día 1 al firmar la entrega en obra; camión y chofer quedan libres
+              </td>
+            </tr>
+
+            <!-- FILA 3: CAMIÓN RETORNO ASÍNCRONO -->
+            <tr class="hover:bg-slate-900/40 transition-colors">
+              <td class="p-3.5 font-bold text-white">
+                <div class="text-emerald-400 font-mono">3. FLETE DE RETORNO (RETIRO)</div>
+                Camión Plataforma / Cama Baja
+                <div class="text-[11px] font-normal text-slate-400">Segmento 2 (Momento $T_1$ Asíncrono)</div>
+              </td>
+              <td class="p-3.5 font-mono text-[11px] text-emerald-300">
+                Línea 2: <code class="bg-slate-900 px-1 py-0.5 rounded">TRASLADO IDA/VUELTA</code> (Tramo Vuelta)
+              </td>
+              <td class="p-3.5">
+                <span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 rounded font-mono">Camión + Chofer Retorno</span><br>
+                <span class="text-slate-400 text-[11px]">Asignación asíncrona (puede ser otra patente y otro chofer)</span>
+              </td>
+              <td class="p-3.5 text-slate-400">
+                No se exige en $T_0$ (queda pendiente hasta el término del arriendo)
+              </td>
+              <td class="p-3.5">
+                Se asigna en Sub-tab 2 cuando el cliente solicita el retiro de la plataforma
+              </td>
+              <td class="p-3.5 space-y-1">
+                <div>1&deg; <strong class="text-emerald-300">Candado: Acta de Recuperación + Fotos 360° + Firma Manual Cliente</strong></div>
+                <div>2&deg; <strong class="text-white">Activa Viaje de Retorno</strong> (Odómetro Salida Obra &rarr; Llegada Base)</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 4: FLUJO EN TERRENO DEL CHOFER (IDA VS RETORNO CON CANDADO)   -->
+    <!-- ===================================================================== -->
+    <section class="space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="route" class="w-5 h-5 text-amber-400"></i>
+            4. Secuencia Operativa del Chofer en Terreno (Inversión de Candado entre Ida y Retorno)
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">El Chofer del camión de flete realiza tanto el registro de odómetros del viaje como la toma de las Actas de Entrega y Retiro.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- CIRCUITO A: ENTREGA (IDA T0) -->
+        <div class="bg-brand-card border border-amber-500/30 rounded-2xl p-6 space-y-4 shadow-lg">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono font-black flex items-center justify-center text-xs">T0</span>
+              <div>
+                <h3 class="text-base font-bold text-white">Circuito A: Despacho de Ida y Acta de Entrega</h3>
+                <p class="text-[11px] text-amber-400 font-mono">Primero se ejecuta el Viaje de Ida &rarr; Al concluir se toma el Acta de Entrega</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">50% Flete</span>
+          </div>
+
+          <ol class="space-y-3 text-xs text-slate-300">
+            <li class="flex items-start gap-3 bg-slate-900/70 p-3 rounded-xl border border-slate-800">
+              <span class="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-mono font-bold text-[11px] shrink-0">Paso 1</span>
+              <div>
+                <strong class="text-white">Salida desde Patio BSM/GSP:</strong> El Chofer de Ida abre su Hoja de Ruta (<code class="text-amber-300 font-mono">/viaje/:token</code>), ingresa el <strong>Odómetro de Salida (km)</strong> y captura la fotografía del tablero del camión con la plataforma cargada.
+              </div>
+            </li>
+            <li class="flex items-start gap-3 bg-slate-900/70 p-3 rounded-xl border border-slate-800">
+              <span class="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-mono font-bold text-[11px] shrink-0">Paso 2</span>
+              <div>
+                <strong class="text-white">Llegada a Instalación del Cliente:</strong> Al arribar a la obra o galpón, el Chofer registra el <strong>Odómetro de Llegada (km)</strong> + fotografía del tablero, concluyendo el tramo carretero de ida.
+              </div>
+            </li>
+            <li class="flex items-start gap-3 bg-amber-500/10 p-3.5 rounded-xl border border-amber-500/40">
+              <span class="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-mono font-bold text-[11px] shrink-0">Paso 3</span>
+              <div>
+                <strong class="text-amber-300">Hito Obligatorio Post-Viaje — Registro de Entrega de Plataforma:</strong> Descargada la plataforma, el Chofer completa en pantalla el documento oficial <em>Acta de Entrega y Recepción de Maquinaria</em> (columna <code class="text-amber-300 font-mono">ENTREGA</code>):
+                <ul class="mt-1.5 space-y-1 text-[11px] text-slate-200 list-disc list-inside">
+                  <li>Horómetro de entrada (<code class="font-mono text-amber-300">HOROM. IN</code>) y nivel de combustible/batería (<code class="font-mono">0</code> a <code class="font-mono">4/4</code>).</li>
+                  <li>Evaluación de los <strong>19 ítems de equipamiento</strong> (<code class="text-emerald-400">SI</code> / <code class="text-red-400">NO</code> / <code class="text-slate-400">NA</code> + comentario).</li>
+                  <li><strong>Fotografías 360° obligatorias</strong> del estado de entrega de la máquina.</li>
+                  <li><strong>Firma Manual en pantalla del receptor del cliente</strong> indicando <strong>Nombre, RUT y Cargo</strong>.</li>
+                </ul>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <!-- CIRCUITO B: RETIRO ASÍNCRONO (VUELTA T1) -->
+        <div class="bg-brand-card border border-emerald-500/30 rounded-2xl p-6 space-y-4 shadow-lg">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono font-black flex items-center justify-center text-xs">T1</span>
+              <div>
+                <h3 class="text-base font-bold text-white">Circuito B: Retiro Asíncrono y Candado de Retorno</h3>
+                <p class="text-[11px] text-emerald-400 font-mono">Primero se firma el Acta de Recuperación 360° &rarr; Luego se activa el Viaje de Retorno</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">+50% = 100% Flete</span>
+          </div>
+
+          <ol class="space-y-3 text-xs text-slate-300">
+            <li class="flex items-start gap-3 bg-slate-900/70 p-3 rounded-xl border border-slate-800">
+              <span class="px-2 py-0.5 rounded bg-purple-500 text-white font-mono font-bold text-[11px] shrink-0">Paso 1</span>
+              <div>
+                <strong class="text-white">Asignación Asíncrona de Retorno:</strong> Días, semanas o meses después, cuando termina el arriendo, Operaciones agrega en el Segmento 2 la línea de <strong>Flete de Retorno</strong> con el camión y el <strong>Chofer de Retorno</strong> disponibles en esa fecha.
+              </div>
+            </li>
+            <li class="flex items-start gap-3 bg-emerald-500/10 p-3.5 rounded-xl border border-emerald-500/40">
+              <span class="px-2 py-0.5 rounded bg-emerald-400 text-slate-950 font-mono font-bold text-[11px] shrink-0">Paso 2</span>
+              <div>
+                <strong class="text-emerald-300">CANDADO OBLIGATORIO PREVIO AL RETORNO — Acta de Recuperación 360°:</strong> Al presentarse donde el cliente a retirar la máquina, el botón <em>"Iniciar Viaje de Retorno"</em> se encuentra <strong class="text-red-400">bloqueado</strong>. Para desbloquearlo, el Chofer debe completar primero la columna <code class="text-emerald-300 font-mono">RECEPCIÓN</code> del Acta:
+                <ul class="mt-1.5 space-y-1 text-[11px] text-slate-200 list-disc list-inside">
+                  <li>Horómetro de salida (<code class="font-mono text-emerald-300">HOROM. OUT</code> >= <code class="font-mono">HOROM. IN</code>) y nivel de estanque/carga.</li>
+                  <li>Inspección comparativa de los <strong>19 ítems</strong> frente a cómo se entregaron en $T_0$.</li>
+                  <li><strong>Fotografías 360° obligatorias de recuperación</strong> (y fotos de eventuales daños).</li>
+                  <li><strong>Firma Manual en pantalla del cliente que devuelve el equipo</strong> (<strong>Nombre, RUT y Cargo</strong>).</li>
+                </ul>
+              </div>
+            </li>
+            <li class="flex items-start gap-3 bg-slate-900/70 p-3 rounded-xl border border-slate-800">
+              <span class="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-mono font-bold text-[11px] shrink-0">Paso 3</span>
+              <div>
+                <strong class="text-white">Activación y Cierre del Viaje de Retorno:</strong> Firmada el Acta de Recuperación, el sistema <strong>desbloquea el Viaje de Retorno</strong>. El Chofer carga la plataforma al camión, registra <strong>Odómetro Salida Obra + Foto</strong> y al llegar al patio registra <strong>Odómetro Llegada Base + Foto</strong>, completando el 100% del servicio.
+              </div>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 5: ESTRUCTURA OFICIAL DEL DOCUMENTO (19 ÍTEMS + 360 + FIRMA)  -->
+    <!-- ===================================================================== -->
+    <section class="border border-slate-800 bg-brand-card rounded-2xl p-6 md:p-8 space-y-6 shadow-xl">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-800 pb-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-white">5. Estructura Oficial del Documento: Acta de Entrega y Recepción de Maquinaria</h2>
+            <p class="text-xs text-slate-400">Homologación digital exacta (1:1) del formulario físico oficial utilizado en terreno por Bestmaq (BSM) y Royal Rental</p>
+          </div>
+        </div>
+        <span class="text-xs font-mono px-2.5 py-1 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+          19 Ítems + Estanque + Fotos 360° + Firmas Manuales
+        </span>
+      </div>
+
+      <!-- Datos de Cabecera -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 space-y-2">
+          <div class="text-xs font-mono font-bold uppercase text-amber-400">Cuadro Izquierdo: ARRENDATARIO</div>
+          <div class="grid grid-cols-2 gap-2 text-xs text-slate-300">
+            <div><span class="text-slate-500">RAZÓN SOCIAL:</span> Cliente Mandante</div>
+            <div><span class="text-slate-500">R.U.T.:</span> RUT Empresa</div>
+            <div><span class="text-slate-500">DIRECCIÓN:</span> Dirección Instalación / Faena</div>
+            <div><span class="text-slate-500">OBRA:</span> Nombre Obra / Galpón</div>
+            <div class="col-span-2"><span class="text-slate-500">CONTACTO:</span> Nombre y Teléfono Contacto en Terreno</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 space-y-2">
+          <div class="text-xs font-mono font-bold uppercase text-blue-400">Cuadro Derecho: EQUIPO &amp; CONTRATO</div>
+          <div class="grid grid-cols-2 gap-2 text-xs text-slate-300">
+            <div><span class="text-slate-500">N° CONTRATO:</span> Folio <code class="text-blue-300 font-mono">CTR-YYYY-XXXX</code></div>
+            <div><span class="text-slate-500">MARCA / MODELO:</span> JLG / Genie / Haulotte</div>
+            <div><span class="text-slate-500">AÑO / NRO SERIE:</span> Serie Fabricante</div>
+            <div><span class="text-slate-500">N° INTERNO:</span> Código Flota BSM/RYL</div>
+            <div><span class="text-amber-400 font-semibold">HOROM. IN:</span> Lectura Entrega ($T_0$)</div>
+            <div><span class="text-emerald-400 font-semibold">HOROM. OUT:</span> Lectura Devolución ($T_1$)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de los 19 Ítems -->
+      <div class="space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold">
+            Matriz Oficial de 19 Ítems de Equipamiento (Evaluación: <span class="text-emerald-400">[✓] SI</span> &bull; <span class="text-red-400">[X] NO</span> &bull; <span class="text-slate-400">[NA] NO APLICA</span>)
+          </h3>
+          <span class="text-[11px] text-slate-400">Doble Columna en el mismo documento: <strong>ENTREGA ($T_0$)</strong> vs. <strong>RECEPCIÓN ($T_1$)</strong> + <strong>COMENTARIO</strong></span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>1. Alarma Traslación</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>2. Baterías</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>3. Arrancador Motor Aéreo y Tierra</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>4. Interruptor de Parada de Emergencia</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>5. Llave de Contacto</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>6. Perillas Tablero Control Bastidor</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>7. Perillas Tablero Control Canastillo</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>8. Estado de Mangueras Hidráulicas</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>9. Estado General de la Pluma</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>10. Pintura de Equipo</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>11. Pintura de Canastillo</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>12. Puerta Canastillo</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>13. Estado de Capot</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>14. Estado de Neumáticos</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>15. Estado de Joystick</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>16. Baliza</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>17. Tapa de Combustible</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>18. Chapa de Contacto</span><span class="font-mono text-[10px] text-emerald-400">SI / NO / NA</span></div>
+          <div class="bg-slate-900/50 border border-slate-800/80 rounded-lg px-3 py-2 flex items-center justify-between"><span>19. Otros + Nivel Estanque Petróleo</span><span class="font-mono text-[10px] text-amber-400">0 &bull; 1/4 &bull; 1/2 &bull; 3/4 &bull; 4/4</span></div>
+        </div>
+      </div>
+
+      <!-- Bloques de Firma Manual y Evidencia 360 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div class="border border-amber-500/30 bg-amber-950/10 rounded-xl p-4 space-y-2">
+          <div class="text-xs font-mono font-bold uppercase text-amber-400 flex items-center gap-1.5">
+            <i data-lucide="pen-tool" class="w-4 h-4"></i> Bloque ENTREGA (Al concluir Viaje de Ida en $T_0$)
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            &bull; <strong>Fotografías 360° de Entrega:</strong> Frontal, Posterior, Lateral Izquierdo, Lateral Derecho/Canastillo y Horómetro de entrada.<br>
+            &bull; <strong>Recibido por (Cliente):</strong> Nombre Completo, RUT, Cargo y <strong>Firma Manual trazada en pantalla</strong>.<br>
+            &bull; <strong>Entregado por (Chofer de Ida):</strong> Nombre, RUT, Firma + Fecha, Hora y Lugar de Inicio de Arriendo.
+          </p>
+        </div>
+
+        <div class="border border-emerald-500/30 bg-emerald-950/10 rounded-xl p-4 space-y-2">
+          <div class="text-xs font-mono font-bold uppercase text-emerald-400 flex items-center gap-1.5">
+            <i data-lucide="pen-tool" class="w-4 h-4"></i> Bloque DEVOLUCIÓN (Candado previo al Viaje de Retorno en $T_1$)
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            &bull; <strong>Fotografías 360° de Recuperación:</strong> 4 vistas perimetrales + fotos de daños (neumáticos, pintura, golpes) + Horómetro de salida.<br>
+            &bull; <strong>Entregado por (Cliente):</strong> Nombre Completo, RUT, Cargo y <strong>Firma Manual trazada en pantalla</strong>.<br>
+            &bull; <strong>Recibido por (Chofer de Retorno):</strong> Nombre, RUT, Firma + Fecha, Hora y Lugar de Término de Arriendo.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECCIÓN 6: DEVENGADO FINANCIERO (50% / 50%) Y LIQUIDACIÓN EN EDP      -->
+    <!-- ===================================================================== -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-brand-card border border-slate-800 rounded-2xl p-6 space-y-3 shadow-lg">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="percent" class="w-5 h-5 text-emerald-400"></i>
+            6.1. Regla de Devengado del Traslado Ida y Vuelta (50% / 50%)
+          </h3>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">IFRS 15</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          La partida comercial <code class="text-amber-300 font-mono">TRASLADO IDA/VUELTA</code> estructurada en la cotización se devenga proporcionalmente a medida que se cumplen los hitos físicos documentados en terreno:
+        </p>
+        <ul class="text-xs text-slate-300 space-y-2 pt-1">
+          <li class="flex items-center justify-between bg-slate-900/70 px-3 py-2 rounded-lg border border-slate-800">
+            <span>1&deg; Viaje de Ida Concluido + <strong>Acta de Entrega Firmada ($T_0$)</strong></span>
+            <span class="font-mono font-bold text-amber-400">50% Devengado</span>
+          </li>
+          <li class="flex items-center justify-between bg-slate-900/70 px-3 py-2 rounded-lg border border-slate-800">
+            <span>2&deg; <strong>Acta de Recuperación Firmada</strong> + Viaje de Retorno Concluido ($T_1$)</span>
+            <span class="font-mono font-bold text-emerald-400">+50% (100% Total)</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="bg-brand-card border border-slate-800 rounded-2xl p-6 space-y-3 shadow-lg">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="file-check-2" class="w-5 h-5 text-blue-400"></i>
+            6.2. Respaldo Probatorio para Estado de Pago (EDP) y Cobro de Daños
+          </h3>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">PDF Oficial</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Al no existir operador GSP durante la estadía de la plataforma, el <strong class="text-white">Estado de Pago (EDP)</strong> se respalda directamente con:
+        </p>
+        <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside leading-relaxed">
+          <li>El <strong>Contrato de Arrendamiento (<code class="font-mono text-blue-300">SPEC-076</code>)</strong> firmado al inicio del servicio.</li>
+          <li>El <strong>PDF Consolidado del Acta de Entrega y Recepción de Maquinaria</strong> (con las lecturas <code class="font-mono">HOROM. IN</code> y <code class="font-mono">HOROM. OUT</code>, el comparativo de los 19 ítems, las fotografías 360° de entrada/salida y ambas firmas manuales del cliente).</li>
+          <li>Cualquier diferencia o daño registrado en la columna <code class="font-mono text-emerald-300">RECEPCIÓN</code> (pintura, neumáticos, mangueras, diferencia de combustible) queda documentada con foto y firma del cliente para su cobro adicional según las cláusulas del contrato.</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-brand-border bg-[#080d1a] py-4 px-4 md:px-8 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 no-print">
+    <div>
+      <span class="font-semibold text-slate-400">Bestmaq S.A. &bull; Royal Rental &bull; Grúas San Pablo S.A.</span> &bull; Documentación Oficial del Sistema
+    </div>
+    <div class="font-mono text-[11px] text-slate-400">
+      SPEC-081 &bull; Proceso Completo E2E de Plataformas y Retorno Asíncrono
+    </div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

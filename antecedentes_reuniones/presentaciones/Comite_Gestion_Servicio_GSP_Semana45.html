@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comité Semanal de Gestión de Servicio | LeanGlobal & Grúas San Pablo</title>
+  <style>
+    :root {
+      --bg-main: #060911;
+      --bg-card: rgba(15, 23, 42, 0.88);
+      --bg-card-hover: rgba(30, 41, 59, 0.95);
+      --border-card: rgba(255, 255, 255, 0.10);
+      --border-highlight: rgba(245, 158, 11, 0.4);
+      --primary: #f59e0b;
+      --primary-light: #fbbf24;
+      --primary-glow: rgba(245, 158, 11, 0.25);
+      --accent-blue: #38bdf8;
+      --accent-emerald: #10b981;
+      --accent-purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-muted: #cbd5e1;
+      --text-dim: #94a3b8;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.10) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: var(--font-stack);
+      line-height: 1.55;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(6, 9, 17, 0.94);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-card);
+      padding: 12px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      font-weight: 900;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      letter-spacing: 1.1px;
+    }
+
+    .brand-text h1 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .brand-text p {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border-card);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      padding: 8px 16px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #000;
+      font-weight: 800;
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    /* Content Area */
+    .main-container {
+      flex: 1;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 32px 48px;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Headers */
+    .section-header {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1px solid var(--border-card);
+      padding-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title span.tag {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+
+    .tag-amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .tag-blue { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+    .tag-emerald { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .tag-purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+
+    .section-subtitle {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 20px;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-highlight);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .kpi-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--primary);
+    }
+
+    .kpi-card.emerald::before { background: var(--accent-emerald); }
+    .kpi-card.blue::before { background: var(--accent-blue); }
+    .kpi-card.purple::before { background: var(--accent-purple); }
+
+    .kpi-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-dim);
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+
+    .kpi-sub {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    /* Split Panes / Grid 2 Col */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 1024px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 24px;
+      position: relative;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      color: var(--primary-light);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Tables */
+    .custom-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 13px;
+    }
+
+    .custom-table th {
+      background: rgba(30, 41, 59, 0.7);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-card);
+    }
+
+    .custom-table th:first-child { border-top-left-radius: 8px; }
+    .custom-table th:last-child { border-top-right-radius: 8px; }
+
+    .custom-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      vertical-align: middle;
+    }
+
+    .custom-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-main);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .badge-bug { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-debt { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .badge-req { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-l2 { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .badge-zero { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 800; }
+
+    /* Flow Diagrams / Alert Boxes */
+    .callout {
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-bottom: 20px;
+      border-left: 4px solid var(--primary);
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .callout.emerald {
+      border-left-color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .callout.blue {
+      border-left-color: var(--accent-blue);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .callout h4 {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .callout p {
+      font-size: 13.5px;
+      color: var(--text-muted);
+    }
+
+    /* Filter Buttons */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-card);
+      color: var(--text-dim);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      color: #fff;
+      border-color: var(--primary);
+      background: rgba(245, 158, 11, 0.15);
+    }
+
+    /* Progress bar */
+    .progress-bar-container {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      height: 14px;
+      width: 100%;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #f59e0b 70%, #ef4444 95%);
+      border-radius: 20px;
+      transition: width 0.5s ease;
+    }
+
+    /* Action Checklist */
+    .action-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .action-step:last-child { border-bottom: none; }
+
+    .step-number {
+      background: var(--primary);
+      color: #000;
+      font-weight: 900;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .step-content h5 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .step-content p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border-card);
+      padding: 16px 32px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-dim);
+      background: rgba(6, 9, 17, 0.8);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    /* Code Snippet */
+    pre.code-box {
+      background: #020617;
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar Navigation -->
+  <header class="top-bar">
+    <div class="brand-container">
+      <div class="brand-badge">LEANGLOBAL</div>
+      <div class="brand-text">
+        <h1>Gestión de Servicio TI & Negocio — Grúas San Pablo</h1>
+        <p>Comité Semanal de Operaciones & Software | Lunes 09-Nov-2026</p>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-resumen')">
+        <span>📋</span> Resumen Ejecutivo
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-negocio')">
+        <span>📊</span> Eje 1: Negocio GSP
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-software')">
+        <span>🛠️</span> Eje 2: Software (ITIL)
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-capacidad')">
+        <span>⏱️</span> Eje 3: Capacidad & Horas
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-gobernanza')">
+        <span>🛡️</span> Gobernanza & Backlog
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- ========================================== -->
+    <!-- TAB 0: RESUMEN EJECUTIVO                   -->
+    <!-- ========================================== -->
+    <section id="tab-resumen" class="tab-content active">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            Comité Semanal de Gestión de Servicio
+            <span class="tag tag-amber">Semana 45</span>
+          </h2>
+          <p class="section-subtitle">
+            Sesión de Rendición de Cuentas, Estabilización Operativa y Paso Formal a Régimen Mensual
+          </p>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 13px; font-weight: 700; color: #fff;">Participantes Oficiales</div>
+          <div style="font-size: 12px; color: var(--text-dim);">
+            Jorge Ponce (Sponsor) • Alfonso Porperrello (PM) • Sergio Gajardo (LeanGlobal)
+          </div>
+        </div>
+      </div>
+
+      <!-- Callout Estratégico -->
+      <div class="callout emerald">
+        <h4>🎯 Hito Estratégico: Traspaso de Puesta en Marcha (Hypercare) a Régimen Operacional</h4>
+        <p>
+          Durante la semana del Go-Live operacional, LeanGlobal puso a disposición de GSP más de <strong>46 horas de ingeniería en solo 5 días</strong> para resolver de raíz el cálculo de pisos mensuales, blindar el sistema contra errores de usuarios y garantizar la cuadratura del flujo de caja. <strong>Más del 57% de ese esfuerzo (26.5 hrs) fue asumido 100% bajo garantía técnica por LeanGlobal ($0 para GSP)</strong>. Hoy cerramos la fase de estabilización y formalizamos el régimen mensual continuo.
+        </p>
+      </div>
+
+      <!-- Grid 4 KPIs Principales -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <span>Pipeline Total CRM</span>
+            <span>💼</span>
+          </div>
+          <div class="kpi-value">$ 15.237.750</div>
+          <div class="kpi-sub">36 Cotizaciones registradas</div>
+        </div>
+
+        <div class="kpi-card blue">
+          <div class="kpi-label">
+            <span>Cartera Ganada (OTs)</span>
+            <span>⚡</span>
+          </div>
+          <div class="kpi-value">$ 9.947.750</div>
+          <div class="kpi-sub">14 OTs Adjudicadas en faena</div>
+        </div>
+
+        <div class="kpi-card emerald">
+          <div class="kpi-label">
+            <span>Devengado Real</span>
+            <span>📈</span>
+          </div>
+          <div class="kpi-value">$ 8.696.000</div>
+          <div class="kpi-sub">26 Reports • 214.1h (87% avance)</div>
+        </div>
+
+        <div class="kpi-card purple">
+          <div class="kpi-label">
+            <span>Listo para Facturar</span>
+            <span>💰</span>
+          </div>
+          <div class="kpi-value">$ 7.946.000</div>
+          <div class="kpi-sub">8 Servicios pendientes de EDP</div>
+        </div>
+      </div>
+
+      <!-- Agenda de 3 Bloques -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span>⏱️</span> Estructura y Agenda del Comité (50 Minutos)</div>
+          <div class="action-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h5>Bloque 1: Rendimiento del Negocio Operacional GSP (15 min)</h5>
+              <p>Revisión de volumen cotizado, devengado real en faena, cierre de ITS y facturación expedita (cash-in). Cero discusión técnica.</p>
+            </div>
+          </div>
+          <div class="action-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h5>Bloque 2: Rendición de Versiones TI & Estabilización (20 min)</h5>
+              <p>Auditoría de las 14 versiones desplegadas en producción, categorización ITIL v4 y valor estructural entregado a la empresa.</p>
+            </div>
+          </div>
+          <div class="action-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h5>Bloque 3: Gobernanza de Capacidad y Régimen Mensual (15 min)</h5>
+              <p>Formalización de la bolsa mensual (20-25 hrs/mes) del contrato SaaS ($400k), rol de Alfonso como Gatekeeper y protocolo de horas adicionales.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>🛡️</span> Acuerdos Fundamentales de la Sesión del Sábado</div>
+          <ul style="list-style: none; font-size: 13.5px; color: var(--text-muted); display: flex; flex-direction: column; gap: 12px;">
+            <li style="display: flex; gap: 10px; align-items: flex-start;">
+              <span style="color: var(--accent-emerald); font-weight: 900;">✓</span>
+              <div><strong>Canal Único Backlog:</strong> Toda solicitud, incidencia o requerimiento debe registrarse mediante ticket en la plataforma (con capturas de pantalla), eliminando solicitudes informales por WhatsApp.</div>
+            </li>
+            <li style="display: flex; gap: 10px; align-items: flex-start;">
+              <span style="color: var(--accent-emerald); font-weight: 900;">✓</span>
+              <div><strong>Modo Visor Ejecutivo en ITS:</strong> Jefatura de Operaciones (Jorge/Alfonso) y Contabilidad (Maritza) no editarán formularios; solo verán el PDF oficial con botones Aprobar / Devolver. La edición queda 100% en Yiara Mendoza.</div>
+            </li>
+            <li style="display: flex; gap: 10px; align-items: flex-start;">
+              <span style="color: var(--accent-emerald); font-weight: 900;">✓</span>
+              <div><strong>Pausa Estratégica:</strong> Módulo combustible en complementarios y exportación Excel quedan pausados para asegurar la cobranza y facturación limpia de noviembre.</div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: EJE 1 NEGOCIO GSP                   -->
+    <!-- ========================================== -->
+    <section id="tab-negocio" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            Eje 1: Rendimiento del Negocio Operativo GSP
+            <span class="tag tag-emerald">Valor Operativo</span>
+          </h2>
+          <p class="section-subtitle">
+            Auditoría económica y operacional de la flota sobre la plataforma (Semana del 02 al 06-Nov-2026)
+          </p>
+        </div>
+        <button class="filter-btn active" onclick="copyQueries()">📋 Copiar Consultas SQL</button>
+      </div>
+
+      <!-- Balanza Operativa -->
+      <div class="callout blue">
+        <h4>💡 Propósito de este Bloque en la Reunión</h4>
+        <p>Permite a Jorge Ponce y Alfonso Porperrello evaluar en 15 minutos la velocidad con la que las cotizaciones se convierten en faenas activas, el cumplimiento de las jornadas en terreno y la rapidez para convertir horas operadas en facturación cobrable.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span>📊</span> Balanza Operacional Semanal Consolidada</div>
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Etapa Operacional</th>
+                <th>Volumen</th>
+                <th>Monto Neto CLP</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1. Pipeline Total CRM</strong></td>
+                <td>36 Cotizaciones</td>
+                <td><strong>$ 15.237.750</strong></td>
+                <td><span class="badge badge-debt">Comercial CRM</span></td>
+              </tr>
+              <tr>
+                <td><strong>2. Cartera Ganada (OTs)</strong></td>
+                <td>14 OTs Activas</td>
+                <td><strong>$ 9.947.750</strong></td>
+                <td><span class="badge badge-req">Comprometido</span></td>
+              </tr>
+              <tr>
+                <td><strong>3. Producción Devengada</strong></td>
+                <td>26 Reports (214.1h)</td>
+                <td><strong>$ 8.696.000</strong></td>
+                <td><span class="badge badge-zero">87% Ejecutado</span></td>
+              </tr>
+              <tr style="background: rgba(245, 158, 11, 0.08);">
+                <td><strong>4. Listos para Facturar</strong></td>
+                <td>8 Servicios</td>
+                <td><strong>$ 7.946.000</strong></td>
+                <td><span class="badge badge-req">Pendiente EDP</span></td>
+              </tr>
+              <tr>
+                <td><strong>5. Cerrado en ITS</strong></td>
+                <td>1 Folio ITS</td>
+                <td><strong>$ 120.000</strong></td>
+                <td><span class="badge badge-l2">Margen 55%</span></td>
+              </tr>
+              <tr style="background: rgba(239, 68, 68, 0.06);">
+                <td><strong>6. Facturación DTE (SII)</strong></td>
+                <td>0 DTEs Emitidos</td>
+                <td><strong>$ 0</strong></td>
+                <td><span class="badge badge-bug">Brecha $9.947.750</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>🔍</span> Fuentes de Verdad en Base de Datos (Auditoría SQL)</div>
+          <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 8px;">
+            Consultas canónicas extraídas directamente del esquema de producción <code>sch_leangsp_prod</code>:
+          </p>
+          <pre class="code-box">
+-- Devengado Operativo: Horas validadas × Tarifa pactada
+SELECT 
+    COUNT(r.id_reporte_avance) AS jornadas_validadas,
+    SUM(r.horas_facturables) AS total_horas_facturables,
+    SUM(r.horas_sobretiempo) AS total_horas_sobretiempo,
+    SUM(r.horas_facturables * (p.json_field->'crm_v1'->'lineas_servicio'->0->>'valorUnitario')::NUMERIC) 
+      AS monto_devengado_neto
+FROM sch_leangsp_prod.tedp_reporte_avance r
+JOIN sch_leangsp_prod.tpry_proyecto p ON r.id_proyecto = p.id_proyecto
+WHERE r.fecha_reporte BETWEEN '2026-11-02' AND '2026-11-06'
+  AND r.estado_jornada != 'JORNADA_EN_CURSO';</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: EJE 2 SOFTWARE (ITIL)               -->
+    <!-- ========================================== -->
+    <section id="tab-software" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            Eje 2: Gestión de Servicio TI y Mantenimiento de Software
+            <span class="tag tag-blue">ITIL v4 Delivery</span>
+          </h2>
+          <p class="section-subtitle">
+            Auditoría de 14 Versiones Desplegadas en Producción (v1.0.188 a v1.0.201)
+          </p>
+        </div>
+      </div>
+
+      <!-- Filtros de Taxonomía -->
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterVersions('ALL')">Todas (14 Versiones)</button>
+        <button class="filter-btn" onclick="filterVersions('BUG')">Incidentes / Bugs (Garantía $0)</button>
+        <button class="filter-btn" onclick="filterVersions('DEBT')">Deuda Técnica & Blindajes (Garantía $0)</button>
+        <button class="filter-btn" onclick="filterVersions('REQ')">Requerimientos & Criterio GSP</button>
+        <button class="filter-btn" onclick="filterVersions('L2')">Soporte L2 & Datafixes</button>
+      </div>
+
+      <!-- Tabla de Versiones -->
+      <div class="card" style="margin-bottom: 24px;">
+        <table class="custom-table" id="versions-table">
+          <thead>
+            <tr>
+              <th>Versión</th>
+              <th>Fecha</th>
+              <th>Requerimiento / Caso</th>
+              <th>Taxonomía ITIL v4</th>
+              <th>Solución Técnica Desplegada</th>
+              <th>Imputación Contractual</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-type="BUG">
+              <td><strong>v1.0.201</strong></td>
+              <td>06-Nov 17:55</td>
+              <td><code>REQ-1125</code> (SPEC-115)</td>
+              <td><span class="badge badge-bug">Incident Mgmt</span></td>
+              <td>Resolución integral de piso mensual en Reports e ITS (imputa horas reales operadas a bolsa pactada, elimina sobretiempos falsos). Datafix y 13 PDFs regenerados.</td>
+              <td><span class="badge badge-zero">Garantía LeanGlobal ($0)</span></td>
+            </tr>
+            <tr data-type="BUG">
+              <td><strong>v1.0.200</strong></td>
+              <td>05-Nov 18:45</td>
+              <td><code>REQ-1124</code> (SPEC-078)</td>
+              <td><span class="badge badge-bug">Incident Mgmt</span></td>
+              <td>Corrección de colación (0m vs 60m). Doble columna de cobro izaje: <code>HRS SERVICIO</code> (máquina Urbano/Rural) vs <code>HRS VIÁTICOS</code> (personal puerta a puerta).</td>
+              <td><span class="badge badge-zero">Garantía ($0) / Evolutivo</span></td>
+            </tr>
+            <tr data-type="REQ">
+              <td><strong>v1.0.199</strong></td>
+              <td>05-Nov 12:50</td>
+              <td><code>REQ-1120-1123</code></td>
+              <td><span class="badge badge-req">Request Fulfilment</span></td>
+              <td>Proyección de <code>obs_validador</code> en tarjeta PMO. Horas formato reloj <code>HH:mm</code>. Ocultamiento de márgenes P&L para secretarías y email automático en visitas.</td>
+              <td><span class="badge badge-req">Solicitud GSP (Bolsa)</span></td>
+            </tr>
+            <tr data-type="BUG">
+              <td><strong>v1.0.198</strong></td>
+              <td>05-Nov 12:00</td>
+              <td><code>REQ-1117-1119</code></td>
+              <td><span class="badge badge-bug">Incident Mgmt</span></td>
+              <td>Prioridad de horarios validados por Operaciones sobre GPS chofer (FEPASA: 07:30 vs 08:35). Asignación operador por rango fechas en PMO y captura <code>LLEGADA_BASE</code>.</td>
+              <td><span class="badge badge-zero">Garantía LeanGlobal ($0)</span></td>
+            </tr>
+            <tr data-type="REQ">
+              <td><strong>v1.0.197</strong></td>
+              <td>04-Nov 16:20</td>
+              <td><code>REQ-1116</code></td>
+              <td><span class="badge badge-req">Request Fulfilment</span></td>
+              <td>Habilitación en Pestaña 2 Validación Operaciones para que Jonathan/Alfonso editen viáticos y condición sin trabar la emisión de la OT.</td>
+              <td><span class="badge badge-req">Solicitud Operaciones</span></td>
+            </tr>
+            <tr data-type="BUG">
+              <td><strong>v1.0.196</strong></td>
+              <td>04-Nov 16:00</td>
+              <td><code>REQ-1113-1115</code></td>
+              <td><span class="badge badge-bug">Incident Mgmt</span></td>
+              <td>Eliminación de piso mínimo 8.0 hrs en servicios mensuales. Tipografía grande en OT con <code>--disable-smart-shrinking</code> y reasignación de comercial responsable.</td>
+              <td><span class="badge badge-zero">Garantía ($0) / Solicitud</span></td>
+            </tr>
+            <tr data-type="DEBT">
+              <td><strong>v1.0.195 (Web)</strong></td>
+              <td>04-Nov 14:40</td>
+              <td><code>REQ-1112</code> (FEPASA)</td>
+              <td><span class="badge badge-debt">Problem & Blindaje</span></td>
+              <td><strong>Rescate Forense FEPASA:</strong> Candado anti-regresión inmutable en backend y verificador automático de versión en cliente que recarga ante nuevas liberaciones.</td>
+              <td><span class="badge badge-zero">Garantía & Blindaje ($0)</span></td>
+            </tr>
+            <tr data-type="REQ">
+              <td><strong>v1.0.195 (PWA)</strong></td>
+              <td>04-Nov 15:18</td>
+              <td><code>REQ-1106-1108</code></td>
+              <td><span class="badge badge-req">Request Fulfilment</span></td>
+              <td>Eliminación de tarjeta Copec en OT. Anexión automática de fotos y documentos adjuntos al PDF de Reportes vía <code>pdf-lib</code> y limpieza de horómetros sugeridos.</td>
+              <td><span class="badge badge-req">Mejora de Terreno (Bolsa)</span></td>
+            </tr>
+            <tr data-type="DEBT">
+              <td><strong>v1.0.194</strong></td>
+              <td>04-Nov 14:10</td>
+              <td><code>REQ-1110-1111</code></td>
+              <td><span class="badge badge-debt">Architecture Mgmt</span></td>
+              <td>Motor estructural de relevos de chofer por fecha (<code>turnos_operadores</code>) y nueva tabla de 3 viáticos (Traslado, Alimentación, Alojamiento) con convivencia dual V1/V2.</td>
+              <td><span class="badge badge-req">Evolutivo Operacional</span></td>
+            </tr>
+            <tr data-type="BUG">
+              <td><strong>v1.0.193</strong></td>
+              <td>04-Nov 11:50</td>
+              <td><code>REQ-1105</code></td>
+              <td><span class="badge badge-bug">Incident Mgmt</span></td>
+              <td>Exclusión estricta de personal certificado (riggers) y fletes del cálculo de piso mínimo de maquinaria en el PDF oficial de la OT.</td>
+              <td><span class="badge badge-zero">Garantía LeanGlobal ($0)</span></td>
+            </tr>
+            <tr data-type="REQ">
+              <td><strong>v1.0.192</strong></td>
+              <td>04-Nov 11:32</td>
+              <td><code>REQ-1103-1104</code></td>
+              <td><span class="badge badge-req">Request Fulfilment</span></td>
+              <td>Supresión de "No Aplica" en viáticos (obliga a definir si costea Mandante o GSP por orden de Jorge) y obligatoriedad de descripción de servicio en preventa para la OT.</td>
+              <td><span class="badge badge-req">Regla Negocio GSP (Bolsa)</span></td>
+            </tr>
+            <tr data-type="L2">
+              <td><strong>v1.0.191</strong></td>
+              <td>04-Nov 09:50</td>
+              <td><code>REQ-1091</code> (Dominique)</td>
+              <td><span class="badge badge-l2">Soporte L2 / RBAC</span></td>
+              <td>Desacople de alias cruzados en base de datos entre cuentas de Alfonso y Dominique Torres. Refresco dinámico de roles RBAC en Sidebar.</td>
+              <td><span class="badge badge-l2">Soporte Usuarios / Roles</span></td>
+            </tr>
+            <tr data-type="BUG">
+              <td><strong>v1.0.189</strong></td>
+              <td>04-Nov 00:58</td>
+              <td><code>REQ-1102</code></td>
+              <td><span class="badge badge-bug">Incident Mgmt</span></td>
+              <td>Corrección de fórmula en ITS donde el flete cotizado era pisado por los fletes diarios. Incorporación de botón "Abrir OT" directo en PMO.</td>
+              <td><span class="badge badge-zero">Garantía LeanGlobal ($0)</span></td>
+            </tr>
+            <tr data-type="DEBT">
+              <td><strong>v1.0.188</strong></td>
+              <td>03-Nov 23:00</td>
+              <td><code>REQ-1101</code></td>
+              <td><span class="badge badge-debt">Problem Mgmt</span></td>
+              <td>Erradicación de parseo frágil por texto libre en estructurador comercial; taxonomía determinista por Categoría/Subcategoría de BD para Camión Pluma en Fundo Caracas.</td>
+              <td><span class="badge badge-zero">Garantía LeanGlobal ($0)</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Los 5 Pilares de Valor -->
+      <div class="card">
+        <div class="card-title"><span>🌟</span> Los 5 Pilares de Valor Entregados por LeanGlobal esta Semana</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+          <div style="padding: 14px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-card);">
+            <div style="font-weight: 800; color: var(--accent-emerald); margin-bottom: 4px;">1. Certeza en Contratos Mensuales</div>
+            <p style="font-size: 12.5px; color: var(--text-dim);">Cero cobro espurio de sobretiempos diarios en faenas de mes (Inarco, Mettco). Las horas reales operadas se acumulan limpiamente a la bolsa acordada.</p>
+          </div>
+          <div style="padding: 14px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-card);">
+            <div style="font-weight: 800; color: var(--accent-blue); margin-bottom: 4px;">2. Candado Anti-Regresión Inmutable</div>
+            <p style="font-size: 12.5px; color: var(--text-dim);">Blindaje en base de datos que impide a usuarios con pestañas obsoletas degradar estados de proyectos o pisar cotizaciones en curso.</p>
+          </div>
+          <div style="padding: 14px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-card);">
+            <div style="font-weight: 800; color: var(--primary); margin-bottom: 4px;">3. Doble Cómputo de Izaje Chileno</div>
+            <p style="font-size: 12.5px; color: var(--text-dim);">Separación formal de la hora de máquina al cliente (<code>HRS SERVICIO</code> Urbano/Rural) de la hora de permanencia de tripulación (<code>HRS VIÁTICOS</code> puerta a puerta).</p>
+          </div>
+          <div style="padding: 14px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-card);">
+            <div style="font-weight: 800; color: var(--accent-purple); margin-bottom: 4px;">4. PWA Móvil 100% Blindada</div>
+            <p style="font-size: 12.5px; color: var(--text-dim);">Cámara WebRTC in-app sin caídas de memoria en Android, eliminación de horómetros sugeridos para evitar disputas y anexos de fotos directos en el PDF oficial.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: EJE 3 CAPACIDAD & HORAS             -->
+    <!-- ========================================== -->
+    <section id="tab-capacidad" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            Eje 3: Capacidad, Esfuerzo Real & Régimen Mensual
+            <span class="tag tag-purple">Bolsa Contractual</span>
+          </h2>
+          <p class="section-subtitle">
+            Transparencia de Costos: Del esfuerzo extraordinario de Hypercare a la sostenibilidad mensual
+          </p>
+        </div>
+      </div>
+
+      <!-- Comparativa Hypercare vs Régimen -->
+      <div class="grid-2">
+        <div class="card" style="border-color: rgba(16, 185, 129, 0.4);">
+          <div class="card-title" style="color: var(--accent-emerald);">
+            <span>🚀</span> Semana de Salida a Producción (Esfuerzo Real Desplegado)
+          </div>
+          <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 16px;">
+            Durante la semana del 02 al 06 de noviembre, LeanGlobal volcó todo su equipo para asegurar que la operación no sufriera detenciones:
+          </p>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+            <span>Total Horas de Ingeniería Desplegadas:</span>
+            <strong>46.5 Horas</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--accent-emerald);">
+            <span>Asumidas por LeanGlobal (Garantía Hypercare $0):</span>
+            <strong>26.5 Horas (57%)</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 13px; color: var(--primary);">
+            <span>Imputadas a Estabilización de Procesos:</span>
+            <strong>20.0 Horas (43%)</strong>
+          </div>
+          
+          <div class="progress-bar-container">
+            <div class="progress-fill" style="width: 100%;"></div>
+          </div>
+          <p style="font-size: 12px; color: var(--text-dim); text-align: center;">
+            46.5 horas ejecutadas en 5 días equivalen a <strong>2 meses de soporte estándar</strong> entregados en una sola semana.
+          </p>
+        </div>
+
+        <div class="card" style="border-color: rgba(56, 189, 248, 0.4);">
+          <div class="card-title" style="color: var(--accent-blue);">
+            <span>📜</span> Régimen Mensual Continuo (Propuesta Final Adjudicada)
+          </div>
+          <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 16px;">
+            Páginas 35 y 36 de la propuesta formal adjudicada a GSP:
+          </p>
+          <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 8px; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px;">
+              <span>Fee Mensual de Licenciamiento SaaS:</span>
+              <strong style="color: #fff;">9.795 UF / mes ($400.000 CLP)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-dim);">
+              <span>Capacidad Asignada Mensual Sostenible:</span>
+              <strong style="color: var(--accent-emerald);">20 a 25 Horas / Mes</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-dim); margin-top: 4px;">
+              <span>Promedio de Dedicación Semanal:</span>
+              <strong style="color: var(--accent-blue);">5 a 6 Horas / Semana</strong>
+            </div>
+          </div>
+          <div class="callout emerald" style="padding: 12px; margin-bottom: 0;">
+            <p style="font-size: 12.5px;">
+              <strong>Principio de Sostenibilidad:</strong> A \$400.000/mes, la hora de ingeniería especializada se valoriza en un rango altamente preferencial de \$16.000 a \$20.000/HH para GSP.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulador de Consumo y Semáforo -->
+      <div class="card">
+        <div class="card-title"><span>🚦</span> Semáforo de Control y Alerta Temprana Mensual (20-25 hrs)</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 16px;">
+            <div style="font-weight: 800; color: var(--accent-emerald); font-size: 15px; margin-bottom: 4px;">🟢 0 a 10 Horas (50%)</div>
+            <div style="font-size: 12.5px; color: var(--text-dim);"><strong>Régimen Normal:</strong> Atención rutinaria de requerimientos en backlog y soporte funcional regular.</div>
+          </div>
+
+          <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 16px;">
+            <div style="font-weight: 800; color: var(--warning); font-size: 15px; margin-bottom: 4px;">🟡 15 Horas (75%)</div>
+            <div style="font-size: 12.5px; color: var(--text-dim);"><strong>Alerta Temprana Oficial:</strong> Aviso automático por WhatsApp/correo a Alfonso y Jorge. Saldo disponible: 5 hrs.</div>
+          </div>
+
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 16px;">
+            <div style="font-weight: 800; color: var(--danger); font-size: 15px; margin-bottom: 4px;">🔴 20 a 25 Horas (100%)</div>
+            <div style="font-size: 12.5px; color: var(--text-dim);"><strong>Tope Mensual:</strong> Cierre preventivo de nuevos evolutivos hasta el próximo mes o activación de Overage.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: GOBERNANZA & BACKLOG                -->
+    <!-- ========================================== -->
+    <section id="tab-gobernanza" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            Gobernanza de Backlog & Horas Adicionales
+            <span class="tag tag-amber">Reglas de Juego Claras</span>
+          </h2>
+          <p class="section-subtitle">
+            Alfonso Porperrello como Gatekeeper y Procedimiento de Aprobación Previa con Jorge Ponce
+          </p>
+        </div>
+      </div>
+
+      <!-- Segregación de Costos -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span>⚖️</span> Reglas Claras de Imputación: ¿Qué Consume y Qué es $0?</div>
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Tipo de Solicitud</th>
+                <th>Criterio de Cobro</th>
+                <th>Responsabilidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Errores de Código / Bugs</strong><br><span style="font-size: 11.5px; color: var(--text-dim);">Fallas de cálculo o sintaxis en features aprobadas</span></td>
+                <td><strong style="color: var(--accent-emerald);">$ 0 (Garantía)</strong></td>
+                <td>No consume bolsa de horas</td>
+              </tr>
+              <tr>
+                <td><strong>Blindajes e Infraestructura</strong><br><span style="font-size: 11.5px; color: var(--text-dim);">Parches de servidor, candados de BD y recargas</span></td>
+                <td><strong style="color: var(--accent-emerald);">$ 0 (Garantía)</strong></td>
+                <td>Absorbido por LeanGlobal</td>
+              </tr>
+              <tr>
+                <td><strong>Evolutivos Menores / Ajustes</strong><br><span style="font-size: 11.5px; color: var(--text-dim);">Nuevos campos, cambios de plantilla PDF, reglas</span></td>
+                <td><strong style="color: var(--primary);">Consume Bolsa</strong></td>
+                <td>Se descuenta de las 20-25 hrs/mes</td>
+              </tr>
+              <tr>
+                <td><strong>Soporte a Usuarios & Datafixes</strong><br><span style="font-size: 11.5px; color: var(--text-dim);">Mala digitación, reseteo de roles, capacitaciones</span></td>
+                <td><strong style="color: var(--primary);">Consume Bolsa</strong></td>
+                <td>Se descuenta de las 20-25 hrs/mes</td>
+              </tr>
+              <tr>
+                <td><strong>Requerimientos Mayores</strong><br><span style="font-size: 11.5px; color: var(--text-dim);">Nuevos módulos (Contabilidad nativa, WMS, etc.)</span></td>
+                <td><strong style="color: var(--accent-purple);">Cotización / Overage</strong></td>
+                <td>Aprobación previa por escrito</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>🔐</span> Alfonso como Gatekeeper del Presupuesto</div>
+          <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 14px;">
+            Para cuidar la inversión de GSP y evitar pedidos dispersos de distintos usuarios, Alfonso Porperrello asume el control del Backlog:
+          </p>
+          <div class="action-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h5>Ingreso Formal en Mantenedor de Backlog</h5>
+              <p>Todo requerimiento debe tener ticket con título, descripción y evidencia gráfica (captura de pantalla). Cero WhatsApps sueltos.</p>
+            </div>
+          </div>
+          <div class="action-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h5>Estimación Previa de Horas por LeanGlobal</h5>
+              <p>Antes de escribir una sola línea de código, LeanGlobal cotiza el esfuerzo estimado: <em>"Alfonso, este ticket toma 3.5 hrs. ¿Lo imputamos a la bolsa del mes?"</em></p>
+            </div>
+          </div>
+          <div class="action-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h5>Priorización Autonóma de Alfonso</h5>
+              <p>Alfonso decide si gasta horas en esa solicitud o si prioriza otros temas críticos para la operación de la semana.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flujo de Horas Adicionales -->
+      <div class="card">
+        <div class="card-title"><span>📋</span> Protocolo de Aprobación Previa de Horas Adicionales (Overage)</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-card); border-radius: 10px; padding: 16px;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--primary); font-weight: 800;">Paso 1</div>
+            <div style="font-weight: 700; color: #fff; margin: 4px 0 8px;">Detección & RFC</div>
+            <div style="font-size: 12.5px; color: var(--text-dim);">Cuando la bolsa alcanza las 20-25 hrs o el requerimiento supera la capacidad mensual, Sergio emite solicitud formal de horas adicionales con tarifa pactada.</div>
+          </div>
+
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-card); border-radius: 10px; padding: 16px;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--accent-blue); font-weight: 800;">Paso 2</div>
+            <div style="font-weight: 700; color: #fff; margin: 4px 0 8px;">Validación Alfonso</div>
+            <div style="font-size: 12.5px; color: var(--text-dim);">Alfonso Porperrello valida que la solicitud es imprescindible para la operación y no puede postergarse al mes siguiente.</div>
+          </div>
+
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-card); border-radius: 10px; padding: 16px;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--accent-emerald); font-weight: 800;">Paso 3</div>
+            <div style="font-weight: 700; color: #fff; margin: 4px 0 8px;">Aprobación Jorge Ponce</div>
+            <div style="font-size: 12.5px; color: var(--text-dim);">Jorge Ponce autoriza formalmente por escrito (correo o WhatsApp) la ejecución de las horas extraordinarias tarifadas.</div>
+          </div>
+
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-card); border-radius: 10px; padding: 16px;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--accent-purple); font-weight: 800;">Paso 4</div>
+            <div style="font-weight: 700; color: #fff; margin: 4px 0 8px;">Ejecución & Cero Sorpresas</div>
+            <div style="font-size: 12.5px; color: var(--text-dim);">LeanGlobal ejecuta, entrega en producción y se anexa la aprobación a la factura mensual. Cero cobros sorpresas.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div>
+      <strong>LeanGlobal Platform Services</strong> • Sistema de Gestión Integral GSP v1.0.201
+    </div>
+    <div>
+      Estándar ITIL v4 Service Level Management • Modo Presentación Interactivo
+    </div>
+  </footer>
+
+  <script>
+    // Tab Switching Logic
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      const selectedTab = document.getElementById(tabId);
+      if (selectedTab) {
+        selectedTab.classList.add('active');
+      }
+
+      // Mark button active
+      const buttons = document.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+        if (btn.getAttribute('onclick').includes(tabId)) {
+          btn.classList.add('active');
+        }
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Keyboard navigation (1 to 5)
+    document.addEventListener('keydown', (e) => {
+      const tabs = ['tab-resumen', 'tab-negocio', 'tab-software', 'tab-capacidad', 'tab-gobernanza'];
+      if (e.key >= '1' && e.key <= '5') {
+        const index = parseInt(e.key) - 1;
+        switchTab(tabs[index]);
+      }
+    });
+
+    // Version Filtering Logic
+    function filterVersions(type) {
+      const rows = document.querySelectorAll('#versions-table tbody tr');
+      const buttons = document.querySelectorAll('.filter-bar .filter-btn');
+
+      buttons.forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      rows.forEach(row => {
+        const rowType = row.getAttribute('data-type');
+        if (type === 'ALL' || rowType === type) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    function copyQueries() {
+      const queryText = `-- Pipeline Comercial
+SELECT COUNT(p.id_proyecto) AS servicios, SUM((p.json_field->'crm_v1'->>'monto_total')::NUMERIC) AS total_cotizado 
+FROM sch_leangsp_prod.tpry_proyecto p WHERE p.created_at BETWEEN '2026-11-02' AND '2026-11-06';
+
+-- Devengado Operativo Real
+SELECT COUNT(r.id_reporte_avance) AS jornadas, SUM(r.horas_facturables) AS horas, SUM(r.horas_sobretiempo) AS sobretiempos 
+FROM sch_leangsp_prod.tedp_reporte_avance r WHERE r.fecha_reporte BETWEEN '2026-11-02' AND '2026-11-06';`;
+
+      navigator.clipboard.writeText(queryText).then(() => {
+        alert("Consultas SQL copiadas al portapapeles para auditoría en vivo.");
+      });
+    }
+  </script>
+</body>
+</html>

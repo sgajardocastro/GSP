@@ -1171,9 +1171,17 @@ const crearNuevaOtSubmit = async () => {
 
   try {
     guardandoNuevaOt.value = true
+    let idUserSesion = null
+    try {
+      const perfilLocal = JSON.parse(localStorage.getItem('perfil') || '{}')
+      idUserSesion = profileStore.ID_USUARIO || perfilLocal.ID_USUARIO || perfilLocal.id_user || null
+    } catch { /* ignore */ }
+
     const payload = {
       ...formNuevaOt.value,
-      horometro_inicio: formNuevaOt.value.horometro_grua_inicio
+      horometro_inicio: formNuevaOt.value.horometro_grua_inicio,
+      id_user: idUserSesion,
+      id_user_creador: idUserSesion
     }
     const res = await api.post('/mantenimiento/ots', payload)
     if (res.data?.success && res.data?.data?.id_ot) {

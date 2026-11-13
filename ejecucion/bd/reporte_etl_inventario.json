@@ -1,0 +1,42 @@
+{
+  "totalRows": 2801,
+  "itemsConStock": 660,
+  "itemsSinStock": 2141,
+  "itemsInactivos": 2038,
+  "totalStockUnidades": 9426,
+  "valorizacionTotalCLP": 72282414,
+  "precioMenorIgualUno": 95,
+  "codigosDuplicadosResueltos": 1,
+  "familias": {
+    "EPP": 198,
+    "Material de Desgaste": 63,
+    "Filtros": 372,
+    "Repuestos Taller Mecánico": 1225,
+    "Repuestos Eléctricos": 217,
+    "Neumaticos": 37,
+    "Aceites y Lubricantes": 27,
+    "Insumos Taller de Pinturas": 175,
+    "Insumos Taller de Soldadura": 106,
+    "Materiales Varios": 261,
+    "Útiles de Oficina": 26,
+    "Equipos Computacionales": 8,
+    "Mobiliario": 51,
+    "Articulos de Aseo": 3,
+    "Herramientas": 21,
+    "Repuestos": 11
+  },
+  "uoms": {
+    "UN": 2671,
+    "m": 45,
+    "L": 38,
+    "kg": 35,
+    "PACK": 2,
+    "PAR": 10
+  },
+  "ubicacionesResumen": {
+    "enRacksExactos": 384,
+    "enAreasEspeciales": 9,
+    "enSinUbicar": 2407,
+    "enRacksIncompletos": 1
+  }
+}

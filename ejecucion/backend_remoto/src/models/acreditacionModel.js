@@ -529,6 +529,12 @@ const acreditacionModel = {
     ]);
 
     const row = res.rows[0];
+    await db.query('DELETE FROM tsec_user_roles WHERE id_user = $1', [row.id_user]);
+    await db.query(
+      `INSERT INTO tsec_user_roles (id_user, id_rol)
+       SELECT $1, id_rol FROM tsec_roles WHERE UPPER(name_rol) = 'GSP_EJEC' LIMIT 1`,
+      [row.id_user]
+    );
     const nombreCompleto = `${row.name_frst} ${row.apellido_pat}`.trim();
     return {
       id_user: row.id_user,

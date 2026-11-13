@@ -224,7 +224,7 @@
             variant="flat"
             class="flex-1 font-bold text-none rounded-xl py-2.5 text-white"
             :prepend-icon="estadoPlataformaBsm.entregaSellada ? 'mdi-file-pdf-box' : 'mdi-clipboard-check-outline'"
-            :disabled="!viajeIdaPlataformaCompletado"
+            
             @click="estadoPlataformaBsm.entregaSellada && urlPdfEntregaBsm ? verPdfActa(urlPdfEntregaBsm) : abrirModalPlataformaBsm('ENTREGA')"
           >
             {{
@@ -349,6 +349,69 @@
         >
           {{ reportsPendientes.length > 0 ? `Completar y Firmar Report Día ${reportPrincipalPendiente.dia_a_reportar} ➔` : (primerConcluido ? `Ver Orden OT ${primerConcluido.codi_proyecto} ➔` : 'Abrir / Ver Historial de Reports ➔') }}
         </v-btn>
+      </div>
+    </v-card>
+
+    <!-- ========================================================================= -->
+    <!-- 3️⃣ BLOQUE C: VISITAS TÉCNICAS A TERRENO & PROTOCOLOS ASIGNADOS            -->
+    <!-- ========================================================================= -->
+    <v-card
+      v-if="filteredSurveys.length > 0"
+      class="mb-4 rounded-2xl border border-cyan-400 dark:border-cyan-600 bg-white dark:bg-zinc-800 shadow-sm overflow-hidden"
+    >
+      <div class="h-1 bg-gradient-to-r from-cyan-500 to-blue-600"></div>
+      <div class="pa-4">
+        <div class="d-flex align-center justify-space-between mb-3">
+          <div class="d-flex align-center ga-2.5">
+            <div class="pa-2 rounded-xl bg-cyan-100 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-300 d-flex align-center justify-center">
+              <v-icon size="22">mdi-clipboard-text-search-outline</v-icon>
+            </div>
+            <div>
+              <div class="text-[11px] font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">
+                Evaluación Comercial & Operaciones
+              </div>
+              <div class="text-base font-black text-slate-900 dark:text-white leading-tight">
+                Visitas a Terreno Asignadas
+              </div>
+            </div>
+          </div>
+          <v-chip size="small" color="cyan-darken-2" variant="flat" class="font-bold text-[10px] uppercase text-white">
+            {{ filteredSurveys.length }} PENDIENTE{{ filteredSurveys.length > 1 ? 'S' : '' }}
+          </v-chip>
+        </div>
+
+        <div class="space-y-2.5">
+          <div
+            v-for="srv in filteredSurveys"
+            :key="srv.id_survey"
+            class="rounded-xl pa-3 border bg-cyan-50/50 dark:bg-cyan-950/25 border-cyan-200 dark:border-cyan-800/50"
+          >
+            <div class="d-flex align-center justify-space-between mb-1">
+              <span class="text-xs font-black text-slate-900 dark:text-white">
+                {{ srv.nombre_proyecto || srv.name_template_srv || `Survey #${srv.id_survey}` }}
+              </span>
+              <v-chip size="x-small" :color="getEstadoColor(srv.estado_srv).color" variant="flat" class="font-bold text-[10px] text-white">
+                {{ getEstadoColor(srv.estado_srv).texto }}
+              </v-chip>
+            </div>
+            <div class="text-xs text-slate-600 dark:text-slate-300 mb-1">
+              Cliente: <strong>{{ srv.name_empresa_cliente || 'Por definir' }}</strong>
+            </div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mb-2.5">
+              Protocolo: {{ srv.name_template_srv }} • #{{ srv.id_survey }}
+            </div>
+            <v-btn
+              color="cyan-darken-2"
+              variant="flat"
+              size="small"
+              class="w-100 font-black text-none rounded-lg py-2 text-white"
+              prepend-icon="mdi-map-marker-check-outline"
+              @click="goToInspeccion(srv, notifPrimaryId(srv.id_survey))"
+            >
+              Abrir {{ Number(srv.id_template) === 80 ? 'Visita a Terreno' : 'Formulario Asignado' }} ➔
+            </v-btn>
+          </div>
+        </div>
       </div>
     </v-card>
 
@@ -720,7 +783,7 @@
             <div
               class="pa-3 rounded-xl"
               style="background-color: #111827 !important; border: 1px solid rgba(20, 184, 166, 0.45) !important;"
-              :style="!viajeIdaPlataformaCompletado ? 'opacity: 0.45; pointer-events: none;' : ''"
+              :style="''"
             >
               <div class="d-flex align-center justify-space-between mb-2">
                 <span class="text-xs font-black text-teal-300 uppercase tracking-wider">
@@ -1803,6 +1866,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserDetailStore } from '@/store/userDetail'
 import { useNetworkStatus } from '@/composables/useNetworkStatus'
 import { verificarEsAdminOComercial } from '@/composables/usePermisosCotizador'
+import { abrirCamaraWebRTC } from '@/utils/inAppCamera'
 
 /* eslint-disable */
 
@@ -2367,16 +2431,8 @@ const tieneViajeEnCurso = computed(() => {
 })
 
 const viajeIdaPlataformaCompletado = computed(() => {
-  if (estadoPlataformaBsm.entregaSellada) return true
-  const v = viajeProyectoBsm.value || (
-    Number(viajeActivo.value?.id_proyecto) === Number(idProyectoBsmSeleccionado.value)
-      ? viajeActivo.value
-      : null
-  )
-  if (!v) return false
-  const est = String(v.estado_trayecto || '').toUpperCase()
-  const tipo = String(v.tipo_trayecto || '').toUpperCase()
-  return ['ARRIBADO', 'LLEGADO', 'COMPLETADO'].includes(est) || Boolean(v.fecha_llegada_faena) || tipo === 'RETORNO'
+  // Desacoplado determinista: El Acta de Entrega 360° es independiente del viaje de traslado
+  return true
 })
 
 const tokenViajePlataformaActivo = computed(() =>
@@ -2387,19 +2443,66 @@ const actasPlataformaConcluidas = computed(() =>
   Boolean(estadoPlataformaBsm.entregaSellada && estadoPlataformaBsm.retiroSellado)
 )
 
+// Validador estricto de Plataforma Elevadora BSM (excluye Camión Plataforma, Cama Baja, Grúa Horquilla, Grúa Móvil, Camión Pluma)
+const esTextoPlataformaElevadora = (txtRaw = '') => {
+  const txt = String(txtRaw || '').toUpperCase()
+  if (
+    txt.includes('CAMION PLATAFORMA') ||
+    txt.includes('CAMIÓN PLATAFORMA') ||
+    txt.includes('CAMA BAJA') ||
+    txt.includes('HORQUILLA') ||
+    txt.includes('CAMION PLUMA') ||
+    txt.includes('CAMIÓN PLUMA') ||
+    txt.includes('GRUA MOVIL') ||
+    txt.includes('GRÚA MÓVIL') ||
+    txt.includes('TRACTO')
+  ) {
+    return false
+  }
+  return (
+    txt.includes('PLATAFORMA ELEVADORA') ||
+    txt.includes('PLATAFORMA TIJERA') ||
+    txt.includes('PLATAFORMA ARTICULADA') ||
+    txt.includes('ALZAHOMBRE') ||
+    txt.includes('ALZA HOMBRE') ||
+    txt.includes('MANLIFT') ||
+    txt.includes('TIJERA ELECTRICA') ||
+    txt.includes('TIJERA DIESEL') ||
+    txt.includes('BRAZO ARTICULADO') ||
+    txt.includes('BRAZO TELESCOPICO')
+  )
+}
+
+const esProyectoPlataformaBsm = (p) => {
+  if (!p || Number(p.id_proyecto_estado) === 99) return false
+  const cod = String(p.codi_proyecto || '').toUpperCase().trim()
+  // Proyectos de Grúas San Pablo (GSP-*) jamás son de Bestmaq Plataformas
+  if (cod.startsWith('GSP')) return false
+  const jf = typeof p.json_field === 'string' ? JSON.parse(p.json_field) : (p.json_field || {})
+  const crm = jf.crm_v1 || {}
+  const lineas = Array.isArray(crm.lineas_servicio) ? crm.lineas_servicio : []
+  const tieneLineaPlataformaElevadora = lineas.some(l => {
+    const txt = `${l.tipo || ''} ${l.subcategoria || ''} ${l.descripcion || ''}`
+    return esTextoPlataformaElevadora(txt)
+  })
+  const esBmqExplicito = cod.startsWith('BMQ')
+  return Boolean(tieneLineaPlataformaElevadora || (esBmqExplicito && lineas.length > 0))
+}
+
 const tienePlataformaAsignada = computed(() => {
   if (!idProyectoBsmSeleccionado.value) return false
   if (actasPlataformaConcluidas.value) return false
   const uid = Number(idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user)
-  const v = viajeProyectoBsm.value || viajeActivo.value
-  const esChoferDelViaje = v && Number(v.id_proyecto) === Number(idProyectoBsmSeleccionado.value) && (Number(v.id_user_chofer) === uid || [53, 59].includes(uid))
-  const tieneActaEnCurso = Boolean(estadoPlataformaBsm.entregaSellada && !estadoPlataformaBsm.retiroSellado)
+  if (!uid) return false
   const prySel = proyectosPlataformaDisponibles.value.find(p => Number(p.id_proyecto) === Number(idProyectoBsmSeleccionado.value))
-  const jf = prySel?.raw ? (typeof prySel.raw.json_field === 'string' ? JSON.parse(prySel.raw.json_field) : (prySel.raw.json_field || {})) : {}
+  if (!prySel?.raw || !esProyectoPlataformaBsm(prySel.raw)) return false
+  const v = viajeProyectoBsm.value
+  const esChoferDelViaje = Boolean(v && Number(v.id_proyecto) === Number(idProyectoBsmSeleccionado.value) && Number(v.id_user_chofer) === uid)
+  const jf = typeof prySel.raw.json_field === 'string' ? JSON.parse(prySel.raw.json_field) : (prySel.raw.json_field || {})
   const extras = Array.isArray(jf.ejecucion_v1?.equipos_extra) ? jf.ejecucion_v1.equipos_extra : []
   const asignadoEnExtras = extras.some(ex => Number(ex.chofer_id) === uid)
-  const asignadoEnEjec = Number(jf.ejecucion_v1?.chofer_id) === uid || Number(jf.ejecucion_v1?.operador_id) === uid
-  return Boolean(esChoferDelViaje || tieneActaEnCurso || asignadoEnExtras || asignadoEnEjec || route.query?.id_proyecto)
+  const asignadoChoferEjec = Number(jf.ejecucion_v1?.chofer_id) === uid
+  return Boolean(esChoferDelViaje || asignadoEnExtras || asignadoChoferEjec)
 })
 
 const conteoFotosEntregaBsm = computed(() =>
@@ -2434,25 +2537,21 @@ const esActaRetiroValida = computed(() =>
   Boolean(formBsm.pin_retiro && formBsm.pin_retiro.length === 4)
 )
 
-const agregarFotoAdicional = (etapa) => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/*'
-  input.capture = 'environment'
-  input.onchange = (ev) => {
-    const file = ev.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const lista = etapa === 'ENTREGA' ? fotosAdicionalesEntrega : fotosAdicionalesRetiro
-      lista.value.push({
-        label: `Foto Extra ${lista.value.length + 1}`,
-        data: String(reader.result)
-      })
-    }
-    reader.readAsDataURL(file)
+const agregarFotoAdicional = async (etapa) => {
+  persistirEstadoPlataformaBsm()
+  const res = await abrirCamaraWebRTC({
+    titulo: `Fotografía Adicional (${etapa})`,
+    maxDimension: 1280,
+    quality: 0.82
+  })
+  if (res && res.dataUrl) {
+    const lista = etapa === 'ENTREGA' ? fotosAdicionalesEntrega : fotosAdicionalesRetiro
+    lista.value.push({
+      label: `Foto Extra ${lista.value.length + 1}`,
+      data: String(res.dataUrl)
+    })
+    persistirEstadoPlataformaBsm()
   }
-  input.click()
 }
 
 const eliminarFotoAdicional = (etapa, index) => {
@@ -2522,11 +2621,11 @@ const hidratarCabeceraDesdeProyecto = async (pry) => {
   urlPdfEntregaBsm.value = ''
   urlPdfFinalBsm.value = ''
 
-  // Buscar línea de plataforma o equipo principal
+  // Buscar exclusivamente línea de plataforma elevadora real
   const lineaPlat = lineas.find(l => {
-    const txt = `${l.tipo || ''} ${l.subcategoria || ''} ${l.descripcion || ''}`.toUpperCase()
-    return txt.includes('PLATAFORMA') || txt.includes('ALZA') || txt.includes('MANLIFT') || txt.includes('TIJERA') || txt.includes('ARTICULAD')
-  }) || lineas.find(l => !String(l.tipo || '').toUpperCase().includes('TRASLADO')) || lineas[0] || {}
+    const txt = `${l.tipo || ''} ${l.subcategoria || ''} ${l.descripcion || ''}`
+    return esTextoPlataformaElevadora(txt)
+  }) || lineas.find(l => !String(l.tipo || '').toUpperCase().includes('TRASLADO') && !String(l.tipo || '').toUpperCase().includes('CAMION') && !String(l.tipo || '').toUpperCase().includes('HORQUILLA')) || {}
 
   const eqId = lineaPlat.equipo_asignado_id || ejec.equipo_id || null
   const eqObj = eqId ? equiposCatalogoBsm.value.find(e => Number(e.id_equipo) === Number(eqId)) : null
@@ -2594,31 +2693,18 @@ const hidratarCabeceraDesdeProyecto = async (pry) => {
 const cargarViajeDeProyectoBsm = async (idPry, rawPry = null) => {
   if (!idPry) return
   try {
-    let res = await apiAxios.get(`/viajes/proyecto/${idPry}`).catch(() => ({ data: { data: [] } }))
-    let lista = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : [])
-
-    // Si el proyecto tiene camión asignado en equipos_extra con chofer_id y aún no existe fila en tlog_desplazamiento, crearla automáticamente
-    if (lista.length === 0 && rawPry) {
-      const jf = typeof rawPry.json_field === 'string' ? JSON.parse(rawPry.json_field) : (rawPry.json_field || {})
-      const extras = Array.isArray(jf.ejecucion_v1?.equipos_extra) ? jf.ejecucion_v1.equipos_extra : []
-      const cam = extras.find(ex => ex.id_equipo && ex.chofer_id)
-      if (cam) {
-        await apiAxios.post('/operaciones/viaje/asignar', {
-          id_proyecto: Number(idPry),
-          id_equipo: Number(cam.id_equipo),
-          id_user_chofer: Number(cam.chofer_id),
-          tipo_trayecto: 'IDA'
-        }).catch(() => null)
-        res = await apiAxios.get(`/viajes/proyecto/${idPry}`).catch(() => ({ data: { data: [] } }))
-        lista = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : [])
-      }
-    }
+    const uid = Number(idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user)
+    const res = await apiAxios.get(`/viajes/proyecto/${idPry}`).catch(() => ({ data: { data: [] } }))
+    const lista = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : [])
 
     viajesProyectoListaBsm.value = lista
-    const vIda = lista.find(v => String(v.tipo_trayecto || 'IDA').toUpperCase() === 'IDA') || lista[0] || null
-    const vActivo = lista.find(v => ['ASIGNADO', 'EN_RUTA'].includes(String(v.estado_trayecto || '').toUpperCase())) || vIda
+    // Filtrar viajes correspondientes al chofer autenticado (o fallback si el proyecto tiene un único viaje BSM)
+    const misViajes = uid ? lista.filter(v => Number(v.id_user_chofer) === uid) : lista
+    const pool = misViajes.length > 0 ? misViajes : lista
+    const vIda = pool.find(v => String(v.tipo_trayecto || 'IDA').toUpperCase() === 'IDA') || pool[0] || null
+    const vActivo = pool.find(v => ['ASIGNADO', 'EN_RUTA'].includes(String(v.estado_trayecto || '').toUpperCase())) || vIda
 
-    if (vActivo) {
+    if (vActivo && (!uid || Number(vActivo.id_user_chofer) === uid)) {
       const jf = rawPry ? (typeof rawPry.json_field === 'string' ? JSON.parse(rawPry.json_field) : (rawPry.json_field || {})) : {}
       const crm = jf.crm_v1 || {}
       const enriquecido = {
@@ -2629,16 +2715,6 @@ const cargarViajeDeProyectoBsm = async (idPry, rawPry = null) => {
       }
       viajeProyectoBsm.value = enriquecido
       estadoPlataformaBsm.viajeIdaConcluido = ['ARRIBADO', 'LLEGADO', 'COMPLETADO'].includes(String(enriquecido.estado_trayecto || '').toUpperCase()) || Boolean(enriquecido.fecha_llegada_faena)
-
-      // Si viajeActivo está vacío o apunta a un viaje antiguo ya ARRIBADO de otro proyecto menor, priorizar el viaje activo de este proyecto
-      const estActual = String(viajeActivo.value?.estado_trayecto || '').toUpperCase()
-      const estNuevo = String(enriquecido.estado_trayecto || '').toUpperCase()
-      if (
-        !viajeActivo.value ||
-        (['ARRIBADO', 'LLEGADO', 'COMPLETADO'].includes(estActual) && Number(viajeActivo.value?.id_proyecto) < Number(idPry) && ['ASIGNADO', 'EN_RUTA'].includes(estNuevo))
-      ) {
-        viajeActivo.value = enriquecido
-      }
     } else {
       viajeProyectoBsm.value = null
     }
@@ -2667,18 +2743,10 @@ const cargarDatosRealesPlataformaBsm = async () => {
     equiposCatalogoBsm.value = listaEq
 
     const listaPry = Array.isArray(resPry.data) ? resPry.data : (resPry.data?.proyectos || [])
-    // Filtrar proyectos con plataformas/arriendo y ordenar del más reciente al más antiguo
-    const candidatos = listaPry.filter(p => {
-      if (Number(p.id_proyecto_estado) === 99) return false
-      const jf = typeof p.json_field === 'string' ? JSON.parse(p.json_field) : (p.json_field || {})
-      const crm = jf.crm_v1 || {}
-      const lineas = Array.isArray(crm.lineas_servicio) ? crm.lineas_servicio : []
-      const tienePlat = lineas.some(l => {
-        const txt = `${l.tipo || ''} ${l.subcategoria || ''} ${l.descripcion || ''}`.toUpperCase()
-        return txt.includes('PLATAFORMA') || txt.includes('ALZA') || txt.includes('MANLIFT') || txt.includes('TIJERA') || txt.includes('ARTICULAD')
-      })
-      return tienePlat || Number(crm.tipo_caso) === 5 || Number(p.id_empresa) === 11 || String(p.codi_proyecto || '').toUpperCase().startsWith('BMQ')
-    }).sort((a, b) => Number(b.id_proyecto) - Number(a.id_proyecto))
+    // Filtrar estrictamente proyectos de Plataformas Elevadoras Bestmaq (excluye GSP-*, Grúas Horquilla y Camiones Plataforma)
+    const candidatos = listaPry
+      .filter(p => esProyectoPlataformaBsm(p))
+      .sort((a, b) => Number(b.id_proyecto) - Number(a.id_proyecto))
 
     proyectosPlataformaDisponibles.value = candidatos.map(p => {
       const jf = typeof p.json_field === 'string' ? JSON.parse(p.json_field) : (p.json_field || {})
@@ -2694,22 +2762,24 @@ const cargarDatosRealesPlataformaBsm = async () => {
     })
 
     const uid = Number(idUser.value || JSON.parse(localStorage.getItem('perfil') || '{}')?.id_user)
-    const queryPryId = route.query?.id_proyecto ? Number(route.query.id_proyecto) : null
+    const queryPryId = route.query?.id_proyecto && candidatos.some(c => Number(c.id_proyecto) === Number(route.query.id_proyecto))
+      ? Number(route.query.id_proyecto)
+      : null
     const activeIsCandidate = viajeActivo.value?.id_proyecto && candidatos.some(c => Number(c.id_proyecto) === Number(viajeActivo.value.id_proyecto))
 
-    // Buscar si el usuario actual tiene asignación específica en alguno de los proyectos de plataforma
+    // Buscar si el usuario actual tiene asignación específica como CHOFER de traslado en alguno de los proyectos de plataforma BSM
     const candidatoAsignado = candidatos.find(c => {
-      if (viajeActivo.value?.id_proyecto && Number(c.id_proyecto) === Number(viajeActivo.value.id_proyecto)) {
+      if (viajeActivo.value?.id_proyecto && Number(c.id_proyecto) === Number(viajeActivo.value.id_proyecto) && Number(viajeActivo.value.id_user_chofer) === uid) {
         return true
       }
       const jf = typeof c.json_field === 'string' ? JSON.parse(c.json_field) : (c.json_field || {})
       const extras = Array.isArray(jf.ejecucion_v1?.equipos_extra) ? jf.ejecucion_v1.equipos_extra : []
       if (extras.some(ex => Number(ex.chofer_id) === uid)) return true
-      if (Number(jf.ejecucion_v1?.chofer_id) === uid || Number(jf.ejecucion_v1?.operador_id) === uid) return true
+      if (Number(jf.ejecucion_v1?.chofer_id) === uid) return true
       return false
     })
 
-    const targetId = queryPryId || (activeIsCandidate ? viajeActivo.value.id_proyecto : null) || candidatoAsignado?.id_proyecto || (idProyectoBsmSeleccionado.value && candidatos.some(c => Number(c.id_proyecto) === Number(idProyectoBsmSeleccionado.value)) ? idProyectoBsmSeleccionado.value : null)
+    const targetId = queryPryId || (activeIsCandidate ? viajeActivo.value.id_proyecto : null) || candidatoAsignado?.id_proyecto || null
     if (targetId) {
       idProyectoBsmSeleccionado.value = Number(targetId)
       const sel = proyectosPlataformaDisponibles.value.find(x => Number(x.id_proyecto) === Number(targetId))
@@ -2798,22 +2868,19 @@ const marcarTodosItemsBsm = (columna, valor) => {
   })
 }
 
-const seleccionarFoto360 = (etapa, slotKey) => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/*'
-  input.capture = 'environment'
-  input.onchange = (ev) => {
-    const file = ev.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (etapa === 'ENTREGA') formBsm.fotos_entrega[slotKey] = String(reader.result)
-      else formBsm.fotos_retiro[slotKey] = String(reader.result)
-    }
-    reader.readAsDataURL(file)
+const seleccionarFoto360 = async (etapa, slotKey) => {
+  persistirEstadoPlataformaBsm()
+  const slotObj = slotsFotos360.find(s => s.key === slotKey)
+  const res = await abrirCamaraWebRTC({
+    titulo: `${slotObj?.label || slotKey} (${etapa})`,
+    maxDimension: 1280,
+    quality: 0.82
+  })
+  if (res && res.dataUrl) {
+    if (etapa === 'ENTREGA') formBsm.fotos_entrega[slotKey] = String(res.dataUrl)
+    else formBsm.fotos_retiro[slotKey] = String(res.dataUrl)
+    persistirEstadoPlataformaBsm()
   }
-  input.click()
 }
 
 const iniciarTrazoCanvas = (e, etapa) => {

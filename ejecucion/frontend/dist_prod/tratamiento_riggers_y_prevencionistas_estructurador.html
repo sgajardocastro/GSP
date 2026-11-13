@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tratamiento de Riggers y Prevencionistas en el Estructurador | Grúas San Pablo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              amber: '#f59e0b',
+              amberLight: '#fbbf24',
+              amberDark: '#b45309',
+              dark: '#030712',
+              card: '#0b1324',
+              border: 'rgba(255, 255, 255, 0.08)'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #030712;
+      color: #f3f4f6;
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0b1324;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 3px;
+    }
+    @media print {
+      body {
+        background-color: #ffffff;
+        color: #0f172a;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col antialiased custom-scrollbar selection:bg-amber-500 selection:text-black">
+
+  <!-- ENCABEZADO SUPERIOR -->
+  <header class="border-b border-brand-border bg-[#080d1a] px-4 md:px-8 py-3.5 sticky top-0 z-50 backdrop-blur flex items-center justify-between no-print">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-lg">
+        <i data-lucide="sliders" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">GRÚAS SAN PABLO</span>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 font-mono border border-amber-500/30 font-bold">ESPECIFICACIÓN OFICIAL</span>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono border border-slate-700">SPEC-016 §19 • REQ-1100</span>
+        </div>
+        <h1 class="text-sm font-extrabold text-white">Tratamiento de Riggers y Prevencionistas en el Estructurador</h1>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2">
+      <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 flex items-center space-x-1 transition-all cursor-pointer">
+        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">Imprimir / PDF</span>
+      </button>
+      <a href="./centro_documentacion_gsp.html" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center space-x-1 transition-all">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+        <span>Volver al Centro de Documentación</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="max-w-6xl mx-auto w-full p-4 md:p-8 flex-1 space-y-8">
+
+    <!-- 1. RESUMEN EJECUTIVO -->
+    <section class="bg-gradient-to-r from-amber-500/10 via-[#0b1324] to-slate-900 border border-amber-500/30 rounded-2xl p-6 shadow-xl">
+      <div class="max-w-4xl">
+        <span class="text-xs font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded font-bold tracking-wider">
+          GOBERNANZA COMERCIAL &amp; OPERACIONAL • SPEC-016 v4.2.0
+        </span>
+        <h2 class="text-2xl font-black text-white mt-2 tracking-tight">
+          Tratamiento de Riggers y Prevencionistas en el Estructurador de Servicios y Vigencia de Cotizaciones en Operación
+        </h2>
+        <p class="text-xs md:text-sm text-slate-300 mt-2 leading-relaxed">
+          Esta especificación define las reglas de negocio del <strong>Estructurador de Servicios</strong> respecto a la creación y exclusión comercial de <strong>Riggers y Prevencionistas</strong>, la limpieza automática de glosas al cambiar categorías, la validez operativa de nuevas versiones de cotización cuando un servicio ya está en ejecución y la herencia del piso de horas mínimas en el Report Diario.
+        </p>
+      </div>
+    </section>
+
+    <!-- 2. REGLA 1: RIGGER Y PREVENCIONISTA EN EL ESTRUCTURADOR -->
+    <section class="bg-brand-card border border-slate-800 rounded-2xl p-6 space-y-5 shadow-lg">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center font-mono">01</span>
+          <h3 class="text-base md:text-lg font-extrabold text-white">Regla de Negocio: Rigger y Prevencionista en Preventa vs. Itemizado Comercial</h3>
+        </div>
+        <span class="text-[11px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold">Desacople Operativo / Comercial</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Paso 1 -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-mono font-bold text-amber-400 uppercase">1. Al Marcar el Selector</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">Automático</span>
+          </div>
+          <h4 class="text-sm font-bold text-white">Inyección Inicial en el Estructurador</h4>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            En Preventa, cuando el ejecutivo comercial selecciona manualmente <strong>Requiere Rigger = SÍ</strong> o <strong>Prevencionista Certificado = SÍ</strong>, el Estructurador de Servicios genera inmediatamente un registro de <code class="text-amber-300 font-mono">PERSONAL CERTIFICADO — RIGGER</code> (o <code class="text-amber-300 font-mono">PREVENCIONISTA</code>).
+          </p>
+        </div>
+
+        <!-- Paso 2 -->
+        <div class="bg-slate-950/80 border border-indigo-500/40 rounded-xl p-4 space-y-2 ring-1 ring-indigo-500/20">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-mono font-bold text-indigo-400 uppercase">2. Decisión Comercial</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">Eliminable</span>
+          </div>
+          <h4 class="text-sm font-bold text-white">Eliminación Libre desde el Estructurador</h4>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Este registro <strong>puede ser eliminado libremente desde el Estructurador</strong> (botón <code class="text-rose-400 font-mono">🗑️</code>) ya que, por motivos comerciales, el Rigger o Prevencionista <strong>podría no ser cobrado por separado</strong> (incluido en la tarifa de la grúa) y <strong>no ir en el itemizado de la cotización PDF</strong>.
+          </p>
+        </div>
+
+        <!-- Paso 3 -->
+        <div class="bg-slate-950/80 border border-emerald-500/40 rounded-xl p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-mono font-bold text-emerald-400 uppercase">3. Persistencia Respetada</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">Sin Re-Inyección</span>
+          </div>
+          <h4 class="text-sm font-bold text-white">Se Mantiene el Requerimiento Operativo</h4>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Al eliminar la línea comercial del Estructurador:
+            <br>• <strong>Operaciones sigue sabiendo que el servicio requiere Rigger/Prevencionista</strong> (<code class="text-emerald-300 font-mono">Requiere Rigger = SÍ</code> se mantiene activo para la asignación).
+            <br>• <strong>El sistema jamás vuelve a re-inyectar la línea</strong> al guardar, cambiar de pestaña o reabrir el negocio.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tabla comparativa de escenarios -->
+      <div class="overflow-x-auto pt-2">
+        <table class="w-full text-left text-xs border border-slate-800 rounded-xl overflow-hidden">
+          <thead class="bg-slate-900 text-slate-300 uppercase font-mono text-[10px]">
+            <tr>
+              <th class="p-3 border-b border-slate-800">Escenario Comercial</th>
+              <th class="p-3 border-b border-slate-800">Selector Preventa</th>
+              <th class="p-3 border-b border-slate-800">Acción en el Estructurador</th>
+              <th class="p-3 border-b border-slate-800">Resultado en Cotización PDF</th>
+              <th class="p-3 border-b border-slate-800">Resultado en Operaciones (OT)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 bg-slate-950/50">
+            <tr>
+              <td class="p-3 font-bold text-white">A. Rigger cobrado como ítem separado</td>
+              <td class="p-3 font-mono text-emerald-400">Requiere Rigger = SÍ</td>
+              <td class="p-3 text-slate-300">Se mantiene la fila de Rigger y se ingresa su tarifa unitaria (ej. $90.000/día).</td>
+              <td class="p-3 text-slate-200">Aparece como ítem valorizado en la cotización.</td>
+              <td class="p-3 text-emerald-300 font-semibold">Exige asignar Rigger en la OT.</td>
+            </tr>
+            <tr>
+              <td class="p-3 font-bold text-amber-300">B. Rigger incluido en la tarifa de la grúa (Sin cobro separado)</td>
+              <td class="p-3 font-mono text-emerald-400">Requiere Rigger = SÍ</td>
+              <td class="p-3 text-slate-300">El comercial <strong>elimina la fila de Rigger (`🗑️`)</strong> del Estructurador para que solo quede la Grúa.</td>
+              <td class="p-3 text-amber-300 font-semibold">Solo aparece la Grúa en el itemizado (el Rigger no aparece cobrado aparte).</td>
+              <td class="p-3 text-emerald-300 font-semibold">Mantiene <code class="font-mono">Requiere Rigger = SÍ</code> para que Operaciones asigne al Rigger en terreno.</td>
+            </tr>
+            <tr>
+              <td class="p-3 font-bold text-slate-300">C. Maniobra sin Rigger</td>
+              <td class="p-3 font-mono text-slate-400">Requiere Rigger = NO</td>
+              <td class="p-3 text-slate-400">No se genera fila de Rigger (o se remueve si existía).</td>
+              <td class="p-3 text-slate-400">Sin ítem de Rigger.</td>
+              <td class="p-3 text-slate-400">No solicita Rigger en la OT.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3. REGLA 2: SANEAMIENTO AUTOMÁTICO DE DESCRIPCIÓN -->
+    <section class="bg-brand-card border border-slate-800 rounded-2xl p-6 space-y-4 shadow-lg">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-sky-500 text-slate-950 font-black text-xs flex items-center justify-center font-mono">02</span>
+          <h3 class="text-base md:text-lg font-extrabold text-white">Saneamiento Automático de Glosa al Cambiar Categoría o Subcategoría</h3>
+        </div>
+        <span class="text-[11px] font-mono px-2.5 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/30 font-bold">Prevención de Error de Glosa</span>
+      </div>
+
+      <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+        Si un usuario cambia la <strong>Categoría</strong> de una fila existente en el Estructurador (por ejemplo, reutiliza una fila que decía <code class="text-rose-300 font-mono">PERSONAL CERTIFICADO / RIGGER</code> y la cambia a <code class="text-emerald-300 font-mono">GRUAS TELESCOPICAS / GRUA 70 TON</code>):
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4">
+          <div class="text-xs font-bold text-rose-300 uppercase mb-1">❌ Qué se evita</div>
+          <p class="text-xs text-slate-300">
+            Que una línea de Grúa o Camión Pluma conserve por arrastre la descripción automática <code class="text-rose-300 font-mono">"Servicio de Rigger Certificado"</code> o <code class="text-rose-300 font-mono">"Servicio de Prevencionista Certificado"</code> en el PDF de la cotización.
+          </p>
+        </div>
+        <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
+          <div class="text-xs font-bold text-emerald-300 uppercase mb-1">✅ Comportamiento del Sistema</div>
+          <p class="text-xs text-slate-300">
+            Al cambiar la categoría y seleccionar la subcategoría del equipo, el sistema limpia automáticamente la glosa por defecto anterior y propone <code class="text-emerald-300 font-mono">"HORAS MINIMAS DIARIAS [SUBCATEGORÍA]"</code>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. REGLA 3: VIGENCIA DE NUEVAS COTIZACIONES EN SERVICIOS EN OPERACIÓN -->
+    <section class="bg-brand-card border border-amber-500/40 rounded-2xl p-6 space-y-5 shadow-lg ring-1 ring-amber-500/20">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center font-mono">03</span>
+          <h3 class="text-base md:text-lg font-extrabold text-white">Control de Versiones de Cotización cuando el Servicio YA está en Operación</h3>
+        </div>
+        <span class="text-[11px] font-mono px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">Validez Sujeta a Envío Formal</span>
+      </div>
+
+      <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+        Cuando un negocio ya se encuentra en fase operativa (<strong>Asignación, Preparación de Salida o En Ejecución en Terreno</strong>) y el ejecutivo comercial necesita corregir o emitir una nueva versión de la cotización (<code class="text-amber-300 font-mono">v2</code>, <code class="text-amber-300 font-mono">v3</code>):
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-slate-950/90 border border-amber-500/40 rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase rounded">Estado 1: Cotización Generada pero NO Enviada</span>
+          </div>
+          <h4 class="text-sm font-bold text-white">🟠 Borrador Comercial Sin Validez Operativa</h4>
+          <ul class="text-xs text-slate-300 space-y-1.5 list-disc pl-4 leading-relaxed">
+            <li>El sistema emite un aviso explícito al comercial indicando que <strong>mientras NO envíe formalmente la nueva versión al cliente mediante el botón <code class="text-amber-300 font-mono">[ENVIAR COTIZACIÓN]</code>, dicha versión NO es válida para Operaciones</strong>.</li>
+            <li>El Report Diario y la operación en curso continúan rigiéndose por la <strong>última cotización enviada formalmente</strong>.</li>
+          </ul>
+        </div>
+
+        <div class="bg-slate-950/90 border border-emerald-500/40 rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-black uppercase rounded">Estado 2: Cotización Enviada al Cliente</span>
+          </div>
+          <h4 class="text-sm font-bold text-white">🟢 Vigente en Operaciones (Actualización en Caliente)</h4>
+          <ul class="text-xs text-slate-300 space-y-1.5 list-disc pl-4 leading-relaxed">
+            <li>En el instante en que el comercial envía la nueva cotización por correo desde el sistema (<code class="text-emerald-300 font-mono">[ENVIAR COTIZACIÓN]</code>), esta pasa a estado <strong>🟢 Vigente en Operaciones</strong>.</li>
+            <li>El sistema actualiza automáticamente las horas mínimas y tarifas en el Report Diario <strong>sin reiniciar el servicio, sin pedir nuevamente "Generar Requerimiento", sin bloquear los viajes de los operadores y sin perder la grúa, operador ni rigger asignados</strong>.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. REGLA 4: HERENCIA DE HORAS MÍNIMAS EN REPORT DIARIO -->
+    <section class="bg-brand-card border border-slate-800 rounded-2xl p-6 space-y-3 shadow-lg">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-emerald-500 text-slate-950 font-black text-xs flex items-center justify-center font-mono">04</span>
+          <h3 class="text-base md:text-lg font-extrabold text-white">Herencia Unificada de Horas Mínimas Contractuales en el Report Diario</h3>
+        </div>
+        <span class="text-[11px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold">PWA + Matriz PMO + Regularización</span>
+      </div>
+      <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+        Todo Report Diario (ya sea emitido por el operador desde la App Móvil PWA, registrado manualmente desde la Matriz de Control en Vivo PMO o cargado por Regularización Manual) hereda dinámicamente las <strong>Horas Mínimas Diarias</strong> pactadas en la línea de grúa de la <strong>cotización enviada vigente</strong> (por ejemplo, <code class="text-amber-300 font-mono">9.00 hrs</code> mínimas), aplicando la regla contractual:
+      </p>
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 font-mono text-xs text-amber-300 text-center">
+        Horas Facturables del Día = MÁXIMO ( Horas Reales Operadas , Horas Mínimas de la Cotización Enviada Vigente )
+      </div>
+    </section>
+
+    <!-- 6. REGLA 5: CLASIFICACIÓN POR CATEGORÍA Y SUBCATEGORÍA (CERO LECTURA DE DESCRIPCIÓN) Y VISIBILIDAD DE TRASLADOS -->
+    <section class="bg-brand-card border border-amber-500/40 rounded-2xl p-6 space-y-5 shadow-lg ring-1 ring-amber-500/20">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center font-mono">05</span>
+          <h3 class="text-base md:text-lg font-extrabold text-white">Clasificación por Categoría y Subcategoría (Cero Lectura de Descripción) y Visibilidad de Traslados en Asignación</h3>
+        </div>
+        <span class="text-[11px] font-mono px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">SPEC-016 §20 &bull; SPEC-065 §4.1</span>
+      </div>
+
+      <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+        El campo <code class="text-slate-200 font-mono">Descripción del Servicio</code> del Estructurador es una glosa comercial libre para el PDF del cliente. El sistema <strong>jamás evalúa la descripción</strong> para clasificar equipos, operadores o traslados. Todo el comportamiento hacia <strong>3. Asignación Recursos OT</strong> se gobierna exclusivamente por los combos <strong>Categoría (<code class="text-amber-300 font-mono">tipo</code>)</strong> y <strong>Subcategoría (<code class="text-amber-300 font-mono">subcategoria</code>)</strong>:
+      </p>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-900 border-b border-slate-800 text-slate-300 font-mono uppercase tracking-wider text-[11px]">
+              <th class="p-3">#</th>
+              <th class="p-3">Composición de Equipos Principales (Sección 1)</th>
+              <th class="p-3">Línea en <code class="text-amber-400">Categoría = TRASLADOS</code></th>
+              <th class="p-3 text-center">¿Se muestra en Sección 2 (Vehículo + Chofer)?</th>
+              <th class="p-3">Razón de Negocio</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 text-slate-300">
+            <tr class="hover:bg-slate-900/40">
+              <td class="p-3 font-mono font-bold text-amber-400">1</td>
+              <td class="p-3 font-semibold text-white">Solo Camión (<code class="text-blue-300 font-mono">Categoría = CAMIONES</code>, ej. <code class="text-blue-300 font-mono">CAMION PLUMA</code>) sin Plataformas/Horquillas</td>
+              <td class="p-3 font-mono text-slate-300">Cualquier subcategoría</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono font-bold">NO (Se oculta)</span></td>
+              <td class="p-3">El Camión Pluma es autopropulsado (viaja con su propio operador) y no lleva camión auxiliar de contrapesos. Su línea de traslado es solo cobro comercial.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40">
+              <td class="p-3 font-mono font-bold text-amber-400">2</td>
+              <td class="p-3 font-semibold text-white">Grúa Telescópica (<code class="text-blue-300 font-mono">Categoría = GRUAS TELESCOPICAS</code>)</td>
+              <td class="p-3 font-mono text-slate-300">Subcategoría de Grúa (<code class="text-amber-300">GRUA ... TON</code>)</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono font-bold">NO (Se oculta)</span></td>
+              <td class="p-3">Es el cobro de movilización de la propia Grúa Telescópica (autopropulsada, viaja con su operador de Sección 1).</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40 bg-slate-900/25">
+              <td class="p-3 font-mono font-bold text-amber-400">3</td>
+              <td class="p-3 font-semibold text-white">Grúa Telescópica (<code class="text-blue-300 font-mono">Categoría = GRUAS TELESCOPICAS</code>)</td>
+              <td class="p-3 font-mono text-slate-300">Subcategoría de Camión Auxiliar (<code class="text-purple-300">CAMA BAJA</code>, <code class="text-purple-300">CAMIÓN PLATAFORMA</code>, <code class="text-purple-300">RAMPLA</code>, <code class="text-purple-300">TRACTOCAMIÓN</code>)</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono font-bold">SÍ (Se asigna)</span></td>
+              <td class="p-3">Cuando una Grúa Telescópica lleva además una línea de <code class="font-mono">TRASLADOS</code> con subcategoría de camión/rampla, corresponde al vehículo auxiliar que transporta sus contrapesos/aparejos y requiere asignar camión + chofer.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40 bg-slate-900/25">
+              <td class="p-3 font-mono font-bold text-amber-400">4</td>
+              <td class="p-3 font-semibold text-white">Equipos No Autopropulsados (<code class="text-blue-300 font-mono">Categoría = PLATAFORMAS</code>, Alza Hombre, Horquilla)</td>
+              <td class="p-3 font-mono text-slate-300">Subcategoría de Camión (<code class="text-purple-300">CAMA BAJA</code>, <code class="text-purple-300">CAMIÓN PLATAFORMA</code>)</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono font-bold">SÍ (Se asigna)</span></td>
+              <td class="p-3">Las plataformas/horquillas no se desplazan solas por carretera; requieren asignar el camión de traslado y su chofer en Sección 2.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40 bg-slate-900/25">
+              <td class="p-3 font-mono font-bold text-amber-400">5</td>
+              <td class="p-3 font-semibold text-white">Ningún equipo en Sección 1 (solo venta de <code class="text-purple-300 font-mono">TRASLADOS</code>)</td>
+              <td class="p-3 font-mono text-slate-300">Cualquier subcategoría</td>
+              <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono font-bold">SÍ (Se asigna)</span></td>
+              <td class="p-3">Es un servicio de Flete/Transporte puro; requiere asignar en Sección 2 el camión y el chofer que realizará el viaje.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

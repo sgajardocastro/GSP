@@ -1,0 +1,355 @@
+{
+  "tables": [
+    {
+      "name": "tinv_conteo",
+      "status": "SOLO_EN_DEV"
+    },
+    {
+      "name": "tinv_conteo_linea",
+      "status": "SOLO_EN_DEV"
+    },
+    {
+      "name": "tinv_lote",
+      "status": "SOLO_EN_DEV"
+    },
+    {
+      "name": "tinv_producto_compatibilidad",
+      "status": "SOLO_EN_DEV"
+    },
+    {
+      "name": "tinv_producto_referencia",
+      "status": "SOLO_EN_DEV"
+    },
+    {
+      "name": "tinv_recepcion",
+      "status": "SOLO_EN_DEV"
+    },
+    {
+      "name": "tinv_recepcion_linea",
+      "status": "SOLO_EN_DEV"
+    },
+    {
+      "name": "tinv_serie",
+      "status": "SOLO_EN_DEV"
+    },
+    {
+      "name": "tinv_stock",
+      "status": "SOLO_EN_DEV"
+    },
+    {
+      "name": "tinv_traspaso_linea",
+      "status": "SOLO_EN_DEV"
+    },
+    {
+      "name": "tinv_ubicacion",
+      "status": "SOLO_EN_DEV"
+    },
+    {
+      "name": "tope_acta_plataforma",
+      "status": "SOLO_EN_DEV"
+    }
+  ],
+  "columnsInCommonTables": [
+    {
+      "table_name": "tedp_reporte_avance",
+      "column_name": "hora_inicio_colacion",
+      "status": "COL_SOLO_EN_PROD",
+      "tipo_dev": "N/A",
+      "tipo_prod": "time without time zone"
+    },
+    {
+      "table_name": "tedp_reporte_avance",
+      "column_name": "hora_termino_colacion",
+      "status": "COL_SOLO_EN_PROD",
+      "tipo_dev": "N/A",
+      "tipo_prod": "time without time zone"
+    },
+    {
+      "table_name": "tinv_bodega",
+      "column_name": "codigo",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_bodega",
+      "column_name": "consolida_stock",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "boolean",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_bodega",
+      "column_name": "descripcion",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "text",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_bodega",
+      "column_name": "id_sucursal",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "bigint",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_bodega",
+      "column_name": "responsable",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_bodega",
+      "column_name": "tipo_bodega",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_movimiento",
+      "column_name": "costo_unitario_pmp",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "numeric",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_movimiento",
+      "column_name": "documento_folio",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_movimiento",
+      "column_name": "documento_tipo",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_movimiento",
+      "column_name": "id_lote",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "bigint",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_movimiento",
+      "column_name": "id_movimiento_reversado",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "bigint",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_movimiento",
+      "column_name": "id_serie",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "bigint",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_movimiento",
+      "column_name": "id_ubicacion",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "bigint",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_movimiento",
+      "column_name": "id_usuario",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "bigint",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_movimiento",
+      "column_name": "observaciones",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "text",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_movimiento",
+      "column_name": "stock_posterior",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "numeric",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "clase_abc",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "codigo_legado",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "costo_pmp_vigente",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "numeric",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "es_rotable",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "boolean",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "factor_conversion",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "numeric",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "familia",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "impacto_operacional",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "lead_time",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "presentacion_compra",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "punto_reorden",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "numeric",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "requiere_revalorizacion",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "boolean",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "stock_maximo",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "numeric",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "stock_minimo",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "numeric",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "subfamilia",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "tipo_control",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tinv_producto",
+      "column_name": "unidad_medida_base",
+      "status": "COL_SOLO_EN_DEV",
+      "tipo_dev": "character varying",
+      "tipo_prod": "N/A"
+    },
+    {
+      "table_name": "tnot_notification_web",
+      "column_name": "id_notificacion",
+      "status": "DISTINTO_TIPO",
+      "tipo_dev": "integer",
+      "tipo_prod": "bigint"
+    },
+    {
+      "table_name": "tnot_notification_web",
+      "column_name": "id_usuario_destinatario",
+      "status": "COL_SOLO_EN_PROD",
+      "tipo_dev": "N/A",
+      "tipo_prod": "integer"
+    },
+    {
+      "table_name": "tnot_notification_web",
+      "column_name": "leido_en",
+      "status": "COL_SOLO_EN_PROD",
+      "tipo_dev": "N/A",
+      "tipo_prod": "timestamp with time zone"
+    },
+    {
+      "table_name": "tnot_notification_web",
+      "column_name": "leido_por",
+      "status": "DISTINTO_TIPO",
+      "tipo_dev": "jsonb",
+      "tipo_prod": "character varying"
+    },
+    {
+      "table_name": "tnot_notification_web",
+      "column_name": "metadata",
+      "status": "COL_SOLO_EN_PROD",
+      "tipo_dev": "N/A",
+      "tipo_prod": "jsonb"
+    },
+    {
+      "table_name": "tnot_notification_web",
+      "column_name": "rol_destinatario",
+      "status": "COL_SOLO_EN_PROD",
+      "tipo_dev": "N/A",
+      "tipo_prod": "character varying"
+    },
+    {
+      "table_name": "tnot_notification_web",
+      "column_name": "tipo_notificacion",
+      "status": "COL_SOLO_EN_PROD",
+      "tipo_dev": "N/A",
+      "tipo_prod": "character varying"
+    },
+    {
+      "table_name": "tpry_proyecto",
+      "column_name": "hora_llegada_plan",
+      "status": "COL_SOLO_EN_PROD",
+      "tipo_dev": "N/A",
+      "tipo_prod": "time without time zone"
+    },
+    {
+      "table_name": "tpry_proyecto",
+      "column_name": "plan_diario",
+      "status": "COL_SOLO_EN_PROD",
+      "tipo_dev": "N/A",
+      "tipo_prod": "jsonb"
+    }
+  ]
+}

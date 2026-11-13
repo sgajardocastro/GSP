@@ -401,6 +401,23 @@ class MantenimientoModel {
       const horoGrua = parseFloat(data.horometro_grua_inicio) || parseFloat(data.horometro_inicio) || 0;
       const horoChasis = parseFloat(data.horometro_chasis_inicio) || null;
       const odoInicio = parseFloat(data.odometro_inicio) || null;
+      const { rows: eqAcumRows } = await client.query(
+        `SELECT COALESCE(horometro_grua_acumulado, 0) AS h_grua, COALESCE(horometro_chasis_acumulado, 0) AS h_chasis, COALESCE(odometro_acumulado, 0) AS odo
+         FROM tequ_equipo WHERE id_equipo = $1`,
+        [idEquipo]
+      );
+      if (eqAcumRows.length > 0) {
+        const acum = eqAcumRows[0];
+        if (horoGrua > 0 && Number(acum.h_grua) > 0 && horoGrua < Number(acum.h_grua)) {
+          throw new Error(`El Horómetro Grúa de inicio (${horoGrua}) no puede ser menor al último acumulado del equipo (${acum.h_grua} hrs).`);
+        }
+        if (horoChasis !== null && horoChasis > 0 && Number(acum.h_chasis) > 0 && horoChasis < Number(acum.h_chasis)) {
+          throw new Error(`El Horómetro Chasis de inicio (${horoChasis}) no puede ser menor al último acumulado del equipo (${acum.h_chasis} hrs).`);
+        }
+        if (odoInicio !== null && odoInicio > 0 && Number(acum.odo) > 0 && odoInicio < Number(acum.odo)) {
+          throw new Error(`El Odómetro de inicio (${odoInicio}) no puede ser menor al último acumulado del equipo (${acum.odo} km).`);
+        }
+      }
       const alcance = data.alcance_mantenimiento || 'SUPERESTRUCTURA_GRUA';
 
       const otParams = [
@@ -569,6 +586,31 @@ class MantenimientoModel {
       const hGrua = (hGruaRaw !== undefined && hGruaRaw !== null && hGruaRaw !== '') ? parseFloat(hGruaRaw) : null;
       const hChasis = (data.horometro_chasis_inicio !== undefined && data.horometro_chasis_inicio !== null && data.horometro_chasis_inicio !== '') ? parseFloat(data.horometro_chasis_inicio) : null;
       const odo = (data.odometro_inicio !== undefined && data.odometro_inicio !== null && data.odometro_inicio !== '') ? parseFloat(data.odometro_inicio) : null;
+
+      const { rows: otPreRows } = await this.pool.query(
+        `SELECT o.id_equipo, o.horometro_grua_inicio, o.horometro_chasis_inicio, o.odometro_inicio,
+                COALESCE(e.horometro_grua_acumulado, 0) AS h_grua_acum,
+                COALESCE(e.horometro_chasis_acumulado, 0) AS h_chasis_acum,
+                COALESCE(e.odometro_acumulado, 0) AS odo_acum
+         FROM tmnt_ot o
+         LEFT JOIN tequ_equipo e ON e.id_equipo = o.id_equipo
+         WHERE o.id_ot = $1`,
+        [idOt]
+      );
+      if (otPreRows.length === 0) throw new Error('OT no encontrada');
+      const pre = otPreRows[0];
+      const minGrua = Math.max(Number(pre.horometro_grua_inicio || 0), Number(pre.h_grua_acum || 0));
+      const minChasis = Math.max(Number(pre.horometro_chasis_inicio || 0), Number(pre.h_chasis_acum || 0));
+      const minOdo = Math.max(Number(pre.odometro_inicio || 0), Number(pre.odo_acum || 0));
+      if (hGrua !== null && minGrua > 0 && hGrua < minGrua) {
+        throw new Error(`El Horómetro Grúa (${hGrua}) no puede ser menor al registro previo del equipo (${minGrua} hrs).`);
+      }
+      if (hChasis !== null && minChasis > 0 && hChasis < minChasis) {
+        throw new Error(`El Horómetro Chasis (${hChasis}) no puede ser menor al registro previo del equipo (${minChasis} hrs).`);
+      }
+      if (odo !== null && minOdo > 0 && odo < minOdo) {
+        throw new Error(`El Odómetro (${odo}) no puede ser menor al registro previo del equipo (${minOdo} km).`);
+      }
 
       const sql = `
         UPDATE tmnt_ot
@@ -760,6 +802,14 @@ class MantenimientoModel {
       const horometro_cierre = parseFloat(data.horometro_cierre) || ot.horometro_inicio;
       if (horometro_cierre < ot.horometro_inicio) {
         throw new Error(`El horómetro de cierre (${horometro_cierre}) no puede ser menor al horómetro de inicio (${ot.horometro_inicio}).`);
+      }
+      const horometro_chasis_cierre = (data.horometro_chasis_cierre !== undefined && data.horometro_chasis_cierre !== null && data.horometro_chasis_cierre !== '') ? parseFloat(data.horometro_chasis_cierre) : null;
+      if (horometro_chasis_cierre !== null && ot.horometro_chasis_inicio && horometro_chasis_cierre < Number(ot.horometro_chasis_inicio)) {
+        throw new Error(`El horómetro chasis de cierre (${horometro_chasis_cierre}) no puede ser menor al de inicio (${ot.horometro_chasis_inicio}).`);
+      }
+      const odometro_cierre = (data.odometro_cierre !== undefined && data.odometro_cierre !== null && data.odometro_cierre !== '') ? parseFloat(data.odometro_cierre) : null;
+      if (odometro_cierre !== null && ot.odometro_inicio && odometro_cierre < Number(ot.odometro_inicio)) {
+        throw new Error(`El odómetro de cierre (${odometro_cierre}) no puede ser menor al de inicio (${ot.odometro_inicio}).`);
       }
 
       // Calcular Balanza Financiera

@@ -170,10 +170,65 @@ export async function sincronizarMutacionesConBackend(token, apiInstance) {
         await apiInstance.post(`/operaciones/viaje/${token}/ping`, m.payload);
         await marcarMutacionSincronizada(m.id);
         sincronizadas++;
+      } else if (m.tipo === 'CREAR_REPORTE_DIARIO') {
+        const p = m.payload || {};
+        let id_proyecto = p.id_proyecto;
+        let id_equipo = p.id_equipo;
+        let id_user_operador = p.id_user_operador;
+
+        if (!id_proyecto || !id_user_operador) {
+          try {
+            const sesion = await obtenerSesionLocal(token);
+            if (sesion) {
+              id_proyecto = id_proyecto || sesion.id_proyecto;
+              id_equipo = id_equipo || sesion.id_equipo;
+              id_user_operador = id_user_operador || sesion.id_user_chofer;
+            }
+          } catch (e) {
+            console.warn('[SyncEngine] No se pudo leer sesion local:', e);
+          }
+        }
+
+        const payloadNorm = {
+          id_proyecto: id_proyecto,
+          id_equipo: id_equipo || null,
+          id_user_operador: id_user_operador || 55,
+          dia_correlativo: Number(p.dia_correlativo || p.dia || 1),
+          fecha_reporte: p.fecha_reporte || p.fecha || new Date().toISOString().split('T')[0],
+          hora_inicio: p.hora_inicio || '08:00',
+          hora_termino: p.hora_termino || '18:00',
+          horas_colacion: p.horas_colacion !== undefined ? p.horas_colacion : Number((Number(p.colacion_minutos || 60) / 60).toFixed(2)),
+          horas_operadas: p.horas_operadas !== undefined ? p.horas_operadas : Number(p.horas_efectivas || 0),
+          horas_minimas: 4.0,
+          horas_facturables: Number(p.horas_facturables || 0),
+          horometro_inicio: p.horometro_inicio !== undefined ? Number(p.horometro_inicio) : null,
+          horometro_termino: p.horometro_termino !== undefined ? Number(p.horometro_termino) : (p.horometro_final !== undefined ? Number(p.horometro_final) : null),
+          odometro_inicio: p.odometro_inicio || null,
+          odometro_termino: p.odometro_termino || null,
+          observacion_trabajo: p.observacion_trabajo || p.maniobra_detalle || '',
+          cliente_nombre: p.cliente_nombre || p.mandante_nombre || 'Supervisor Mandante',
+          cliente_rut: p.cliente_rut || p.mandante_rut || '',
+          cliente_cargo: p.cliente_cargo || p.mandante_cargo || 'ITO Mandante',
+          cliente_firma_canvas_base64: p.cliente_firma_canvas_base64 || p.firma_mandante || null,
+          latitud_inicio_servicio: p.latitud_inicio_servicio || p.gps_sellado?.latitud || null,
+          longitud_inicio_servicio: p.longitud_inicio_servicio || p.gps_sellado?.longitud || null,
+          accuracy_firma: p.accuracy_firma || p.gps_sellado?.accuracy || null,
+          token_viaje: token,
+          device_timestamp: p.device_timestamp || new Date().toISOString()
+        };
+
+        await apiInstance.post('/operaciones/report/guardar', payloadNorm);
+        await marcarMutacionSincronizada(m.id);
+        sincronizadas++;
       }
     } catch (err) {
-      console.warn(`[SyncEngine] No se pudo enviar mutación ${m.id}:`, err?.message || err);
-      // Mantener en cola para siguiente reintento
+      if (err?.response?.status === 403 && (err?.response?.data?.code === 'SERVICIO_CONCLUIDO' || err?.response?.data?.error?.includes('concluido') || err?.response?.data?.error?.includes('completó'))) {
+        console.warn(`[SyncEngine] Mutación ${m.id} rechazada con 403 Candado Operativo (Servicio Concluido). Descartando de la cola.`);
+        await marcarMutacionSincronizada(m.id);
+      } else {
+        console.warn(`[SyncEngine] No se pudo enviar mutación ${m.id}:`, err?.message || err);
+        // Mantener en cola para siguiente reintento
+      }
     }
   }
 
@@ -237,11 +292,11 @@ export async function hashPin(pin, salt = 'GSP-SALT-2026') {
 }
 
 let currentGpsState = {
-  latitud: -36.6172,
-  longitud: -72.1148,
+  latitud: null,
+  longitud: null,
   velocidad_kmh: 0,
-  accuracy: 10,
-  timestamp: new Date().toISOString(),
+  accuracy: null,
+  timestamp: null,
   fuente: 'INIT'
 };
 

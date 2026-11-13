@@ -459,3 +459,16 @@ Feature: Liquidación Técnico-Económica del Servicio (Informe de Término de S
     And se habilita la recepción formal para Maritza Seguel en Contabilidad
     And el Paso 2 (EDP Mandante) recibe el balance de horas para generar la Carátula Oficial
 ```
+
+---
+
+## 8. 🔗 Extensiones Evolutivas y Especificaciones Complementarias del Dominio ITS
+
+1. **[SPEC-078](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/78_its_final_viaticos_alimentacion_y_resumen_ejecutivo_costos_spec.md):** Marcador Urbano/Rural, columnas `HRS SERVICIO` y `HRS VIÁTICOS` (puerta a puerta), formato reloj `HH:mm` y cuadro resumen ejecutivo de costos.
+2. **[SPEC-115](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/115_resolucion_piso_minimo_mensual_reports_e_its_spec.md):** Eliminación de imposición de 8.0 horas diarias en servicios mensuales (`HRS_MES`).
+3. **[SPEC-116](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/116_flujo_aprobacion_its_modo_revision_ejecutiva_spec.md) & [SPEC-122](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/122_reestructuracion_layout_y_visor_pdf_modal_its_spec.md):** Modo de Revisión Ejecutiva (Paso 2 Operaciones y Paso 3 Contabilidad) en layout de 2 paneles con visor PDF amplio y consola lateral de decisión FES.
+4. **[SPEC-117](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/117_viaticos_personal_rer_rigger_its_spec.md):** Liquidación automática de viáticos de alimentación para personal Rigger / RER.
+5. **[SPEC-120](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/120_normalizacion_costos_directos_y_eliminacion_reactiva_seccion3_its_spec.md):** Normalización de claves de categorías de costos directos y eliminación reactiva en Sección 3.
+6. **[SPEC-121](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/121_reimplementacion_its_transicion_con_viaticos_y_datos_produccion_spec.md):** Cuadro resumen de los 10 puntos conceptuales (incluyendo partidas en `$0`) e historial cronológico de rechazos FES.
+7. **[SPEC-125](file:///d:/SGajardo/Google%20Drive/Antigravity/Gr%C3%BAas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/.agents/specs/125_its_servicios_valor_fijo_registro_viaje_y_glosas_operacionales_spec.md):** Gobernanza integral para servicios a Valor Fijo (Suma Alzada sin mínimo de horas ni líneas fantasma de Rigger a `$0`), regla determinista de despliegue de flota (exclusivamente vehículos motorizados con Report Diario o Registro de Viaje, excluyendo semirremolques sin motor), campos `tipo_viaje` y `comentario_viaje` en Registros de Viaje, persistencia simultánea de `tipo_movilizacion — ruta_detalle`, condición editable de movimiento diario en viáticos de alimentación, preservación del rol `RIGGER` (`$0` sueldo fijo) y formato reloj `hh:mm`.
+

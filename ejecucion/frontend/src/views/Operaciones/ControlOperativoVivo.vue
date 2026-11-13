@@ -377,30 +377,101 @@
             </div>
           </div>
 
-          <!-- MINI-FRANJA MULTI-DÍA [R][R][▶][ ][FIN] -->
-          <div class="pt-1.5 border-t border-white/5">
-            <div class="flex items-center justify-between text-[10px] font-mono mb-1 text-slate-400">
-              <span>Progreso: Día {{ getEquipoActivo(s).dia_actual || s.dia_actual }} de {{ getEquipoActivo(s).dias_totales || s.dias_totales }} ({{ getEquipoActivo(s).tipo_dia || s.tipo_dia }})</span>
-              <span v-if="getEquipoActivo(s).es_equipo_faena !== false">
-                Reports: <strong class="text-white">{{ getEquipoActivo(s).reports_consumidos ?? s.reports_consumidos }}/{{ getEquipoActivo(s).dias_totales || s.dias_totales }}</strong>
+          <!-- RIBBON HORIZONTAL DE JORNADAS MULTI-DÍA (REQ-1012 / SPEC-066) -->
+          <div class="pt-2 border-t border-white/5 space-y-1.5">
+            <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span class="flex items-center gap-1">
+                <span>🗓️</span>
+                <strong class="text-slate-300">Ribbon de Jornadas</strong>
+                <span class="text-slate-500">({{ getEquipoActivo(s).dias_totales || s.dias_totales }} días):</span>
               </span>
-              <span v-else class="text-[9px] text-blue-300 font-mono">
-                Desplazamiento
+              <span class="text-[9px] text-cyan-400 font-bold font-mono">
+                Día seleccionado: {{ getDiaSeleccionado(s) }} de {{ getEquipoActivo(s).dias_totales || s.dias_totales }}
               </span>
             </div>
-            <div class="flex items-center gap-1 overflow-x-auto py-0.5">
-              <div 
-                v-for="d in (getEquipoActivo(s).franja_multidia || s.franja_multidia)" 
-                :key="'dia-'+d.dia"
-                class="px-2 py-1 rounded text-[10px] font-mono font-bold border transition-all text-center flex items-center justify-center gap-1 shrink-0"
-                :class="getClaseFranjaDia(d)"
-                :title="`Día ${d.dia} (${d.fecha})${d.es_hoy ? ' - HOY' : ''}${d.tiene_report ? ' - Report emitido' : ''}`"
+
+            <!-- Scroll Horizontal de Cápsulas Interactivas de Jornadas -->
+            <div class="flex items-center gap-1.5 overflow-x-auto py-1">
+              <button 
+                v-for="(d, idxDia) in (getEquipoActivo(s).franja_multidia || s.franja_multidia)" 
+                :key="'dia-' + (d.fecha || idxDia)"
+                type="button"
+                @click.stop="seleccionarDia(s, d)"
+                class="relative px-2.5 py-1.5 pr-4 rounded-lg text-[10px] font-mono font-bold border transition-all text-center flex flex-col items-center justify-center shrink-0 cursor-pointer select-none group/capsula"
+                :class="[
+                  esCapsulaSeleccionada(s, d)
+                    ? (d.es_laboral === false
+                        ? 'ring-2 ring-red-400 border-red-400 bg-red-950/90 text-red-100 shadow-md'
+                        : 'ring-2 ring-cyan-400 border-cyan-400 bg-cyan-950/50 text-white shadow-md')
+                    : d.es_laboral === false
+                    ? 'bg-red-950/80 text-red-200 border-red-500/80 hover:bg-red-900/85'
+                    : getClaseFranjaDia(d)
+                ]"
+                :title="d.es_laboral === false
+                  ? `${d.motivo_no_laboral || 'Fin de Semana / Feriado'} (${d.fecha}) — NO LABORAL. Usa el botón [+] de la esquina para habilitarlo como laboral.`
+                  : `Día ${d.dia} (${d.fecha}) — Clic para ver/editar horas. Usa la [✕] de la esquina para marcar como No Laboral.`"
               >
-                <span v-if="d.tiene_report">✓</span>
-                <span v-else-if="d.es_hoy">▶</span>
-                <span>D{{ d.dia }}</span>
-                <span v-if="d.es_fin" class="text-[8px] opacity-75">FIN</span>
-              </div>
+                <!-- Botón esquina independiente: [+] para pasar a Laboral | [✕] para pasar a No Laboral -->
+                <span
+                  v-if="d.es_laboral === false"
+                  @click.stop="cambiarEstadoLaboralDia(s, d, true)"
+                  class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black flex items-center justify-center shadow border border-emerald-300/60 cursor-pointer transition-transform hover:scale-110"
+                  title="Habilitar este día como Día Laboral"
+                >+</span>
+                <span
+                  v-else
+                  @click.stop="cambiarEstadoLaboralDia(s, d, false)"
+                  class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-800 hover:bg-red-600 text-slate-300 hover:text-white text-[8px] font-black flex items-center justify-center shadow border border-white/20 cursor-pointer transition-transform hover:scale-110"
+                  title="Marcar este día como No Laboral (FDS / Festivo / Sin Faena)"
+                >✕</span>
+
+                <!-- Contenido Día No Laboral (Rojo: SÁB FDS / DOM FDS / FERIADO) -->
+                <template v-if="d.es_laboral === false">
+                  <div class="flex items-center gap-1 text-red-300 font-extrabold">
+                    <span>🚫</span>
+                    <span>{{ d.etiqueta_no_laboral || 'FDS' }}</span>
+                  </div>
+                  <div class="text-[8px] text-red-200/90 mt-0.5 flex items-center gap-1 font-normal">
+                    <span>{{ formatearFechaCorta(d.fecha) }}</span>
+                    <span class="px-1 rounded bg-red-500/30 text-[7px] font-bold uppercase">No Lab</span>
+                  </div>
+                </template>
+
+                <!-- Contenido Día Laboral (D1, D2... o FDS habilitado) -->
+                <template v-else>
+                  <div class="flex items-center gap-1">
+                    <span 
+                      v-if="d.tiene_report" 
+                      @click.stop="abrirVisorReportDirecto(s, d)"
+                      class="text-emerald-400 font-black hover:scale-125 transition-transform" 
+                      title="Abrir Report Diario emitido de este día"
+                    >✓</span>
+                    <span v-else-if="d.es_hoy" class="text-amber-400 font-black">▶</span>
+                    <span>D{{ d.dia }}</span>
+                    <span v-if="d.es_fds_o_feriado" class="text-[7px] px-1 py-0.2 rounded bg-amber-500/30 text-amber-200">FDS</span>
+                    <span v-if="d.es_fin" class="text-[8px] px-1 py-0.2 rounded bg-purple-500/30 text-purple-200">FIN</span>
+                  </div>
+                  <div class="text-[8px] opacity-80 mt-0.5 flex items-center gap-1 font-normal">
+                    <span>{{ formatearFechaCorta(d.fecha) }}</span>
+                    <span 
+                      v-if="d.tiene_viaje" 
+                      @click.stop="abrirTelemetriaViaje(s, d)"
+                      class="hover:scale-125 transition-transform cursor-pointer" 
+                      title="Abrir Telemetría GPS de este día"
+                    >🛰️</span>
+                    <span
+                      v-if="d.documentos_dia && d.documentos_dia.length > 0"
+                      class="text-cyan-300 font-bold"
+                      :title="`${d.documentos_dia.length} documento(s) adjunto(s) en este día`"
+                    >📎{{ d.documentos_dia.length > 1 ? d.documentos_dia.length : '' }}</span>
+                    <span
+                      v-if="d.obs_validador"
+                      class="text-amber-300 font-bold"
+                      :title="`Observación Validación: ${d.obs_validador}`"
+                    >💬</span>
+                  </div>
+                </template>
+              </button>
             </div>
           </div>
 
@@ -419,15 +490,15 @@
             <div class="text-right shrink-0">
               <div class="text-[10px] text-slate-400 font-mono">Operador / Conductor:</div>
               <div class="flex items-center gap-1.5 justify-end">
-                <span class="text-xs font-bold text-amber-300 truncate max-w-[110px]" :title="getEquipoActivo(s).operador || s.operador">
-                  👤 {{ getEquipoActivo(s).operador || s.operador }}
+                <span class="text-xs font-bold text-amber-300 truncate max-w-[110px]" :title="getJornadaSeleccionada(s)?.operador || getEquipoActivo(s).operador || s.operador">
+                  👤 {{ getJornadaSeleccionada(s)?.operador || getEquipoActivo(s).operador || s.operador }}
                 </span>
                 <a 
-                  v-if="getEquipoActivo(s).telefono_operador || s.telefono_operador" 
+                  v-if="getJornadaSeleccionada(s)?.telefono_operador || getEquipoActivo(s).telefono_operador || s.telefono_operador" 
                   :href="getWhatsAppLink(getEquipoActivo(s), s)"
                   target="_blank"
                   class="p-1 rounded bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white transition-all text-[11px]"
-                  :title="`Contactar a ${getEquipoActivo(s).operador || s.operador} por WhatsApp`"
+                  :title="`Contactar a ${getJornadaSeleccionada(s)?.operador || getEquipoActivo(s).operador || s.operador} por WhatsApp`"
                 >
                   💬
                 </a>
@@ -436,26 +507,93 @@
           </div>
         </div>
 
-        <!-- CUERPO: DESGLOSE DE ACTIVIDADES PLAN VS REAL -->
+        <!-- CUERPO: DESGLOSE DE ACTIVIDADES PLAN VS REAL DE LA JORNADA SELECCIONADA -->
         <div class="p-3.5 space-y-2 flex-1">
-          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono mb-1.5 flex justify-between">
-            <span>Actividad Planificada</span>
-            <span>Plan vs Real</span>
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono mb-1.5 flex justify-between items-center gap-1 flex-wrap">
+            <span class="flex items-center gap-1.5">
+              <span>Actividad Planificada</span>
+              <span 
+                class="px-1.5 py-0.2 rounded text-[9px] font-mono font-black border"
+                :class="getJornadaSeleccionada(s)?.es_hoy ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-blue-500/20 text-blue-300 border-blue-500/30'"
+              >
+                {{ getJornadaSeleccionada(s)?.es_hoy ? `▶ DÍA ${getDiaSeleccionado(s)} (HOY)` : `DÍA ${getDiaSeleccionado(s)} • ${formatearFechaCorta(getJornadaSeleccionada(s)?.fecha)}` }}
+              </span>
+            </span>
+            <div class="flex items-center gap-1.5">
+              <button
+                type="button"
+                @click.stop="abrirModalAdjuntarDocDia(s, getJornadaSeleccionada(s))"
+                class="px-2 py-0.5 rounded bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 hover:text-white border border-cyan-500/40 text-[9px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-all"
+                title="Adjuntar cualquier documento, respaldo o fotografía asociada a este día de servicio"
+              >
+                <span>📎</span>
+                <span>Adjuntar Documento</span>
+                <span v-if="getJornadaSeleccionada(s)?.documentos_dia?.length" class="px-1 rounded bg-cyan-500/30 text-white text-[8px]">
+                  {{ getJornadaSeleccionada(s).documentos_dia.length }}
+                </span>
+              </button>
+              <button 
+                v-if="!getJornadaSeleccionada(s)?.es_hoy && (getEquipoActivo(s).dia_actual || s.dia_actual)"
+                @click.stop="irADiaHoy(s)"
+                type="button"
+                class="text-[9px] text-cyan-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                title="Volver a la jornada activa de hoy"
+              >
+                <span>↩ Ir a Hoy (D{{ getEquipoActivo(s).dia_actual || s.dia_actual }})</span>
+              </button>
+              <span>Plan vs Real</span>
+            </div>
           </div>
 
-          <div class="space-y-1.5">
+          <div v-if="getJornadaSeleccionada(s)?.es_laboral === false" class="p-3 rounded-lg border border-red-500/40 bg-red-950/30 text-xs flex items-center justify-between gap-2">
+            <div class="text-red-200">
+              <strong class="block text-red-300 font-mono">🚫 {{ getJornadaSeleccionada(s)?.motivo_no_laboral || 'Fin de Semana / Feriado' }} ({{ formatearFechaCorta(getJornadaSeleccionada(s)?.fecha) }})</strong>
+              <span class="text-[11px] text-red-200/80">Día marcado como No Laboral. Si se trabajará este día, habilítalo para gestionar sus horas.</span>
+            </div>
+            <button
+              type="button"
+              @click.stop="cambiarEstadoLaboralDia(s, getJornadaSeleccionada(s), true)"
+              class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-[10px] shrink-0 cursor-pointer shadow"
+            >
+              + Habilitar Laboral
+            </button>
+          </div>
+
+          <div v-else class="space-y-1.5">
             <div 
-              v-for="act in (getEquipoActivo(s).actividades || s.actividades)" 
+              v-for="act in getActividadesMostradas(s)" 
               :key="act.clave"
               class="flex items-center justify-between p-1.5 rounded-lg border text-xs font-mono transition-colors"
               :class="getClaseFilaActividad(act.estado)"
             >
-              <!-- Nombre e ícono del Hito -->
+              <!-- Nombre e ícono del Hito + Accesos Directos a Telemetría y Report -->
               <div class="flex items-center gap-1.5 truncate">
                 <span class="text-xs">{{ getIconoActividad(act.clave) }}</span>
                 <span class="truncate" :class="act.ejecutado ? 'text-white' : 'text-slate-300'">
                   {{ act.nombre }}
                 </span>
+                <!-- Acceso rápido a Telemetría GPS en hitos de viaje -->
+                <button 
+                  v-if="['SALIDA_BASE', 'LLEGADA_FAENA', 'VIAJE_RETORNO'].includes(act.clave) && (getJornadaSeleccionada(s)?.tiene_viaje || getEquipoActivo(s).tiene_viaje)"
+                  @click.stop="abrirTelemetriaViaje(s, getJornadaSeleccionada(s))"
+                  type="button"
+                  class="ml-1 px-1.5 py-0.2 rounded bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 text-[9px] font-bold border border-cyan-500/30 flex items-center gap-0.5 cursor-pointer transition-all shrink-0"
+                  title="Abrir Hoja de Ruta & Telemetría GPS satelital"
+                >
+                  <span>🛰️</span>
+                  <span class="hidden sm:inline">Ruta</span>
+                </button>
+                <!-- Acceso rápido a Report Diario en hitos de faena -->
+                <button 
+                  v-if="['REPORT_INICIO', 'REPORT_TERMINO'].includes(act.clave) && getJornadaSeleccionada(s)?.tiene_report"
+                  @click.stop="abrirVisorReportDirecto(s, getJornadaSeleccionada(s))"
+                  type="button"
+                  class="ml-1 px-1.5 py-0.2 rounded bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 text-[9px] font-bold border border-emerald-500/30 flex items-center gap-0.5 cursor-pointer transition-all shrink-0"
+                  title="Ver Report Diario sellado con firma digital"
+                >
+                  <span>📋</span>
+                  <span class="hidden sm:inline">Report</span>
+                </button>
               </div>
 
               <!-- Tiempos Plan vs Real + Desvío + Edición Rápida Yiara/Adm (REQ-997) -->
@@ -476,9 +614,17 @@
                     type="button"
                     @click.stop="guardarOverrideHito(s, act)"
                     class="px-1.5 py-0.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[10px] rounded cursor-pointer transition-all"
-                    title="Guardar hora real"
+                    title="Guardar hora real (o dejar vacío --:-- si se borró)"
                     :disabled="guardandoOverride"
                   >✓</button>
+                  <button
+                    v-if="act.hora_real"
+                    type="button"
+                    @click.stop="limpiarHito(s, act)"
+                    class="px-1.5 py-0.5 bg-rose-500/25 hover:bg-rose-500 text-rose-200 hover:text-white font-bold text-[10px] rounded border border-rose-500/40 cursor-pointer transition-all"
+                    title="Dejar espacio vacío (--:--) / En ejecución"
+                    :disabled="guardandoOverride"
+                  >🗑️</button>
                   <button
                     type="button"
                     @click.stop="cancelarEdicionHito"
@@ -522,6 +668,118 @@
                 >
                   {{ getTextoDesvio(act) }}
                 </span>
+              </div>
+            </div>
+
+            <!-- REQ-1099: Tira de Documentos / Fotos Adjuntos al Día Seleccionado -->
+            <div
+              v-if="getJornadaSeleccionada(s)?.documentos_dia && getJornadaSeleccionada(s).documentos_dia.length > 0"
+              class="mt-2 pt-2 border-t border-white/10 space-y-1"
+            >
+              <div class="flex items-center justify-between text-[9.5px] font-mono text-cyan-300 font-bold">
+                <span>📎 Documentos / Fotos del Día {{ getDiaSeleccionado(s) }} ({{ formatearFechaCorta(getJornadaSeleccionada(s)?.fecha) }}):</span>
+                <button
+                  type="button"
+                  @click.stop="abrirModalAdjuntarDocDia(s, getJornadaSeleccionada(s))"
+                  class="text-[9px] text-cyan-400 hover:text-white underline cursor-pointer"
+                >
+                  + Agregar otro
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                <div
+                  v-for="doc in getJornadaSeleccionada(s).documentos_dia"
+                  :key="doc.id_doc || doc.nombre_archivo"
+                  class="flex items-center gap-1.5 bg-cyan-950/30 border border-cyan-500/30 rounded-md px-2 py-1 text-[10px] font-mono text-slate-200 max-w-full"
+                >
+                  <a
+                    :href="getUrlDocumentoDia(doc)"
+                    target="_blank"
+                    class="flex items-center gap-1 hover:text-cyan-300 truncate max-w-[190px]"
+                    :title="`${doc.titulo || doc.nombre_archivo}${doc.descripcion ? ' — ' + doc.descripcion : ''} (Clic para abrir)`"
+                  >
+                    <span>📄</span>
+                    <span class="truncate font-semibold">{{ doc.titulo || doc.nombre_archivo }}</span>
+                    <span class="text-cyan-400 text-[9px] shrink-0">↗</span>
+                  </a>
+                  <button
+                    v-if="doc.id_doc"
+                    type="button"
+                    @click.stop="eliminarDocumentoDia(s, getJornadaSeleccionada(s), doc)"
+                    class="text-slate-400 hover:text-rose-400 text-[10px] leading-none cursor-pointer ml-0.5"
+                    title="Quitar documento del día"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- REQ-1120: Observaciones de Validación del Report Diario (visible para RRHH/Operaciones y editable en PMO) -->
+            <div class="mt-2 pt-2 border-t border-white/10">
+              <div
+                v-if="editandoObsValidadorKey === getObsValidadorKey(s)"
+                class="bg-amber-950/30 border border-amber-500/40 rounded-lg p-2 space-y-1.5"
+                @click.stop
+              >
+                <div class="flex items-center justify-between text-[9.5px] font-mono text-amber-300 font-bold">
+                  <span>🛡️ Observaciones de Validación — Día {{ getDiaSeleccionado(s) }} ({{ formatearFechaCorta(getJornadaSeleccionada(s)?.fecha) }})</span>
+                  <span class="text-[8.5px] text-slate-400">Sincronizado con Report Diario</span>
+                </div>
+                <textarea
+                  v-model="obsValidadorInput"
+                  rows="2"
+                  placeholder="Ej: Cuadratura horaria conforme con la OT y parte de terreno..."
+                  class="w-full bg-[#050810] border border-amber-500/40 rounded px-2 py-1 text-[11px] text-white focus:border-amber-400 focus:outline-none resize-none"
+                ></textarea>
+                <div class="flex items-center justify-end gap-1.5">
+                  <button
+                    type="button"
+                    @click.stop="cancelarEdicionObsValidador"
+                    class="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-mono cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    @click.stop="guardarObsValidadorDia(s)"
+                    :disabled="guardandoObsValidador"
+                    class="px-2.5 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-mono font-black cursor-pointer disabled:opacity-50"
+                  >
+                    {{ guardandoObsValidador ? '⏳...' : '💾 Guardar Observación' }}
+                  </button>
+                </div>
+              </div>
+
+              <div
+                v-else-if="getJornadaSeleccionada(s)?.obs_validador"
+                class="bg-amber-950/20 border border-amber-500/30 rounded-lg px-2.5 py-1.5 flex items-start justify-between gap-2 group/obs"
+              >
+                <div class="text-[10.5px] text-amber-100 leading-snug">
+                  <span class="text-[9px] font-mono font-bold uppercase text-amber-400 block">
+                    🛡️ Obs. Validación Report (D{{ getDiaSeleccionado(s) }}):
+                  </span>
+                  <span class="italic">"{{ getJornadaSeleccionada(s).obs_validador }}"</span>
+                </div>
+                <button
+                  type="button"
+                  @click.stop="iniciarEdicionObsValidador(s)"
+                  class="text-[10px] text-amber-300 hover:text-white px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/30 border border-amber-500/30 font-mono shrink-0 cursor-pointer"
+                  title="Editar Observaciones de Validación del Report Diario"
+                >
+                  ✏️ Editar
+                </button>
+              </div>
+
+              <div v-else class="flex items-center justify-between text-[9.5px] font-mono text-slate-400">
+                <span>🛡️ Obs. Validación Report (D{{ getDiaSeleccionado(s) }}): <em class="text-slate-500">Sin observaciones</em></span>
+                <button
+                  type="button"
+                  @click.stop="iniciarEdicionObsValidador(s)"
+                  class="text-[9.5px] text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                >
+                  + Agregar Obs. Validación
+                </button>
               </div>
             </div>
           </div>
@@ -614,23 +872,34 @@
           </button>
 
           <div class="flex items-center gap-1.5">
-            <!-- Ver Report Sellado si ya existe -->
+            <!-- Botón Telemetría GPS de Ruta (REQ-1012) -->
             <button 
-              v-if="(getEquipoActivo(s).reports_consumidos ?? s.reports_consumidos) > 0"
-              @click="verUltimoReport(s)" 
-              class="px-2.5 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-[11px] font-bold border border-indigo-500/30 transition-all flex items-center gap-1"
-              title="Auditar Report Diario sellado"
+              v-if="tieneViajeDisponible(s)"
+              @click="abrirTelemetriaViaje(s, getJornadaSeleccionada(s))"
+              class="px-2.5 py-1 rounded bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white text-[11px] font-bold border border-cyan-500/30 transition-all flex items-center gap-1 cursor-pointer"
+              title="Auditar Telemetría GPS satelital y Hoja de Ruta"
             >
-              <span>📋 Report</span>
+              <span>🛰️ Telemetría</span>
             </button>
 
-            <!-- Abrir Expediente OT -->
+            <!-- Ver Report Sellado del Día Seleccionado (REQ-1012) -->
             <button 
-              @click="$emit('abrir-proyecto', s.id_proyecto)" 
-              class="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold transition-all shadow-sm flex items-center gap-1"
-              title="Abrir Expediente de la OT en Gestor de Oportunidades"
+              v-if="tieneReportDisponible(s)"
+              @click="abrirVisorReportDirecto(s, getJornadaSeleccionada(s))" 
+              class="px-2.5 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-[11px] font-bold border border-indigo-500/30 transition-all flex items-center gap-1 cursor-pointer"
+              :title="`Auditar Report Diario (${getJornadaSeleccionada(s)?.tiene_report ? 'Día ' + getDiaSeleccionado(s) : 'Último sellado'})`"
             >
-              <span>📂 Abrir OT</span>
+              <span>📋 Report D{{ getJornadaSeleccionada(s)?.dia || getDiaSeleccionado(s) }}</span>
+            </button>
+
+            <!-- Abrir PDF Oficial de la OT -->
+            <button 
+              @click="abrirPdfOT(s)" 
+              :disabled="generandoOtId === s.id_proyecto"
+              class="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold transition-all shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              title="Abrir PDF Oficial de la Orden de Trabajo"
+            >
+              <span>{{ generandoOtId === s.id_proyecto ? '⏳ Abriendo...' : '📄 Abrir OT' }}</span>
             </button>
           </div>
         </div>
@@ -961,6 +1230,130 @@
         </div>
       </div>
     </div>
+
+    <!-- 5. Modal Hoja de Ruta & Telemetría GPS Satelital (REQ-1012 / SPEC-066) -->
+    <ModalMapaViaje
+      v-if="modalMapaViajeAbierto"
+      :visible="modalMapaViajeAbierto"
+      :viaje="viajeSeleccionadoTelemetria"
+      @close="modalMapaViajeAbierto = false"
+      @update:visible="modalMapaViajeAbierto = $event"
+    />
+
+    <!-- 6. Modal Visor de Report Diario FES Directo (REQ-1012 / SPEC-066) -->
+    <ModalVisorReport
+      v-if="modalVisorReportAbierto"
+      :visible="modalVisorReportAbierto"
+      :report="reportSeleccionadoVisor"
+      :readonly="false"
+      :modo-edicion-inicial="true"
+      @close="modalVisorReportAbierto = false"
+      @report-validado="onReportValidadoEnVivo"
+    />
+
+    <!-- 7. REQ-1099: Modal Transversal para Adjuntar Cualquier Documento o Foto al Día de Servicio -->
+    <div
+      v-if="modalAdjuntarDocDiaAbierto && ctxAdjuntarDocDia"
+      class="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn"
+      @click.self="cerrarModalAdjuntarDocDia"
+    >
+      <div class="bg-[#0b1021] border border-cyan-500/40 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl shadow-black text-slate-200">
+        <div class="bg-[#050810] px-5 py-3.5 border-b border-white/10 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">📎</span>
+            <div>
+              <h3 class="text-sm font-black text-white uppercase tracking-wider font-mono">
+                Adjuntar Documento / Fotografía al Día {{ ctxAdjuntarDocDia.dia }}
+              </h3>
+              <p class="text-[11px] text-slate-400 font-mono">
+                OT <strong class="text-amber-400">{{ ctxAdjuntarDocDia.codigo_ot }}</strong> • {{ ctxAdjuntarDocDia.cliente }} • Fecha: <strong class="text-cyan-300">{{ formatearFechaCorta(ctxAdjuntarDocDia.fecha) }}</strong>
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            @click="cerrarModalAdjuntarDocDia"
+            class="text-slate-400 hover:text-white text-xl font-bold leading-none cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form @submit.prevent="ejecutarSubidaDocDia" class="p-5 space-y-4">
+          <p class="text-xs text-slate-300 bg-cyan-950/20 border border-cyan-500/20 rounded-lg p-2.5 leading-relaxed">
+            Puedes adjuntar cualquier documento o fotografía de situaciones ocurridas durante el desarrollo del servicio en este día (report físico, fotografía en terreno, guía, acta, observación o comprobante). Quedará asociado tanto a este día como al Dossier de la OT.
+          </p>
+
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-300 font-mono mb-1.5">
+              1. Seleccionar Archivo o Fotografía (PDF, Imagen, Word, Excel) *
+            </label>
+            <input
+              ref="inputArchivoDocDiaRef"
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
+              @change="onFileChangeDocDia"
+              class="w-full text-xs text-slate-300 bg-[#050810] border border-white/15 rounded-lg p-2 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-cyan-600 file:text-white hover:file:bg-cyan-500 cursor-pointer"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-300 font-mono mb-1.5">
+              2. Etiqueta / Descripción del Documento (Opcional)
+            </label>
+            <input
+              type="text"
+              v-model="formDocDia.titulo"
+              placeholder="Ej: Report físico firmado, Foto condición terreno, Guía cliente..."
+              class="w-full bg-[#050810] border border-white/15 focus:border-cyan-400 rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
+            />
+          </div>
+
+          <!-- Lista de documentos ya asociados a este día -->
+          <div v-if="ctxAdjuntarDocDia.documentos_dia?.length" class="space-y-1.5 pt-2 border-t border-white/10">
+            <span class="block text-[10px] font-mono font-bold uppercase text-cyan-300">
+              Documentos ya asociados al Día {{ ctxAdjuntarDocDia.dia }} ({{ formatearFechaCorta(ctxAdjuntarDocDia.fecha) }}):
+            </span>
+            <div class="max-h-32 overflow-y-auto space-y-1">
+              <div
+                v-for="doc in ctxAdjuntarDocDia.documentos_dia"
+                :key="doc.id_doc || doc.nombre_archivo"
+                class="flex items-center justify-between bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono"
+              >
+                <a
+                  :href="getUrlDocumentoDia(doc)"
+                  target="_blank"
+                  class="flex items-center gap-1.5 text-cyan-300 hover:underline truncate"
+                >
+                  <span>📄</span>
+                  <span class="truncate">{{ doc.titulo || doc.nombre_archivo }}</span>
+                  <span class="text-[10px]">↗</span>
+                </a>
+                <span class="text-[10px] text-slate-500 ml-2 shrink-0">{{ doc.subido_por || '' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-white/10">
+            <button
+              type="button"
+              @click="cerrarModalAdjuntarDocDia"
+              class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-white/10 cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              :disabled="!archivoDocDiaSeleccionado || subiendoDocDia"
+              class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-mono shadow-lg disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+            >
+              <span v-if="subiendoDocDia">⏳ Subiendo...</span>
+              <span v-else>📎 Adjuntar al Día {{ ctxAdjuntarDocDia.dia }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -969,6 +1362,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { apiAxios } from '@/services/api'
 import ModalITS from '@/components/Operaciones/ModalITS.vue'
 import ModalCaratulaEDP from '@/components/Operaciones/ModalCaratulaEDP.vue'
+import ModalMapaViaje from '@/components/Operaciones/ModalMapaViaje.vue'
+import ModalVisorReport from '@/components/Operaciones/ModalVisorReport.vue'
 
 const emit = defineEmits(['abrir-proyecto', 'ver-report'])
 
@@ -1003,6 +1398,15 @@ const ocDataModal = ref(null)
 const modalFacturaAbierto = ref(false)
 const facturaDataModal = ref(null)
 
+// Modales de Telemetría GPS y Visor Report Directo (REQ-1012 / SPEC-066)
+const modalMapaViajeAbierto = ref(false)
+const viajeSeleccionadoTelemetria = ref(null)
+const cargandoViaje = ref(false)
+
+const modalVisorReportAbierto = ref(false)
+const reportSeleccionadoVisor = ref(null)
+const cargandoReport = ref(false)
+
 // Drawer Timeline
 const drawerAbierto = ref(false)
 const servicioSeleccionado = ref(null)
@@ -1026,10 +1430,263 @@ const getEquipoActivo = (s) => {
   return s.equipos[0]
 }
 
-// REQ-997 / Caso 2: Carga Manual y Corrección Rápida de Horas de Hitos (Yiara / Adm)
+// REQ-1012 / SPEC-066: Navegación Multi-Día en Ribbon Horizontal
+const selectedDiaByOt = ref({})
+const selectedFechaByOt = ref({})
+
+const seleccionarDia = async (s, d) => {
+  if (!d) return
+  if (s && s.id_proyecto) {
+    if (d.fecha) {
+      selectedFechaByOt.value = { ...selectedFechaByOt.value, [s.id_proyecto]: d.fecha }
+    }
+    if (d.dia) {
+      selectedDiaByOt.value = { ...selectedDiaByOt.value, [s.id_proyecto]: Number(d.dia) }
+    }
+  }
+}
+
+const esCapsulaSeleccionada = (s, d) => {
+  if (!s || !d) return false
+  const fSel = selectedFechaByOt.value[s.id_proyecto]
+  if (fSel && d.fecha) return fSel === d.fecha
+  return d.es_laboral !== false && getDiaSeleccionado(s) === d.dia
+}
+
+const cambiarEstadoLaboralDia = async (s, d, nuevoEstadoLaboral) => {
+  if (!s || !d || !d.fecha) return
+  try {
+    guardandoOverride.value = true
+    const { data } = await apiAxios.post('/operaciones/control-vivo/override-hito', {
+      id_proyecto: s.id_proyecto,
+      fecha: d.fecha,
+      clave_actividad: 'TOGGLE_DIA_LABORAL',
+      es_laboral: Boolean(nuevoEstadoLaboral)
+    })
+    if (data && data.success) {
+      selectedFechaByOt.value = { ...selectedFechaByOt.value, [s.id_proyecto]: d.fecha }
+      await cargarDatos()
+    }
+  } catch (err) {
+    console.error('Error cambiando estado laboral del día:', err)
+    alert('❌ No se pudo cambiar el estado del día: ' + (err.response?.data?.message || err.message))
+  } finally {
+    guardandoOverride.value = false
+  }
+}
+
+const generandoOtId = ref(null)
+
+const abrirPdfOT = async (s) => {
+  if (!s?.id_proyecto) return
+  const base = (apiAxios.defaults.baseURL || '').replace(/\/$/, '')
+  if (s.ot_id_doc) {
+    window.open(`${base}/v1/storage/view/${s.ot_id_doc}`, '_blank')
+    return
+  }
+  if (s.ot_url) {
+    const fullUrl = s.ot_url.startsWith('http') ? s.ot_url : `${base.replace(/\/api$/, '')}${s.ot_url}`
+    window.open(fullUrl, '_blank')
+    return
+  }
+  generandoOtId.value = s.id_proyecto
+  try {
+    const { data } = await apiAxios.post(`/proyectos/${s.id_proyecto}/generar-ot`, {})
+    if (data?.ot?.id_doc) {
+      s.ot_id_doc = data.ot.id_doc
+      window.open(`${base}/v1/storage/view/${data.ot.id_doc}`, '_blank')
+    } else if (data?.ot?.url) {
+      s.ot_url = data.ot.url
+      const fullUrl = data.ot.url.startsWith('http') ? data.ot.url : `${base.replace(/\/api$/, '')}${data.ot.url}`
+      window.open(fullUrl, '_blank')
+    }
+  } catch (err) {
+    alert('Error al abrir el PDF de la OT: ' + (err.response?.data?.error || err.message))
+  } finally {
+    generandoOtId.value = null
+  }
+}
+
+const getDiaSeleccionado = (s) => {
+  if (!s) return 1
+  const eq = getEquipoActivo(s)
+  const franja = eq.franja_multidia || s.franja_multidia || []
+  const fSel = selectedFechaByOt.value[s.id_proyecto]
+  if (fSel) {
+    const found = franja.find(f => f.fecha === fSel)
+    if (found && found.dia) return found.dia
+  }
+  if (selectedDiaByOt.value[s.id_proyecto]) {
+    return selectedDiaByOt.value[s.id_proyecto]
+  }
+  return eq.dia_actual || s.dia_actual || 1
+}
+
+const getJornadaSeleccionada = (s) => {
+  if (!s) return null
+  const eq = getEquipoActivo(s)
+  const franja = eq.franja_multidia || s.franja_multidia || []
+  const fSel = selectedFechaByOt.value[s.id_proyecto]
+  if (fSel) {
+    const byFecha = franja.find(f => f.fecha === fSel)
+    if (byFecha) return byFecha
+  }
+  const diaSel = getDiaSeleccionado(s)
+  return franja.find(f => f.dia === diaSel) || franja.find(f => f.es_laboral !== false && f.es_hoy) || franja.find(f => f.es_laboral !== false) || franja[0] || null
+}
+
+const getActividadesMostradas = (s) => {
+  if (!s) return []
+  const jornada = getJornadaSeleccionada(s)
+  if (jornada && Array.isArray(jornada.actividades) && jornada.actividades.length > 0) {
+    return jornada.actividades
+  }
+  const eq = getEquipoActivo(s)
+  return eq.actividades || s.actividades || []
+}
+
+const formatearFechaCorta = (fechaStr) => {
+  if (!fechaStr) return ''
+  const partes = String(fechaStr).split('-')
+  if (partes.length === 3) {
+    return `${partes[2]}/${partes[1]}`
+  }
+  return fechaStr
+}
+
+const tieneViajeDisponible = (s) => {
+  if (!s) return false
+  const eq = getEquipoActivo(s)
+  const franja = eq.franja_multidia || s.franja_multidia || []
+  return franja.some(f => f.tiene_viaje) || !!eq.tiene_viaje || !!s.tiene_viaje
+}
+
+const tieneReportDisponible = (s) => {
+  if (!s) return false
+  const eq = getEquipoActivo(s)
+  const franja = eq.franja_multidia || s.franja_multidia || []
+  return franja.some(f => f.tiene_report) || (eq.reports_consumidos ?? s.reports_consumidos) > 0
+}
+
+// REQ-997 / REQ-1099: Carga Manual, Corrección y Limpieza (--:--) de Horas de Hitos (Yiara / Adm)
 const editandoHitoKey = ref(null)
 const horaOverrideInput = ref('')
 const guardandoOverride = ref(false)
+
+// REQ-1099: Estado Modal Adjuntar Documento al Día
+const modalAdjuntarDocDiaAbierto = ref(false)
+const ctxAdjuntarDocDia = ref(null)
+const archivoDocDiaSeleccionado = ref(null)
+const inputArchivoDocDiaRef = ref(null)
+const subiendoDocDia = ref(false)
+const formDocDia = ref({ titulo: '' })
+
+const getUrlDocumentoDia = (doc) => {
+  if (!doc) return '#'
+  const base = (apiAxios.defaults.baseURL || '').replace(/\/$/, '')
+  if (doc.id_doc) {
+    return `${base}/v1/storage/view/${doc.id_doc}`
+  }
+  if (doc.url_vista) {
+    return doc.url_vista.startsWith('http') ? doc.url_vista : `${base}${doc.url_vista.replace(/^\/api/, '')}`
+  }
+  return '#'
+}
+
+const irADiaHoy = (s) => {
+  if (!s) return
+  const eq = getEquipoActivo(s)
+  const franja = eq.franja_multidia || s.franja_multidia || []
+  const diaTarget = eq.dia_actual || s.dia_actual || 1
+  const itemHoy = franja.find(f => f.es_hoy && f.es_laboral !== false) || franja.find(f => f.dia === diaTarget)
+  if (itemHoy) {
+    seleccionarDia(s, itemHoy)
+  }
+}
+
+const abrirModalAdjuntarDocDia = (s, jornadaParam = null) => {
+  if (!s) return
+  const eq = getEquipoActivo(s)
+  const jornada = jornadaParam || getJornadaSeleccionada(s)
+  ctxAdjuntarDocDia.value = {
+    servicio: s,
+    id_proyecto: s.id_proyecto,
+    codigo_ot: s.codigo_ot,
+    cliente: s.cliente,
+    id_equipo: eq?.id_equipo || 0,
+    dia: jornada?.dia || getDiaSeleccionado(s) || 1,
+    fecha: jornada?.fecha || fechaFiltro.value,
+    id_reporte_avance: jornada?.id_reporte_avance || null,
+    documentos_dia: jornada?.documentos_dia || []
+  }
+  archivoDocDiaSeleccionado.value = null
+  formDocDia.value = { titulo: '' }
+  modalAdjuntarDocDiaAbierto.value = true
+}
+
+const cerrarModalAdjuntarDocDia = () => {
+  modalAdjuntarDocDiaAbierto.value = false
+  ctxAdjuntarDocDia.value = null
+  archivoDocDiaSeleccionado.value = null
+}
+
+const onFileChangeDocDia = (e) => {
+  const f = e.target?.files?.[0] || null
+  archivoDocDiaSeleccionado.value = f
+  if (f && !formDocDia.value.titulo) {
+    formDocDia.value.titulo = f.name.replace(/\.[^/.]+$/, '')
+  }
+}
+
+const ejecutarSubidaDocDia = async () => {
+  if (!ctxAdjuntarDocDia.value || !archivoDocDiaSeleccionado.value) return
+  try {
+    subiendoDocDia.value = true
+    const fd = new FormData()
+    fd.append('archivo', archivoDocDiaSeleccionado.value)
+    fd.append('id_proyecto', ctxAdjuntarDocDia.value.id_proyecto)
+    fd.append('id_equipo', ctxAdjuntarDocDia.value.id_equipo || 0)
+    fd.append('fecha', ctxAdjuntarDocDia.value.fecha)
+    fd.append('dia', ctxAdjuntarDocDia.value.dia)
+    if (ctxAdjuntarDocDia.value.id_reporte_avance) {
+      fd.append('id_reporte_avance', ctxAdjuntarDocDia.value.id_reporte_avance)
+    }
+    if (formDocDia.value.titulo?.trim()) {
+      fd.append('titulo', formDocDia.value.titulo.trim())
+    }
+
+    const { data } = await apiAxios.post('/operaciones/control-vivo/adjuntar-documento-dia', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    if (data && data.success) {
+      cerrarModalAdjuntarDocDia()
+      await cargarDatos()
+    }
+  } catch (err) {
+    console.error('Error subiendo documento del día:', err)
+    alert('❌ No se pudo adjuntar el documento: ' + (err.response?.data?.message || err.message))
+  } finally {
+    subiendoDocDia.value = false
+  }
+}
+
+const eliminarDocumentoDia = async (s, jornada, doc) => {
+  if (!s || !doc?.id_doc) return
+  if (!confirm(`¿Quitar el documento "${doc.titulo || doc.nombre_archivo}" del Día ${jornada?.dia || ''}?`)) return
+  try {
+    await apiAxios.delete(`/operaciones/control-vivo/documento-dia/${doc.id_doc}`, {
+      params: {
+        id_proyecto: s.id_proyecto,
+        fecha: jornada?.fecha || '',
+        id_reporte_avance: jornada?.id_reporte_avance || ''
+      }
+    })
+    await cargarDatos()
+  } catch (err) {
+    console.error('Error quitando documento del día:', err)
+    alert('❌ No se pudo quitar el documento: ' + (err.response?.data?.message || err.message))
+  }
+}
 
 const getHitoKey = (s, act) => {
   const eq = getEquipoActivo(s)
@@ -1047,15 +1704,102 @@ const cancelarEdicionHito = () => {
   horaOverrideInput.value = ''
 }
 
-const guardarOverrideHito = async (s, act) => {
-  if (!horaOverrideInput.value) return
+// REQ-1120: Edición inline de Observaciones de Validación del Report Diario desde la tarjeta PMO
+const editandoObsValidadorKey = ref(null)
+const obsValidadorInput = ref('')
+const guardandoObsValidador = ref(false)
+
+const getObsValidadorKey = (s) => {
   const eq = getEquipoActivo(s)
+  const eqId = eq?.id_equipo || 0
+  const dia = getDiaSeleccionado(s)
+  return `${s.id_proyecto}-${eqId}-D${dia}`
+}
+
+const iniciarEdicionObsValidador = (s) => {
+  const jornada = getJornadaSeleccionada(s)
+  editandoObsValidadorKey.value = getObsValidadorKey(s)
+  obsValidadorInput.value = jornada?.obs_validador || ''
+}
+
+const cancelarEdicionObsValidador = () => {
+  editandoObsValidadorKey.value = null
+  obsValidadorInput.value = ''
+}
+
+const guardarObsValidadorDia = async (s) => {
+  const eq = getEquipoActivo(s)
+  const jornada = getJornadaSeleccionada(s)
+  try {
+    guardandoObsValidador.value = true
+    const { data } = await apiAxios.post('/operaciones/control-vivo/override-hito', {
+      id_proyecto: s.id_proyecto,
+      id_equipo: eq?.id_equipo || 0,
+      fecha: jornada?.fecha || fechaFiltro.value,
+      dia: jornada?.dia || getDiaSeleccionado(s),
+      id_reporte_avance: jornada?.id_reporte_avance || null,
+      clave_actividad: 'OBS_VALIDADOR',
+      obs_validador: obsValidadorInput.value
+    })
+    if (data && data.success) {
+      if (jornada) {
+        jornada.obs_validador = data.data?.obs_validador || null
+      }
+      cancelarEdicionObsValidador()
+      await cargarDatos()
+    }
+  } catch (err) {
+    console.error('Error guardando observación de validación:', err)
+    alert('❌ No se pudo guardar la observación de validación: ' + (err.response?.data?.message || err.message))
+  } finally {
+    guardandoObsValidador.value = false
+  }
+}
+
+const limpiarHito = async (s, act) => {
+  const eq = getEquipoActivo(s)
+  const jornada = getJornadaSeleccionada(s)
   try {
     guardandoOverride.value = true
     const { data } = await apiAxios.post('/operaciones/control-vivo/override-hito', {
       id_proyecto: s.id_proyecto,
       id_equipo: eq?.id_equipo || 0,
-      fecha: fechaFiltro.value,
+      fecha: jornada?.fecha || fechaFiltro.value,
+      dia: jornada?.dia || getDiaSeleccionado(s),
+      clave_actividad: act.clave,
+      hora_real: null,
+      limpiar: true,
+      motivo: 'Limpieza de hito (--:--) desde Torre de Control'
+    })
+    if (data && data.success) {
+      act.hora_real = null
+      act.ejecutado = false
+      act.override = false
+      act.requiere_regularizacion = false
+      cancelarEdicionHito()
+      await cargarDatos()
+    }
+  } catch (err) {
+    console.error('Error limpiando hito:', err)
+    alert('❌ Error al dejar vacío el hito: ' + (err.response?.data?.message || err.message))
+  } finally {
+    guardandoOverride.value = false
+  }
+}
+
+const guardarOverrideHito = async (s, act) => {
+  if (!horaOverrideInput.value || horaOverrideInput.value === '--:--') {
+    return limpiarHito(s, act)
+  }
+  const eq = getEquipoActivo(s)
+  const jornada = getJornadaSeleccionada(s)
+  try {
+    guardandoOverride.value = true
+    const { data } = await apiAxios.post('/operaciones/control-vivo/override-hito', {
+      id_proyecto: s.id_proyecto,
+      id_equipo: eq?.id_equipo || 0,
+      fecha: jornada?.fecha || fechaFiltro.value,
+      dia: jornada?.dia || getDiaSeleccionado(s),
       clave_actividad: act.clave,
       hora_real: horaOverrideInput.value,
       motivo: 'Ajuste manual de Torre de Control',
@@ -1268,6 +2012,170 @@ const abrirExpedienteDesdeModal = (idProyecto) => {
   modalOCAbierto.value = false
   modalFacturaAbierto.value = false
   emit('abrir-proyecto', idProyecto)
+}
+
+// Métodos de Telemetría GPS y Visor Report Directo (REQ-1012 / SPEC-066)
+const abrirTelemetriaViaje = async (s, jornadaParam = null) => {
+  if (!s) return
+  const jornada = jornadaParam || getJornadaSeleccionada(s)
+  cargandoViaje.value = true
+  try {
+    // Si la jornada ya contiene el viaje_resumen con token
+    const token = jornada?.viaje_resumen?.token_viaje
+    if (token) {
+      const { data } = await apiAxios.get(`/operaciones/viaje/${token}`)
+      if (data) {
+        viajeSeleccionadoTelemetria.value = data
+        modalMapaViajeAbierto.value = true
+        return
+      }
+    }
+
+    // Consulta de respaldo por ID de Proyecto
+    const { data } = await apiAxios.get(`/operaciones/viaje/proyecto/${s.id_proyecto}`)
+    const viajes = Array.isArray(data) ? data : (data.data || [])
+    if (viajes.length > 0) {
+      // Si tenemos jornada con id_log_desplazamiento específico
+      let viajeTarget = null
+      if (jornada?.viaje_resumen?.id_log_desplazamiento) {
+        viajeTarget = viajes.find(v => v.id_log_desplazamiento === jornada.viaje_resumen.id_log_desplazamiento)
+      }
+      viajeSeleccionadoTelemetria.value = viajeTarget || viajes[0]
+      modalMapaViajeAbierto.value = true
+    } else {
+      alert('ℹ️ No se encontraron registros de telemetría de viaje para este servicio.')
+    }
+  } catch (err) {
+    console.error('Error cargando telemetría de viaje:', err)
+    alert('❌ Error al cargar telemetría de viaje: ' + (err.response?.data?.error || err.message))
+  } finally {
+    cargandoViaje.value = false
+  }
+}
+
+const abrirVisorReportDirecto = async (s, jornadaParam = null) => {
+  if (!s) return
+  const jornada = jornadaParam || getJornadaSeleccionada(s)
+  const eq = getEquipoActivo(s)
+  const eqId = eq?.id_equipo || 0
+  const fechaTarget = jornada?.fecha || null
+  const diaSel = jornada?.dia || getDiaSeleccionado(s)
+
+  const buscarReportDelDia = (lista) => {
+    if (!Array.isArray(lista) || lista.length === 0) return null
+    if (jornada?.id_reporte_avance) {
+      const byId = lista.find(r => Number(r.id_reporte_avance) === Number(jornada.id_reporte_avance))
+      if (byId) return byId
+    }
+    if (fechaTarget) {
+      const fTargetNorm = String(fechaTarget).slice(0, 10)
+      const byFechaEq = lista.find(r => {
+        const fRep = r.fecha_reporte_iso || (r.fecha_reporte ? String(r.fecha_reporte).slice(0, 10) : '')
+        const matchEq = !eqId || !r.id_equipo || Number(r.id_equipo) === Number(eqId)
+        return fRep === fTargetNorm && matchEq
+      })
+      if (byFechaEq) return byFechaEq
+
+      const byFechaAny = lista.find(r => {
+        const fRep = r.fecha_reporte_iso || (r.fecha_reporte ? String(r.fecha_reporte).slice(0, 10) : '')
+        return fRep === fTargetNorm
+      })
+      if (byFechaAny) return byFechaAny
+    }
+    const byDia = lista.find(r => Number(r.dia_correlativo) === Number(diaSel))
+    if (byDia) return byDia
+    if (lista.length === 1) return lista[0]
+    const byEqOnly = lista.find(r => !eqId || !r.id_equipo || Number(r.id_equipo) === Number(eqId))
+    if (byEqOnly) return byEqOnly
+    return lista[0] || null
+  }
+
+  cargandoReport.value = true
+  try {
+    const { data } = await apiAxios.get(`/operaciones/report/proyecto/${s.id_proyecto}`)
+    let reports = Array.isArray(data) ? data : (data.data || [])
+    let rep = buscarReportDelDia(reports)
+
+    // Si en el día seleccionado se ingresaron horas de report en PMO pero aún no existía fila en tedp_reporte_avance, sincronizar al vuelo
+    if (!rep && fechaTarget && Array.isArray(jornada?.actividades)) {
+      const actIni = jornada.actividades.find(a => a.clave === 'REPORT_INICIO' && a.hora_real)
+      const actFin = jornada.actividades.find(a => a.clave === 'REPORT_TERMINO' && a.hora_real)
+      if (actIni || actFin) {
+        if (actIni) {
+          await apiAxios.post('/operaciones/control-vivo/override-hito', {
+            id_proyecto: s.id_proyecto,
+            id_equipo: eqId,
+            fecha: fechaTarget,
+            dia: diaSel,
+            clave_actividad: 'REPORT_INICIO',
+            hora_real: actIni.hora_real,
+            motivo: 'Sincronización automática de Report Día ' + diaSel
+          })
+        }
+        if (actFin) {
+          await apiAxios.post('/operaciones/control-vivo/override-hito', {
+            id_proyecto: s.id_proyecto,
+            id_equipo: eqId,
+            fecha: fechaTarget,
+            dia: diaSel,
+            clave_actividad: 'REPORT_TERMINO',
+            hora_real: actFin.hora_real,
+            motivo: 'Sincronización automática de Report Día ' + diaSel
+          })
+        }
+        const { data: dataRef } = await apiAxios.get(`/operaciones/report/proyecto/${s.id_proyecto}`)
+        reports = Array.isArray(dataRef) ? dataRef : (dataRef.data || [])
+        rep = buscarReportDelDia(reports)
+      }
+    }
+
+    // Si no existiera reporte previo en BD, generar borrador contextual para permitir editarlo y validarlo de inmediato
+    if (!rep) {
+      const actIni = jornada?.actividades?.find(a => a.clave === 'REPORT_INICIO' && a.hora_real)
+      const actFin = jornada?.actividades?.find(a => a.clave === 'REPORT_TERMINO' && a.hora_real)
+      rep = {
+        id_reporte_avance: null,
+        id_proyecto: s.id_proyecto,
+        codi_proyecto: s.codigo_ot,
+        obra_nombre: s.obra,
+        id_equipo: eqId,
+        equipo_patente: eq?.patente || '',
+        equipo_modelo: eq?.modelo || '',
+        operador_nombre: jornada?.operador || eq?.operador || s.operador || '',
+        dia_correlativo: diaSel || 1,
+        fecha_reporte: fechaTarget || new Date().toISOString().slice(0, 10),
+        fecha_inicio_servicio: actIni?.hora_real ? `${fechaTarget || new Date().toISOString().slice(0, 10)}T${actIni.hora_real}:00` : null,
+        fecha_termino_servicio: actFin?.hora_real ? `${fechaTarget || new Date().toISOString().slice(0, 10)}T${actFin.hora_real}:00` : null,
+        hora_inicio: actIni?.hora_real || '08:00',
+        hora_termino: actFin?.hora_real || '18:00',
+        horas_colacion: 1.0,
+        estado_reporte: 'PENDIENTE_VALIDACION',
+        documentos_dia: jornada?.documentos_dia || []
+      }
+    }
+
+    if (rep) {
+      reportSeleccionadoVisor.value = {
+        ...rep,
+        dia_correlativo: diaSel || rep.dia_correlativo || 1,
+        codi_proyecto: rep.codi_proyecto || s.codigo_ot,
+        obra_nombre: rep.obra_nombre || s.obra,
+        documentos_dia: rep.documentos_dia?.length ? rep.documentos_dia : (jornada?.documentos_dia || [])
+      }
+      modalVisorReportAbierto.value = true
+    } else {
+      alert(`ℹ️ El Día ${diaSel || ''} (${formatearFechaCorta(fechaTarget)}) aún no tiene horario de inicio/término de jornada registrado.`)
+    }
+  } catch (err) {
+    console.error('Error al abrir Visor de Report:', err)
+    alert('❌ Error al cargar Report Diario: ' + (err.response?.data?.message || err.message))
+  } finally {
+    cargandoReport.value = false
+  }
+}
+
+const onReportValidadoEnVivo = () => {
+  cargarDatos()
 }
 
 const getClaseBadgeDocumental = (estado) => {

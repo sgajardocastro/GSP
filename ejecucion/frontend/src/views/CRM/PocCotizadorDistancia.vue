@@ -5,7 +5,7 @@
     <header class="bg-[#090f22] border border-blue-500/30 rounded-2xl p-4 sm:p-5 mb-6 shadow-xl flex flex-wrap justify-between items-center gap-4">
       <div class="flex items-center gap-3.5">
         <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-2xl shadow-inner">
-          🏗️
+          📏
         </div>
         <div>
           <div class="flex items-center gap-2.5 flex-wrap">
@@ -350,7 +350,7 @@
                   <!-- CONCEPTO & NOTA DINÁMICA -->
                   <td class="p-3 space-y-1">
                     <div class="flex items-center gap-2">
-                      <span class="text-xs">{{ line.tipo === 'TRASLADOS' ? '🚚' : (line.tipo === 'GRUAS' ? '🏗️' : '👷') }}</span>
+                      <span class="text-xs">{{ line.tipo === 'TRASLADOS' ? '🚚' : (line.tipo === 'GRUAS' ? '⚙️' : '👷') }}</span>
                       <strong class="text-white font-sans text-xs">{{ line.descripcion }}</strong>
                     </div>
 

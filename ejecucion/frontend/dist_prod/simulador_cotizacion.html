@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador Interactivo: Generación de Cotización GSP Web</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #070d19; color: #f1f5f9; overflow-x: hidden; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    
+    /* Virtual Cursor & Click Effects */
+    #virtualCursor {
+      position: fixed;
+      width: 28px;
+      height: 28px;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+    }
+    .click-ripple {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(245, 158, 11, 0.5);
+      border: 2px solid #f59e0b;
+      transform: translate(-50%, -50%) scale(0);
+      animation: rippleAnim 0.5s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes rippleAnim {
+      0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+    }
+
+    /* Highlight Pulse */
+    .spotlight-active {
+      box-shadow: 0 0 0 3px #f59e0b, 0 0 25px rgba(245, 158, 11, 0.45) !important;
+      border-color: #f59e0b !important;
+      transition: all 0.3s ease;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b1120; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-black">
+
+  <!-- VIRTUAL CURSOR -->
+  <div id="virtualCursor" class="opacity-0">
+    <svg viewBox="0 0 24 24" fill="none" class="w-7 h-7 drop-shadow-lg">
+      <path d="M4 3L11 20L14 13L21 10L4 3Z" fill="#f59e0b" stroke="#000" stroke-width="2" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <!-- TOP HEADER / CONTROL BAR -->
+  <header class="bg-slate-900/90 border-b border-slate-800 backdrop-blur sticky top-0 z-50 px-4 py-3 shadow-lg">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center font-black text-black text-xl shadow-md shadow-amber-500/20">
+          🏗️
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-base font-extrabold text-white tracking-wide">Grúas San Pablo</h1>
+            <span class="text-[10px] font-mono font-bold bg-amber-400 text-black px-2 py-0.5 rounded uppercase">Simulador Web v1.0.90</span>
+          </div>
+          <p class="text-xs text-slate-400">Demostración Interactiva: Generador de Propuesta Técnico-Comercial</p>
+        </div>
+      </div>
+
+      <!-- TIMELINE STEPS INDICATOR -->
+      <div class="hidden md:flex items-center space-x-2 bg-slate-950/80 px-4 py-1.5 rounded-2xl border border-slate-800 text-xs">
+        <div id="badgeStep1" class="flex items-center space-x-1.5 text-amber-400 font-bold">
+          <span class="w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center text-[10px] font-mono">1</span>
+          <span>Cliente & Faena</span>
+        </div>
+        <span class="text-slate-600">➔</span>
+        <div id="badgeStep2" class="flex items-center space-x-1.5 text-slate-400 font-medium">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-[10px] font-mono">2</span>
+          <span>Estructurador</span>
+        </div>
+        <span class="text-slate-600">➔</span>
+        <div id="badgeStep3" class="flex items-center space-x-1.5 text-slate-400 font-medium">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-[10px] font-mono">3</span>
+          <span>Condiciones (5d)</span>
+        </div>
+        <span class="text-slate-600">➔</span>
+        <div id="badgeStep4" class="flex items-center space-x-1.5 text-slate-400 font-medium">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-[10px] font-mono">4</span>
+          <span>Dossier PDF</span>
+        </div>
+      </div>
+
+      <!-- PLAYBACK CONTROLS -->
+      <div class="flex items-center space-x-2">
+        <button id="btnPlayPause" onclick="togglePlayPause()" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs flex items-center space-x-1 shadow-md transition-transform active:scale-95">
+          <span id="playIcon">⏸️</span>
+          <span id="playText">Pausar</span>
+        </button>
+        <button onclick="prevStep()" class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs border border-slate-700 transition" title="Paso anterior">
+          ⏮️
+        </button>
+        <button onclick="nextStep()" class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs border border-slate-700 transition" title="Paso siguiente">
+          ⏭️
+        </button>
+        <button onclick="restartDemo()" class="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs border border-slate-700 transition" title="Reiniciar">
+          🔄
+        </button>
+        <div class="flex items-center bg-slate-950 border border-slate-800 rounded-xl px-2 py-1 text-xs">
+          <span class="text-slate-400 mr-1">Vel:</span>
+          <select id="speedSelect" onchange="changeSpeed(this.value)" class="bg-transparent text-amber-400 font-mono font-bold focus:outline-none cursor-pointer">
+            <option value="1" selected>1.0x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2.0x</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NARRATIVE FLOATING TOAST -->
+  <div id="narratorBox" class="max-w-xl mx-auto mt-4 px-4 w-full transition-all duration-300">
+    <div class="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border-2 border-amber-500/50 rounded-2xl p-3.5 shadow-xl flex items-center space-x-3">
+      <div id="narratorIcon" class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-400/40 flex items-center justify-center text-lg flex-shrink-0 animate-pulse">
+        💡
+      </div>
+      <div class="flex-grow">
+        <div id="narratorTitle" class="text-xs uppercase font-extrabold text-amber-400 tracking-wider">Paso 1: Identificación Comercial</div>
+        <p id="narratorDesc" class="text-sm text-slate-200 font-medium">Buscando y asignando el cliente mandante y faena minera para la cotización...</p>
+      </div>
+      <div id="progressBar" class="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden flex-shrink-0">
+        <div id="progressFill" class="bg-amber-400 h-full w-1/4 transition-all duration-500"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN SIMULATED APPLICATION VIEWPORT -->
+  <main class="max-w-6xl mx-auto w-full px-4 py-4 flex-grow">
+    <div class="bg-slate-900/90 border-2 border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl relative overflow-hidden backdrop-blur">
+      
+      <!-- STEP 1 CONTAINER: CLIENTE & NEGOCIO -->
+      <section id="sectionPaso1" class="transition-all duration-500">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <span class="text-xl">🏢</span>
+            <h2 class="text-lg font-black text-white">1. Definición del Cliente & Proyecto Mandante</h2>
+          </div>
+          <span class="text-xs font-mono font-bold text-amber-400 bg-amber-950/80 px-2.5 py-1 rounded-lg border border-amber-500/40">GSP-COT-2026-4853</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Empresa Emisora -->
+          <div>
+            <label class="text-xs font-bold uppercase text-slate-400 block mb-1.5">Empresa Emisora GSP</label>
+            <div id="inputEmpresaEmisora" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white flex items-center justify-between">
+              <span>Grúas San Pablo SpA (76.123.456-7)</span>
+              <span class="text-xs text-amber-400">✔️</span>
+            </div>
+          </div>
+
+          <!-- Cliente Mandante -->
+          <div class="relative">
+            <label class="text-xs font-bold uppercase text-amber-400 block mb-1.5">Cliente Mandante (Razón Social) *</label>
+            <div id="inputCliente" class="w-full bg-slate-950 border-2 border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white flex items-center justify-between transition-all">
+              <span id="txtCliente" class="text-slate-500">Buscar cliente...</span>
+              <span class="text-slate-500">🔍</span>
+            </div>
+            <!-- Dropdown Simulado -->
+            <div id="dropdownCliente" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-950 border-2 border-amber-400 rounded-xl shadow-2xl z-20 overflow-hidden">
+              <div class="p-2.5 hover:bg-amber-500/20 cursor-pointer text-xs font-bold text-white flex items-center justify-between border-b border-slate-800">
+                <span>Minera Escondida Ltda. (77.892.110-4)</span>
+                <span class="text-emerald-400">Cliente Frecuente</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Faena / Obra -->
+          <div>
+            <label class="text-xs font-bold uppercase text-slate-400 block mb-1.5">Faena / Lugar de Servicio</label>
+            <div id="inputFaena" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white transition-all">
+              <span id="txtFaena" class="text-slate-500">Faena de destino...</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 2 CONTAINER: ESTRUCTURADOR DE SERVICIOS -->
+      <section id="sectionPaso2" class="mt-6 pt-5 border-t border-slate-800 transition-all duration-500">
+        <div class="flex items-center justify-between pb-3 mb-4">
+          <div class="flex items-center space-x-2">
+            <span class="text-xl">🚜</span>
+            <h2 class="text-lg font-black text-white">2. Estructurador de Servicios & Tarifas</h2>
+          </div>
+          <button id="btnAgregarServicio" class="text-xs font-extrabold bg-amber-500 hover:bg-amber-400 text-black px-3.5 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all shadow-md">
+            <span>➕</span>
+            <span>Añadir Línea de Grúa</span>
+          </button>
+        </div>
+
+        <!-- Tabla Estructuradora -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900/90 text-slate-300 uppercase tracking-wider font-extrabold border-b border-slate-800">
+              <tr>
+                <th class="p-3">Tipo / Equipo</th>
+                <th class="p-3 text-center">Jornadas / Días</th>
+                <th class="p-3 text-center">Piso Mínimo</th>
+                <th class="p-3 text-right">Tarifa Día</th>
+                <th class="p-3 text-right">Total Ítem</th>
+                <th class="p-3 text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tablaServiciosBody" class="divide-y divide-slate-800/80 font-medium">
+              <!-- Empty state initially -->
+              <tr id="rowEmpty">
+                <td colspan="6" class="p-6 text-center text-slate-500 italic">
+                  No hay equipos cargados. Haz clic en "Añadir Línea de Grúa" para comenzar.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totales de Cotización -->
+        <div id="boxTotales" class="mt-4 flex flex-col sm:flex-row justify-end items-end sm:items-center space-y-2 sm:space-y-0 sm:space-x-6 text-sm font-mono opacity-0 transition-opacity duration-500">
+          <div class="text-slate-400">Neto: <strong id="valNeto" class="text-white text-base font-bold">$0</strong></div>
+          <div class="text-slate-400">IVA (19%): <strong id="valIva" class="text-slate-300 text-base font-bold">$0</strong></div>
+          <div class="bg-amber-500/10 border-2 border-amber-500/50 px-4 py-2 rounded-xl text-amber-300 font-black text-lg">
+            Total General: <span id="valTotal">$0</span> CLP
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 3 CONTAINER: CONDICIONES COMERCIALES CANÓNICAS (REQ-992) -->
+      <section id="sectionPaso3" class="mt-6 pt-5 border-t border-slate-800 transition-all duration-500">
+        <div class="flex items-center justify-between pb-3 mb-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-xl">📜</span>
+            <h2 class="text-lg font-black text-white">3. Acuerdos y Condiciones Comerciales Oficiales</h2>
+          </div>
+          <span class="text-xs font-bold text-emerald-400 bg-emerald-950/90 border border-emerald-500/50 px-3 py-1 rounded-xl">
+            🔒 Inyección Automática REQ-992
+          </span>
+        </div>
+
+        <div id="cardCondiciones" class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs text-slate-300 space-y-3">
+          <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+            <span class="font-bold text-amber-300">⏳ VALIDEZ DE LA OFERTA CONTRACTUAL:</span>
+            <span id="badgeValidez" class="font-mono font-black text-white bg-red-600 px-3 py-1 rounded-lg shadow animate-pulse">
+              5 DÍAS HÁBILES
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-slate-400">
+            <div class="p-2.5 rounded-xl bg-slate-900/60 border border-white/5">
+              <strong class="text-slate-200 block mb-1">1. Personal Técnico Especializado:</strong>
+              Operadores y riggers con credenciales de alta montaña y acreditaciones vigentes en faenas mineras.
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/60 border border-white/5">
+              <strong class="text-slate-200 block mb-1">2. Seguros y Pólizas de Carga:</strong>
+              Póliza de Responsabilidad Civil de UF 50.000 y cobertura de izaje con tabla de carga certificada.
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/60 border border-white/5">
+              <strong class="text-slate-200 block mb-1">3. Condiciones del Terreno Mandante:</strong>
+              El mandante debe asegurar nivelación compactada y accesos transitables para la estabilización de los gatos.
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/60 border border-white/5">
+              <strong class="text-slate-200 block mb-1">4. Combustible y Abastecimiento:</strong>
+              Equipos entregados con estanque full en base; reposición según kilometraje y horómetro devengado.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 4 CONTAINER: BOTÓN DE EMISIÓN & DOSSIER PDF -->
+      <section id="sectionPaso4" class="mt-6 pt-5 border-t border-slate-800 flex items-center justify-between">
+        <div class="text-xs text-slate-400 font-medium">
+          Estado: <span id="txtEstadoDoc" class="text-amber-400 font-bold">Borrador Validado</span>
+        </div>
+        <button id="btnEmitirPDF" class="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-sm tracking-wider uppercase shadow-xl shadow-amber-500/20 flex items-center space-x-2 transition-all">
+          <span>📄</span>
+          <span>Generar Propuesta Formal PDF</span>
+        </button>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- MODAL VISOR PDF SIMULADO -->
+  <div id="modalPdf" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-950 border-2 border-amber-500 rounded-3xl max-w-3xl w-full p-6 shadow-2xl relative animate-in fade-in zoom-in duration-300 max-h-[90vh] overflow-y-auto">
+      
+      <!-- Close Button -->
+      <button onclick="closePdfModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-900 p-2 rounded-xl text-xs font-bold border border-slate-700">
+        ✕ Cerrar
+      </button>
+
+      <div class="flex items-center space-x-3 mb-5 border-b border-slate-800 pb-3">
+        <span class="text-3xl">📄</span>
+        <div>
+          <h3 class="text-lg font-black text-white">Dossier de Propuesta Técnico-Comercial</h3>
+          <span class="text-xs font-mono text-amber-400 font-bold">Folio: GSP-COT-2026-4853-001 • Generado con Éxito</span>
+        </div>
+      </div>
+
+      <!-- Simulated Sheet of Paper -->
+      <div class="bg-white text-slate-900 p-6 rounded-2xl shadow-xl font-sans text-xs space-y-4 border border-slate-300">
+        
+        <!-- Header Documento -->
+        <div class="flex justify-between items-start border-b-2 border-slate-900 pb-3">
+          <div>
+            <h4 class="text-base font-black uppercase tracking-tight text-slate-900">GRÚAS SAN PABLO SpA</h4>
+            <p class="text-[10px] text-slate-600">Servicios de Izaje Pesado, Grúas Telescópicas & Logística Industrial</p>
+            <p class="text-[10px] text-slate-600">Av. Américo Vespucio 1234, Santiago • Fono: +56 2 2345 6789</p>
+          </div>
+          <div class="text-right">
+            <span class="inline-block bg-amber-500 text-black px-2.5 py-1 rounded font-mono font-black text-xs mb-1">COTIZACIÓN FORMAL</span>
+            <div class="font-mono text-[11px] font-bold">N°: GSP-COT-2026-4853</div>
+            <div class="text-[10px] text-slate-500">Fecha: 05 de Octubre de 2026</div>
+          </div>
+        </div>
+
+        <!-- Info Cliente -->
+        <div class="bg-slate-100 p-3 rounded-xl grid grid-cols-2 gap-2 text-[11px]">
+          <div><strong>Señores:</strong> Minera Escondida Ltda.</div>
+          <div><strong>R.U.T.:</strong> 77.892.110-4</div>
+          <div><strong>Faena:</strong> Minera Escondida (Antofagasta)</div>
+          <div><strong>Atención:</strong> Ing. Carlos Morales (Jefe Izaje)</div>
+        </div>
+
+        <!-- Tabla Resumen PDF -->
+        <div>
+          <table class="w-full text-left text-[11px] border border-slate-300">
+            <thead class="bg-slate-200 font-bold">
+              <tr>
+                <th class="p-2">Descripción del Servicio</th>
+                <th class="p-2 text-center">Cant.</th>
+                <th class="p-2 text-right">Tarifa Unit.</th>
+                <th class="p-2 text-right">Total Ítem</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              <tr>
+                <td class="p-2 font-medium">Arriendo Grúa Telescópica Liebherr LTM 1220-5.2 (220 TON) con Operador Certificado y Rigger (Piso Mínimo: 9.0 hrs/día)</td>
+                <td class="p-2 text-center font-bold">5 Días</td>
+                <td class="p-2 text-right font-mono">$2.450.000</td>
+                <td class="p-2 text-right font-mono font-bold">$12.250.000</td>
+              </tr>
+              <tr>
+                <td class="p-2 font-medium">Movilización y Desmovilización (Traslado Ida y Vuelta en Carretera con Escolta y Permiso Vial)</td>
+                <td class="p-2 text-center font-bold">1 Global</td>
+                <td class="p-2 text-right font-mono">$1.200.000</td>
+                <td class="p-2 text-right font-mono font-bold">$1.200.000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totalizadores PDF -->
+        <div class="flex justify-end pt-2">
+          <div class="w-64 space-y-1 font-mono text-[11px]">
+            <div class="flex justify-between"><span>Subtotal Neto:</span> <strong>$13.450.000 CLP</strong></div>
+            <div class="flex justify-between"><span>IVA (19%):</span> <strong>$2.555.500 CLP</strong></div>
+            <div class="flex justify-between border-t-2 border-slate-900 pt-1 text-xs">
+              <span class="font-black">TOTAL PROPUESTA:</span>
+              <span class="font-black text-amber-600">$16.005.500 CLP</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clausula Validez Destacada en PDF -->
+        <div class="p-2.5 bg-amber-50 rounded-lg border border-amber-300 text-[10px] text-amber-950 font-medium">
+          <strong>CONDICIÓN COMERCIAL ESPECÍFICA:</strong> La presente cotización tiene una validez estricta de <strong>5 DÍAS HÁBILES</strong> a contar de su fecha de emisión. Pasado este plazo, las tarifas y disponibilidad de flota quedan sujetas a reconfirmación comercial.
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="mt-5 flex justify-end space-x-3">
+        <button onclick="alert('📲 Enlace directo generado: https://wa.me/56912345678?text=Estimado Carlos, te comparto la cotización formal GSP...')" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center space-x-1.5 shadow">
+          <span>💬</span>
+          <span>Compartir por WhatsApp</span>
+        </button>
+        <button onclick="alert('📥 Descargando PDF oficial: GSP-COT-2026-4853.pdf')" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs flex items-center space-x-1.5 shadow">
+          <span>⬇️</span>
+          <span>Descargar PDF</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT AUTOMATION & DEMO CONTROLLER -->
+  <script>
+    let currentStep = 1;
+    let isPlaying = true;
+    let playbackSpeed = 1.0;
+    let timeoutId = null;
+
+    const cursor = document.getElementById('virtualCursor');
+    const narratorTitle = document.getElementById('narratorTitle');
+    const narratorDesc = document.getElementById('narratorDesc');
+    const progressFill = document.getElementById('progressFill');
+
+    // Steps Configuration
+    const steps = [
+      {
+        stepNum: 1,
+        title: "Paso 1: Identificación del Cliente Mandante",
+        desc: "El ejecutivo ingresa a 'Gestor de Oportunidades' y selecciona Minera Escondida Ltda. para asociar la faena en Antofagasta.",
+        progress: "25%",
+        action: async () => {
+          highlightStepBadge(1);
+          await moveCursorTo('#inputCliente', 1000);
+          showClick('#inputCliente');
+          document.getElementById('inputCliente').classList.add('spotlight-active');
+          document.getElementById('dropdownCliente').classList.remove('hidden');
+
+          await wait(800);
+          await moveCursorTo('#dropdownCliente div', 600);
+          showClick('#dropdownCliente div');
+          document.getElementById('dropdownCliente').classList.add('hidden');
+          document.getElementById('txtCliente').textContent = 'Minera Escondida Ltda. (77.892.110-4)';
+          document.getElementById('txtCliente').classList.remove('text-slate-500');
+          document.getElementById('txtCliente').classList.add('text-amber-300', 'font-black');
+          document.getElementById('inputCliente').classList.remove('spotlight-active');
+
+          await wait(600);
+          await moveCursorTo('#inputFaena', 700);
+          showClick('#inputFaena');
+          document.getElementById('txtFaena').textContent = 'Faena Minera Escondida (Antofagasta)';
+          document.getElementById('txtFaena').classList.remove('text-slate-500');
+          document.getElementById('txtFaena').classList.add('text-white', 'font-bold');
+        }
+      },
+      {
+        stepNum: 2,
+        title: "Paso 2: Estructuración de Grúa & Turnos",
+        desc: "Se añade la línea de servicio para una Grúa Liebherr LTM 1220 (220 TON) con 5 días de arriendo y horas mínimas de 9 hrs.",
+        progress: "50%",
+        action: async () => {
+          highlightStepBadge(2);
+          await moveCursorTo('#btnAgregarServicio', 900);
+          showClick('#btnAgregarServicio');
+
+          // Render Row
+          document.getElementById('rowEmpty')?.remove();
+          const tbody = document.getElementById('tablaServiciosBody');
+          tbody.innerHTML = `
+            <tr class="bg-amber-500/10 border-l-4 border-amber-400">
+              <td class="p-3">
+                <div class="font-bold text-white">Grúa Telescópica Liebherr LTM 1220-5.2</div>
+                <div class="text-[10px] text-amber-300 font-mono">220 TON • Patente: BGDF.90-4</div>
+              </td>
+              <td class="p-3 text-center font-mono font-bold text-white">5 Días</td>
+              <td class="p-3 text-center font-mono font-bold text-emerald-400">9.0 hrs/día</td>
+              <td class="p-3 text-right font-mono text-slate-300">$2.450.000</td>
+              <td class="p-3 text-right font-mono font-black text-amber-300">$12.250.000</td>
+              <td class="p-3 text-center">
+                <span class="text-xs bg-slate-800 text-emerald-400 px-2 py-0.5 rounded font-mono">OK</span>
+              </td>
+            </tr>
+            <tr class="bg-slate-900/50">
+              <td class="p-3">
+                <div class="font-bold text-slate-200">Traslado Ida y Vuelta con Escolta</div>
+                <div class="text-[10px] text-slate-400 font-mono">Base San Pablo ➔ Minera Escondida</div>
+              </td>
+              <td class="p-3 text-center font-mono font-bold text-slate-400">1 Global</td>
+              <td class="p-3 text-center font-mono text-slate-500">N/A</td>
+              <td class="p-3 text-right font-mono text-slate-300">$1.200.000</td>
+              <td class="p-3 text-right font-mono font-black text-slate-200">$1.200.000</td>
+              <td class="p-3 text-center">
+                <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">OK</span>
+              </td>
+            </tr>
+          `;
+
+          // Show totals
+          const boxTotales = document.getElementById('boxTotales');
+          boxTotales.classList.remove('opacity-0');
+          document.getElementById('valNeto').textContent = '$13.450.000';
+          document.getElementById('valIva').textContent = '$2.555.500';
+          document.getElementById('valTotal').textContent = '$16.005.500';
+        }
+      },
+      {
+        stepNum: 3,
+        title: "Paso 3: Validación de Condiciones Oficiales & 5 Días",
+        desc: "El sistema inyecta automáticamente las 6 secciones contractuales oficiales y fija la validez en estrictamente 5 días hábiles.",
+        progress: "75%",
+        action: async () => {
+          highlightStepBadge(3);
+          await moveCursorTo('#cardCondiciones', 900);
+          document.getElementById('cardCondiciones').classList.add('spotlight-active');
+          await wait(500);
+          await moveCursorTo('#badgeValidez', 600);
+          showClick('#badgeValidez');
+          await wait(800);
+          document.getElementById('cardCondiciones').classList.remove('spotlight-active');
+        }
+      },
+      {
+        stepNum: 4,
+        title: "Paso 4: Emisión y Generación del Dossier PDF",
+        desc: "Se pulsa 'Generar Propuesta Formal PDF'. El motor genera el PDF canónico con folio formal listo para enviar a WhatsApp.",
+        progress: "100%",
+        action: async () => {
+          highlightStepBadge(4);
+          await moveCursorTo('#btnEmitirPDF', 900);
+          showClick('#btnEmitirPDF');
+          document.getElementById('btnEmitirPDF').classList.add('scale-95');
+          await wait(300);
+          document.getElementById('btnEmitirPDF').classList.remove('scale-95');
+          document.getElementById('txtEstadoDoc').textContent = '✅ Emitido & Bloqueado';
+          document.getElementById('txtEstadoDoc').classList.remove('text-amber-400');
+          document.getElementById('txtEstadoDoc').classList.add('text-emerald-400');
+
+          await wait(500);
+          document.getElementById('modalPdf').classList.remove('hidden');
+          hideCursor();
+        }
+      }
+    ];
+
+    // Helper functions
+    function wait(ms) {
+      return new Promise(resolve => {
+        timeoutId = setTimeout(resolve, ms / playbackSpeed);
+      });
+    }
+
+    async function moveCursorTo(selector, duration = 800) {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const targetX = rect.left + rect.width / 2;
+      const targetY = rect.top + rect.height / 2;
+
+      cursor.classList.remove('opacity-0');
+      cursor.style.transform = `translate(${targetX}px, ${targetY}px)`;
+      await wait(duration);
+    }
+
+    function showClick(selector) {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const ripple = document.createElement('div');
+      ripple.className = 'click-ripple';
+      ripple.style.left = (rect.left + rect.width / 2) + 'px';
+      ripple.style.top = (rect.top + rect.height / 2) + 'px';
+      document.body.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 600);
+    }
+
+    function hideCursor() {
+      cursor.classList.add('opacity-0');
+    }
+
+    function highlightStepBadge(stepNum) {
+      for (let i = 1; i <= 4; i++) {
+        const badge = document.getElementById(`badgeStep${i}`);
+        if (!badge) continue;
+        if (i === stepNum) {
+          badge.className = "flex items-center space-x-1.5 text-amber-400 font-black animate-pulse";
+          badge.querySelector('span:first-child').className = "w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center text-[10px] font-mono font-black";
+        } else if (i < stepNum) {
+          badge.className = "flex items-center space-x-1.5 text-emerald-400 font-bold";
+          badge.querySelector('span:first-child').className = "w-5 h-5 rounded-full bg-emerald-500 text-black flex items-center justify-center text-[10px] font-mono font-bold";
+        } else {
+          badge.className = "flex items-center space-x-1.5 text-slate-500 font-medium";
+          badge.querySelector('span:first-child').className = "w-5 h-5 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center text-[10px] font-mono";
+        }
+      }
+    }
+
+    async function runStep(index) {
+      if (index >= steps.length) {
+        await wait(3000);
+        restartDemo();
+        return;
+      }
+      currentStep = index + 1;
+      const step = steps[index];
+      narratorTitle.textContent = step.title;
+      narratorDesc.textContent = step.desc;
+      progressFill.style.width = step.progress;
+
+      await step.action();
+
+      if (isPlaying && index < steps.length - 1) {
+        await wait(1800);
+        runStep(index + 1);
+      }
+    }
+
+    function togglePlayPause() {
+      isPlaying = !isPlaying;
+      const playIcon = document.getElementById('playIcon');
+      const playText = document.getElementById('playText');
+      if (isPlaying) {
+        playIcon.textContent = '⏸️';
+        playText.textContent = 'Pausar';
+        if (currentStep < steps.length) {
+          runStep(currentStep);
+        } else {
+          restartDemo();
+        }
+      } else {
+        playIcon.textContent = '▶️';
+        playText.textContent = 'Reanudar';
+        clearTimeout(timeoutId);
+      }
+    }
+
+    function prevStep() {
+      clearTimeout(timeoutId);
+      if (currentStep > 1) {
+        currentStep -= 2;
+        runStep(currentStep);
+      }
+    }
+
+    function nextStep() {
+      clearTimeout(timeoutId);
+      if (currentStep < steps.length) {
+        runStep(currentStep);
+      }
+    }
+
+    function restartDemo() {
+      clearTimeout(timeoutId);
+      closePdfModal();
+      document.getElementById('txtCliente').textContent = 'Buscar cliente...';
+      document.getElementById('txtCliente').className = 'text-slate-500';
+      document.getElementById('txtFaena').textContent = 'Faena de destino...';
+      document.getElementById('txtFaena').className = 'text-slate-500';
+      document.getElementById('tablaServiciosBody').innerHTML = `
+        <tr id="rowEmpty">
+          <td colspan="6" class="p-6 text-center text-slate-500 italic">
+            No hay equipos cargados. Haz clic en "Añadir Línea de Grúa" para comenzar.
+          </td>
+        </tr>
+      `;
+      document.getElementById('boxTotales').classList.add('opacity-0');
+      document.getElementById('txtEstadoDoc').textContent = 'Borrador Validado';
+      document.getElementById('txtEstadoDoc').className = 'text-amber-400 font-bold';
+      
+      currentStep = 1;
+      isPlaying = true;
+      document.getElementById('playIcon').textContent = '⏸️';
+      document.getElementById('playText').textContent = 'Pausar';
+      runStep(0);
+    }
+
+    function closePdfModal() {
+      document.getElementById('modalPdf').classList.add('hidden');
+    }
+
+    function changeSpeed(val) {
+      playbackSpeed = parseFloat(val);
+    }
+
+    // Auto-start on load
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        runStep(0);
+      }, 800);
+    });
+  </script>
+</body>
+</html>

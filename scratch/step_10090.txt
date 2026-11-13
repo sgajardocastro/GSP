@@ -1,0 +1,403 @@
+Created At: 2026-11-08T20:32:11-03:00
+Completed At: 2026-11-08T20:32:12-03:00
+Showing lines 1-400 of 4611
+1: <template>
+2:   <div class="space-y-6 text-left">
+3:     <!-- Header -->
+4:     <div class="bg-[#0a0f1e]/40 p-4 border border-white/5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+5:       <div>
+6:         <div class="flex items-center gap-2.5 flex-wrap">
+7:           <h2 class="text-lg font-black text-white uppercase tracking-wider font-display">Torre de Control Operativa</h2>
+8:           <span 
+9:             :class="['px-2.5 py-0.5 rounded-full text-[10px] font-bold border tracking-wider uppercase inline-flex items-center gap-1 shadow-sm', scopeLabel.color]"
+10:             :title="`Usuario: ${currentUser?.name_frst || currentUser?.email || ''} | Roles: ${userRoles.join(', ') || 'Sin Rol'}`"
+11:           >
+12:             <span>{{ scopeLabel.icon }}</span>
+13:             <span>{{ scopeLabel.text }}</span>
+14:           </span>
+15:         </div>
+16:         <p class="text-xs text-slate-400 mt-1">Planificación y seguimiento de maniobras de izaje, logística de contrapesos y telemetría de ruta.</p>
+17:       </div>
+18: 
+19:       <!-- Buscador Omnibox Reactivo (Spec 16 - Sección 11) + Filtro Tipo (Spec 87) -->
+20:       <div v-if="['kanban', 'kanban_filtros', 'kardex'].includes(activeView)" class="flex-1 flex flex-wrap items-center gap-2 max-w-2xl w-full md:w-auto">
+21:         <div class="relative flex-1 min-w-[210px] flex items-center">
+22:           <span class="absolute left-3 text-slate-400 pointer-events-none text-xs">🔍</span>
+23:           <input 
+24:             v-model="busquedaKanban"
+25:             type="text" 
+26:             placeholder="Buscar por N° Cotización, INT-, Cliente, Sucursal o Vendedor..." 
+27:             @keydown.esc="busquedaKanban = ''"
+28:             class="w-full bg-[#070b14] border border-white/10 rounded-xl pl-8 pr-16 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
+29:           />
+30:           <div class="absolute right-2 flex items-center gap-1.5">
+31:             <span v-if="busquedaKanban" class="text-[9px] text-blue-400 font-mono font-bold bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+32:               {{ totalCoincidenciasKanban }}
+33:             </span>
+34:             <button 
+35:               v-if="busquedaKanban"
+36:               @click="busquedaKanban = ''"
+37:               type="button"
+38:               class="text-slate-400 hover:text-white p-0.5 transition-colors"
+39:               title="Limpiar búsqueda (Esc)"
+40:             >
+41:               ✕
+42:             </button>
+43:           </div>
+44:         </div>
+45: 
+46:         <!-- Filtro rápido Tipo Proyecto: Todos | Comerciales | Internos -->
+47:         <div class="flex items-center bg-[#070b14] p-1 rounded-xl border border-white/10 text-[11px] shrink-0">
+48:           <button
+49:             @click="filtroTipoProyecto = 'TODOS'"
+50:             type="button"
+51:             class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+52:             :class="filtroTipoProyecto === 'TODOS' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+53:           >
+54:             Todos
+55:           </button>
+56:           <button
+57:             @click="filtroTipoProyecto = 'COMERCIALES'"
+58:             type="button"
+59:             class="px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer"
+60:             :class="filtroTipoProyecto === 'COMERCIALES' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+61:           >
+62:             Comerciales
+63:           </button>
+64:           <button
+65:             @click="filtroTipoProyecto = 'INTERNOS'"
+66:             type="button"
+67:             class="px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer"
+68:             :class="filtroTipoProyecto === 'INTERNOS' ? 'bg-amber-500 text-black font-black shadow' : 'text-amber-400 hover:text-amber-300'"
+69:           >
+70:             <span>🔁</span>
+71:             <span>Internos</span>
+72:           </button>
+73:         </div>
+74: 
+75:         <!-- Botón rápido Cabecera: + Req. Interno (Spec 87) -->
+76:         <button
+77:           @click="mostrarModalReqInterno = true"
+78:           type="button"
+79:           class="px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-black border border-dashed border-amber-400/70 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
+80:           title="Crear Requerimiento Interno de Operaciones sin pasar por preventa comercial"
+81:         >
+82:           <span>🔁</span>
+83:           <span>+ Req. Interno</span>
+84:         </button>
+85:       </div>
+86: 
+87:       <!-- Selector de Vistas (Incluye 3 Vistas Comparativas Kanban - REQ-1096) -->
+88:       <div class="flex flex-wrap items-center bg-[#070b14] p-1 rounded-xl border border-white/10 shrink-0 gap-0.5">
+89:         <button 
+90:           @click="activeView = 'kanban'" 
+91:           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+92:           :class="activeView === 'kanban' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'"
+93:           title="Vista 1: Tablero Kanban Original (Clásico)"
+94:         >
+95:           <span>🗂️</span>
+96:           <span>Tablero Kanban</span>
+97:         </button>
+98:         <button 
+99:           @click="activeView = 'kanban_filtros'" 
+100:           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+101:           :class="activeView === 'kanban_filtros' ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/20' : 'text-cyan-400/90 hover:text-cyan-300'"
+102:           title="Vista 2: Kanban de Alta Densidad con Filtros por Fecha (Venta/Ejecución), Operador, Rigger y Tarjetas Operativas"
+103:         >
+104:           <span>⚡</span>
+105:           <span>Kanban + Filtros</span>
+106:         </button>
+107:         <button 
+108:           @click="activeView = 'kardex'" 
+109:           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+110:           :class="activeView === 'kardex' ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20' : 'text-amber-400/90 hover:text-amber-300'"
+111:           title="Vista 3: Mueble Tarjetero Cardex 3D con elevación dinámica de fichas por criterio"
+112:         >
+113:           <span>🗄️</span>
+114:           <span>Cardex 3D</span>
+115:         </button>
+116:         <button 
+117:           @click="activeView = 'pmo'" 
+118:           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all relative cursor-pointer"
+119:           :class="activeView === 'pmo' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'"
+120:         >
+121:           <span>📊</span>
+122:           <span>Matriz PMO</span>
+123:           <span v-if="alertasCriticasTotales > 0" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+124:         </button>
+125:         <button 
+126:           @click="activeView = 'gantt'" 
+127:           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+128:           :class="activeView === 'gantt' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'"
+129:         >
+130:           <span>📅</span>
+131:           <span>Flota Gantt</span>
+132:         </button>
+133:         <button 
+134:           @click="activeView = 'contabilidad'" 
+135:           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all relative cursor-pointer"
+136:           :class="activeView === 'contabilidad' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'"
+137:         >
+138:           <span>💼</span>
+139:           <span>Contabilidad</span>
+140:           <span v-if="pendientesFacturacion > 0" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+141:         </button>
+142:       </div>
+143:     </div>
+144: 
+145:     <!-- Kanban Columns (6 Columnas Operativas) -->
+146:     <div v-if="activeView === 'kanban'" class="grid grid-cols-1 lg:grid-cols-6 gap-3.5 h-[calc(100vh-210px)] overflow-y-auto">
+147:       <!-- Columna 1: Requerimiento Registrado -->
+148:       <div class="bg-[#0f1629] border-t-4 border-[#6366f1] border border-white/5 rounded-xl p-3 flex flex-col">
+149:         <div class="flex justify-between items-center mb-4">
+150:           <div class="flex items-center gap-2">
+151:             <span class="w-2 h-2 bg-[#6366f1] rounded-full"></span>
+152:             <span class="text-xs font-black uppercase text-white">Requerimiento Registrado</span>
+153:           </div>
+154:           <span class="bg-black/20 text-[10px] text-slate-400 font-bold px-2 py-0.5 rounded border border-white/5">
+155:             {{ preventaFiltrados.length }}
+156:           </span>
+157:         </div>
+158:         <div class="space-y-3 flex-1 overflow-y-auto">
+159:           <div class="space-y-1.5 mb-2">
+160:             <button @click="abrirCotizacion" class="w-full py-2 bg-[#6366f1]/10 hover:bg-[#6366f1]/20 border border-[#6366f1]/30 text-[#818cf8] rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer">
+161:               <span>+ Nueva Oportunidad</span>
+162:             </button>
+163:             <button @click="mostrarModalReqInterno = true" class="w-full py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-dashed border-amber-400/60 text-amber-300 rounded-lg text-[11px] font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+164:               <span>🔁</span>
+165:               <span>+ Req. Interno</span>
+166:             </button>
+167:           </div>
+168:           
+169:           <div 
+170:             v-for="p in preventaFiltrados" 
+171:             :key="p.id_proyecto" 
+172:             @click="abrirProyecto(p.id_proyecto, 'comercial')"
+173:             class="bg-[#151d35] border rounded-lg p-3 hover:bg-[#6366f1]/5 transition-all cursor-pointer text-left"
+174:             :class="[
+175:               esProyectoInterno(p)
+176:                 ? 'border-l-4 border-dashed border-amber-400 bg-amber-500/5'
+177:                 : (p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-[#6366f1]/40')
+178:             ]"
+179:           >
+180:             <div v-if="esProyectoInterno(p)" class="mb-1.5">
+181:               <span class="text-[8px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded inline-flex items-center gap-1 font-mono">
+182:                 🔁 MOVIMIENTO INTERNO · COSTO PROPIO
+183:               </span>
+184:             </div>
+185:             <div class="flex justify-between items-start">
+186:               <span class="text-[9px] font-mono font-bold" :class="esProyectoInterno(p) ? 'text-amber-400' : 'text-[#818cf8]'">{{ p.codi_proyecto || '—' }}</span>
+187:               <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
+188:                 🔥 Alta
+189:               </span>
+190:             </div>
+191:             <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
+192:             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
+193:             <p v-if="esProyectoInterno(p)" class="text-[10px] text-amber-300 font-mono font-bold mt-1 truncate">
+194:               📍 {{ getOrigenInterno(p) }} ➔ {{ getDestinoInterno(p) }}
+195:             </p>
+196:             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
+197:               <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
+198:               <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
+199:                 <span>👤</span> {{ getNombreVendedor(p) }}
+200:               </p>
+201:               <p v-if="esProyectoInterno(p)" class="text-[9px] font-mono font-black text-amber-400">
+202:                 🚫 NO FACTURABLE (C. COSTO INTERNO)
+203:               </p>
+204:               <p v-else-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
+205:               <p v-if="p.fecha_plan_ini" class="text-amber-500/70"><span class="font-semibold">Tentativa:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
+206:             </div>
+207:             <div class="flex flex-wrap gap-1.5 mt-2">
+208:               <span class="text-[8px] font-bold uppercase bg-[#6366f1]/10 px-2 py-0.5 rounded border border-[#6366f1]/20 text-[#818cf8]">
+209:                 {{ p.id_proyecto_estado === 1 ? 'Oportunidad' : 'Cotizando' }}
+210:               </span>
+211:               <span
+212:                 v-if="getEstadoVbGerencia(p)"
+213:                 class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border font-mono"
+214:                 :class="getEstadoVbGerencia(p).classes"
+215:                 :title="getEstadoVbGerencia(p).tooltip"
+216:               >
+217:                 {{ getEstadoVbGerencia(p).label }}
+218:               </span>
+219:             </div>
+220:           </div>
+221:         </div>
+222:       </div>
+223: 
+224:       <!-- Columna 2: En Verificación Operaciones -->
+225:       <div class="bg-[#0f1629] border-t-4 border-amber-500 border border-white/5 rounded-xl p-3 flex flex-col">
+226:         <div class="flex justify-between items-center mb-4">
+227:           <div class="flex items-center gap-1.5">
+228:             <span class="text-xs">🔥</span>
+229:             <span class="text-xs font-black uppercase text-white">En Verificación Operaciones</span>
+230:           </div>
+231:           <span class="bg-black/20 text-[10px] text-amber-500 font-bold px-2 py-0.5 rounded border border-amber-500/20">
+232:             {{ verificacionFiltrados.length }}
+233:           </span>
+234:         </div>
+235:         <div class="space-y-3 flex-1 overflow-y-auto">
+236:           <div 
+237:             v-for="p in verificacionFiltrados" 
+238:             :key="p.id_proyecto" 
+239:             @click="abrirProyecto(p.id_proyecto, 'validacion')"
+240:             class="bg-[#151d35] border rounded-lg p-3 hover:bg-amber-500/5 transition-all cursor-pointer text-left"
+241:             :class="[
+242:               esProyectoInterno(p)
+243:                 ? 'border-l-4 border-dashed border-amber-400 bg-amber-500/5'
+244:                 : (p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-amber-500/40')
+245:             ]"
+246:           >
+247:             <div v-if="esProyectoInterno(p)" class="mb-1.5">
+248:               <span class="text-[8px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded inline-flex items-center gap-1 font-mono">
+249:                 🔁 MOVIMIENTO INTERNO · COSTO PROPIO
+250:               </span>
+251:             </div>
+252:             <div class="flex justify-between items-start">
+253:               <span class="text-[9px] font-mono text-amber-500 font-bold">{{ p.codi_proyecto || '—' }}</span>
+254:               <div class="flex items-center gap-1.5">
+255:                 <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
+256:                   🔥 Alta
+257:                 </span>
+258:                 <!-- Micro-Gauge Avance Acreditación (Visible solo desde Preparación de Salida / Estado 5) -->
+259:                 <div 
+260:                   v-if="Number(p.id_proyecto_estado) >= 5 && !esProyectoInterno(p)"
+261:                   @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
+262:                   class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
+263:                   :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
+264:                 >
+265:                   <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+266:                     <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+267:                     <path 
+268:                       :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
+269:                       class="transition-all duration-700" 
+270:                       stroke-width="3.5" 
+271:                       :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
+272:                       stroke-linecap="round" 
+273:                       stroke="currentColor" 
+274:                       fill="none" 
+275:                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+276:                     />
+277:                   </svg>
+278:                   <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
+279:                     {{ calcularPorcentajeAcreditacion(p) }}%
+280:                   </span>
+281:                 </div>
+282:               </div>
+283:             </div>
+284:             <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
+285:             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
+286:             <p v-if="esProyectoInterno(p)" class="text-[10px] text-amber-300 font-mono font-bold mt-1 truncate">
+287:               📍 {{ getOrigenInterno(p) }} ➔ {{ getDestinoInterno(p) }}
+288:             </p>
+289:             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
+290:               <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
+291:               <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
+292:                 <span>👤</span> {{ getNombreVendedor(p) }}
+293:               </p>
+294:               <p v-if="esProyectoInterno(p)" class="text-[9px] font-mono font-black text-amber-400">
+295:                 🚫 NO FACTURABLE (C. COSTO INTERNO)
+296:               </p>
+297:               <p v-else-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
+298:               <p v-if="p.fecha_plan_ini" class="text-amber-500/70"><span class="font-semibold">Asignación:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
+299:             </div>
+300:             <div class="flex flex-wrap gap-1.5 mt-3">
+301:               <span class="text-[8px] font-bold uppercase bg-white/5 px-2 py-0.5 rounded border border-white/5 text-slate-400">
+302:                 {{ esProyectoInterno(p) ? 'Orden Interna' : (p.json_field?.crm_v1?.requiere_acreditacion ? 'Acreditación' : 'Sin Acreditación') }}
+303:               </span>
+304:               <span
+305:                 v-if="getEstadoVbGerencia(p)"
+306:                 class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border font-mono"
+307:                 :class="getEstadoVbGerencia(p).classes"
+308:                 :title="getEstadoVbGerencia(p).tooltip"
+309:               >
+310:                 {{ getEstadoVbGerencia(p).label }}
+311:               </span>
+312:             </div>
+313:           </div>
+314:         </div>
+315:       </div>
+316: 
+317:       <!-- Columna 3: En Asignación Recursos -->
+318:       <div class="bg-[#0f1629] border-t-4 border-blue-500 border border-white/5 rounded-xl p-3 flex flex-col">
+319:         <div class="flex justify-between items-center mb-4">
+320:           <span class="text-xs font-black uppercase text-white">En Asignación Recursos</span>
+321:           <span class="bg-black/20 text-[10px] text-blue-400 font-bold px-2 py-0.5 rounded border border-blue-500/20">
+322:             {{ asignadosFiltrados.length }}
+323:           </span>
+324:         </div>
+325:         <div class="space-y-3 flex-1 overflow-y-auto">
+326:           <div 
+327:             v-for="p in asignadosFiltrados" 
+328:             :key="p.id_proyecto" 
+329:             @click="abrirProyecto(p.id_proyecto, 'asignacion')"
+330:             class="bg-[#151d35] border rounded-lg p-3 hover:bg-blue-500/5 transition-all cursor-pointer text-left"
+331:             :class="[
+332:               esProyectoInterno(p)
+333:                 ? 'border-l-4 border-dashed border-amber-400 bg-amber-500/5'
+334:                 : (p.json_field?.crm_v1?.prioridad === 'alta' ? 'border-red-500/40 shadow-lg shadow-red-500/5' : 'border-white/5 hover:border-blue-500/40')
+335:             ]"
+336:           >
+337:             <div v-if="esProyectoInterno(p)" class="mb-1.5">
+338:               <span class="text-[8px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded inline-flex items-center gap-1 font-mono">
+339:                 🔁 MOVIMIENTO INTERNO · COSTO PROPIO
+340:               </span>
+341:             </div>
+342:             <div class="flex justify-between items-start">
+343:               <span class="text-[9px] font-mono font-bold" :class="esProyectoInterno(p) ? 'text-amber-400' : 'text-blue-400'">{{ p.codi_proyecto || '—' }}</span>
+344:               <div class="flex items-center gap-1.5">
+345:                 <span v-if="p.json_field?.crm_v1?.prioridad === 'alta'" class="text-[8px] font-bold uppercase bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30 text-red-400 flex items-center gap-0.5">
+346:                   🔥 Alta
+347:                 </span>
+348:                 <!-- Micro-Gauge Avance Acreditación (Visible solo desde Preparación de Salida / Estado 5) -->
+349:                 <div 
+350:                   v-if="Number(p.id_proyecto_estado) >= 5 && !esProyectoInterno(p)"
+351:                   @click.stop="abrirProyecto(p.id_proyecto, 'acreditaciones')"
+352:                   class="relative w-14 h-14 flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform bg-[#0a0f1e]/80 rounded-full border border-white/10 p-1 shadow-md" 
+353:                   :title="`Acreditación: ${calcularPorcentajeAcreditacion(p)}% (Clic para gestionar Acreditaciones)`"
+354:                 >
+355:                   <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+356:                     <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+357:                     <path 
+358:                       :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-500'" 
+359:                       class="transition-all duration-700" 
+360:                       stroke-width="3.5" 
+361:                       :stroke-dasharray="`${calcularPorcentajeAcreditacion(p)}, 100`" 
+362:                       stroke-linecap="round" 
+363:                       stroke="currentColor" 
+364:                       fill="none" 
+365:                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+366:                     />
+367:                   </svg>
+368:                   <span :class="calcularPorcentajeAcreditacion(p) === 100 ? 'text-emerald-400' : 'text-red-400'" class="absolute text-xs font-black font-mono">
+369:                     {{ calcularPorcentajeAcreditacion(p) }}%
+370:                   </span>
+371:                 </div>
+372:               </div>
+373:             </div>
+374:             <h4 class="text-xs font-bold text-white mt-1">{{ p.nombre_cliente || '—' }}</h4>
+375:             <p class="text-[10px] text-slate-400 mt-0.5 truncate">{{ p.nombre_proyecto }}</p>
+376:             <p v-if="esProyectoInterno(p)" class="text-[10px] text-amber-300 font-mono font-bold mt-1 truncate">
+377:               📍 {{ getOrigenInterno(p) }} ➔ {{ getDestinoInterno(p) }}
+378:             </p>
+379:             <div class="text-[10px] text-slate-400 mt-2 space-y-1">
+380:               <p>{{ p.json_field?.crm_v1?.familia_servicio || p.objetivo_proyecto || '—' }}</p>
+381:               <p v-if="getNombreVendedor(p)" class="text-[9px] text-indigo-400 font-medium flex items-center gap-1">
+382:                 <span>👤</span> {{ getNombreVendedor(p) }}
+383:               </p>
+384:               <p v-if="esProyectoInterno(p)" class="text-[9px] font-mono font-black text-amber-400">
+385:                 🚫 NO FACTURABLE (C. COSTO INTERNO)
+386:               </p>
+387:               <p v-else-if="formatMonto(p)" class="text-white font-bold">{{ formatMonto(p) }}</p>
+388:               <p v-if="p.fecha_plan_ini" class="text-blue-400/70"><span class="font-semibold">Asignación:</span> {{ new Date(p.fecha_plan_ini).toLocaleDateString() }}</p>
+389:             </div>
+390:             <div class="flex flex-wrap gap-1.5 mt-3">
+391:               <span class="text-[8px] font-bold uppercase bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/25 text-blue-400">Asignando OT</span>
+392:               <span
+393:                 v-if="getEstadoVbGerencia(p)"
+394:                 class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border font-mono"
+395:                 :class="getEstadoVbGerencia(p).classes"
+396:                 :title="getEstadoVbGerencia(p).tooltip"
+397:               >
+398:                 {{ getEstadoVbGerencia(p).label }}
+399:               </span>
+400:             </div>

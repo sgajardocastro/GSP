@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Protocolo E2E de Operaciones, Transacciones y Notificaciones de Mantenimiento | Grúas San Pablo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              amber: '#f59e0b',
+              amberLight: '#fbbf24',
+              amberDark: '#b45309',
+              blue: '#2563eb',
+              dark: '#030712',
+              card: '#0b1324',
+              cardHover: '#111e38',
+              border: 'rgba(255, 255, 255, 0.08)'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #030712;
+      color: #f3f4f6;
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0b1324;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; color: black !important; }
+      .print-card { border: 1px solid #ccc !important; background: white !important; color: black !important; }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col antialiased custom-scrollbar">
+
+  <!-- TOP ACTION BAR -->
+  <header class="border-b border-brand-border bg-brand-dark/95 backdrop-blur sticky top-0 z-50 px-4 md:px-8 py-3.5 flex items-center justify-between no-print">
+    <div class="flex items-center space-x-3">
+      <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20">
+        <i data-lucide="wrench" class="w-5 h-5 text-slate-950"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-extrabold text-sm tracking-wider text-slate-100 uppercase">Grúas San Pablo</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">SPEC-071</span>
+        </div>
+        <p class="text-xs text-slate-400">Manual Maestro de Operaciones, Transacciones y Notificaciones de Mantenimiento</p>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <button onclick="window.print()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition-colors flex items-center space-x-1.5">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span>Imprimir / Guardar PDF</span>
+      </button>
+      <a href="./centro_documentacion_gsp.html" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-all flex items-center space-x-1.5 shadow-md shadow-amber-500/10">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        <span>Volver al Centro de Documentación</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 md:px-8 py-8 space-y-10">
+
+    <!-- HERO PRINCIPAL -->
+    <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/30 border border-slate-800 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
+      <div class="relative z-10 space-y-3">
+        <div class="inline-flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>Protocolo Canónico E2E de Validación Operacional</span>
+        </div>
+        <h1 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight">
+          Ciclo de Vida Técnico de Mantenimiento, Transacciones & Notificaciones
+        </h1>
+        <p class="text-slate-300 text-sm md:text-base leading-relaxed max-w-3xl">
+          Este documento formaliza la especificación funcional, reglas de base de datos, flujos de pantalla (Web y PWA Móvil) y la matriz omnicanal de notificaciones (Email transaccional y WhatsApp con deep link) del <strong>Módulo de Mantenimiento de Flota Pesada de Grúas San Pablo</strong>.
+        </p>
+
+        <div class="pt-4 flex flex-wrap gap-4 text-xs font-mono">
+          <div class="bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span class="text-slate-400 block text-[10px]">VERSIÓN WEB</span>
+            <span class="text-amber-400 font-bold">Portal Web v1.0.122</span>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span class="text-slate-400 block text-[10px]">VERSIÓN PWA</span>
+            <span class="text-amber-400 font-bold">Taller Móvil v1.0.39</span>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span class="text-slate-400 block text-[10px]">ESPECIFICACIÓN</span>
+            <span class="text-blue-400 font-bold">SPEC-071 / REQ-1025</span>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span class="text-slate-400 block text-[10px]">ESTÁNDAR SEGURIDAD</span>
+            <span class="text-emerald-400 font-bold">Firma FES con PIN OTP</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAPA VISUAL DEL CICLO COMPLETO -->
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <i data-lucide="git-merge" class="w-5 h-5 text-amber-400"></i>
+        <span>1. Mapa del Ciclo de Vida E2E (8 Etapas Operativas)</span>
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 border-t-4 border-t-rose-500 shadow-lg">
+          <div class="flex justify-between items-center">
+            <span class="font-mono text-rose-400 font-black">ETAPA 1</span>
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i>
+          </div>
+          <h3 class="font-bold text-white text-sm">Aviso de Avería</h3>
+          <p class="text-slate-400 text-[11px]">Reporte en terreno o portón con criticidad. Notificación omnicanal urgente si paraliza la grúa.</p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 border-t-4 border-t-amber-500 shadow-lg">
+          <div class="flex justify-between items-center">
+            <span class="font-mono text-amber-400 font-black">ETAPA 2</span>
+            <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <h3 class="font-bold text-white text-sm">Apertura OTM</h3>
+          <p class="text-slate-400 text-[11px]">Generación de OTM con inyección de 4 tareas base y notificación al mecánico asignado.</p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 border-t-4 border-t-blue-500 shadow-lg">
+          <div class="flex justify-between items-center">
+            <span class="font-mono text-blue-400 font-black">ETAPA 3 & 4</span>
+            <i data-lucide="gauge" class="w-4 h-4 text-blue-400"></i>
+          </div>
+          <h3 class="font-bold text-white text-sm">Medidores & Fotos 360°</h3>
+          <p class="text-slate-400 text-[11px]">Captura de doble horómetro/odómetro y levantamiento visual de 6 ranuras periciales.</p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2 border-t-4 border-t-emerald-500 shadow-lg">
+          <div class="flex justify-between items-center">
+            <span class="font-mono text-emerald-400 font-black">ETAPA 5 A 8</span>
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <h3 class="font-bold text-white text-sm">Ejecución & Cierre FES</h3>
+          <p class="text-slate-400 text-[11px]">Imputación de HH y repuestos, hallazgos, validación monotónica y firma PIN FES supervisada.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DETALLE TÉCNICO DE LAS 8 ETAPAS -->
+    <section class="space-y-6">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <i data-lucide="layers" class="w-5 h-5 text-amber-400"></i>
+        <span>2. Detalle Operativo, Transacciones y Endpoints</span>
+      </h2>
+
+      <!-- ETAPA 1 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 font-mono font-bold flex items-center justify-center text-xs">01</span>
+            <h3 class="text-base font-bold text-white uppercase">Reporte de Aviso de Avería (Incidente de Terreno)</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">POST /api/mantenimiento/avisos</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Cualquier operador o técnico puede reportar un síntoma, fuga o falla desde la PWA móvil o la consola web. El sistema genera un correlativo anual obligatorio <code>AV-YYYY-XXXX</code>. Si el aviso tiene criticidad <strong>PARADA_MAQUINA</strong>, el activo queda identificado como inmovilizado y se dispara de inmediato una alerta de alta prioridad a los administradores de la plataforma.
+        </p>
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono space-y-2">
+          <div class="text-slate-400 font-bold uppercase text-[10px] text-amber-400">Reglas de Gobernanza & BD:</div>
+          <div>• Tabla de Destino: <code class="text-white">sch_leangsp.tmnt_aviso</code></div>
+          <div>• Criticidades Disponibles: <code class="text-rose-400">PARADA_MAQUINA</code> (Alerta urgente), <code class="text-amber-400">DEGRADADO</code> (Operación restringida), <code class="text-slate-300">OBSERVACION</code> (Condición menor).</div>
+          <div>• Campos Mínimos: <code>id_equipo</code>, <code>criticidad</code>, <code>descripcion_sintoma</code>.</div>
+        </div>
+      </div>
+
+      <!-- ETAPA 2 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-mono font-bold flex items-center justify-center text-xs">02</span>
+            <h3 class="text-base font-bold text-white uppercase">Apertura de OTM y Priorización RBAC de Técnicos</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">POST /api/mantenimiento/ots</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Se genera la Orden de Trabajo de Mantenimiento con folio <code>MNT-YYYY-XXXX</code>. Al seleccionar el mecánico responsable, el endpoint <code>/api/mantenimiento/tecnicos</code> prioriza con icono 🛠️ a los mecánicos habilitados por rol RBAC (<code>GSP_TALLER_EJEC</code>, <code>MECANICO</code>) y luego al resto del personal. Al crear una orden sin pauta preventiva, el backend inyecta automáticamente las <strong>4 tareas estructuradas base de taller</strong>.
+        </p>
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs font-mono space-y-2">
+          <div class="text-slate-400 font-bold uppercase text-[10px] text-amber-400">Tareas Base Inyectadas Obligatorias:</div>
+          <div>1. Evaluación diagnóstica inicial y verificación de sistemas críticos.</div>
+          <div>2. Desarme e inspección técnica de componentes intervenidos.</div>
+          <div>3. Ejecución de reparación / ajuste / cambio según alcance técnico.</div>
+          <div>4. Pruebas de funcionamiento, verificación de seguridades y puesta a punto.</div>
+        </div>
+      </div>
+
+      <!-- ETAPA 3 & 4 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 font-mono font-bold flex items-center justify-center text-xs">03 & 04</span>
+            <h3 class="text-base font-bold text-white uppercase">Medidores de Ingreso & Protocolo Fotográfico 360°</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">PUT /ots/:id/medidores-inicio & POST /v1/storage/upload</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Al recibir el activo en taller o faena se registran los medidores de recepción: <strong>Horómetro Grúa</strong> (superestructura de izaje), <strong>Horómetro Chasis</strong> (motor tracto en grúas bicomponente) y <strong>Odómetro</strong> (kilometraje de carretera). Paralelamente se levanta la evidencia en 6 ranuras fotográficas periciales con resolución determinista mediante <code>resolverFotoUrl</code>.
+        </p>
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-2 text-[11px] font-mono text-center">
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">1. Frente</div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">2. Lat. Izquierdo</div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">3. Lat. Derecho</div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">4. Posterior</div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">5. Tablero Medidores</div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">6. Pluma / Gancho</div>
+        </div>
+      </div>
+
+      <!-- ETAPA 5 & 6 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-mono font-bold flex items-center justify-center text-xs">05 & 06</span>
+            <h3 class="text-base font-bold text-white uppercase">Feed de Ejecución, Imputación de HH y Materiales</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">POST /ots/:id/hh & POST /ots/:id/materiales</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Cada tarea del checklist cuenta con feed interactivo para adjuntar fotografías de evidencia y comentarios cronológicos de bitácora. La imputación de Horas Hombre (HH) aplica automáticamente la tarifa paramétrica oficial de taller ($15.000 CLP/HH), acumulándose junto a los repuestos y materiales de taller para el balance de costo directo de la orden.
+        </p>
+      </div>
+
+      <!-- ETAPA 7 & 8 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 font-mono font-bold flex items-center justify-center text-xs">07 & 08</span>
+            <h3 class="text-base font-bold text-white uppercase">Hallazgos y Cierre Supervisado con Firma PIN FES</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">POST /mantenimiento/hallazgos & POST /ots/:id/cerrar</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Las anomalías no planificadas detectadas en la intervención se catalogan como Hallazgos (C1 a C4). El cierre de la OT exige validar la <strong>regla de no-regresión horométrica</strong> (<code>cierre &gt;= inicio</code>), el checklist de liberación operativa y la firma con PIN FES de 4 dígitos. Al sellar la orden, el trigger PostgreSQL <code>trg_sync_equipo_odohoro_ot</code> sincroniza las lecturas acumuladas en la tabla maestra <code>tequ_equipo</code> y libera el activo como <strong>OPERATIVO</strong>.
+        </p>
+      </div>
+    </section>
+
+    <!-- MATRIZ DE NOTIFICACIONES OMNICANAL -->
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <i data-lucide="bell" class="w-5 h-5 text-amber-400"></i>
+        <span>3. Matriz Oficial de Notificaciones Omnicanal (Email & WhatsApp)</span>
+      </h2>
+
+      <div class="overflow-x-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
+        <table class="w-full text-left text-xs border-collapse font-sans">
+          <thead>
+            <tr class="bg-slate-950 text-slate-400 border-b border-slate-800 uppercase font-mono text-[11px]">
+              <th class="p-3.5">Evento</th>
+              <th class="p-3.5">Disparador</th>
+              <th class="p-3.5">Destinatarios</th>
+              <th class="p-3.5">Canales</th>
+              <th class="p-3.5">Deep Link Contextual</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 text-slate-200 text-[11px]">
+            <tr class="hover:bg-slate-800/40">
+              <td class="p-3.5 font-mono font-bold text-rose-400">MNT_PARADA_MAQUINA</td>
+              <td class="p-3.5">Aviso con criticidad PARADA_MAQUINA</td>
+              <td class="p-3.5">Administradores activos (Admin, GSP_ADMIN)</td>
+              <td class="p-3.5"><span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">Email + WhatsApp</span></td>
+              <td class="p-3.5 font-mono text-slate-300">/mantenimiento?tab=avisos&folio={AVISO}</td>
+            </tr>
+            <tr class="hover:bg-slate-800/40">
+              <td class="p-3.5 font-mono font-bold text-amber-400">MNT_OT_ASIGNADA</td>
+              <td class="p-3.5">Creación de OT con técnico responsable</td>
+              <td class="p-3.5">Mecánico o Supervisor asignado</td>
+              <td class="p-3.5"><span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Email + WhatsApp</span></td>
+              <td class="p-3.5 font-mono text-slate-300">/taller/ot/{ID_OT} (PWA Móvil)</td>
+            </tr>
+            <tr class="hover:bg-slate-800/40">
+              <td class="p-3.5 font-mono font-bold text-blue-400">MNT_OT_CRITICA_CREADA</td>
+              <td class="p-3.5">OT creada con Prioridad 1 (Urgente)</td>
+              <td class="p-3.5">Jefatura de Taller & Operaciones</td>
+              <td class="p-3.5"><span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">Email + WhatsApp</span></td>
+              <td class="p-3.5 font-mono text-slate-300">/mantenimiento?tab=ots</td>
+            </tr>
+            <tr class="hover:bg-slate-800/40">
+              <td class="p-3.5 font-mono font-bold text-emerald-400">MNT_OT_CERRADA</td>
+              <td class="p-3.5">Cierre técnico y liberación con PIN FES</td>
+              <td class="p-3.5">Jefe de Taller, Despacho, Torre Control</td>
+              <td class="p-3.5"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Email + Push</span></td>
+              <td class="p-3.5 font-mono text-slate-300">/mantenimiento/equipo/{ID_EQUIPO}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- MATRIZ DE CRITERIOS DE ACEPTACIÓN BDD -->
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <i data-lucide="check-square" class="w-5 h-5 text-emerald-400"></i>
+        <span>4. Criterios de Aceptación Deterministas (QA Matrix)</span>
+      </h2>
+
+      <div class="space-y-3 text-xs">
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-start gap-3">
+          <div class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold">✓</div>
+          <div>
+            <span class="font-bold text-white block">QA-MNT-01: Paridad y Conmutación Reactiva de Deep Links</span>
+            <span class="text-slate-400">Al recibir un correo o mensaje con <code>?tab=avisos&folio=...</code>, la consola web debe conmutar automáticamente a la bitácora de avisos y aplicar borde resaltado en ámbar al folio referenciado sin dejar la pantalla vacía.</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-start gap-3">
+          <div class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold">✓</div>
+          <div>
+            <span class="font-bold text-white block">QA-MNT-02: Inmutabilidad Horométrica Monotónica</span>
+            <span class="text-slate-400">El modal de cierre debe rechazar cualquier valor de horómetro o kilometraje menor al registrado en el ingreso de la OT, emitiendo una alerta explícita y bloqueando el sellado de la orden.</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-start gap-3">
+          <div class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold">✓</div>
+          <div>
+            <span class="font-bold text-white block">QA-MNT-03: Desacoplamiento de Entornos DEV vs PROD</span>
+            <span class="text-slate-400">En ambiente DEV, las notificaciones transaccionales quedan estrictamente confinadas al correo y teléfono del administrador de desarrollo, protegiendo a los directores y jefaturas de recibir correos espurios de pruebas.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- PIE DE PÁGINA -->
+  <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500 font-mono no-print">
+    Grúas San Pablo • LeanGlobal Platform © 2026. Documentación Técnica Canónica Gobernada por SPEC-071.
+  </footer>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

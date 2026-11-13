@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5. Estado de Pago (EDP) y Facturación en Contabilidad — Grúas San Pablo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.mermaid) {
+        mermaid.initialize({
+          startOnLoad: true,
+          theme: 'dark',
+          themeVariables: {
+            darkMode: true,
+            background: '#070c1a',
+            primaryColor: '#1e293b',
+            primaryTextColor: '#f8fafc',
+            primaryBorderColor: '#3b82f6',
+            lineColor: '#60a5fa',
+            secondaryColor: '#0f172a',
+            tertiaryColor: '#1e1b4b',
+            noteBkgColor: '#0f172a',
+            noteTextColor: '#fbbf24',
+            noteBorderColor: '#d97706',
+            actorBkg: '#0f172a',
+            actorBorder: '#3b82f6',
+            actorTextColor: '#f8fafc',
+            signalColor: '#38bdf8',
+            signalTextColor: '#f8fafc'
+          }
+        });
+      }
+    });
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0b1120;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+    }
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-card {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen antialiased pb-16">
+
+  <!-- BARRA SUPERIOR COMPACTA (SIN HERO BANNER DE RELLENO) -->
+  <header class="no-print sticky top-0 z-50 bg-slate-950/95 backdrop-blur border-b border-slate-800 px-4 md:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-400 flex items-center justify-center font-bold">
+        <i data-lucide="landmark" class="w-4 h-4"></i>
+      </div>
+      <div>
+        <h1 class="text-sm md:text-base font-extrabold text-white">5. Estado de Pago (EDP) y Facturación en Contabilidad</h1>
+        <p class="text-[11px] text-slate-400">Flujo directo de Control de Gestión a Comercial, subida de Orden de Compra (OC) y carga de facturas en Contabilidad</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a href="./proceso_financiero_integral_y_protocolo_pruebas_gsp.html" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors">
+        <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+        <span>Ir a Manual #4 (Cálculo Horas y Viáticos ITS)</span>
+      </a>
+      <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer">
+        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+        <span>Imprimir / PDF</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 md:px-8 pt-4 space-y-6">
+
+    <!-- NAVEGACIÓN DIRECTA POR PESTAÑAS -->
+    <nav class="no-print flex flex-wrap gap-2 bg-slate-900/90 border border-slate-800 p-2 rounded-xl">
+      <button onclick="mostrarBloque('todos')" id="tab-todos" class="tab-btn bg-amber-500 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+        Ver Todo (5 Secciones)
+      </button>
+      <button onclick="mostrarBloque('bloque-1')" id="tab-bloque-1" class="tab-btn bg-slate-800/80 hover:bg-slate-800 text-slate-300 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+        1. Diferencia entre ITS y EDP
+      </button>
+      <button onclick="mostrarBloque('bloque-2')" id="tab-bloque-2" class="tab-btn bg-slate-800/80 hover:bg-slate-800 text-slate-300 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+        2. Flujo del EDP (Control de Gestión &rarr; Comercial)
+      </button>
+      <button onclick="mostrarBloque('bloque-3')" id="tab-bloque-3" class="tab-btn bg-slate-800/80 hover:bg-slate-800 text-slate-300 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+        3. Subida de Orden de Compra (OC)
+      </button>
+      <button onclick="mostrarBloque('bloque-4')" id="tab-bloque-4" class="tab-btn bg-slate-800/80 hover:bg-slate-800 text-slate-300 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+        4. Cuándo se Puede Facturar
+      </button>
+      <button onclick="mostrarBloque('bloque-5')" id="tab-bloque-5" class="tab-btn bg-slate-800/80 hover:bg-slate-800 text-slate-300 font-semibold text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer">
+        5. Pantalla de Contabilidad y Carga de Facturas
+      </button>
+    </nav>
+
+    <!-- =================================================================== -->
+    <!-- SECCIÓN 1: DIFERENCIA ENTRE ITS Y EDP                               -->
+    <!-- =================================================================== -->
+    <section id="bloque-1" class="bloque-doc bg-slate-900/80 border border-slate-800 rounded-xl p-5 md:p-6 space-y-4 print-card">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-mono font-extrabold text-xs">SECCIÓN 1</span>
+          <h2 class="text-base md:text-lg font-extrabold text-white">Diferencia entre ITS (Cierre Interno) y EDP (Cobro al Cliente)</h2>
+        </div>
+        <span class="text-xs font-mono text-emerald-400 font-semibold">2 Carriles Independientes</span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- EDP -->
+        <div class="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono uppercase text-emerald-400 font-bold">1. Estado de Pago (EDP) — Para Cobrar al Cliente</span>
+            <span class="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">NO ESPERA AL ITS</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Es el documento comercial de cobro para el cliente. Apenas <strong>Control de Gestión (Yiara)</strong> revisa que están todos los Reports Diarios del servicio, emite el EDP y lo pasa directo a <strong>Comercial</strong> para enviarlo al cliente, sin esperar que esté cerrado el ITS.
+          </p>
+        </div>
+
+        <!-- ITS -->
+        <div class="bg-blue-950/20 border border-blue-500/30 rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono uppercase text-blue-400 font-bold">2. Report Diario &rarr; ITS — Costos Internos y Remuneraciones RRHH</span>
+            <span class="text-[10px] font-mono bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-bold">SE VERIFICA DÍA A DÍA EN EL REPORT</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Las horas a pagar al Operador, las horas del Rigger y los Viáticos de Alimentación se pre-calculan y verifican <strong>día a día dentro de cada Report Diario</strong> cuando Yiara lo valida con su PIN FES, y se traspasan automáticamente al ITS (<code class="text-emerald-300 font-mono">&check; Report</code>). Así, <strong>RRHH (Tesalia) liquida sueldos el último día de cada mes</strong> sin esperar que un ITS multi-día termine.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SECCIÓN 2: FLUJO DEL EDP (CONTROL DE GESTIÓN -> COMERCIAL)          -->
+    <!-- =================================================================== -->
+    <section id="bloque-2" class="bloque-doc bg-slate-900/80 border border-slate-800 rounded-xl p-5 md:p-6 space-y-5 print-card">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-mono font-extrabold text-xs">SECCIÓN 2</span>
+          <h2 class="text-base md:text-lg font-extrabold text-white">Flujo del EDP: Pasa Directo de Control de Gestión a Comercial (Sin pasar por Contabilidad)</h2>
+        </div>
+        <span class="text-xs font-mono text-amber-400 font-semibold">2 Firmas en el EDP</span>
+      </div>
+
+      <!-- DIAGRAMA SIMPLE -->
+      <div class="bg-[#070c1a] border border-slate-800 rounded-xl p-4">
+        <div class="mermaid overflow-x-auto flex justify-center text-xs">
+sequenceDiagram
+    autonumber
+    actor OP as Terreno (Reports)
+    actor CG as 1. Control de Gestión (Yiara)
+    actor CM as 2. Comercial Responsable
+    actor CL as Cliente
+    actor CO as Contabilidad (Maritza)
+
+    OP->>CG: Reports Diarios firmados en obra
+    CG->>CM: Emite y firma el EDP (Pasa directo a Comercial)
+    CM->>CL: Firma y envía el EDP al Cliente
+    CM->>CO: Sube la Orden de Compra (OC) cuando el cliente la entrega
+    CO->>CO: Emite y sube la Factura (Laudus / SII) en su pantalla
+        </div>
+      </div>
+
+      <!-- 3 CAJAS DE ROLES -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-slate-950/90 border border-indigo-500/40 rounded-xl p-4 space-y-2">
+          <div class="text-xs font-mono font-bold text-indigo-400">PASO 1 DEL EDP &bull; FIRMA 1</div>
+          <h3 class="text-sm font-bold text-white">1. Control de Gestión (Yiara)</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Revisa los cobros del servicio con los Reports Diarios y firma el EDP con su PIN de 4 dígitos. El EDP queda en estado <code class="text-indigo-300 font-mono">EMITIDO_ANALISTA</code> y pasa <strong>directo a Comercial</strong>.
+          </p>
+        </div>
+
+        <div class="bg-slate-950/90 border border-amber-500/40 rounded-xl p-4 space-y-2">
+          <div class="text-xs font-mono font-bold text-amber-400">PASO 2 DEL EDP &bull; FIRMA 2</div>
+          <h3 class="text-sm font-bold text-white">2. Comercial Responsable</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Recibe el EDP directo desde Control de Gestión, lo firma con su PIN y lo envía al cliente (<code class="text-amber-300 font-mono">ENVIADO_CLIENTE</code>). Además, sube la Orden de Compra (OC) cuando el cliente la envía.
+          </p>
+        </div>
+
+        <div class="bg-slate-950/90 border border-emerald-500/40 rounded-xl p-4 space-y-2">
+          <div class="text-xs font-mono font-bold text-emerald-400">CONTABILIDAD SEPARADA DEL EDP</div>
+          <h3 class="text-sm font-bold text-white">3. Contabilidad (Maritza)</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            <strong>Contabilidad no firma el EDP.</strong> Trabaja en su propia pantalla de Contabilidad: apenas el EDP está emitido (y tiene OC cargada si el cliente exige OC), emite la factura en Laudus/SII y sube el PDF al sistema.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SECCIÓN 3: CÓMO SUBIR LA ORDEN DE COMPRA (OC)                       -->
+    <!-- =================================================================== -->
+    <section id="bloque-3" class="bloque-doc bg-slate-900/80 border border-slate-800 rounded-xl p-5 md:p-6 space-y-4 print-card">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="px-2 py-0.5 rounded bg-sky-500 text-slate-950 font-mono font-extrabold text-xs">SECCIÓN 3</span>
+          <h2 class="text-base md:text-lg font-extrabold text-white">Cómo Subir la Orden de Compra (OC) y Aviso Automático a Contabilidad</h2>
+        </div>
+        <span class="text-xs font-mono text-sky-400 font-semibold">Rol Comercial</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-1.5">
+          <div class="text-xs font-mono text-sky-400 font-bold">1. DÓNDE SE SUBE LA OC</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            El Comercial sube el PDF de la OC e ingresa el número de folio en el botón <strong><code>③ Respaldo OC</code></strong> de la tarjeta del servicio o dentro de la ventana del EDP.
+          </p>
+        </div>
+
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-1.5">
+          <div class="text-xs font-mono text-sky-400 font-bold">2. REGISTRO DE AUDITORÍA</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            El sistema guarda el archivo PDF de la OC, el número de folio, el nombre de quién la subió y la fecha/hora exacta.
+          </p>
+        </div>
+
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-1.5">
+          <div class="text-xs font-mono text-emerald-400 font-bold">3. CORREO AUTOMÁTICO A CONTABILIDAD</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Al guardar la OC, el sistema envía automáticamente un correo a Contabilidad (<code class="font-mono text-emerald-300">mseguel@arriendosanpablo.cl</code>) con copia del PDF para que proceda a facturar.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SECCIÓN 4: CUÁNDO SE PUEDE FACTURAR (REGLA CON OC Y SIN OC)         -->
+    <!-- =================================================================== -->
+    <section id="bloque-4" class="bloque-doc bg-slate-900/80 border border-slate-800 rounded-xl p-5 md:p-6 space-y-4 print-card">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-mono font-extrabold text-xs">SECCIÓN 4</span>
+          <h2 class="text-base md:text-lg font-extrabold text-white">Cuándo se Puede Facturar un Servicio (Regla Con OC y Sin OC)</h2>
+        </div>
+        <span class="text-xs font-mono text-emerald-400 font-semibold">Regla de Habilitación</span>
+      </div>
+
+      <div class="overflow-x-auto border border-slate-800 rounded-xl">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-slate-800 bg-slate-950 text-slate-300 font-mono uppercase text-[11px]">
+              <th class="py-3 px-4">Caso</th>
+              <th class="py-3 px-4">¿El Cliente exige OC?</th>
+              <th class="py-3 px-4">¿Está subida la OC?</th>
+              <th class="py-3 px-4">¿Está emitido el EDP?</th>
+              <th class="py-3 px-4">¿Se puede Facturar?</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80">
+            <tr class="bg-emerald-950/15">
+              <td class="py-3 px-4 font-bold text-white">1. Servicio sin OC</td>
+              <td class="py-3 px-4 font-mono text-slate-300">NO</td>
+              <td class="py-3 px-4 text-slate-400">No aplica</td>
+              <td class="py-3 px-4 font-mono text-emerald-300">SÍ (Emitido por Control de Gestión)</td>
+              <td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold">SÍ — LISTO PARA FACTURAR</span></td>
+            </tr>
+            <tr class="bg-emerald-950/15">
+              <td class="py-3 px-4 font-bold text-white">2. Servicio con OC al día</td>
+              <td class="py-3 px-4 font-mono text-amber-300">SÍ</td>
+              <td class="py-3 px-4 font-mono text-emerald-300">SÍ (Folio + PDF subido)</td>
+              <td class="py-3 px-4 font-mono text-emerald-300">SÍ (Emitido por Control de Gestión)</td>
+              <td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold">SÍ — LISTO PARA FACTURAR</span></td>
+            </tr>
+            <tr class="bg-rose-950/15">
+              <td class="py-3 px-4 font-bold text-white">3. Falta subir la OC del cliente</td>
+              <td class="py-3 px-4 font-mono text-amber-300">SÍ</td>
+              <td class="py-3 px-4 font-mono text-rose-400">NO (Pendiente)</td>
+              <td class="py-3 px-4 font-mono text-emerald-300">SÍ (Enviado al cliente para pedir OC)</td>
+              <td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono font-bold">ESPERANDO OC PARA FACTURAR</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SECCIÓN 5: PANTALLA DE CONTABILIDAD Y CARGA DE FACTURAS             -->
+    <!-- =================================================================== -->
+    <section id="bloque-5" class="bloque-doc bg-slate-900/80 border border-slate-800 rounded-xl p-5 md:p-6 space-y-5 print-card">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <span class="px-2 py-0.5 rounded bg-blue-500 text-slate-950 font-mono font-extrabold text-xs">SECCIÓN 5</span>
+          <h2 class="text-base md:text-lg font-extrabold text-white">Pantalla de Contabilidad: Carga de Facturas (Laudus / SII) y Reportes Excel</h2>
+        </div>
+        <span class="text-xs font-mono text-blue-400 font-semibold">Menú: Perspectiva Contabilidad</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-slate-950/80 border border-blue-500/30 rounded-xl p-4 space-y-2">
+          <div class="text-xs font-mono text-blue-400 font-bold uppercase">1. Carga de una o varias Facturas por Servicio</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Desde el botón <strong><code>④ Facturar DTE</code></strong> (o desde la Bandeja Contable), Contabilidad registra las facturas emitidas en Laudus / SII indicando:
+            <br/>&bull; <strong>Tipo de Documento:</strong> Factura Afecta (33), Factura Exenta (34), Nota de Crédito (61) o Nota de Débito (56).
+            <br/>&bull; <strong>Folio SII, Fecha de Emisión, Monto Neto, IVA, Total y archivo PDF.</strong>
+            <br/>&bull; Si un servicio se factura en 2 o más facturas parciales, el sistema suma los montos y muestra el saldo pendiente por facturar.
+          </p>
+        </div>
+
+        <div class="bg-slate-950/80 border border-emerald-500/30 rounded-xl p-4 space-y-2">
+          <div class="text-xs font-mono text-emerald-400 font-bold uppercase">2. Los 5 Reportes Descargables en Excel (.xlsx) y Filtro Desde-Hasta</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            En la vista <strong>Perspectiva Contabilidad</strong>, Contabilidad, RRHH y Control de Gestión disponen de 5 sábanas exportables a Excel:
+            <br/>&bull; <strong>1) Avance y Calce por Proceso:</strong> Compara Venta Cotizada vs. Reports vs. ITS vs. EDP vs. Facturado.
+            <br/>&bull; <strong>2) Horas de Operadores y Riggers (RRHH):</strong> Incluye filtro por rango de fechas (<strong>Desde &mdash; Hasta</strong>) y columna <strong><code>Report Validado (SÍ / NO)</code></strong> para liquidación mensual de sueldos y viáticos.
+            <br/>&bull; <strong>3) Ventas y Costos por Grúa:</strong> Ingresos facturados y costos directos por cada equipo.
+            <br/>&bull; <strong>4) Control de Combustible:</strong> Resumen por patente y sábana de 28 columnas con odómetros y horómetros.
+            <br/>&bull; <strong>5) Salidas de Bodega:</strong> Matriz mensual por Cuenta Contable y detalle de consumos de pañol/taller.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    lucide.createIcons();
+
+    function mostrarBloque(id) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-500', 'text-slate-950', 'font-bold');
+        btn.classList.add('bg-slate-800/80', 'text-slate-300', 'font-semibold');
+      });
+      const activeBtn = document.getElementById('tab-' + id);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-800/80', 'text-slate-300', 'font-semibold');
+        activeBtn.classList.add('bg-amber-500', 'text-slate-950', 'font-bold');
+      }
+
+      document.querySelectorAll('.bloque-doc').forEach(sec => {
+        if (id === 'todos' || sec.id === id) {
+          sec.style.display = 'block';
+        } else {
+          sec.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -23,6 +23,9 @@ const VALIDATION_URL = `${process.env.APP_BASE_URL || 'https://servidor.leanglob
 
 // Servicio TSA (FreeTSA)
 const { obtenerSelloTiempo } = require('../services/tsaService');
+const pool = require('../config/dbConfig');
+const notificacionService = require('../services/notificacionService');
+const SCHEMA = process.env.DB_SCHEMA || 'sch_leangsp';
 
 /**
  * Dibuja un pie de página SOLO en la ÚLTIMA página del PDF
@@ -810,6 +813,91 @@ module.exports = {
         hash_pdf,
         tsa_token
       });
+
+      // REQ-1123: Si el survey firmado corresponde a Visita a Terreno (id_template = 80), actualizar estado y notificar a Comercial, Operaciones y Gerencia con el PDF adjunto/linkeado
+      try {
+        const srvRes = await pool.query(
+          `SELECT s.id_survey, s.id_template, s.id_proyecto, s.json_field AS survey_json,
+                  p.codi_proyecto, p.desc_proyecto, p.json_field AS proy_json,
+                  c.razon_social AS cliente_nombre, c.rut AS cliente_rut,
+                  CONCAT_WS(' ', u_com.name_frst, u_com.apellido_pat) AS comercial_nombre,
+                  u_com.email AS comercial_email, u_com.movil AS comercial_fono,
+                  CONCAT_WS(' ', u_ing.name_frst, u_ing.apellido_pat) AS ingeniero_nombre
+           FROM ${SCHEMA}.tsrv_survey s
+           LEFT JOIN ${SCHEMA}.tpry_proyecto p ON s.id_proyecto = p.id_proyecto
+           LEFT JOIN ${SCHEMA}.tcom_cliente c ON p.id_cliente = c.id_cliente
+           LEFT JOIN ${SCHEMA}.tsec_users u_com ON p.id_ejecutivo_comercial = u_com.id_user
+           LEFT JOIN ${SCHEMA}.tsec_users u_ing ON COALESCE(p.id_ingeniero_visita, $2) = u_ing.id_user
+           WHERE s.id_survey = $1`,
+          [id_survey, id_user]
+        );
+        const srvRow = srvRes.rows[0];
+        if (srvRow && Number(srvRow.id_template) === 80 && srvRow.id_proyecto) {
+          await pool.query(
+            `UPDATE ${SCHEMA}.tpry_proyecto
+             SET estado_solicitud_visita = 'COMPLETADA'
+             WHERE id_proyecto = $1`,
+            [srvRow.id_proyecto]
+          );
+
+          const baseUrlApp = process.env.APP_BASE_URL || 'https://servidor.leanglobal.cl';
+          const envPrefix = (process.env.APP_ENV === 'prod') ? '/lg-gsp-prod' : '/lg-gsp-dev';
+          const urlPdfFirmado = `${baseUrlApp}${envPrefix}/api/v1/storage/view/${idDocNuevo}`;
+          const urlDealCrm = `${baseUrlApp}${envPrefix}/crm/${srvRow.id_proyecto}?tab=3`;
+          const codNegocio = srvRow.codi_proyecto || `N° ${srvRow.id_proyecto}`;
+          const clienteNom = srvRow.cliente_nombre || srvRow.proy_json?.crm_v1?.cliente_nombre || 'Cliente';
+          const ingNom = srvRow.ingeniero_nombre || inserted.nombre_firmante || 'Ingeniero Visitador';
+
+          const destQuery = await pool.query(
+            `SELECT DISTINCT u.id_user, u.email, u.movil AS fono,
+                    CONCAT_WS(' ', u.name_frst, u.apellido_pat) AS nombre_completo
+             FROM ${SCHEMA}.tsec_users u
+             LEFT JOIN ${SCHEMA}.tsec_user_roles ur ON u.id_user = ur.id_user
+             LEFT JOIN ${SCHEMA}.tsec_roles r ON ur.id_rol = r.id_rol
+             WHERE COALESCE(u.activo, true) = true
+               AND u.email IS NOT NULL AND u.email <> ''
+               AND (
+                 LOWER(u.email) = LOWER($1)
+                 OR r.name_rol IN ('OPERACIONES_APROB', 'OPERACIONES_PROG', 'GERENCIA_ADMIN', 'GERENCIA_APROB', 'GSP_ADMIN')
+                 OR u.id_user IN (19, 57, 65)
+               )`,
+            [srvRow.comercial_email || '']
+          );
+
+          for (const d of destQuery.rows) {
+            await notificacionService.despacharNotificacion({
+              evento: 'VISITA_TERRENO_COMPLETADA',
+              canales: ['EMAIL'],
+              destinatario: {
+                id_user: d.id_user,
+                nombre: d.nombre_completo || 'Equipo GSP',
+                email: d.email,
+                telefono: d.fono
+              },
+              contexto: {
+                id_proyecto: srvRow.id_proyecto,
+                asunto: `✅ [Visita a Terreno Firmada] ${codNegocio} — ${clienteNom}`,
+                titulo: 'INFORME DE VISITA TÉCNICA A TERRENO FIRMADO (FES)',
+                cuerpo: `Se informa que <strong>${ingNom}</strong> ha completado y firmado electrónicamente (FES) el <strong>Informe de Visita Técnica a Terreno</strong> correspondiente al negocio <strong>${codNegocio}</strong> (${clienteNom}).<br><br>📄 <strong>Documento PDF Oficial Firmado:</strong> <a href="${urlPdfFirmado}" target="_blank" style="color:#d97706;font-weight:bold;">Descargar / Ver PDF de Visita a Terreno</a>`,
+                datos_clave: {
+                  'Negocio / OT': codNegocio,
+                  'Cliente': clienteNom,
+                  'Ingeniero / Visitador': ingNom,
+                  'Ejecutivo Comercial': srvRow.comercial_nombre || 'Por asignar',
+                  'Código Validación FES': nuevoUuid
+                },
+                cta_texto: '📄 VER PDF VISITA A TERRENO Y COTIZACIÓN',
+                cta_url: urlPdfFirmado,
+                cta_secundario_texto: 'Ir al Negocio en CRM',
+                cta_secundario_url: urlDealCrm
+              },
+              id_usuario_origen: id_user
+            });
+          }
+        }
+      } catch (notifErr) {
+        console.warn('⚠️ [REQ-1123] Error no bloqueante al despachar notificación de Visita a Terreno:', notifErr.message);
+      }
 
       // 4) Devolver resultado
       return res.status(201).json({

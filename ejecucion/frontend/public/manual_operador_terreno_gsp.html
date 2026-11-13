@@ -126,32 +126,42 @@
   <header class="bg-[#080d1a] border-b border-amber-500/30 px-3 md:px-5 py-1.5 sticky top-0 z-50 shadow-xl backdrop-blur-md no-print">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
 
-      <!-- Barra de Navegación de los 7 Pasos -->
+      <!-- Barra de Navegación de los 9 Pasos -->
       <div class="flex items-center gap-1 overflow-x-auto w-full md:w-auto py-1 text-xs">
-        <button onclick="goToSlide(1)" id="tab1" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+        <button onclick="goToSlide(1)" id="tab1" class="tab-btn px-2 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
           <span class="font-mono">1</span> 📱 Inicio APP
         </button>
-        <button onclick="goToSlide(2)" id="tab2" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+        <button onclick="goToSlide(2)" id="tab2" class="tab-btn px-2 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
           <span class="font-mono">2</span> 🚛 Salida Base
         </button>
-        <button onclick="goToSlide(3)" id="tab3" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
-          <span class="font-mono">3</span> 📍 Llegada Faena
+        <button onclick="goToSlide(3)" id="tab3" class="tab-btn px-2 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">3</span> ⛽ En Ruta / Combustible
         </button>
-        <button onclick="goToSlide(4)" id="tab4" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
-          <span class="font-mono">4</span> 🟢 Inicio Report
+        <button onclick="goToSlide(4)" id="tab4" class="tab-btn px-2 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">4</span> 📍 Llegada Faena
         </button>
-        <button onclick="goToSlide(5)" id="tab5" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
-          <span class="font-mono">5</span> 🔴 Término de Report
+        <button onclick="goToSlide(5)" id="tab5" class="tab-btn px-2 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">5</span> 🟢 Inicio Report
         </button>
-        <button onclick="goToSlide(6)" id="tab6" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
-          <span class="font-mono">6</span> ✍️ Firma Mandante
+        <button onclick="goToSlide(6)" id="tab6" class="tab-btn px-2 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">6</span> 🔴 Término Report
         </button>
-        <button onclick="goToSlide(7)" id="tab7" class="tab-btn px-2.5 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
-          <span class="font-mono">7</span> 🏁 Retorno Base
+        <button onclick="goToSlide(7)" id="tab7" class="tab-btn px-2 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">7</span> ✍️ Firma Mandante
+        </button>
+        <button onclick="goToSlide(8)" id="tab8" class="tab-btn px-2 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">8</span> 🔄 Salida Obra (Retorno)
+        </button>
+        <button onclick="goToSlide(9)" id="tab9" class="tab-btn px-2 py-1.5 rounded-lg font-bold transition-all border border-white/10 bg-slate-900 text-slate-300 hover:text-white flex items-center gap-1 whitespace-nowrap cursor-pointer">
+          <span class="font-mono">9</span> 🏁 Llegada Base GSP
         </button>
       </div>
 
       <div class="flex items-center gap-2">
+        <a href="#matrizInstrumentos" class="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer">
+          <span>📋</span>
+          <span>Tabla Odómetro y Horómetro</span>
+        </a>
         <button id="audioGlobalBtn" onclick="toggleAudio()" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer">
           <span id="audioIcon">🔊</span>
           <span id="audioText" class="hidden sm:inline">Escuchar</span>
@@ -191,8 +201,8 @@
             </div>
           </div>
           
-          <!-- PANTALLA DEL CELULAR CON INYECCIÓN DINÁMICA -->
-          <div id="phoneScreen" class="p-3 text-slate-100 text-xs">
+          <!-- PANTALLA DEL CELULAR CON INYECCIÓN DINÁMICA (CAPTURA REAL PWA) -->
+          <div id="phoneScreen" class="p-0 text-slate-100 text-xs">
             <!-- Inyectado dinámicamente vía Javascript -->
           </div>
         </div>
@@ -203,7 +213,7 @@
             ◀ Anterior
           </button>
           <span id="slideIndicator" class="text-xs font-mono font-black text-amber-400 px-3 py-1 bg-black/70 rounded-lg border border-white/10">
-            Paso 1 de 7
+            Paso 1 de 9
           </span>
           <button onclick="nextSlide()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl shadow-lg flex items-center gap-1 cursor-pointer transition-all">
             Siguiente ▶
@@ -279,22 +289,22 @@
         <div class="bg-black/50 border border-purple-500/30 rounded-2xl p-3.5 space-y-2">
           <div class="flex items-center gap-2 text-purple-400 font-black">
             <span>⛽</span>
-            <span>4. Nivel Petróleo (%)</span>
+            <span>4. Petróleo (% y Carga Copec)</span>
           </div>
           <p class="text-slate-300 text-[11px] leading-relaxed">
-            <strong>¿Dónde está?</strong> En el reloj medidor de combustible del estanque.<br>
-            <strong>¿Cuándo se anota?</strong> Al salir de Base hacia faena y al llegar a Patio Central en el retorno.<br>
-            <span class="text-purple-300 font-bold">👉 Selecciona el % y toma foto clara.</span>
+            <strong>Nivel (%):</strong> Solo al salir de Base hacia faena y al llegar a Patio Central en el retorno.<br>
+            <strong>Carga en Ruta (Copec):</strong> En la pantalla <em>Convoy en Ruta</em> con el botón <strong>⛽ Rendir Carga de Combustible (Copec)</strong>.<br>
+            <span class="text-purple-300 font-bold">👉 En salida de obra (retorno) NO se pide %.</span>
           </p>
         </div>
 
       </div>
 
       <!-- MATRIZ CANÓNICA DE REGISTRO FOTOGRÁFICO E INSTRUMENTOS -->
-      <div class="border-t border-white/10 pt-4 space-y-2">
+      <div id="matrizInstrumentos" class="border-t border-white/10 pt-4 space-y-2 scroll-mt-16">
         <div class="flex items-center justify-between">
           <span class="text-xs font-mono font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span>📋</span> MATRIZ OFICIAL: QUÉ NÚMEROS Y FOTOS SE REGISTRAN EN CADA HITO
+            <span>📋</span> TABLA OFICIAL: CUÁNDO LLENAR ODÓMETRO, HORÓMETRO CAMIÓN Y HORÓMETRO GRÚA (VIAJES VS REPORTS)
           </span>
           <span class="text-[9px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40 font-bold">
             100% EXIGIDO
@@ -305,133 +315,153 @@
           <table class="w-full text-center border-collapse text-xs font-mono">
             <thead>
               <tr class="bg-amber-500/20 text-amber-300 border-b border-white/10">
-                <th class="p-2.5 text-left border-r border-white/10 font-bold">HITO / REGISTRO OPERACIONAL</th>
-                <th class="p-2.5 border-r border-white/10 font-bold">reg-horom equipo</th>
-                <th class="p-2.5 border-r border-white/10 font-bold">rego odo equipo</th>
-                <th class="p-2.5 border-r border-white/10 font-bold">reg odo superestructura</th>
-                <th class="p-2.5 border-r border-white/10 font-bold">reg combustible equipo</th>
-                <th class="p-2.5 font-bold">reg combuslible superestructura</th>
+                <th class="p-2.5 text-left border-r border-white/10 font-bold">PASO / HITO EN LA APP</th>
+                <th class="p-2.5 border-r border-white/10 font-bold">ODÓMETRO CAMIÓN (KM)</th>
+                <th class="p-2.5 border-r border-white/10 font-bold">HORÓMETRO CAMIÓN / CHASIS (HRS)</th>
+                <th class="p-2.5 border-r border-white/10 font-bold">HORÓMETRO GRÚA / PLUMA (HRS)</th>
+                <th class="p-2.5 border-r border-white/10 font-bold">PETRÓLEO (%)</th>
+                <th class="p-2.5 font-bold">HORA RELOJ Y FIRMA</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5 bg-black/40">
               <tr>
                 <td class="p-2.5 text-left font-bold text-slate-200 border-r border-white/10">
-                  1. Viaje Ida: Inicio <span class="block text-[10px] text-amber-400 font-normal">Salida Base / Patio GSP</span>
+                  1. Viaje Ida: Salida de Base GSP <span class="block text-[10px] text-amber-400 font-normal">Registro de Viaje (Ida)</span>
                 </td>
                 <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro</span>
+                  SÍ (Inicial) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Odómetro</span>
                 </td>
                 <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">📸 Foto Odómetro</span>
+                  SÍ (Inicial) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro Camión</span>
                 </td>
                 <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(Sin odómetro)</span>
+                  NO <span class="block text-[9px] text-slate-500">(Solo en Report)</span>
                 </td>
                 <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">Nivel % (Foto opc.)</span>
+                  SÍ (% Salida) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Marcador</span>
                 </td>
-                <td class="p-2.5 text-slate-500">
-                  No se registra <span class="block text-[9px] text-slate-500">(Estanque único)</span>
+                <td class="p-2.5 text-slate-300">
+                  Hora GPS/App <span class="block text-[9px] text-amber-300">+ PIN Operador</span>
+                </td>
+              </tr>
+              <tr class="bg-amber-950/15">
+                <td class="p-2.5 text-left font-bold text-slate-200 border-r border-white/10">
+                  2. En Ruta: Carga de Combustible (Copec) <span class="block text-[10px] text-amber-300 font-normal">Si abastece petróleo en ruta (Ida o Retorno)</span>
+                </td>
+                <td class="p-2.5 text-amber-300 font-bold border-r border-white/10">
+                  Opcional <span class="block text-[9px] font-normal text-slate-400">Odómetro en carga</span>
+                </td>
+                <td class="p-2.5 text-amber-300 font-bold border-r border-white/10">
+                  Opcional <span class="block text-[9px] font-normal text-slate-400">Horómetro en carga</span>
+                </td>
+                <td class="p-2.5 text-slate-500 border-r border-white/10">
+                  NO <span class="block text-[9px] text-slate-500">(Se elige Estanque)</span>
+                </td>
+                <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
+                  SÍ (Litros * + Monto $ *) <span class="block text-[9px] font-normal text-slate-300">🧾 Foto Voucher Copec</span>
+                </td>
+                <td class="p-2.5 text-slate-300">
+                  Botón ⛽ Rendir Carga <span class="block text-[9px] text-amber-300">Estanque Principal / Grúa</span>
                 </td>
               </tr>
               <tr>
                 <td class="p-2.5 text-left font-bold text-slate-200 border-r border-white/10">
-                  2. Viaje Ida: Fin <span class="block text-[10px] text-emerald-400 font-normal">Llegada a Faena</span>
+                  3. Viaje Ida: Llegada a Faena <span class="block text-[10px] text-emerald-400 font-normal">Registro de Viaje (Ida)</span>
                 </td>
                 <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro</span>
+                  SÍ (Llegada) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Odómetro</span>
                 </td>
                 <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">📸 Foto Odómetro</span>
+                  SÍ (Llegada) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro Camión</span>
                 </td>
                 <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(Se toma en Inicio Report)</span>
+                  NO <span class="block text-[9px] text-slate-500">(Se toma en Inicio Report)</span>
                 </td>
                 <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(Ágil llegada faena)</span>
+                  NO <span class="block text-[9px] text-slate-500">(No se pide al llegar)</span>
                 </td>
-                <td class="p-2.5 text-slate-500">
-                  No se registra <span class="block text-[9px] text-slate-500">(No aplica)</span>
+                <td class="p-2.5 text-slate-300">
+                  Hora GPS/App <span class="block text-[9px] text-amber-300">+ PIN Operador</span>
                 </td>
               </tr>
-              <tr class="bg-blue-950/10">
+              <tr class="bg-blue-950/15">
                 <td class="p-2.5 text-left font-bold text-slate-200 border-r border-white/10">
-                  3. Report Diario: Inicio <span class="block text-[10px] text-blue-400 font-normal">INICIO REPORT - Apertura Faena</span>
-                </td>
-                <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro Superestructura</span>
+                  4. Report Diario: Inicio en Obra <span class="block text-[10px] text-blue-400 font-normal">INICIO REPORT - Apertura Faena</span>
                 </td>
                 <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(Equipo estático)</span>
+                  NO <span class="block text-[9px] text-slate-500">(Equipo posicionado)</span>
                 </td>
                 <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(Sin odómetro)</span>
+                  NO <span class="block text-[9px] text-slate-500">(No aplica en Report)</span>
+                </td>
+                <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/25">
+                  SÍ (Inicial Pluma) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro Grúa</span>
                 </td>
                 <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(No aplica en report)</span>
+                  NO <span class="block text-[9px] text-slate-500">(No aplica en Report)</span>
                 </td>
-                <td class="p-2.5 text-slate-500">
-                  No se registra <span class="block text-[9px] text-slate-500">(No aplica)</span>
+                <td class="p-2.5 text-amber-300 font-bold">
+                  Hora Inicio (HH:MM) <span class="block text-[9px] font-normal text-slate-300">Ej. 08:30</span>
                 </td>
               </tr>
-              <tr class="bg-blue-950/10">
+              <tr class="bg-blue-950/15">
                 <td class="p-2.5 text-left font-bold text-slate-200 border-r border-white/10">
-                  4. Report Diario: Fin <span class="block text-[10px] text-blue-400 font-normal">TERMINO DE REPORT - Cierre & Firma Mandante</span>
-                </td>
-                <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro Superestructura</span>
+                  5. Report Diario: Término en Obra <span class="block text-[10px] text-blue-400 font-normal">TÉRMINO DE REPORT + Firma Cliente</span>
                 </td>
                 <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(Equipo estático)</span>
+                  NO <span class="block text-[9px] text-slate-500">(Equipo posicionado)</span>
                 </td>
                 <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(Sin odómetro)</span>
+                  NO <span class="block text-[9px] text-slate-500">(No aplica en Report)</span>
+                </td>
+                <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/25">
+                  SÍ (Final Pluma) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro Grúa</span>
                 </td>
                 <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(No aplica en report)</span>
+                  NO <span class="block text-[9px] text-slate-500">(No aplica en Report)</span>
                 </td>
-                <td class="p-2.5 text-slate-500">
-                  No se registra <span class="block text-[9px] text-slate-500">(No aplica)</span>
-                </td>
-              </tr>
-              <tr>
-                <td class="p-2.5 text-left font-bold text-slate-200 border-r border-white/10">
-                  5. Viaje Retorno: Inicio <span class="block text-[10px] text-amber-400 font-normal">Salida de Faena (Obra)</span>
-                </td>
-                <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro</span>
-                </td>
-                <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">📸 Foto Odómetro</span>
-                </td>
-                <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(Sin odómetro)</span>
-                </td>
-                <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(Ágil retorno)</span>
-                </td>
-                <td class="p-2.5 text-slate-500">
-                  No se registra <span class="block text-[9px] text-slate-500">(No aplica)</span>
+                <td class="p-2.5 text-amber-300 font-bold">
+                  Hora Término + Colación + StandBy <span class="block text-[9px] text-emerald-300">✍️ Firma Cliente + PIN</span>
                 </td>
               </tr>
               <tr>
                 <td class="p-2.5 text-left font-bold text-slate-200 border-r border-white/10">
-                  6. Viaje Retorno: Fin <span class="block text-[10px] text-emerald-400 font-normal">Llegada a Base / Patio GSP</span>
+                  6. Viaje Retorno: Salida de Obra <span class="block text-[10px] text-amber-400 font-normal">Registro de Viaje (Último Día)</span>
                 </td>
                 <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro</span>
+                  SÍ (Salida Obra) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Odómetro</span>
                 </td>
                 <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">📸 Foto Odómetro</span>
+                  SÍ (Salida Obra) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro Camión</span>
                 </td>
                 <td class="p-2.5 text-slate-500 border-r border-white/10">
-                  No se registra <span class="block text-[9px] text-slate-500">(Sin odómetro)</span>
+                  NO <span class="block text-[9px] text-slate-500">(Ya cerrado en Report)</span>
+                </td>
+                <td class="p-2.5 text-slate-500 border-r border-white/10">
+                  NO <span class="block text-[9px] text-slate-500">(Solo al llegar a Patio)</span>
+                </td>
+                <td class="p-2.5 text-slate-300">
+                  Hora GPS/App <span class="block text-[9px] text-amber-300">+ PIN Operador</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="p-2.5 text-left font-bold text-slate-200 border-r border-white/10">
+                  7. Viaje Retorno: Llegada a Base GSP <span class="block text-[10px] text-emerald-400 font-normal">Cierra Viaje y Servicio</span>
                 </td>
                 <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
-                  OBLIGATORIO <span class="block text-[9px] font-normal text-slate-300">Nivel % (Foto opc.)</span>
+                  SÍ (Final Base) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Odómetro</span>
                 </td>
-                <td class="p-2.5 text-slate-500">
-                  No se registra <span class="block text-[9px] text-slate-500">(Estanque único)</span>
+                <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
+                  SÍ (Final Base) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Horómetro Camión</span>
+                </td>
+                <td class="p-2.5 text-slate-500 border-r border-white/10">
+                  NO <span class="block text-[9px] text-slate-500">(Ya cerrado en Report)</span>
+                </td>
+                <td class="p-2.5 text-emerald-400 font-black border-r border-white/10 bg-emerald-950/20">
+                  SÍ (% Recepción) <span class="block text-[9px] font-normal text-slate-300">📸 Foto Marcador</span>
+                </td>
+                <td class="p-2.5 text-slate-300">
+                  Hora GPS/App <span class="block text-[9px] text-amber-300">+ PIN Operador</span>
                 </td>
               </tr>
             </tbody>
@@ -453,6 +483,15 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
         
+        <div class="bg-black/40 border border-white/5 rounded-2xl p-4 space-y-2">
+          <h4 class="font-bold text-amber-400 text-sm flex items-center gap-1.5">
+            <span>⛽</span> ¿Cómo y cuándo registro una Carga de Combustible (Copec)?
+          </h4>
+          <p class="text-slate-300 leading-relaxed">
+            Cuando vas en traslado (pantalla <strong>2. Convoy en Ruta</strong>, tanto de ida como de retorno) tienes el botón azul <strong>[ ⛽ RENDIR CARGA DE COMBUSTIBLE (COPEC) ]</strong>. Al tocarlo, seleccionas el <em>Estanque Abastecido</em> (Principal Chasis, Superestructura Grúa o Auxiliar), anotas los <em>Litros Cargados *</em>, el <em>Monto ($ CLP) *</em>, el odómetro/horómetro, tomas la <strong>🧾 Foto del Voucher / Boleta</strong> y presionas <em>[ CONFIRMAR CARGA DE COMBUSTIBLE ]</em>.
+          </p>
+        </div>
+
         <div class="bg-black/40 border border-white/5 rounded-2xl p-4 space-y-2">
           <h4 class="font-bold text-amber-400 text-sm flex items-center gap-1.5">
             <span>📡</span> ¿Qué pasa si no tengo señal o internet en la faena?
@@ -477,15 +516,6 @@
           </h4>
           <p class="text-slate-300 leading-relaxed">
             La firma electrónica en pantalla del supervisor o ITO es el <strong>único documento legal</strong> con el que Grúas San Pablo cobra el arriendo de la máquina. Si te retiras de la faena sin la firma del cliente, el turno no puede facturarse y se generan reclamos de cobro.
-          </p>
-        </div>
-
-        <div class="bg-black/40 border border-white/5 rounded-2xl p-4 space-y-2">
-          <h4 class="font-bold text-purple-400 text-sm flex items-center gap-1.5">
-            <span>⏱️</span> ¿Qué hago si el cliente me pide trabajar un día extra?
-          </h4>
-          <p class="text-slate-300 leading-relaxed">
-            Si la faena estaba contratada por 2 días y el cliente te pide un 3er día en terreno, <strong>avisa de inmediato a Torre de Control (Yiara / Coordinación)</strong> antes de las 18:00 hrs. Ellos deben autorizar la ampliación en el sistema para que la APP te permita abrir el report del nuevo día.
           </p>
         </div>
 
@@ -516,52 +546,66 @@
         <tbody>
           <tr>
             <td class="border border-gray-400 p-2 font-bold">1</td>
-            <td class="border border-gray-400 p-2 font-bold">Salida Patio Base</td>
-            <td class="border border-gray-400 p-2">Odómetro Camión (KM) + Horómetro Camión (HRS) + % Petróleo + PIN</td>
-            <td class="border border-gray-400 p-2 font-bold text-amber-800">2 Fotos: 📸 Odómetro + 📸 Horómetro Camión (+ Foto Petróleo opc.)</td>
-            <td class="border border-gray-400 p-2 font-mono">[ INICIAR VIAJE HACIA FAENA ]</td>
+            <td class="border border-gray-400 p-2 font-bold">Inicio APP (Panel Operativo)</td>
+            <td class="border border-gray-400 p-2">Revisa cuadros Viajes (Asignado) y Reports (Pendientes)</td>
+            <td class="border border-gray-400 p-2">No aplica</td>
+            <td class="border border-gray-400 p-2 font-mono">[ Iniciar Viaje de Traslado (Hoja de Ruta) ➔ ]</td>
           </tr>
           <tr>
             <td class="border border-gray-400 p-2 font-bold">2</td>
-            <td class="border border-gray-400 p-2 font-bold">Llegada a Faena</td>
-            <td class="border border-gray-400 p-2">Odómetro Camión (KM) + Horómetro Camión (HRS) + PIN</td>
-            <td class="border border-gray-400 p-2 font-bold text-amber-800">2 Fotos: 📸 Odómetro + 📸 Horómetro Camión</td>
-            <td class="border border-gray-400 p-2 font-mono">[ CONFIRMAR LLEGADA ]</td>
+            <td class="border border-gray-400 p-2 font-bold">Salida de Base / Patio</td>
+            <td class="border border-gray-400 p-2">Odómetro Salida (KM) + Horómetro Camión (HRS) + % Combustible + PIN (4 dígitos)</td>
+            <td class="border border-gray-400 p-2 font-bold text-amber-800">2 Fotos: 📸 Odómetro + 📸 Horómetro Camión (+ Foto Marcador opc.)</td>
+            <td class="border border-gray-400 p-2 font-mono">[ 🟢 INICIAR VIAJE (SALIDA DE BASE) ]</td>
           </tr>
           <tr>
             <td class="border border-gray-400 p-2 font-bold">3</td>
+            <td class="border border-gray-400 p-2 font-bold">En Ruta / Carga Combustible (Copec)</td>
+            <td class="border border-gray-400 p-2">Estanque Abastecido * + Litros Cargados * + Monto ($ CLP) * + Odómetro/Horómetro</td>
+            <td class="border border-gray-400 p-2 font-bold text-amber-800">1 Foto: 🧾 Foto Voucher / Boleta Copec</td>
+            <td class="border border-gray-400 p-2 font-mono">[ ⛽ RENDIR CARGA DE COMBUSTIBLE (COPEC) ]</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-400 p-2 font-bold">4</td>
+            <td class="border border-gray-400 p-2 font-bold">Llegada a Faena</td>
+            <td class="border border-gray-400 p-2">Odómetro Llegada (KM) + Horómetro Camión Llegada (HRS) + PIN (4 dígitos)</td>
+            <td class="border border-gray-400 p-2 font-bold text-amber-800">2 Fotos: 📸 Odómetro Llegada + 📸 Horómetro Camión Llegada</td>
+            <td class="border border-gray-400 p-2 font-mono">[ CONFIRMAR LLEGADA ]</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-400 p-2 font-bold">5</td>
             <td class="border border-gray-400 p-2 font-bold">INICIO REPORT</td>
-            <td class="border border-gray-400 p-2">Hora Inicio (HH:MM numérico) + Horómetro Superestructura Inicial</td>
+            <td class="border border-gray-400 p-2">Hora Inicio (HH:MM numérico) + Horómetro Superestructura (Inicio) *</td>
             <td class="border border-gray-400 p-2 font-bold text-amber-800">1 Foto: 📸 FOTO HOROMETRO SUPERESTRUCTURA (Obligatoria)</td>
             <td class="border border-gray-400 p-2 font-mono">[ GUARDAR INICIO REPORT ]</td>
           </tr>
           <tr>
-            <td class="border border-gray-400 p-2 font-bold">4</td>
+            <td class="border border-gray-400 p-2 font-bold">6</td>
             <td class="border border-gray-400 p-2 font-bold">TERMINO DE REPORT</td>
-            <td class="border border-gray-400 p-2">Hora Término (HH:MM) + Colación + Standby + Horómetro Superestructura Final</td>
+            <td class="border border-gray-400 p-2">Hora Término (HH:MM) + Colación + Standby + Horómetro Superestructura (Término) * + Maniobras</td>
             <td class="border border-gray-400 p-2 font-bold text-amber-800">1 Foto: 📸 FOTO HOROMETRO SUPERESTRUCTURA (Obligatoria)</td>
             <td class="border border-gray-400 p-2 font-mono">[ TERMINO DE REPORT ]</td>
           </tr>
           <tr>
-            <td class="border border-gray-400 p-2 font-bold">5</td>
-            <td class="border border-gray-400 p-2 font-bold">Firma Mandante</td>
-            <td class="border border-gray-400 p-2">Nombre ITO + RUT + Cargo ITO</td>
-            <td class="border border-gray-400 p-2 font-bold">Firma ITO con el dedo en pantalla touch (FES)</td>
-            <td class="border border-gray-400 p-2 font-mono">[ Sellar y Transmitir Report ]</td>
-          </tr>
-          <tr>
-            <td class="border border-gray-400 p-2 font-bold">6</td>
-            <td class="border border-gray-400 p-2 font-bold">Retorno (Salida Faena)</td>
-            <td class="border border-gray-400 p-2">Odómetro y Horómetro Camión al salir de faena + PIN</td>
-            <td class="border border-gray-400 p-2 font-bold text-amber-800">2 Fotos: 📸 Odómetro + 📸 Horómetro Camión</td>
-            <td class="border border-gray-400 p-2 font-mono">[ Iniciar Retorno a Base ]</td>
-          </tr>
-          <tr>
             <td class="border border-gray-400 p-2 font-bold">7</td>
-            <td class="border border-gray-400 p-2 font-bold">Llegada a Base GSP</td>
-            <td class="border border-gray-400 p-2">Odómetro Final Base + Horómetro Camión Final Base + % Petróleo + PIN</td>
-            <td class="border border-gray-400 p-2 font-bold text-amber-800">3 Fotos: 📸 Odómetro + 📸 Horómetro Camión + 📸 Petróleo Recepción</td>
-            <td class="border border-gray-400 p-2 font-mono">[ Confirmar Llegada Patio Central ]</td>
+            <td class="border border-gray-400 p-2 font-bold">Firma Mandante</td>
+            <td class="border border-gray-400 p-2">Nombre Supervisor Mandante * + RUT Mandante * + Cargo en Faena</td>
+            <td class="border border-gray-400 p-2 font-bold">Firma manuscrita con el dedo en pantalla touch (FES)</td>
+            <td class="border border-gray-400 p-2 font-mono">[ 🟢 SELLAR Y TRANSMITIR REPORT ]</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-400 p-2 font-bold">8</td>
+            <td class="border border-gray-400 p-2 font-bold">Salida de Faena (Retorno)</td>
+            <td class="border border-gray-400 p-2">Odómetro Salida (KM) + Horómetro Camión (HRS) + PIN (4 dígitos)</td>
+            <td class="border border-gray-400 p-2 font-bold text-amber-800">2 Fotos: 📸 Odómetro + 📸 Horómetro Camión</td>
+            <td class="border border-gray-400 p-2 font-mono">[ 🟢 INICIAR RETORNO (SALIDA DE FAENA) ]</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-400 p-2 font-bold">9</td>
+            <td class="border border-gray-400 p-2 font-bold">Llegada a Patio Central GSP</td>
+            <td class="border border-gray-400 p-2">Odómetro Llegada (KM) + Horómetro Camión (HRS) + % Combustible Ingreso + PIN (4 dígitos)</td>
+            <td class="border border-gray-400 p-2 font-bold text-amber-800">2 Fotos: 📸 Odómetro + 📸 Horómetro Camión (+ Foto Marcador opc.)</td>
+            <td class="border border-gray-400 p-2 font-mono">[ CONFIRMAR LLEGADA ]</td>
           </tr>
         </tbody>
       </table>
@@ -590,449 +634,189 @@
     const slides = [
       {
         id: 1,
-        titulo: "Paso 1: La Pantalla Principal en la APP (Mis Servicios)",
+        titulo: "Paso 1: Panel Operativo de Campo (Inicio en la APP)",
         fase: "INICIO DEL DÍA",
-        badge: "PANTALLA DE INICIO",
+        badge: "PANEL OPERATIVO",
         badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-        audioPrompt: "Bienvenido a tu APP de terreno de Grúas San Pablo. Al abrir tu celular verás tu orden de trabajo del día y la grúa asignada. No tienes que buscar menús complicados: solo presiona el botón grande iluminado que dice 'Tu Próxima Acción'.",
-        resumen: "Al abrir la APP en tu celular, el sistema te muestra directamente tu orden de trabajo (OT) del día y el botón gigante iluminado con tu siguiente paso.",
+        audioPrompt: "Bienvenido a tu APP de terreno de Grúas San Pablo. Al abrir tu celular verás el Panel Operativo de Campo con dos cuadros de resumen arriba: Viajes y Reports. Debajo verás la tarjeta Registro de Viaje en Ruta con el destino asignado y el botón Iniciar Viaje de Traslado Hoja de Ruta, y más abajo la tarjeta Report Diario de Izaje.",
+        resumen: "Al iniciar sesión en tu celular, la APP muestra el Panel Operativo de Campo con el estado de tus Viajes y tus Reports asignados del día.",
         puntosClave: [
-          "<strong>Ya no hay menús complicados:</strong> La APP te muestra arriba en grande el número de OT, la grúa que tienes asignada y la obra del cliente.",
-          "<strong>El Stepper 1-2-3 didáctico:</strong> Te muestra en qué parte del día estás: <em>1. Viaje a Faena</em>, <em>2. Report Faena</em>, o <em>3. Retorno Base</em>.",
-          "<strong>El Botón Gigante (TU PRÓXIMA ACCIÓN):</strong> Es el botón grande que palpita con luz propia. Solo debes tocarlo para avanzar a la tarea que te toca en ese momento."
+          "<strong>Cuadros de Resumen Superiores:</strong> Arriba ves 2 indicadores rápidos: <em>Viajes (Asignado)</em> y <em>Reports (1 Pendiente)</em>.",
+          "<strong>Módulo 1 — Registro de Viaje en Ruta:</strong> Muestra tu OT, patente, destino de obra, el estado actual (<em>ASIGNADO</em> o <em>EN RUTA</em>) y el botón <em>[ Iniciar Viaje de Traslado (Hoja de Ruta) ➔ ]</em>.",
+          "<strong>Módulo 2 — Report Diario de Izaje:</strong> Muestra tu OT y grúa asignada para registrar los horómetros de superestructura, horas de faena y la firma digital del cliente mandante."
         ],
-        dondeMirar: "En la pantalla de tu celular: el botón amarillo grande que dice <strong>[ 🚀 1. INICIAR VIAJE A FAENA ➔ ]</strong>.",
-        reglaOro: "No tienes que buscar nada raro. Solo abre la APP y toca el botón grande que palpita.",
+        dondeMirar: "En la pantalla principal de tu celular: toca la tarjeta <strong>Registro de Viaje en Ruta</strong> o el botón <strong>[ Iniciar Viaje de Traslado (Hoja de Ruta) ➔ ]</strong>.",
+        reglaOro: "Al salir de Base San Pablo siempre entras primero a 'Registro de Viaje en Ruta'. Cuando ya estás posicionado en la obra, entras a 'Report Diario de Izaje'.",
         screenHtml: `
-          <div class="space-y-3">
-            <div class="flex items-center justify-between border-b border-white/10 pb-2">
-              <span class="font-black text-amber-400 font-mono text-[11px]">GSP OPERACIONES</span>
-              <span class="bg-emerald-500/20 text-emerald-400 font-mono text-[9px] px-2 py-0.5 rounded font-bold">🟢 CONECTADO</span>
-            </div>
-
-            <!-- Tarjeta Maestra -->
-            <div class="bg-gradient-to-br from-[#070d1e] to-[#0f1c3f] border-2 border-amber-500/50 rounded-2xl p-3 text-white space-y-2.5 shadow-xl">
-              <div class="flex justify-between items-start">
-                <div>
-                  <span class="text-[9px] font-mono uppercase bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-bold">OT GSP-2610-4853</span>
-                  <div class="text-sm font-black font-mono mt-1">🚜 BGDF.90-4</div>
-                  <div class="text-[10px] text-slate-300">Liebherr LTM-1220</div>
-                </div>
-                <div class="text-right">
-                  <span class="text-[9px] text-slate-400 block font-mono">Faena Mandante</span>
-                  <span class="text-[10px] font-bold text-white">📍 Ceresita - Quilicura</span>
-                </div>
-              </div>
-
-              <!-- Stepper 3 Pasos -->
-              <div class="bg-black/50 border border-white/10 rounded-xl p-2 grid grid-cols-3 gap-1.5 text-center font-mono">
-                <div class="p-1 rounded bg-amber-950/80 border border-amber-500 text-amber-300 font-bold">
-                  <div class="text-xs">🚛</div>
-                  <div class="text-[8px] uppercase">1. Viaje</div>
-                  <div class="text-[7px]">Por salir</div>
-                </div>
-                <div class="p-1 rounded bg-black/40 border border-white/10 text-slate-500 opacity-60">
-                  <div class="text-xs">🔒</div>
-                  <div class="text-[8px] uppercase">2. Report</div>
-                  <div class="text-[7px]">En espera</div>
-                </div>
-                <div class="p-1 rounded bg-black/40 border border-white/10 text-slate-500 opacity-60">
-                  <div class="text-xs">🔒</div>
-                  <div class="text-[8px] uppercase">3. Retorno</div>
-                  <div class="text-[7px]">En espera</div>
-                </div>
-              </div>
-
-              <!-- BOTÓN MAESTRO -->
-              <div class="space-y-1 pt-1">
-                <div class="text-[8px] font-mono text-amber-300 font-black uppercase">👉 TU PRÓXIMA ACCIÓN:</div>
-                <button class="w-full py-3 bg-amber-500 text-slate-950 font-black text-xs uppercase rounded-xl shadow-lg flex items-center justify-center gap-1.5 pulse-amber cursor-pointer">
-                  <span>🚀</span>
-                  <span>1. INICIAR VIAJE A FAENA ➔</span>
-                </button>
-                <p class="text-[9px] text-center text-slate-300">Registra odómetro, horómetro y sal de patio.</p>
-              </div>
-            </div>
-
-          </div>
+          <img src="./img/manual_pwa/paso1_inicio_app.png?v=20261028_6" alt="Paso 1: Panel Operativo de Campo" class="w-full h-auto block select-none" />
         `
       },
       {
         id: 2,
-        titulo: "Paso 2: Salida de Patio Base San Pablo",
-        fase: "VIAJE DE IDA",
-        badge: "PASO 1 VIAJE",
+        titulo: "Paso 2: Salida de Base / Patio (Inicio Viaje de Ida)",
+        fase: "VIAJE DE IDA • SALIDA",
+        badge: "PASO 1 SALIDA BASE",
         badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-        audioPrompt: "Antes de salir por el portón de Base San Pablo, debes registrar dos lecturas con sus dos fotos independientes en la cabina del camión: primero anotas los kilómetros y tomas la foto del odómetro en el tacógrafo; segundo, anotas el horómetro del motor del camión y tomas la foto del horómetro. Si en tu camión ambos números están en la misma pantalla digital, puedes presionar el botón de copiar para usar la misma foto sin tener que sacarla dos veces. Luego ingresas tu clave de cuatro dígitos y presionas Iniciar Viaje. La APP comenzará a reportar tu viaje a faena automáticamente.",
-        resumen: "Antes de cruzar el portón de Base San Pablo rumbo a la obra, debes ingresar los dos instrumentos del camión con sus DOS FOTOS SEPARADAS.",
+        audioPrompt: "Al entrar a Registro de Viaje en Ruta, verás la tarjeta Paso 1 Salida de Base o Patio. Antes de salir por el portón de San Pablo, debes completar: primero, el Odómetro de Salida en kilómetros y tomar la Foto del Odómetro Camión; segundo, el Horómetro Motor Camión Chasis en horas y tomar la Foto del Horómetro Motor Camión; tercero, el Nivel de Combustible al Salir de Patio de uno a cien por ciento y foto opcional del marcador; cuarto, tu PIN del Conductor de cuatro dígitos y presionar el botón Iniciar Viaje Salida de Base.",
+        resumen: "Antes de cruzar el portón de Base San Pablo rumbo a la obra, registras en 'Paso 1: Salida de Base / Patio' el Odómetro, el Horómetro del Camión (con sus 2 fotos), el % de Combustible de salida y tu PIN.",
         puntosClave: [
-          "<strong>1. Odómetro Camión (KM) + Foto 1:</strong> Anotas el número que marca el tacógrafo del camión y tomas la foto clara del odómetro.",
-          "<strong>2. Horómetro Motor Camión (HRS) + Foto 2:</strong> Anotas las horas del motor del camión y tomas su propia foto independiente.",
-          "<strong>3. Botón de Ayuda (Mismo Display):</strong> Si tu camión muestra los kilómetros y horas en la misma pantalla digital, tocas <em>[Copiar a Horómetro]</em> para usar la misma foto sin sacarla dos veces.",
-          "<strong>4. Tu PIN secreto de 4 dígitos:</strong> Escribes tu clave de seguridad personal para firmar la salida e iniciar la telemetría en ruta."
+          "<strong>1. Odómetro de Salida (KM) * + 📸 Foto Odómetro Camión *:</strong> Anotas los kilómetros del tablero del camión y tomas la foto obligatoria.",
+          "<strong>2. Horómetro Motor Camión / Chasis (HRS) * + 📸 Foto Horómetro *:</strong> Anotas las horas del motor chasis y tomas su foto (o tocas <em>📋 ¿Mismo display digital? Usar foto de Odómetro para Horómetro</em>).",
+          "<strong>3. Nivel de Combustible al Salir de Patio *:</strong> Seleccionas el porcentaje (1% a 100%) y puedes adjuntar la <em>📸 Foto Marcador Combustible Salida (Opcional)</em>.",
+          "<strong>4. PIN del Conductor (4 Dígitos) *:</strong> Escribes tu clave personal y presionas <em>[ 🟢 INICIAR VIAJE (SALIDA DE BASE) ]</em>."
         ],
-        dondeMirar: "En la cabina del camión: tacógrafo del volante (KM) y pantalla o reloj de horas del motor chasis (HRS).",
-        reglaOro: "¡Son dos fotos independientes de instrumentos! Odómetro y horómetro del camión quedan respaldados fotográficamente.",
+        dondeMirar: "En la cabina del camión: tacógrafo del volante (KM), horas del motor chasis (HRS) y marcador de petróleo (%).",
+        reglaOro: "En la Salida de Base se registran Odómetro (con foto), Horómetro Camión (con foto), % Combustible y tu PIN de 4 dígitos.",
         screenHtml: `
-          <div class="space-y-3">
-            <div class="flex items-center justify-between border-b border-white/10 pb-2">
-              <span class="font-mono text-amber-400 font-bold text-[10px]">HOJA DE RUTA • SALIDA BASE</span>
-              <span class="text-slate-400 text-[10px]">OT GSP-2610-4853</span>
-            </div>
-
-            <div class="bg-slate-900 border border-amber-500/40 rounded-xl p-3 space-y-2.5">
-              <div class="flex items-center gap-1.5 text-amber-400 font-black text-xs">
-                <span>🚀</span> 1. Salida de Base (2 Fotos Independientes)
-              </div>
-
-              <!-- Odómetro -->
-              <div class="space-y-1">
-                <label class="text-[10px] font-bold text-slate-300 block">1. Odómetro Salida (KM) *</label>
-                <div class="bg-black/60 border border-white/20 rounded-lg p-1.5 font-mono text-xs font-bold text-white">
-                  145.820 km
-                </div>
-                <div class="border border-dashed border-emerald-500/50 rounded-lg p-1.5 text-center bg-emerald-950/30">
-                  <span class="text-[9px] font-bold text-emerald-400">📸 Foto 1: Odómetro / Tacógrafo (Cargada ✅)</span>
-                </div>
-              </div>
-
-              <!-- Horómetro Camión -->
-              <div class="space-y-1 border-t border-white/10 pt-1.5">
-                <label class="text-[10px] font-bold text-slate-300 block">2. Horómetro Motor Camión (HRS) *</label>
-                <div class="bg-black/60 border border-white/20 rounded-lg p-1.5 font-mono text-xs font-bold text-white">
-                  3.240,2 hrs
-                </div>
-                <div class="border border-dashed border-emerald-500/50 rounded-lg p-1.5 text-center bg-emerald-950/30">
-                  <span class="text-[9px] font-bold text-emerald-400">📸 Foto 2: Horómetro Motor Chasis (Cargada ✅)</span>
-                </div>
-              </div>
-
-              <!-- PIN -->
-              <div class="border-t border-white/10 pt-1.5">
-                <label class="text-[10px] font-bold text-amber-400 block mb-0.5">PIN del Chofer (4 Dígitos) *</label>
-                <div class="bg-black/80 border border-amber-500/50 rounded-lg p-1.5 text-center text-base font-mono font-black tracking-widest text-white">
-                  ••••
-                </div>
-              </div>
-
-              <button class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase rounded-lg shadow-lg cursor-pointer">
-                🚀 INICIAR VIAJE HACIA FAENA
-              </button>
-            </div>
-          </div>
+          <img src="./img/manual_pwa/paso2_salida_base.png?v=20261028_6" alt="Paso 2: Salida de Base / Patio" class="w-full h-auto block select-none" />
         `
       },
       {
         id: 3,
-        titulo: "Paso 3: Llegada a la Faena (Confirmación de Arribo)",
-        fase: "LLEGADA A FAENA",
-        badge: "ARRIBO DE CAMIÓN",
-        badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-        audioPrompt: "Al llegar a la portería de la obra, presiona el botón Confirmar Llegada. En esta pantalla solo registras los dos instrumentos de la cabina del camión con sus dos fotos independientes: primero, foto y kilómetros de llegada del camión; segundo, foto y horómetro del motor del camión. Luego ingresas tu PIN de cuatro dígitos y presionas Confirmar Llegada. El horómetro de la superestructura se registrará después al abrir Inicio Report.",
-        resumen: "Al llegar a la obra, solo registras los DOS instrumentos del camión (Odómetro y Horómetro Chasis) con sus dos fotos y tu PIN. Sin horómetro de superestructura ni notas.",
+        titulo: "Paso 3: Convoy en Ruta y Carga de Combustible (Copec)",
+        fase: "EN RUTA • CARGA COMBUSTIBLE",
+        badge: "COMBUSTIBLE COPEC",
+        badgeColor: "bg-blue-500/20 text-blue-300 border-blue-500/40",
+        audioPrompt: "Una vez iniciado el viaje, tu celular muestra la pantalla dos, Convoy en Ruta, con el resumen de tu salida de base bloqueado arriba, el botón azul Rendir Carga de Combustible Copec y el botón verde Confirmar Llegada. Si durante el trayecto de ida o de retorno pasas a abastecer petróleo, presionas el botón Rendir Carga de Combustible Copec. Se abrirá la ventana Carga de Combustible donde seleccionas el Estanque Abastecido, ingresas los Litros Cargados, el Monto en pesos, el Odómetro y Horómetro, tomas la Foto del Voucher o Boleta y presionas Confirmar Carga de Combustible.",
+        resumen: "Mientras vas en traslado ('2. Convoy en Ruta'), si pasas a cargar petróleo presionas [ ⛽ RENDIR CARGA DE COMBUSTIBLE (COPEC) ] y registras el estanque, los litros, el monto ($) y la foto del voucher.",
         puntosClave: [
-          "<strong>1. Cabina Camión - Odómetro Llegada (KM) + Foto 1:</strong> Kilómetros de llegada con su foto obligatoria.",
-          "<strong>2. Cabina Camión - Horómetro Camión (HRS) + Foto 2:</strong> Horas de traslado del motor chasis con su foto obligatoria.",
-          "<strong>3. Tu PIN de 4 dígitos:</strong> Ingresas tu clave y presionas <em>[ CONFIRMAR LLEGADA ]</em>.",
-          "<strong>4. Tarjeta de Cierre Limpia:</strong> Al confirmar, verás únicamente el resumen de llegada y el botón directo <em>[ 1. REGISTRO DE REPORT DIARIO (EN FAENA) ]</em>."
+          "<strong>Pantalla 2. Convoy en Ruta:</strong> Muestra tu salida de base ya registrada (con candado 🔒), el cronómetro en vivo del viaje y el botón azul <em>[ ⛽ RENDIR CARGA DE COMBUSTIBLE (COPEC) ]</em>.",
+          "<strong>1. Estanque Abastecido *:</strong> Al abrir el formulario eliges dónde cargaste: <em>⛽ Estanque Principal (Chasis / Tracción)</em>, <em>⚙️ Estanque Superestructura (Grúa / Hidráulico)</em> o <em>🛢️ Estanque Auxiliar / Reserva</em>.",
+          "<strong>2. Litros Cargados * y Monto ($ CLP) *:</strong> Digitas los litros exactos abastecidos (ej: <em>250,5</em>) y el monto total en pesos de la carga (ej: <em>285000</em>).",
+          "<strong>3. Odómetro (KM), Horómetro (HRS) y 🧾 Foto Voucher:</strong> Anotas las lecturas al momento de cargar, tomas la foto con <em>[ 🧾 Tomar Foto del Voucher ]</em> y presionas <em>[ CONFIRMAR CARGA DE COMBUSTIBLE ]</em>."
         ],
-        dondeMirar: "Únicamente en la cabina del camión (tacógrafo de kilómetros y horómetro del motor chasis).",
-        reglaOro: "En la Llegada a Faena solo se piden las 2 fotos de la cabina del camión. El horómetro de la superestructura se toma en INICIO REPORT.",
+        dondeMirar: "El voucher o boleta impresa en la estación Copec (litros y monto en pesos) y el tablero del camión al momento de abastecer.",
+        reglaOro: "Siempre que cargues petróleo en ruta (en el viaje de ida o en el retorno), debes rendirlo con el botón '⛽ Rendir Carga de Combustible (Copec)' adjuntando la foto del voucher.",
         screenHtml: `
-          <div class="space-y-2.5">
-            <div class="bg-[#0a0f1e] border-2 border-emerald-500/50 rounded-2xl p-3 text-center space-y-2 shadow-xl">
-              <div class="w-10 h-10 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mx-auto text-xl">
-                🏁
-              </div>
-              <span class="text-[9px] font-mono uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-black tracking-wider">
-                PASO 1 CUMPLIDO • EQUIPO EN FAENA
-              </span>
-              <h3 class="text-xs font-black text-white uppercase font-mono">
-                Llegada a Faena Confirmada
-              </h3>
-
-              <div class="bg-black/50 border border-white/10 rounded-xl p-2 text-left font-mono text-[9px] space-y-1.5">
-                <div class="space-y-1">
-                  <div class="flex justify-between">
-                    <span class="text-slate-400">1. Odómetro Llegada:</span>
-                    <strong class="text-emerald-400">145.885 KM [📸 Foto 1 ✅]</strong>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-400">2. Horómetro Camión:</span>
-                    <strong class="text-emerald-400">3.242,5 HRS [📸 Foto 2 ✅]</strong>
-                  </div>
-                </div>
-              </div>
-
-              <!-- BOTÓN DE CONTINUIDAD A INICIO REPORT -->
-              <div class="pt-0.5 space-y-1.5">
-                <button class="w-full py-2.5 bg-emerald-500 text-slate-950 font-black text-xs uppercase rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-1.5 pulse-emerald cursor-pointer">
-                  <span>📋</span>
-                  <span>1. REGISTRO DE REPORT DIARIO (EN FAENA)</span>
-                </button>
-                <button class="w-full py-2 bg-slate-900 border border-white/15 text-slate-300 font-bold text-[10px] uppercase rounded-xl">
-                  VOLVER A MIS SERVICIOS
-                </button>
-              </div>
-            </div>
+          <div class="bg-blue-950/80 border-b border-blue-500/40 px-3 py-1.5 text-[10px] font-mono font-bold text-blue-200 text-center uppercase tracking-wider">
+            1️⃣ Pantalla Activa: 2. Convoy en Ruta
           </div>
+          <img src="./img/manual_pwa/paso_en_ruta_convoy.png?v=20261028_6" alt="Pantalla 2. Convoy en Ruta" class="w-full h-auto block select-none" />
+          <div class="bg-amber-500/20 border-y border-amber-500/40 px-3 py-1.5 text-[10px] font-mono font-bold text-amber-300 text-center uppercase tracking-wider">
+            2️⃣ Al tocar "⛽ Rendir Carga de Combustible (Copec)" ▼
+          </div>
+          <img src="./img/manual_pwa/paso_modal_combustible.png?v=20261028_6" alt="Modal Carga de Combustible en Ruta" class="w-full h-auto block select-none" />
         `
       },
       {
         id: 4,
-        titulo: "Paso 4: INICIO REPORT (Apertura de Jornada en Faena)",
-        fase: "INICIO REPORT",
-        badge: "INICIO REPORT",
-        badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-        audioPrompt: "Al iniciar las maniobras en la obra, se abre la pantalla Inicio Report con la fecha y el número de día. Aquí ingresas la hora de inicio directamente con teclado numérico de horas y minutos, anotas el horómetro de superestructura de la grúa que es obligatorio, tomas la foto con el botón Foto Horómetro Superestructura y presionas Guardar Inicio Report.",
-        resumen: "Al subir a la cabina de izaje para comenzar a operar (tanto el Día 1 como en días siguientes), registras la hora numérica, el horómetro de superestructura y su foto obligatoria.",
+        titulo: "Paso 4: Llegada a Faena (Confirmación de Llegada a Faena)",
+        fase: "VIAJE DE IDA • LLEGADA",
+        badge: "CONFIRMAR LLEGADA",
+        badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+        audioPrompt: "Al llegar a la obra y presionar el botón verde Confirmar Llegada en la pantalla Convoy en Ruta, se abre el formulario Confirmación de Llegada a Faena donde ingresas: primero, el Odómetro de Llegada en kilómetros y su foto obligatoria; segundo, el Horómetro Camión Chasis de Llegada en horas y su foto obligatoria; tercero, tu PIN del Conductor de cuatro dígitos y presionas Confirmar Llegada. Inmediatamente aparecerá el botón Paso 2 Iniciar Report Diario de Faena.",
+        resumen: "Al llegar a la obra presionas [ CONFIRMAR LLEGADA ] y completas el formulario 'Confirmación de Llegada a Faena' con Odómetro Llegada + Foto, Horómetro Camión + Foto y tu PIN de 4 dígitos.",
         puntosClave: [
-          "<strong>Cabecera clara:</strong> Muestra <em>INICIO REPORT</em> y el indicador <em>DD/MM/YYYY (DIA Y DE X)</em>.",
-          "<strong>Hora de Inicio (HH : MM numérico):</strong> Escribes directamente la hora y los minutos con teclado numérico (sin reloj circular).",
-          "<strong>Horómetro Superestructura (OBLIGATORIO):</strong> Anotas las horas del computador de la grúa.",
-          "<strong>Foto Obligatoria (Botón Único):</strong> Presionas <em>[ 📸 FOTO HOROMETRO SUPERESTRUCTURA ]</em> y luego <em>[ GUARDAR INICIO REPORT ]</em>."
+          "<strong>1. Odómetro de Llegada (KM) * + 📸 Foto Odómetro Llegada *:</strong> Digitas los kilómetros al llegar a la obra y tomas la foto del tacógrafo.",
+          "<strong>2. Horómetro Camión / Chasis Llegada (HRS) * + 📸 Foto Horómetro Camión *:</strong> Digitas las horas del motor chasis y tomas su foto (o usas el botón <em>¿Mismo display digital?</em>).",
+          "<strong>3. PIN del Conductor (4 Dígitos) *:</strong> Ingresas tu clave de 4 dígitos y presionas el botón verde <em>[ CONFIRMAR LLEGADA ]</em>.",
+          "<strong>4. Paso siguiente inmediato:</strong> Al confirmar la llegada, la APP te muestra el botón verde <em>[ 📋 PASO 2: INICIAR REPORT DIARIO DE FAENA ➔ ]</em>."
         ],
-        dondeMirar: "En la cabina de izaje de la grúa (computador LICCON / horómetro de superestructura).",
-        reglaOro: "En INICIO REPORT el Horómetro Superestructura y su foto son 100% obligatorios antes de guardar.",
+        dondeMirar: "Únicamente en la cabina del camión (tacógrafo de kilómetros y horómetro del motor chasis). Aquí NO se pide nivel de combustible ni horómetro de pluma.",
+        reglaOro: "En la Llegada a Faena ingresas Odómetro Llegada + Foto, Horómetro Camión + Foto y tu PIN. El horómetro de la superestructura (grúa) recién se pide en INICIO REPORT.",
         screenHtml: `
-          <div class="space-y-2.5">
-            <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
-              <div>
-                <span class="font-mono text-amber-400 font-bold text-[8px] block">GSP OPERACIONES FAENA</span>
-                <span class="font-black text-white text-xs">INICIO REPORT</span>
-              </div>
-              <span class="bg-amber-500 text-slate-950 text-[8px] px-2 py-0.5 rounded font-black font-mono">27/10/2026 (DIA 1 DE 1)</span>
-            </div>
-
-            <div class="bg-slate-900 border border-white/10 rounded-xl p-3 space-y-2.5">
-              <div>
-                <label class="text-[9px] font-black text-emerald-400 uppercase block mb-1">🟢 HORA DE INICIO EN FAENA *</label>
-                <div class="flex items-center justify-center gap-2 bg-black/60 border border-white/15 rounded-xl p-2 font-mono">
-                  <div class="bg-slate-900 border border-emerald-500/50 rounded-lg px-3 py-1 text-sm font-black text-white">08</div>
-                  <span class="text-emerald-400 font-black">:</span>
-                  <div class="bg-slate-900 border border-emerald-500/50 rounded-lg px-3 py-1 text-sm font-black text-white">00</div>
-                </div>
-              </div>
-
-              <div>
-                <label class="text-[9px] font-black text-amber-300 uppercase block mb-1">⚙️ HORÓMETRO SUPERESTRUCTURA (INICIO) *</label>
-                <div class="bg-black/60 border border-amber-500/40 rounded-lg p-2 font-mono text-xs font-black text-amber-300 text-center">
-                  1.850,0 HRS
-                </div>
-              </div>
-
-              <button class="w-full py-2.5 bg-amber-400 text-slate-950 font-black text-[10px] uppercase rounded-xl shadow flex items-center justify-center gap-1.5">
-                <span>📸</span>
-                <span>FOTO HOROMETRO SUPERESTRUCTURA</span>
-              </button>
-
-              <button class="w-full py-3 bg-amber-500 text-slate-950 font-black text-xs uppercase rounded-xl shadow-lg cursor-pointer">
-                GUARDAR INICIO REPORT
-              </button>
-            </div>
-          </div>
+          <img src="./img/manual_pwa/paso3_llegada_faena.png?v=20261028_6" alt="Paso 4: Confirmación de Llegada a Faena" class="w-full h-auto block select-none" />
         `
       },
       {
         id: 5,
-        titulo: "Paso 5: TERMINO DE REPORT (Cierre de Operación Diaria)",
-        fase: "TERMINO DE REPORT",
-        badge: "TERMINO DE REPORT",
+        titulo: "Paso 5: INICIO REPORT (Apertura de Jornada en Faena)",
+        fase: "REPORT DIARIO • INICIO",
+        badge: "INICIO REPORT",
         badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
-        audioPrompt: "Al finalizar las maniobras del día, la pantalla muestra Término de Report. Ingresas la hora de término con teclado numérico, seleccionas tu colación y revisas el recuadro de Hora Report y Hora Colación. Si hubo detenciones, puedes anotar Stand By Cliente Cobrable, que no se descuenta de Hora Report, o Stand By San Pablo Falla Equipo Sin Cobro Cliente. Finalmente ingresas el horómetro final de superestructura, tomas la Foto Horómetro Superestructura, describes las maniobras y presionas Término de Report.",
-        resumen: "Al apagar la grúa al final del día, ingresas la hora numérica de término, colación, standby (si aplica), horómetro final de superestructura con su foto obligatoria y las maniobras.",
+        audioPrompt: "Al iniciar las maniobras en la obra, se abre la pantalla Inicio Report con la tarjeta de tu Orden de Trabajo, la grúa asignada y la tripulación. Aquí ingresas la Hora de Inicio en Faena directamente con teclado numérico de horas y minutos, anotas el Horómetro Superestructura de Inicio que es obligatorio, tomas la foto con el botón Foto Horómetro Superestructura y presionas Guardar Inicio Report.",
+        resumen: "Al subir a la cabina de izaje para comenzar a operar (tanto el Día 1 como en días siguientes), registras la hora numérica, el horómetro de superestructura y su foto obligatoria.",
         puntosClave: [
-          "<strong>Hora de Término (HH : MM numérico):</strong> Ingreso numérico directo de hora y minutos (y puedes rectificar el horario de inicio si fue necesario).",
-          "<strong>Resumen Limpio (2 Indicadores):</strong> Muestra únicamente <em>HORA REPORT</em> y <em>HORA COLACIÓN</em>.",
-          "<strong>Horas Standby claras:</strong> <em>STAND BY CLIENTE COBRABLE</em> (no rebaja la HORA REPORT) y <em>STAND BY SAN PABLO FALLA EQUIPO SIN COBRO CLIENTE</em>.",
-          "<strong>Horómetro Superestructura Final + Foto Obligatoria:</strong> Anotas el horómetro final y tomas la foto con <em>[ 📸 FOTO HOROMETRO SUPERESTRUCTURA ]</em> (sin horómetro de chasis ni notas de taller).",
-          "<strong>Botón de Cierre:</strong> Presionas <em>[ TERMINO DE REPORT ]</em> para pasar a la firma del cliente."
+          "<strong>Tarjeta de Orden de Trabajo:</strong> Verifica tu OT, el nombre del cliente mandante, la <em>🚜 Grúa Asignada</em> y la <em>👷 Tripulación</em>.",
+          "<strong>🟢 HORA DE INICIO EN FAENA * (HH : MM numérico):</strong> Escribes directamente la hora (00-23) y los minutos (00-59) con teclado numérico.",
+          "<strong>⚙️ HORÓMETRO SUPERESTRUCTURA (INICIO) *:</strong> Anotas las horas del computador de la cabina de izaje de la grúa.",
+          "<strong>📸 FOTO HOROMETRO SUPERESTRUCTURA *:</strong> Tomas la foto obligatoria del reloj/pantalla de superestructura y presionas <em>[ GUARDAR INICIO REPORT ]</em>."
         ],
-        dondeMirar: "El computador de la cabina de izaje de la grúa al apagar el equipo.",
-        reglaOro: "El Horómetro Superestructura de término y su foto son obligatorios. Las horas de Stand By Cliente Cobrable NO se rebajan de HORA REPORT.",
+        dondeMirar: "En la cabina de izaje de la grúa (computador LICCON / horómetro de superestructura).",
+        reglaOro: "En INICIO REPORT el Horómetro Superestructura y su foto son 100% obligatorios antes de guardar.",
         screenHtml: `
-          <div class="space-y-2">
-            <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
-              <div>
-                <span class="font-mono text-amber-400 font-bold text-[8px] block">GSP OPERACIONES FAENA</span>
-                <span class="font-black text-white text-xs">TERMINO DE REPORT</span>
-              </div>
-              <span class="bg-amber-500 text-slate-950 text-[8px] px-2 py-0.5 rounded font-black font-mono">27/10/2026 (DIA 1 DE 1)</span>
-            </div>
-
-            <div class="bg-slate-900 border border-white/10 rounded-xl p-2.5 space-y-2">
-              <div class="flex justify-between items-center text-[10px]">
-                <span class="text-red-400 font-black uppercase">🔴 Hora Término (HH:MM):</span>
-                <span class="font-mono font-black text-white bg-black/60 px-2 py-0.5 rounded border border-red-500/40">18 : 00</span>
-              </div>
-
-              <!-- Resumen 2 columnas: HORA REPORT y HORA COLACIÓN -->
-              <div class="bg-emerald-950/50 border border-emerald-500/60 rounded-xl p-2 grid grid-cols-2 gap-2 text-center font-mono">
-                <div class="bg-emerald-900/80 rounded p-1 border border-emerald-400">
-                  <div class="text-[8px] text-emerald-300 uppercase font-black">HORA REPORT</div>
-                  <div class="text-xs font-black text-emerald-200">9,0 hrs</div>
-                </div>
-                <div class="bg-black/50 rounded p-1 border border-white/10">
-                  <div class="text-[8px] text-slate-300 uppercase font-black">HORA COLACIÓN</div>
-                  <div class="text-xs font-bold text-amber-300">1,0 hrs</div>
-                </div>
-              </div>
-
-              <!-- Standby -->
-              <div class="bg-black/40 border border-white/10 rounded-lg p-1.5 space-y-1 text-[8px] font-bold">
-                <div class="text-amber-300">STAND BY CLIENTE COBRABLE: 0.0 hrs</div>
-                <div class="text-red-300">STAND BY SAN PABLO FALLA EQUIPO SIN COBRO CLIENTE: 0.0 hrs</div>
-              </div>
-
-              <!-- Horómetro Término -->
-              <div>
-                <div class="flex justify-between items-center mb-0.5">
-                  <label class="text-[9px] font-bold text-amber-300">⚙️ HORÓMETRO SUPERESTRUCTURA (TÉRMINO) *</label>
-                </div>
-                <div class="bg-black/60 border border-amber-500/50 rounded-lg p-1.5 font-mono text-xs font-black text-amber-300 text-center">
-                  1.858,0 HRS
-                </div>
-              </div>
-
-              <div class="bg-amber-400 text-slate-950 rounded-lg p-1.5 text-center font-black text-[10px]">
-                📸 FOTO HOROMETRO SUPERESTRUCTURA
-              </div>
-
-              <button class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs uppercase rounded-lg shadow-lg cursor-pointer">
-                TERMINO DE REPORT
-              </button>
-            </div>
-          </div>
+          <img src="./img/manual_pwa/paso4_inicio_report.png?v=20261028_6" alt="Paso 5: INICIO REPORT" class="w-full h-auto block select-none" />
         `
       },
       {
         id: 6,
-        titulo: "Paso 6: Firma con el Dedo del Cliente Mandante",
-        fase: "LIQUIDACIÓN OFICIAL",
-        badge: "MOMENTO 3 FIRMA",
-        badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-        audioPrompt: "Este paso es fundamental para el cobro del servicio. Pásale tu teléfono al supervisor o ITO del cliente. Él revisará el resumen de las horas trabajadas, ingresará su nombre, su RUT, su cargo y firmará con su dedo en la pantalla blanca. Presionas Sellar y Transmitir Report y el día queda legalmente aprobado.",
-        resumen: "Le pasas el teléfono al supervisor o ITO del cliente para que revise las horas trabajadas y firme directamente con su dedo en la pantalla táctil.",
+        titulo: "Paso 6: TERMINO DE REPORT (Cierre de Operación Diaria)",
+        fase: "REPORT DIARIO • TÉRMINO",
+        badge: "TERMINO DE REPORT",
+        badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+        audioPrompt: "Al finalizar las maniobras del día, la pantalla muestra Término de Report. Puedes ver o rectificar tu horario de inicio, ingresas la Hora de Término de Faena con teclado numérico, seleccionas el Tiempo de Colación en minutos y revisas el recuadro verde con Hora Report y Hora Colación. Si hubo detenciones, anotas Stand By Cliente Cobrable o Stand By San Pablo Falla Equipo Sin Cobro Cliente. Luego ingresas el Horómetro Superestructura de Término, tomas la Foto Horómetro Superestructura, escribes las Maniobras Realizadas y presionas el botón Término de Report.",
+        resumen: "Al apagar la grúa al final del día, ingresas la hora numérica de término, colación, standby (si aplica), horómetro final de superestructura con su foto obligatoria y las maniobras realizadas.",
         puntosClave: [
-          "<strong>Voucher formal en pantalla:</strong> El cliente ve el resumen de la grúa, las horas facturables y las maniobras realizadas.",
-          "<strong>Datos del supervisor:</strong> El cliente anota su Nombre, RUT y Cargo en la faena.",
-          "<strong>Firma en el recuadro blanco:</strong> Firma con su propio dedo sobre el recuadro touch.",
-          "<strong>Sellar y Transmitir Report:</strong> Tocas el botón verde grande. El documento queda sellado con candado digital y viaja a la oficina central de San Pablo.",
-          "<strong>¿Y si la faena sigue mañana?:</strong> La APP te felicitará y te dejará automáticamente listo para iniciar el Día 2."
+          "<strong>🟢 Horario de Inicio (✏️ Modificable) y 🔴 Hora de Término *:</strong> Ingreso numérico directo de horas y minutos (HH : MM).",
+          "<strong>🥪 Tiempo de Colación y Resumen Verde:</strong> Eliges <em>0m, 30m, 45m, 60m o 90m</em> y ves al instante <em>HORA REPORT</em> y <em>HORA COLACIÓN</em>.",
+          "<strong>🛑 Horas Standby:</strong> <em>STAND BY CLIENTE COBRABLE</em> (no se descuenta de Hora Report) y <em>STAND BY SAN PABLO FALLA EQUIPO SIN COBRO CLIENTE</em> (sí se descuenta).",
+          "<strong>⚙️ Horómetro Superestructura (Término) * + 📸 Foto *:</strong> Anotas las horas finales de la grúa y tomas su foto obligatoria.",
+          "<strong>📝 Maniobras Realizadas:</strong> Describes brevemente el trabajo hecho y presionas <em>[ TERMINO DE REPORT ]</em>."
         ],
-        dondeMirar: "El recuadro blanco de firma en la pantalla de tu celular.",
-        reglaOro: "¡Sin esta firma el servicio no se puede cobrar! Es tu máximo respaldo de trabajo realizado.",
+        dondeMirar: "El computador de la cabina de izaje de la grúa al apagar el equipo.",
+        reglaOro: "El Horómetro Superestructura de término y su foto son obligatorios. Las horas de Stand By Cliente Cobrable NO se rebajan de HORA REPORT.",
         screenHtml: `
-          <div class="space-y-3">
-            <div class="bg-slate-900 border border-emerald-500/40 rounded-xl p-3 space-y-2">
-              <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
-                <span class="text-emerald-400 font-black text-xs flex items-center gap-1">
-                  <span>✍️</span> Aceptación del Mandante
-                </span>
-                <span class="text-[9px] font-mono text-slate-400">DÍA 1</span>
-              </div>
-
-              <!-- Voucher Horas Facturables -->
-              <div class="bg-black/60 border border-emerald-500/30 rounded-lg p-2 text-[10px] font-mono flex justify-between items-center">
-                <span class="text-slate-300">Horas Facturables Aprobadas:</span>
-                <strong class="text-emerald-300 text-xs">9,0 HRS (8h + 1h ST)</strong>
-              </div>
-
-              <div>
-                <label class="text-[9px] font-bold text-slate-300 block mb-0.5">Nombre Supervisor Mandante *</label>
-                <div class="bg-black/60 border border-white/20 rounded-lg p-1.5 text-xs font-bold text-white">
-                  Carlos Henríquez
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-1.5">
-                <div>
-                  <label class="text-[9px] font-bold text-slate-300 block mb-0.5">RUT Mandante *</label>
-                  <div class="bg-black/60 border border-white/20 rounded-lg p-1.5 font-mono text-xs text-white">
-                    14.892.341-2
-                  </div>
-                </div>
-                <div>
-                  <label class="text-[9px] font-bold text-slate-300 block mb-0.5">Cargo</label>
-                  <div class="bg-black/60 border border-white/20 rounded-lg p-1.5 text-xs text-white">
-                    ITO Faena
-                  </div>
-                </div>
-              </div>
-
-              <!-- Recuadro Blanco de Firma -->
-              <div>
-                <label class="text-[9px] font-bold text-slate-300 block mb-0.5">Firma Touch con el Dedo *</label>
-                <div class="bg-white rounded-lg p-2 h-16 flex items-center justify-center border border-slate-300">
-                  <span class="text-xl text-slate-900 font-serif italic">✍️ Carlos H.</span>
-                </div>
-              </div>
-
-              <button class="w-full py-2.5 bg-emerald-500 text-slate-950 font-black text-xs uppercase rounded-lg shadow-lg flex items-center justify-center gap-1.5 cursor-pointer">
-                <span>🟢</span>
-                <span>SELLAR Y TRANSMITIR REPORT DÍA 1</span>
-              </button>
-            </div>
-          </div>
+          <img src="./img/manual_pwa/paso5_termino_report.png?v=20261028_6" alt="Paso 6: TERMINO DE REPORT" class="w-full h-auto block select-none" />
         `
       },
       {
         id: 7,
-        titulo: "Paso 7: Viaje de Retorno a Base San Pablo y Cierre",
-        fase: "REGRESO & LIBERACIÓN",
-        badge: "SERVICIO CONCLUIDO",
-        badgeColor: "bg-purple-500/20 text-purple-300 border-purple-500/40",
-        audioPrompt: "Al sellar el último día contratado de faena se desbloqueará el botón Retorno a Base. Al salir de la obra registras el odómetro y el horómetro del motor del camión con sus dos fotos independientes. Al ingresar por el portón de Base San Pablo, presionas Confirmar Llegada a Patio Central, anotas el odómetro final, el horómetro final del camión con sus dos fotos, y el petróleo recibido con su foto. La grúa quedará disponible y tu servicio finalizado con éxito.",
-        resumen: "Al sellar el último día de faena, se desbloquea el retorno hacia Santiago. Registras la salida de obra con 2 fotos de instrumentos, y la recepción en Base con 2 fotos de instrumentos más la foto del petróleo.",
+        titulo: "Paso 7: Conformidad y Firma con el Dedo del Mandante",
+        fase: "REPORT DIARIO • FIRMA FES",
+        badge: "FIRMA MANDANTE",
+        badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+        audioPrompt: "Al presionar Término de Report pasas a la pantalla de Conformidad del Mandante. Arriba aparece el Resumen Comercial de Faena y la Certificación de Tiempos de Servicio con Inicio y Fin, Colación y Hora Report. Pásale tu teléfono al supervisor o jefe de obra del cliente para que ingrese su Nombre, su RUT, su Cargo en Faena y firme con su dedo en el recuadro blanco. Luego presionas el botón verde Sellar y Transmitir Report.",
+        resumen: "Le pasas el teléfono al supervisor o ITO del cliente para que revise el Resumen Comercial de Faena y firme directamente con su dedo en el recuadro blanco.",
         puntosClave: [
-          "<strong>1. Desbloqueo del Retorno:</strong> Al sellar el último report de faena, la APP te muestra: <em>[ 🚀 INICIAR RETORNO A BASE ➔ ]</em>.",
-          "<strong>2. Salida de Faena (2 Fotos):</strong> Anotas Odómetro (KM) + Foto 1 y Horómetro Camión (HRS) + Foto 2 al salir de la obra con tu PIN.",
-          "<strong>3. Llegada a Base San Pablo (3 Fotos):</strong> Al entrar a patio central, tocas <em>[ 🏁 CONFIRMAR LLEGADA A PATIO CENTRAL GSP ]</em>.",
-          "<strong>4. Recepción Final:</strong> Odómetro final (Foto 1), Horómetro camión final (Foto 2), % de petróleo recibido (Foto 3) y tu PIN.",
-          "<strong>¡Servicio Concluido!:</strong> La máquina pasa automáticamente a estado <strong>DISPONIBLE</strong> en Torre de Control."
+          "<strong>Resumen Comercial de Faena:</strong> El cliente ve en pantalla la OT, la grúa, el horario <em>Inicio - Fin</em>, la <em>Colación</em>, la <em>HORA REPORT</em> y las maniobras realizadas.",
+          "<strong>Datos del Supervisor Mandante:</strong> Se anota el <em>👤 Nombre Supervisor Mandante *</em>, <em>🆔 RUT Mandante *</em> y <em>💼 Cargo en Faena</em>.",
+          "<strong>Firma Manuscrita en Pantalla:</strong> El supervisor firma con su propio dedo sobre el recuadro blanco touch.",
+          "<strong>Botón Sellar y Transmitir Report:</strong> Presionas <em>[ 🟢 Sellar y Transmitir Report Día 1 ]</em>. Si era el último día de faena, se desbloquea de inmediato el Viaje de Retorno a Base."
         ],
-        dondeMirar: "El tacógrafo del volante, el reloj del motor chasis y el medidor de petróleo al ingresar al portón de Base San Pablo.",
-        reglaOro: "Al confirmar llegada en Base, tocas [Volver a Mis Servicios] y tu turno queda finalizado con éxito.",
+        dondeMirar: "El recuadro blanco de firma en la pantalla de tu celular.",
+        reglaOro: "¡Sin esta firma el servicio no se puede cobrar! Es el respaldo oficial de tu trabajo realizado.",
         screenHtml: `
-          <div class="space-y-3">
-            <div class="bg-[#0a0f1e] border-2 border-purple-500/50 rounded-2xl p-4 text-center space-y-2.5 shadow-xl">
-              <div class="w-12 h-12 rounded-full bg-purple-500/20 border-2 border-purple-500 flex items-center justify-center mx-auto text-2xl">
-                🏆
-              </div>
-              <span class="text-[9px] font-mono uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-bold">
-                SERVICIO OPERACIONAL CONCLUIDO
-              </span>
-              <h3 class="text-sm font-black text-white uppercase font-mono">
-                Retorno a Base Concluido
-              </h3>
-              <p class="text-[10px] text-slate-300">
-                La grúa <strong>BGDF.90-4</strong> ha ingresado a Patio Central San Pablo. El equipo queda <strong>DISPONIBLE</strong>.
-              </p>
-
-              <div class="bg-black/50 border border-white/10 rounded-xl p-2 text-left font-mono text-[9px] space-y-1.5">
-                <div class="flex justify-between border-b border-white/10 pb-1">
-                  <span class="text-slate-400">1. Odómetro Final Base:</span>
-                  <strong class="text-purple-300">145.950 KM [📸 Foto 1 ✅]</strong>
-                </div>
-                <div class="flex justify-between border-b border-white/10 pb-1">
-                  <span class="text-slate-400">2. Horómetro Camión Final:</span>
-                  <strong class="text-purple-300">3.253,0 HRS [📸 Foto 2 ✅]</strong>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-cyan-300 font-bold">⛽ 3. Petróleo Recepción:</span>
-                  <strong class="text-cyan-400">100% [📸 Foto 3 ✅]</strong>
-                </div>
-              </div>
-
-              <!-- BOTÓN VOLVER A INICIO -->
-              <div class="pt-1">
-                <button class="w-full py-3 bg-emerald-500 text-slate-950 font-black text-xs uppercase rounded-xl shadow-lg flex items-center justify-center gap-1.5 cursor-pointer">
-                  <span>🏠</span>
-                  <span>VOLVER A MIS SERVICIOS ➔</span>
-                </button>
-              </div>
-            </div>
-          </div>
+          <img src="./img/manual_pwa/paso6_firma_mandante.png?v=20261028_6" alt="Paso 7: Conformidad y Firma del Mandante" class="w-full h-auto block select-none" />
+        `
+      },
+      {
+        id: 8,
+        titulo: "Paso 8: Salida de Faena hacia Base GSP (Inicio Viaje de Retorno)",
+        fase: "VIAJE DE RETORNO • SALIDA",
+        badge: "SALIDA DE FAENA",
+        badgeColor: "bg-purple-500/20 text-purple-300 border-purple-500/40",
+        audioPrompt: "Cuando terminas y firmas el último día de faena, se habilita el Viaje de Retorno a Base GSP. Antes de salir de la obra del cliente rumbo al patio central de San Pablo, abres la pantalla Paso 1 Salida de Faena hacia Base GSP y registras: primero, el Odómetro de Salida en kilómetros y su foto obligatoria; segundo, el Horómetro Motor Camión Chasis en horas y su foto obligatoria; tercero, tu PIN de cuatro dígitos y presionas el botón Iniciar Retorno Salida de Faena.",
+        resumen: "Al terminar el último día de trabajo en la obra, abres el Viaje de Retorno ('Paso 1: Salida de Faena hacia Base GSP') y registras únicamente Odómetro, Horómetro Camión (con sus 2 fotos) y tu PIN antes de emprender el regreso.",
+        puntosClave: [
+          "<strong>¿Cuándo se hace este paso?:</strong> Únicamente al terminar el último día contratado de la faena, cuando la grúa se retira de la obra de vuelta a Base San Pablo.",
+          "<strong>1. Odómetro de Salida (KM) * + 📸 Foto Odómetro Camión *:</strong> Anotas los kilómetros del tacógrafo al salir de la obra y tomas su foto.",
+          "<strong>2. Horómetro Motor Camión / Chasis (HRS) * + 📸 Foto Horómetro *:</strong> Anotas las horas del motor chasis y tomas su foto (o usas el botón <em>¿Mismo display digital?</em>).",
+          "<strong>3. PIN del Conductor (4 Dígitos) *:</strong> Escribes tu PIN personal (en la salida de obra de retorno NO se pide nivel de combustible) y presionas <em>[ 🟢 INICIAR RETORNO (SALIDA DE FAENA) ]</em>."
+        ],
+        dondeMirar: "En la cabina del camión antes de salir de la obra del cliente (tacógrafo KM y horómetro motor chasis).",
+        reglaOro: "En la Salida de Obra (Retorno) NO se pide nivel de petróleo: solo Odómetro + Foto, Horómetro Camión + Foto y tu PIN. El petróleo se mide al llegar a Patio Central GSP (Paso 9).",
+        screenHtml: `
+          <img src="./img/manual_pwa/paso7_salida_obra_retorno.png?v=20261028_6" alt="Paso 8: Salida de Faena hacia Base GSP" class="w-full h-auto block select-none" />
+        `
+      },
+      {
+        id: 9,
+        titulo: "Paso 9: Llegada a Patio Central San Pablo y Cierre Final",
+        fase: "VIAJE DE RETORNO • LLEGADA BASE",
+        badge: "RECEPCIÓN EN PATIO",
+        badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+        audioPrompt: "Al ingresar por el portón de Patio Central San Pablo, presionas el botón verde Confirmar Llegada. Se abre el formulario Confirmación de Llegada a Patio Central San Pablo donde registras: primero, el Odómetro de Llegada en kilómetros y su foto obligatoria; segundo, el Horómetro Camión Chasis de Llegada en horas y su foto obligatoria; tercero, el Nivel de Combustible al Ingresar a Patio de uno a cien por ciento; cuarto, tu PIN del Conductor de cuatro dígitos y presionas Confirmar Llegada. Con esto tu servicio queda concluido y el equipo disponible.",
+        resumen: "Al estacionar en Base San Pablo presionas [ CONFIRMAR LLEGADA ] y completas el formulario 'Confirmación de Llegada a Patio Central San Pablo' con Odómetro + Foto, Horómetro Camión + Foto, % Combustible de Recepción y tu PIN.",
+        puntosClave: [
+          "<strong>1. Odómetro de Llegada (KM) * + 📸 Foto Odómetro Llegada *:</strong> Kilómetros finales al estacionar en Patio Central San Pablo.",
+          "<strong>2. Horómetro Camión / Chasis Llegada (HRS) * + 📸 Foto Horómetro Camión *:</strong> Horas finales del motor chasis (o botón <em>¿Mismo display digital?</em>).",
+          "<strong>3. ⛽ Nivel de Combustible al Ingresar a Patio Central *:</strong> Seleccionas el % de petróleo con que entregas la máquina en base y foto opcional del marcador.",
+          "<strong>4. PIN del Conductor (4 Dígitos) * y [ CONFIRMAR LLEGADA ]:</strong> Cierra el viaje de retorno y libera automáticamente la grúa como <strong>DISPONIBLE</strong>."
+        ],
+        dondeMirar: "El tacógrafo del volante, el reloj del motor chasis y el medidor de petróleo al estacionar en Patio Central San Pablo.",
+        reglaOro: "En la llegada final a Patio Central San Pablo siempre se pide el Nivel de Combustible al Ingresar a Patio (%).",
+        screenHtml: `
+          <img src="./img/manual_pwa/paso8_llegada_base_gsp.png?v=20261028_6" alt="Paso 9: Confirmación de Llegada a Patio Central San Pablo" class="w-full h-auto block select-none" />
         `
       }
     ];
@@ -1101,6 +885,8 @@
 
       // Actualizar Pantalla del Celular
       document.getElementById('phoneScreen').innerHTML = data.screenHtml;
+      const phoneContainer = document.getElementById('phoneContainer');
+      if (phoneContainer) phoneContainer.scrollTop = 0;
 
       // Actualizar Indicador
       document.getElementById('slideIndicator').innerText = `Paso ${data.id} de ${slides.length}`;

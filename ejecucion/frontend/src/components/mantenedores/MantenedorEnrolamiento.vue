@@ -22,6 +22,29 @@
         </div>
       </div>
 
+      <!-- Selector de Roles RBAC Iniciales -->
+      <div class="space-y-1.5 pt-2 border-t border-white/5">
+        <label class="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">
+          Roles RBAC Iniciales <span class="text-emerald-400 font-mono">({{ rolesSeleccionados.length }} seleccionados)</span>
+        </label>
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            v-for="r in rolesFiltrados"
+            :key="r.id_rol"
+            type="button"
+            @click="toggleRole(r.id_rol)"
+            :class="[
+              'px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all',
+              rolesSeleccionados.includes(r.id_rol)
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                : 'bg-white/5 text-zinc-400 border-white/10 hover:border-white/25 hover:text-white'
+            ]"
+          >
+            {{ r.codi_rol || r.name_rol }}
+          </button>
+        </div>
+      </div>
+
       <!-- Empresa (Solo si hay rol externo) -->
       <div v-if="showEmpresas" class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-white/5">
         <div class="space-y-1">
@@ -61,6 +84,23 @@
           <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
         </button>
       </div>
+
+      <!-- Feedback Reenvío Enlace -->
+      <div v-if="feedbackMsg" class="px-6 py-3 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-between text-xs text-emerald-400 font-medium">
+        <div class="flex items-center gap-2">
+          <Check class="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{{ feedbackMsg }}</span>
+        </div>
+        <button @click="feedbackMsg = ''" class="text-zinc-400 hover:text-white text-xs px-1">✕</button>
+      </div>
+      <div v-if="feedbackError" class="px-6 py-3 bg-red-500/10 border-b border-red-500/20 flex items-center justify-between text-xs text-red-400 font-medium">
+        <div class="flex items-center gap-2">
+          <AlertCircle class="w-4 h-4 text-red-400 shrink-0" />
+          <span>{{ feedbackError }}</span>
+        </div>
+        <button @click="feedbackError = ''" class="text-zinc-400 hover:text-white text-xs px-1">✕</button>
+      </div>
+
       <div class="overflow-x-auto max-h-[500px]">
         <table class="w-full text-left">
           <thead class="bg-white/5 text-[10px] font-black uppercase text-muted-foreground tracking-widest sticky top-0 z-10 border-b border-white/5">
@@ -70,7 +110,7 @@
               <th class="px-4 py-4">Usuario / Correo</th>
               <th class="px-4 py-4">Rut</th>
               <th class="px-4 py-4 text-center">Estado</th>
-              <th class="px-4 py-4">En Enrolamiento</th>
+              <th class="px-4 py-4 text-center">En Enrolamiento</th>
               <th class="px-4 py-4 text-right">Acciones</th>
             </tr>
           </thead>
@@ -105,9 +145,27 @@
                 </span>
               </td>
               <td class="px-4 py-4 text-right">
-                <button @click="abrirDialogEdicion(item)" class="p-2 rounded-lg bg-white/5 text-muted-foreground hover:text-white border border-white/5 opacity-0 group-hover:opacity-100 transition-all">
-                  <Pencil class="w-4 h-4" />
-                </button>
+                <div class="flex items-center justify-end gap-2">
+                  <!-- Botón Reenviar Enlace (1-Clic) para usuarios pendientes -->
+                  <button 
+                    v-if="item.flag_proc_enrol || !item.pass_hash_fes"
+                    @click="reenviarEnlace(item)"
+                    :disabled="resendingId === item.id_user"
+                    class="px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold tracking-wide flex items-center gap-1.5 transition-all disabled:opacity-50 shadow-sm"
+                    :title="'Reenviar enlace oficial de enrolamiento y FES a ' + (item.email || 'usuario')"
+                  >
+                    <RefreshCw v-if="resendingId === item.id_user" class="w-3 h-3 animate-spin text-amber-400" />
+                    <Check v-else-if="sentSuccessId === item.id_user" class="w-3 h-3 text-emerald-400" />
+                    <Mail v-else class="w-3 h-3 text-amber-400" />
+                    <span>
+                      {{ resendingId === item.id_user ? 'Enviando...' : (sentSuccessId === item.id_user ? '¡Enviado!' : 'Reenviar Enlace') }}
+                    </span>
+                  </button>
+
+                  <button @click="abrirDialogEdicion(item)" title="Editar usuario" class="p-2 rounded-lg bg-white/5 text-muted-foreground hover:text-white border border-white/5 opacity-0 group-hover:opacity-100 transition-all">
+                    <Pencil class="w-4 h-4" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -128,7 +186,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { UserPlus, ChevronDown, Send, RefreshCw, Check, X, Pencil, AlertCircle } from 'lucide-vue-next'
+import { UserPlus, ChevronDown, Send, RefreshCw, Check, X, Pencil, AlertCircle, Mail } from 'lucide-vue-next'
 import apiAxios from '@/services/api'
 import EnrolamientoExcel from '@/components/EnrolamientoExcel.vue'
 import EditUsuarioDialog from '@/components/EditUsuarioDialog.vue'
@@ -160,6 +218,11 @@ const errorMessage = ref('')
 
 const dialogEditar = ref(false)
 const usuarioSeleccionado = ref(null)
+
+const resendingId = ref(null)
+const sentSuccessId = ref(null)
+const feedbackMsg = ref('')
+const feedbackError = ref('')
 
 const showEmpresas = computed(() => {
   return rolesSeleccionados.value.some(id => {
@@ -271,6 +334,48 @@ async function guardarUsuarioEditado(payload) {
     emit('refresh')
   } catch (err) {
     console.error('Error guardarUsuarioEditado', err)
+  }
+}
+
+async function reenviarEnlace(item) {
+  if (!item || !item.id_user) return
+  resendingId.value = item.id_user
+  feedbackMsg.value = ''
+  feedbackError.value = ''
+
+  try {
+    const res = await apiAxios.post('/usuarios/reenviarEnrolamiento', {
+      id_user: item.id_user
+    })
+
+    sentSuccessId.value = item.id_user
+    const canales = res.data?.data?.canales || []
+    const canalesTexto = canales.length ? ` vía ${canales.join(' y ')}` : ''
+    const nombre = item.name_frst ? `${item.name_frst} ${item.apellido_pat || ''}`.trim() : (item.email || 'usuario')
+    feedbackMsg.value = `Enlace oficial de enrolamiento reenviado exitosamente a ${nombre} (${item.email})${canalesTexto}.`
+
+    // Reset temporal de feedback visual en botón
+    setTimeout(() => {
+      if (sentSuccessId.value === item.id_user) {
+        sentSuccessId.value = null
+      }
+    }, 4000)
+
+    // Ocultar banner tras 8 segundos
+    setTimeout(() => {
+      if (feedbackMsg.value) {
+        feedbackMsg.value = ''
+      }
+    }, 8000)
+
+    // Refrescar estado local
+    item.flag_proc_enrol = true
+  } catch (err) {
+    console.error('Error al reenviar enlace de enrolamiento:', err)
+    const errText = err.response?.data?.message || err.response?.data?.error || err.message || 'Error al reenviar enlace'
+    feedbackError.value = `Error al reenviar enlace a ${item.email || 'usuario'}: ${errText}`
+  } finally {
+    resendingId.value = null
   }
 }
 

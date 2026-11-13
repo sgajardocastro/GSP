@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flujo Oficial de Cotización WEB • Grúas San Pablo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #030712;
+      color: #f3f4f6;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .spotlight-active {
+      box-shadow: 0 0 0 3px #f59e0b, 0 0 25px rgba(245, 158, 11, 0.4) !important;
+      position: relative;
+      z-index: 30;
+      transition: all 0.3s ease;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Estilos oficiales del PDF idénticos a proyectoModel.js líneas 704-741 */
+    .pdf-container {
+      width: 100%;
+      background: #ffffff;
+      color: #2d3748;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.4;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      border-radius: 4px;
+    }
+    .pdf-header-table { width: 100%; margin-bottom: 16px; border-collapse: collapse; }
+    .pdf-header-table td { vertical-align: middle; }
+    .pdf-emitter-title { font-size: 14px; font-weight: 800; color: #f5a623; text-transform: uppercase; margin-bottom: 4px; }
+    .pdf-emitter-info { font-size: 9.5px; color: #718096; line-height: 1.35; }
+    .pdf-quote-badge { background-color: rgba(245, 166, 35, 0.08); border: 1.5px solid #f5a623; border-radius: 6px; padding: 10px; text-align: center; }
+    .pdf-quote-title { font-size: 13px; font-weight: 800; color: #1a202c; letter-spacing: 0.5px; }
+    .pdf-quote-meta { font-size: 9.5px; color: #2d3748; margin-top: 4px; line-height: 1.4; }
+    .pdf-section-title { font-size: 11px; font-weight: 800; color: #1a202c; text-transform: uppercase; border-bottom: 2px solid #f5a623; padding-bottom: 3px; margin-bottom: 8px; margin-top: 14px; }
+    .pdf-info-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 9.5px; }
+    .pdf-info-table td { padding: 5px 8px; vertical-align: top; border: 1px solid #e2e8f0; }
+    .pdf-info-label { font-weight: 700; color: #4a5568; background-color: #f8fafc; width: 22%; }
+    .pdf-info-value { color: #1e293b; width: 28%; }
+    .pdf-services-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 9.5px; }
+    .pdf-services-table th { background-color: #f5a623; color: #ffffff; font-weight: 800; text-transform: uppercase; font-size: 9px; padding: 6px 8px; border: 1px solid #f5a623; }
+    .pdf-services-table td { padding: 6px 8px; border: 1px solid #cbd5e0; vertical-align: top; }
+    .pdf-services-table tr:nth-child(even) { background-color: #f8fafc; }
+    .pdf-summary-table { width: 260px; float: right; border-collapse: collapse; margin-top: 12px; font-size: 10px; }
+    .pdf-summary-table td { padding: 5px 8px; border: 1px solid #cbd5e0; }
+    .pdf-summary-label { font-weight: 700; background-color: #f8fafc; text-align: right; width: 50%; }
+    .pdf-summary-value { text-align: right; font-weight: 800; width: 50%; font-family: 'JetBrains Mono', monospace; }
+    .pdf-summary-total { background-color: rgba(245, 166, 35, 0.12); color: #1a202c; font-size: 11px; }
+    .pdf-conditions-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; margin-top: 8px; font-size: 9px; color: #4a5568; line-height: 1.45; }
+    .pdf-footer { margin-top: 24px; text-align: center; font-size: 8.5px; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 8px; clear: both; }
+  </style>
+</head>
+<body class="bg-[#030712] min-h-screen text-slate-100 flex flex-col">
+
+  <!-- TOP BAR: CONSOLA DE NAVEGACIÓN Y EXPLICACIÓN GUIADA -->
+  <header class="bg-[#080d1a] border-b border-amber-500/30 px-4 py-3 sticky top-0 z-40 shadow-xl backdrop-blur-md">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+      
+      <!-- Brand & Título -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-lg">
+            🚚
+          </div>
+          <div>
+            <h1 class="text-sm font-black tracking-wide text-white uppercase flex items-center gap-2">
+              <span>Flujo de Cotización Web</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono border border-amber-500/40">Fiel a GestorOportunidades.vue</span>
+            </h1>
+            <p class="text-[11px] text-slate-400">Grúas San Pablo • CRM Preventa Comercial & Despacho Formal</p>
+          </div>
+        </div>
+
+        <!-- Botón AutoPlay Móvil -->
+        <button onclick="toggleAutoPlay()" id="btnAutoPlayMobile" class="md:hidden px-2.5 py-1 bg-amber-500 text-slate-950 text-xs font-bold rounded-lg">
+          ▶
+        </button>
+      </div>
+
+      <!-- Pasos 1 a 6 -->
+      <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto scrollbar-hide py-1">
+        <button onclick="goToStep(1)" id="btnStep1" class="step-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border border-amber-500/50 bg-amber-500/25 text-amber-300 shadow-md flex items-center gap-1 whitespace-nowrap">
+          <span class="font-mono">1</span> Mandante
+        </button>
+        <button onclick="goToStep(2)" id="btnStep2" class="step-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/10 bg-slate-900/60 text-slate-400 hover:text-white flex items-center gap-1 whitespace-nowrap">
+          <span class="font-mono">2</span> Requerimientos
+        </button>
+        <button onclick="goToStep(3)" id="btnStep3" class="step-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/10 bg-slate-900/60 text-slate-400 hover:text-white flex items-center gap-1 whitespace-nowrap">
+          <span class="font-mono">3</span> Faena & Mapa
+        </button>
+        <button onclick="goToStep(4)" id="btnStep4" class="step-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/10 bg-slate-900/60 text-slate-400 hover:text-white flex items-center gap-1 whitespace-nowrap">
+          <span class="font-mono">4</span> Estructurador GSP
+        </button>
+        <button onclick="goToStep(5)" id="btnStep5" class="step-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/10 bg-slate-900/60 text-slate-400 hover:text-white flex items-center gap-1 whitespace-nowrap">
+          <span class="font-mono">5</span> Acuerdos (REQ-992)
+        </button>
+        <button onclick="goToStep(6)" id="btnStep6" class="step-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/10 bg-slate-900/60 text-slate-400 hover:text-white flex items-center gap-1 whitespace-nowrap">
+          <span class="font-mono">6</span> PDF & Despacho
+        </button>
+      </div>
+
+      <!-- Controles de Reproducción -->
+      <div class="hidden md:flex items-center gap-2">
+        <button onclick="prevStep()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition-colors">
+          ◀
+        </button>
+        <button onclick="toggleAutoPlay()" id="btnAutoPlay" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider rounded-lg transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5">
+          <span id="playIcon">▶</span>
+          <span id="playText">Animación Auto</span>
+        </button>
+        <button onclick="nextStep()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition-colors">
+          ▶
+        </button>
+        <select onchange="changeSpeed(this.value)" class="bg-slate-900 border border-white/10 rounded-lg px-2 py-1 text-xs text-amber-400 font-mono outline-none">
+          <option value="1">1x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- BANNER EXPLICATIVO DINÁMICO (EXPLICACIÓN DE REGLAS DE NEGOCIO EN CADA PASO) -->
+  <div id="commentBox" class="bg-slate-900/90 border-b border-amber-500/30 px-4 py-3 text-xs text-slate-200 transition-all">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div class="flex items-start gap-3 flex-1">
+        <span id="commentStepBadge" class="px-2 py-1 bg-amber-500 text-slate-950 font-black rounded text-[10px] uppercase font-mono tracking-wider flex-shrink-0">
+          PASO 1 DE 6
+        </span>
+        <div class="space-y-0.5">
+          <h2 id="commentTitle" class="text-sm font-bold text-white flex items-center gap-2">
+            Configuración de Oportunidad & Empresa Emisora
+          </h2>
+          <p id="commentText" class="text-slate-300 text-xs leading-relaxed">
+            El ejecutivo comercial (Jorge Ponce) selecciona la empresa emisora corporativa <strong>LUIS OMAR GHISELLINI JARA E.I.R.L. (GRÚAS SAN PABLO)</strong> (RUT 52.004.162-1, Temuco) y carga la ficha oficial del cliente <strong>Sociedad Minera Las Cenizas S.A.</strong> con contacto y condición de crédito a 30 días.
+          </p>
+        </div>
+      </div>
+      <div id="commentRule" class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 md:max-w-xs text-[11px] text-amber-300 font-mono flex items-center gap-2 flex-shrink-0">
+        <span>⚖️</span>
+        <span id="commentRuleText">Regla: Multi-Empresa & Enrolamiento Canónico GSP</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERFAZ EXACTA DE GESTOROPORTUNIDADES.VUE -->
+  <main class="flex-1 p-3 md:p-5 max-w-[1700px] w-full mx-auto flex flex-col space-y-4">
+
+    <!-- TOP ACTION BAR: ACCIONES PREVENTA COMERCIAL (Exact lines 25-52 of GestorOportunidades.vue) -->
+    <div class="bg-[#080d1a] border border-white/10 rounded-xl p-3 md:p-4 flex flex-wrap justify-between items-center gap-3 shadow-lg">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        </div>
+        <div>
+          <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider flex items-center gap-2">
+            <span>CRM / Preventa Comercial</span>
+            <span class="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">ETAPA 1: OPORTUNIDAD</span>
+          </div>
+          <div class="text-sm md:text-base font-black text-white font-mono flex items-center gap-2">
+            <span>GSP-2610-4853-001</span>
+            <span class="text-xs text-slate-400 font-normal font-sans">— Montaje Chancador Secundario (Cabildo)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTONES DE ACCIÓN REALES DE GESTOROPORTUNIDADES.VUE (lines 36-52) -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button class="px-3.5 py-2 bg-red-600/90 hover:bg-red-500 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 opacity-60 cursor-not-allowed">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+          <span>No Ganada</span>
+        </button>
+
+        <!-- BOTÓN GENERAR COTIZACIÓN (line 41) -->
+        <button id="btnGenerarCotizacion" onclick="generarCotizacionVersionDemo()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 border border-white/10 shadow-sm cursor-pointer">
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          <span>Generar Cotización</span>
+        </button>
+
+        <!-- BOTÓN GUARDAR EN PREVENTA (line 45) -->
+        <button class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 border border-white/10">
+          <span>Guardar en Preventa</span>
+        </button>
+
+        <!-- BOTÓN GENERAR REQUERIMIENTO (line 48) -->
+        <button id="btnGenerarRequerimiento" onclick="abrirModalRequerimientoDemo()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-widest transition-colors shadow-lg shadow-amber-500/10 flex items-center gap-1.5 cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          <span>Generar Requerimiento</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SUBTABS BAR REALES DE LA PLATAFORMA (lines 85-189) -->
+    <div class="flex border-b border-white/10 bg-[#080d1a] px-3 pt-2 flex-shrink-0 transition-all duration-200 gap-2 overflow-x-auto scrollbar-hide rounded-t-xl">
+      <button class="text-amber-400 border-b-2 border-amber-500 font-bold bg-white/[0.02] py-2.5 px-3.5 text-xs uppercase tracking-wider transition-all duration-200 flex items-center gap-2 outline-none rounded-t">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+        <span>1. Preventa Comercial</span>
+      </button>
+
+      <button disabled class="opacity-40 cursor-not-allowed text-slate-600 py-2.5 px-3.5 text-xs uppercase tracking-wider flex items-center gap-2 outline-none rounded-t">
+        <span class="text-xs">🔒</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span>2. Validación & Diff</span>
+      </button>
+
+      <button disabled class="opacity-40 cursor-not-allowed text-slate-600 py-2.5 px-3.5 text-xs uppercase tracking-wider flex items-center gap-2 outline-none rounded-t">
+        <span class="text-xs">🔒</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+        <span>3. Asignación Recursos OT</span>
+      </button>
+
+      <button disabled class="opacity-40 cursor-not-allowed text-slate-600 py-2.5 px-3.5 text-xs uppercase tracking-wider flex items-center gap-2 outline-none rounded-t">
+        <span class="text-xs">🔒</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <span>4. Acreditaciones & Dossier</span>
+      </button>
+
+      <button disabled class="opacity-40 cursor-not-allowed text-slate-600 py-2.5 px-3.5 text-xs uppercase tracking-wider flex items-center gap-2 outline-none rounded-t">
+        <span class="text-xs">🔒</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+        <span>5. Control de Flota & Despacho</span>
+      </button>
+
+      <button disabled class="opacity-40 cursor-not-allowed text-slate-600 py-2.5 px-3.5 text-xs uppercase tracking-wider flex items-center gap-2 outline-none rounded-t">
+        <span class="text-xs">🔒</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+        <span>6. Reportes Diarios de Izaje</span>
+      </button>
+    </div>
+
+    <!-- MAIN 2-COLUMN GRID (Comercial / Preventa: Exact lines 3286-3705) -->
+    <div class="grid grid-cols-1 lg:grid-cols-[1.5fr_3.5fr] gap-6 flex-1 min-h-0 w-full">
+
+      <!-- COLUMNA IZQUIERDA: CLIENTE & CONTROL DE VERSIONES (lines 3286-3650) -->
+      <div class="bg-[#050810] border border-white/10 rounded-xl p-5 flex flex-col gap-6 overflow-y-auto scrollbar-hide">
+        
+        <!-- 1. Datos de la Oportunidad -->
+        <div class="space-y-4">
+          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
+            1. Datos de la Oportunidad
+          </div>
+
+          <!-- Ejecutivo Comercial Responsable -->
+          <div>
+            <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Ejecutivo Comercial Responsable:</label>
+            <div class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs text-indigo-300 font-medium flex items-center gap-2">
+              <span>👤</span>
+              <span class="font-bold text-white">Jorge Ponce</span>
+              <span class="text-[10px] text-slate-400 ml-auto font-mono">(Creador Requerimiento)</span>
+            </div>
+          </div>
+
+          <!-- Empresa Emisora Oficial (Parámetro ID 9 = GSP Real) -->
+          <div id="fieldEmpresaEmisora" class="transition-all rounded-lg p-1.5">
+            <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Empresa Emisora (Cotizar a nombre de):</label>
+            <select class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs text-amber-400 font-bold outline-none">
+              <option value="9" selected>LUIS OMAR GHISELLINI JARA E.I.R.L. (GRÚAS SAN PABLO)</option>
+              <option value="7">SOCIEDAD BESTMAQ LIMITADA</option>
+              <option value="8">SERVICIOS INTEGRADOS LOGÍSTICA DEL SUR LTDA.</option>
+              <option value="11">ARRIENDO ROYAL RENTAL LIMITADA</option>
+            </select>
+          </div>
+
+          <!-- Cliente Mandante -->
+          <div id="fieldClienteMandante" class="transition-all rounded-lg p-1.5">
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="text-[11px] text-slate-400 font-semibold">Cliente Mandante:</label>
+              <span class="text-[9px] px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded font-bold">
+                Enrolado en BD
+              </span>
+            </div>
+            <input 
+              type="text" 
+              value="Sociedad Minera Las Cenizas S.A." 
+              readonly
+              class="w-full bg-[#0a0f1e] border border-amber-500/50 rounded-lg px-3 py-2 text-xs text-white font-bold"
+            />
+          </div>
+
+          <!-- Ficha de Cliente Registrado -->
+          <div>
+            <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">RUT Cliente (Registrado en BD):</label>
+            <div class="bg-white/5 border border-white/10 rounded-lg p-3 text-[10px] text-slate-300 space-y-1.5">
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">RUT:</span> <span class="font-bold text-amber-400 font-mono">76.123.456-7</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">Giro:</span> <span class="font-bold">Extracción y Explotación de Cobre</span></div>
+              <div class="flex justify-between"><span class="text-slate-500 font-semibold">Dirección:</span> <span class="font-bold truncate max-w-[150px]">Faena Minera Cabildo S/N, Cabildo</span></div>
+            </div>
+          </div>
+
+          <!-- Punto de Contacto -->
+          <div>
+            <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Punto de Contacto Mandante:</label>
+            <div class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs text-white flex justify-between items-center">
+              <span class="font-bold text-emerald-400">Roberto Morales</span>
+              <span class="text-[10px] text-slate-400 font-mono">rmorales@cenizas.cl</span>
+            </div>
+          </div>
+
+          <!-- Tipo de Pago -->
+          <div>
+            <label class="text-[11px] text-slate-400 font-semibold block mb-1.5">Tipo de Pago:</label>
+            <div class="w-full bg-[#0a0f1e] border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-bold font-mono">
+              CRÉDITO 30 DÍAS (APROBADO)
+            </div>
+          </div>
+
+          <!-- REQUERIMIENTOS COMERCIALES & RÉGIMEN (lines 3450-3550) -->
+          <div id="boxRequerimientosComerciales" class="space-y-3 bg-[#0a0f1e] border border-white/10 rounded-xl p-3.5 transition-all">
+            <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
+              <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                ⚙️ Requerimientos Comerciales
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">6 Parámetros Clave</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 text-xs">
+              <div>
+                <span class="text-[10px] text-slate-400 block">Requiere OC / HES:</span>
+                <span class="font-bold text-white">SÍ</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">Acreditación:</span>
+                <span class="font-bold text-white">SÍ</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">Distancia a Faena:</span>
+                <span class="font-mono font-bold text-amber-400">45 km (Régimen Rural)</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">Requiere Rigger:</span>
+                <span class="font-bold text-white">SÍ</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">Prevencionista:</span>
+                <span class="font-bold text-white">SÍ</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">Combustible:</span>
+                <span class="font-bold text-amber-300">Por San Pablo</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 2: CONTROL DE VERSIONES & ENVÍOS (Exact lines 3584-3638 of GestorOportunidades.vue) -->
+          <div id="boxControlVersiones" class="space-y-3 pt-2 border-t border-white/5">
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2 flex justify-between items-center">
+              <span>2. Control de Versiones & Envíos</span>
+              <span class="text-[10px] text-slate-500 font-mono font-normal">Más reciente primero</span>
+            </div>
+
+            <!-- TARJETA OFICIAL DE VERSIÓN GENERADA (lines 3590-3637) -->
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-2.5 w-full shadow-md">
+              <div class="flex justify-between items-center w-full gap-2">
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-black font-mono rounded">
+                    v1.0
+                  </span>
+                  <span class="text-xs text-emerald-400 font-black font-mono">$ 6.590.000</span>
+                  <span class="text-[10px] text-slate-400 font-mono">05-10-2026 14:30</span>
+                </div>
+
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <!-- Botón Rojo Icónico PDF (line 3606-3613) -->
+                  <button
+                    onclick="abrirVisorPdfOficial()"
+                    class="text-[10px] px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer"
+                    title="Ver documento PDF formal generado en el servidor"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    <span>PDF</span>
+                  </button>
+
+                  <!-- Botón Ámbar Enviar Cotización (line 3616-3623) -->
+                  <button
+                    id="btnAbrirModalEmail"
+                    onclick="abrirModalEnviarOficial()"
+                    class="text-[10px] px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg transition-all flex items-center gap-1 uppercase shadow cursor-pointer"
+                    title="Abrir ModalEnviarCotizacion.vue para despacho por email"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    <span>Enviar Cotización</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Historial de Trazabilidad de Envío (lines 3628-3636) -->
+              <div id="trazabilidadEnvios" class="space-y-1.5 pt-1">
+                <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2 text-[10px] text-emerald-400 font-mono flex items-center justify-between">
+                  <div class="truncate">
+                    ✉️ <strong>Envío #1:</strong> 05-10-2026 14:32
+                    <span class="text-slate-300"> ➔ rmorales@cenizas.cl</span>
+                  </div>
+                  <span class="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-bold uppercase ml-2 flex-shrink-0">ENTREGADO</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Resumen Total Financiero -->
+            <div class="bg-white/5 border border-white/5 p-3 rounded-xl space-y-1.5">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-400">Subtotal Neto:</span>
+                <span class="font-mono font-bold text-white">$ 6.590.000</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-400">I.V.A. (19%):</span>
+                <span class="font-mono text-slate-300">$ 1.252.100</span>
+              </div>
+              <div class="flex justify-between items-center text-xs pt-1.5 border-t border-white/10">
+                <span class="font-bold text-amber-400">Total General CLP:</span>
+                <span class="font-mono font-black text-amber-400 text-sm">$ 7.842.100</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA: PESTAÑAS DEL CRM (lines 3670-4720) -->
+      <div class="bg-[#050810] border border-white/10 rounded-xl flex flex-col min-h-0 overflow-hidden shadow-xl">
+        
+        <!-- Pestañas Superiores del Panel Comercial -->
+        <div class="flex border-b border-white/5 bg-black/20 px-4 flex-shrink-0 gap-4 overflow-x-auto scrollbar-hide items-center justify-between">
+          <div class="flex items-center gap-4">
+            <button id="tabBtnTerreno" onclick="switchRightTab('terreno')" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap text-slate-400 hover:text-white border-b-2 border-transparent">
+              Datos Servicio & Visita
+            </button>
+            <button id="tabBtnServicios" onclick="switchRightTab('servicios')" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap text-amber-500 border-b-2 border-amber-500">
+              Estructurador de Servicios
+            </button>
+            <button id="tabBtnCondiciones" onclick="switchRightTab('condiciones')" class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap text-slate-400 hover:text-white border-b-2 border-transparent">
+              Condiciones Comerciales
+            </button>
+            <button class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap text-slate-500 opacity-50 cursor-not-allowed">
+              Antecedentes Licitación
+            </button>
+            <button class="py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap text-slate-500 opacity-50 cursor-not-allowed">
+              Bitácora & Alertas
+            </button>
+          </div>
+        </div>
+
+        <!-- Contenedor del Tab Activo -->
+        <div class="flex-1 min-h-0 flex flex-col overflow-y-auto p-5 space-y-6 scrollbar-hide">
+
+          <!-- TAB CONTENT 1: DATOS SERVICIO & VISITA + MAPSELECTOR (Exact lines 4242-4555) -->
+          <div id="tabContentTerreno" class="hidden space-y-4">
+            <div class="flex justify-between items-center border-b border-white/5 pb-2">
+              <span class="text-xs font-bold text-white uppercase tracking-wider">
+                Datos Servicio & Visita Técnica a Terreno
+              </span>
+              <span class="text-[10px] text-amber-400 font-mono font-bold">
+                Coordenadas Satelitales & Evaluación Técnica
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              <!-- Columna Izquierda: Formulario de Faena y Visita (lines 4248-4547) -->
+              <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="col-span-2">
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">
+                      Nombre de la Obra <span class="text-red-400">*</span>:
+                    </label>
+                    <input 
+                      type="text" 
+                      value="Montaje Chancador Secundario N° 2" 
+                      readonly 
+                      class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white font-bold" 
+                    />
+                  </div>
+                  <div class="col-span-2">
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">
+                      Dirección de la Obra <span class="text-red-400">*</span>:
+                    </label>
+                    <input 
+                      type="text" 
+                      value="Faena Minera Cabildo S/N, Sector Planta Concentradora" 
+                      readonly 
+                      class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white" 
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">Comuna / Ciudad:</label>
+                    <input type="text" value="Cabildo, V Región" readonly class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white font-mono" />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-slate-400 font-semibold mb-1">Horario Inicio Estimado:</label>
+                    <input type="text" value="08-10-2026 08:00 hrs" readonly class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white font-mono" />
+                  </div>
+                </div>
+
+                <!-- Detalle de Carga y Dimensiones -->
+                <div class="bg-white/5 border border-white/10 rounded-lg p-3 space-y-3">
+                  <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider block border-b border-white/5 pb-1.5">
+                    📦 Parámetros Físicos de Izaje
+                  </span>
+                  <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span class="text-[10px] text-slate-400 block">Tipo de Carga:</span>
+                      <span class="font-bold text-white">Estructuras & Componentes Pesados</span>
+                    </div>
+                    <div>
+                      <span class="text-[10px] text-slate-400 block">Peso de la Carga:</span>
+                      <span class="font-bold text-amber-400 font-mono">38 Toneladas</span>
+                    </div>
+                  </div>
+
+                  <!-- Dimensiones LxAxH y Volumen m³ -->
+                  <div>
+                    <div class="flex justify-between items-center mb-1">
+                      <span class="text-[10px] text-slate-400 font-semibold">Dimensiones de la Carga (m):</span>
+                      <span class="text-[10px] text-emerald-400 font-mono font-bold">Volumen Calculado: 58.24 m³</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 font-mono text-xs">
+                      <div class="bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-center">
+                        <span class="text-[9px] text-slate-500 block">Largo</span>
+                        <span class="font-bold text-white">6.50 m</span>
+                      </div>
+                      <div class="bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-center">
+                        <span class="text-[9px] text-slate-500 block">Ancho</span>
+                        <span class="font-bold text-white">3.20 m</span>
+                      </div>
+                      <div class="bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-center">
+                        <span class="text-[9px] text-slate-500 block">Alto</span>
+                        <span class="font-bold text-white">2.80 m</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div>
+                      <span class="text-[10px] text-slate-400 block font-sans">Radio de Trabajo:</span>
+                      <span class="font-bold text-indigo-300">18 metros</span>
+                    </div>
+                    <div>
+                      <span class="text-[10px] text-slate-400 block font-sans">Altura de Trabajo:</span>
+                      <span class="font-bold text-indigo-300">24 metros</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SOLICITUD DE VISITA TÉCNICA A TERRENO (Exact lines 4420-4547) -->
+                <div class="bg-[#0a0f1e] border border-amber-500/30 rounded-xl p-3.5 space-y-3">
+                  <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                      <input type="checkbox" checked class="w-4 h-4 accent-amber-500 rounded">
+                      <span class="text-xs font-bold text-amber-300 uppercase">Requiere Visita Técnica a Terreno</span>
+                    </div>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono font-bold">ACTIVO</span>
+                  </div>
+
+                  <div class="space-y-2.5 pt-2 border-t border-white/5 text-xs">
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Coordinador a Notificar:</label>
+                        <input type="text" value="Richard Jara (Operaciones)" readonly class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                      </div>
+                      <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Fecha Sugerida:</label>
+                        <input type="text" value="06-10-2026 10:00" readonly class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-amber-300 font-mono" />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="text-[10px] text-slate-400 block mb-1">Contacto en Terreno:</label>
+                      <input type="text" value="Roberto Morales (+56 9 8765 4321)" readonly class="w-full bg-[#050810] border border-white/10 rounded px-2 py-1 text-xs text-slate-200" />
+                    </div>
+                    <button class="w-full py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold uppercase transition-colors flex items-center justify-center gap-1.5">
+                      <span>📋</span>
+                      <span>Solicitar Asignación de Visita a Coordinación</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Columna Derecha: MapSelector.vue Real (lines 4-27 MapSelector.vue) -->
+              <div id="columnaMapaSelector" class="flex flex-col gap-2 transition-all rounded-xl p-1">
+                <div class="flex items-center gap-2">
+                  <input 
+                    type="text" 
+                    value="Faena Minera Cabildo, Valparaíso, Chile" 
+                    readonly
+                    class="flex-1 bg-zinc-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none"
+                  />
+                  <button class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all border border-emerald-400/30">
+                    <span>Buscar</span>
+                  </button>
+                </div>
+
+                <div class="w-full h-[540px] bg-slate-900 rounded-lg overflow-hidden border border-white/10 relative">
+                  <div class="w-full h-full relative bg-[#121c2e]">
+                    <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <pattern id="gridMap" width="40" height="40" patternUnits="userSpaceOnUse">
+                          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                        </pattern>
+                      </defs>
+                      <rect width="100%" height="100%" fill="#0d1b2a"/>
+                      <rect width="100%" height="100%" fill="url(#gridMap)"/>
+                      <path d="M0,180 Q140,90 280,220 T560,160 T800,240 L800,540 L0,540 Z" fill="#1b2a4a" opacity="0.4"/>
+                      <path d="M50,540 Q200,380 340,320 T620,180 T780,100" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6,4"/>
+                      <path d="M0,350 Q300,320 480,270 T800,230" fill="none" stroke="#475569" stroke-width="2"/>
+                      <path d="M340,320 L420,240" fill="none" stroke="#3b82f6" stroke-width="2.5"/>
+                      <g transform="translate(420, 240)">
+                        <circle cx="0" cy="0" r="18" fill="rgba(239, 68, 68, 0.25)" class="animate-ping"/>
+                        <circle cx="0" cy="0" r="10" fill="#ef4444"/>
+                        <circle cx="0" cy="0" r="4" fill="#ffffff"/>
+                        <rect x="-95" y="-55" width="190" height="32" rx="6" fill="#090e1a" stroke="#f59e0b" stroke-width="1.5"/>
+                        <text x="0" y="-35" font-size="10" font-family="monospace" font-weight="bold" fill="#f59e0b" text-anchor="middle">FAENA MINERA CABILDO</text>
+                      </g>
+                    </svg>
+
+                    <div class="absolute top-2 right-2 z-20 bg-black/75 backdrop-blur-sm p-2 rounded text-[10px] text-slate-300 font-mono border border-white/10">
+                      Lat: -32.42710 | Lng: -71.06640
+                    </div>
+
+                    <div class="absolute bottom-2 left-2 z-20 bg-black/75 backdrop-blur-sm px-2 py-1 rounded text-[9px] text-slate-300 font-mono flex items-center gap-1.5 border border-white/10">
+                      <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                      <span>Capa Satelital de Precisión Operacional</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- TAB CONTENT 2: ESTRUCTURADOR DE SERVICIOS CANÓNICO (lines 3759-4240) -->
+          <div id="tabContentServicios" class="space-y-5">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-white uppercase tracking-wider">Líneas de Servicio a Cotizar</span>
+              <span class="text-[10px] text-slate-400 font-mono font-bold">Moneda Base: CLP</span>
+            </div>
+
+            <!-- ASISTENTE DE 5 CASOS GSP (lines 3768-4012) -->
+            <div id="asistenteMatriz" class="rounded-xl border border-white/10 bg-slate-900/60 p-3 space-y-3 transition-all">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-sm">🧭</span>
+                  <span class="text-xs font-bold text-white uppercase tracking-wider">Asistente de Estructuración (Matriz Canónica GSP)</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    45 km (Régimen Rural)
+                  </span>
+                  <label class="flex items-center gap-1.5 select-none px-2 py-0.5 rounded bg-black/40 border border-white/10 text-xs">
+                    <input type="checkbox" checked class="w-3.5 h-3.5 accent-amber-500 rounded">
+                    <span class="text-[10px] font-bold text-amber-300">Con Camión(es) de Contrapeso</span>
+                  </label>
+                </div>
+                <span class="text-[10px] text-slate-400 font-mono">
+                  Determinación Automática según Distancia
+                </span>
+              </div>
+
+              <!-- 5 Casos -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+                <div class="rounded-lg p-2.5 border text-xs opacity-30 bg-black/10 border-white/5">
+                  <div class="font-bold text-[11px] text-slate-500 mb-1">CASO 1: URBANO (SIN FLETE)</div>
+                  <div class="text-[10px] text-slate-500 space-y-0.5">
+                    <div>• Distancia: ≤ 30 km</div>
+                    <div>• Grúa Normal</div>
+                    <div>• 1 Línea ($0 Flete)</div>
+                  </div>
+                </div>
+
+                <div class="rounded-lg p-2.5 border text-xs opacity-30 bg-black/10 border-white/5">
+                  <div class="font-bold text-[11px] text-slate-500 mb-1">CASO 2: URBANO (CONTRAPESO)</div>
+                  <div class="text-[10px] text-slate-500 space-y-0.5">
+                    <div>• Distancia: ≤ 30 km</div>
+                    <div>• Grúa + Cama Baja</div>
+                    <div>• 2 Líneas</div>
+                  </div>
+                </div>
+
+                <div class="rounded-lg p-2.5 border text-xs opacity-50 bg-black/20 border-white/5">
+                  <div class="font-bold text-[11px] text-slate-400 mb-1">CASO 3: RURAL (FLETE GRÚA)</div>
+                  <div class="text-[10px] text-slate-400 space-y-0.5">
+                    <div>• Distancia: > 30 km</div>
+                    <div>• Grúa Normal</div>
+                    <div>• 2 Líneas (Flete Grúa)</div>
+                  </div>
+                </div>
+
+                <!-- Caso 4: SUGERIDO -->
+                <div id="cardCaso4" class="rounded-lg p-2.5 border text-xs border-amber-500 bg-amber-500/15 shadow-lg ring-1 ring-amber-500/40">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-[11px] text-amber-300">CASO 4: RURAL (GRÚA + CONTRAPESOS)</span>
+                    <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500 text-black">Sugerido</span>
+                  </div>
+                  <div class="text-[10px] text-slate-300 space-y-0.5">
+                    <div>• Distancia: > 30 km</div>
+                    <div>• Grúa Telescópica + Cama Baja</div>
+                    <div>• Taxímetro: Llegada Faena</div>
+                    <div class="font-bold text-amber-400">• 3 Líneas (Piso 8h + Fletes)</div>
+                  </div>
+                </div>
+
+                <div class="rounded-lg p-2.5 border text-xs border-white/5 bg-black/20 opacity-50">
+                  <div class="font-bold text-[11px] text-slate-400 mb-1">CASO 5: ESPECIAL / MIXTO LIBRE</div>
+                  <div class="text-[10px] text-slate-400 space-y-0.5">
+                    <div>• Distancia Libre</div>
+                    <div>• Flete Puro / Terceros</div>
+                    <div>• Canasta Abierta</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TABLA REAL DE 8 COLUMNAS (lines 4014-4175) -->
+            <div id="tablaEstructuradorReal" class="border border-white/5 rounded-lg bg-black/20 overflow-x-auto transition-all">
+              <table class="w-full text-left text-xs min-w-[850px]">
+                <thead>
+                  <tr class="bg-white/5 border-b border-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wide">
+                    <th class="p-2.5 min-w-[170px]">Categoría</th>
+                    <th class="p-2.5 min-w-[140px]">Subcategoría</th>
+                    <th class="p-2.5 min-w-[160px]">Descripción / Equipo</th>
+                    <th class="p-2.5 min-w-[130px]">Unidad de Cobro</th>
+                    <th class="p-2.5 text-center min-w-[140px]">Cantidad(es)</th>
+                    <th class="p-2.5 text-right min-w-[100px]">Tarifa Unitario</th>
+                    <th class="p-2.5 text-right min-w-[110px]">Subtotal (Neto)</th>
+                    <th class="p-2.5 text-center min-w-[36px]"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 font-sans">
+                  <!-- Fila 1: Grúa Telescópica Liebherr LTM 1100 -->
+                  <tr class="hover:bg-white/[0.02]">
+                    <td class="p-2">
+                      <span class="font-bold text-amber-400 text-xs">GRÚAS TELESCÓPICAS</span>
+                    </td>
+                    <td class="p-2">
+                      <span class="text-xs text-white">100 TONELADAS</span>
+                    </td>
+                    <td class="p-2">
+                      <span class="text-xs text-slate-200 font-semibold">Liebherr LTM 1100 (100 Ton)</span>
+                    </td>
+                    <td class="p-2">
+                      <span class="text-[11px] text-slate-300">Horas Diarias Minimas</span>
+                    </td>
+                    <td class="p-2 text-center">
+                      <span class="font-mono font-bold text-white bg-slate-900/60 px-2 py-1 rounded border border-white/5">
+                        3 Días × 8 hrs/día
+                      </span>
+                    </td>
+                    <td class="p-2 text-right font-mono text-slate-200">
+                      $ 185.000 / hr
+                    </td>
+                    <td class="p-2 text-right font-mono font-bold text-emerald-400">
+                      $ 4.440.000
+                    </td>
+                    <td class="p-2 text-center text-slate-500">⋮</td>
+                  </tr>
+
+                  <!-- Fila 2: Flete Grúa Telescópica -->
+                  <tr class="hover:bg-white/[0.02]">
+                    <td class="p-2">
+                      <span class="font-bold text-cyan-400 text-xs">TRASLADOS</span>
+                    </td>
+                    <td class="p-2">
+                      <span class="text-xs text-white">FLETE GRÚA</span>
+                    </td>
+                    <td class="p-2">
+                      <span class="text-xs text-slate-200">Flete Grúa Telescópica (Temuco - Cabildo - Temuco)</span>
+                    </td>
+                    <td class="p-2">
+                      <span class="text-[11px] text-slate-300">TRASLADO IDA/VUELTA</span>
+                    </td>
+                    <td class="p-2 text-center">
+                      <span class="font-mono font-bold text-white bg-slate-900/60 px-2 py-1 rounded border border-white/5">
+                        1 Viaje
+                      </span>
+                    </td>
+                    <td class="p-2 text-right font-mono text-slate-200">
+                      $ 1.200.000
+                    </td>
+                    <td class="p-2 text-right font-mono font-bold text-emerald-400">
+                      $ 1.200.000
+                    </td>
+                    <td class="p-2 text-center text-slate-500">⋮</td>
+                  </tr>
+
+                  <!-- Fila 3: Flete Cama Baja Traslado Contrapesos -->
+                  <tr class="hover:bg-white/[0.02]">
+                    <td class="p-2">
+                      <span class="font-bold text-cyan-400 text-xs">TRASLADOS</span>
+                    </td>
+                    <td class="p-2">
+                      <span class="text-xs text-white">CAMA BAJA</span>
+                    </td>
+                    <td class="p-2">
+                      <span class="text-xs text-slate-200">Flete Cama Baja Traslado Contrapesos 26 Ton</span>
+                    </td>
+                    <td class="p-2">
+                      <span class="text-[11px] text-slate-300">TRASLADO IDA/VUELTA</span>
+                    </td>
+                    <td class="p-2 text-center">
+                      <span class="font-mono font-bold text-white bg-slate-900/60 px-2 py-1 rounded border border-white/5">
+                        1 Viaje
+                      </span>
+                    </td>
+                    <td class="p-2 text-right font-mono text-slate-200">
+                      $ 950.000
+                    </td>
+                    <td class="p-2 text-right font-mono font-bold text-emerald-400">
+                      $ 950.000
+                    </td>
+                    <td class="p-2 text-center text-slate-500">⋮</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- BLOQUE INFERIOR: CLÁUSULAS Y CONDICIONES COMERCIALES (REQ-992: lines 4672-4718) -->
+            <div id="boxCondicionesDebajoEstructurador" class="border border-white/10 rounded-xl bg-[#0a0f1e] p-4 space-y-3 transition-all">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-xs font-bold text-white uppercase tracking-wider">
+                    Cláusulas y Acuerdos Comerciales (PDF)
+                  </span>
+                  <span class="text-[9px] font-bold px-2 py-0.5 rounded border bg-amber-500/10 text-amber-400 border-amber-500/30">
+                    ✓ TRASLADOS
+                  </span>
+                  <span class="text-[9px] font-bold px-2 py-0.5 rounded border bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                    ✓ GRÚAS TELESCÓPICAS
+                  </span>
+                </div>
+
+                <!-- VALIDEZ DE OFERTA: 5 DÍAS HÁBILES CANÓNICOS (REQ-992) -->
+                <div class="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-lg">
+                  <span class="text-[11px] font-bold text-amber-400">Validez de Oferta:</span>
+                  <span class="text-xs font-black font-mono text-amber-300">5 DÍAS HÁBILES</span>
+                </div>
+              </div>
+
+              <!-- Textarea Real Canónico -->
+              <textarea 
+                rows="8" 
+                readonly
+                class="w-full bg-[#050810] border border-white/10 rounded p-3 text-xs text-slate-200 outline-none resize-none font-mono leading-relaxed"
+              >CONDICIONES Y ACUERDOS COMERCIALES: GRÚAS TELESCÓPICAS Y TRASLADOS (GSP)
+
+1. Modalidad del Servicio y Disponibilidad
+• Servicio PROGRAMADO: Reserva y concurrencia garantizada de equipo en los días y horarios acordados. Se factura a todo evento.
+
+2. Cómputo de Horas y Régimen de Traslado
+• RÉGIMEN RURAL (> 30 km): La jornada de arriendo inicia al momento de la llegada a faena y concluye al término del servicio diario pactado. La movilización (flete grúa y cama baja de contrapesos) se factura independientemente.
+• Cobro Mínimo: Mínimo 8 horas diarias de operación en terreno.
+
+3. Responsabilidad de Faena: Condiciones de apoyo, terreno y accesos despejados son de exclusiva responsabilidad del cliente mandante.
+
+4. Condiciones de Validez y Pago:
+• Validez de la Oferta: 5 días hábiles a contar de la fecha de emisión.
+• Condición de Pago: Crédito a 30 días contra Estado de Pago / Facturación autorizada. Valores expresados en CLP más 19% IVA.</textarea>
+            </div>
+
+          </div>
+
+          <!-- TAB CONTENT 3: CONDICIONES COMERCIALES (Tab directo) -->
+          <div id="tabContentCondiciones" class="hidden space-y-4">
+            <div class="bg-[#0a0f1e] border border-white/10 rounded-xl p-4 space-y-3 text-xs text-slate-300">
+              <div class="flex items-center gap-3">
+                <span class="font-bold text-amber-400">Plazo de Validez Oficial de la Cotización:</span>
+                <span class="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 font-mono font-bold border border-amber-500/40">
+                  5 DÍAS HÁBILES (REQ-992)
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-relaxed">
+                Alineado con el acuerdo comercial establecido por Jorge Ponce y la Dirección General para cautelar la reserva de grúas telescópicas y camiones pluma en el parque de flota.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: VISOR DEL DOCUMENTO PDF FORMAL (HOJA A4 IDÉNTICA A proyectoModel.js) -->
+  <!-- ========================================================================= -->
+  <div id="modalPdfOficial" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col my-auto max-h-[95vh]">
+      
+      <!-- PDF Viewer Header Bar -->
+      <div class="bg-slate-950 px-5 py-3.5 border-b border-slate-800 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 font-mono font-bold text-xs border border-rose-500/30">
+            PDF OFICIAL
+          </span>
+          <span class="text-xs text-slate-300 font-mono font-bold">
+            GSP-2610-4853-001V1-1.pdf
+          </span>
+          <span class="text-[10px] text-slate-500 font-mono">| Hoja A4 • Formato Institucional GSP</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="cerrarVisorPdfOficial()" class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 w-8 h-8 rounded-full font-bold text-sm transition-colors cursor-pointer">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Hoja A4 Renderizada con los estilos exactos de proyectoModel.js (lines 698-940) -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-950/50">
+        <div class="pdf-container max-w-3xl mx-auto">
+          
+          <!-- HEADER -->
+          <table class="pdf-header-table">
+            <tr>
+              <td style="width: 25%;">
+                <div style="font-size: 18px; font-weight: 900; color: #f5a623; letter-spacing: -0.5px;">
+                  GRÚAS SAN PABLO
+                </div>
+                <div style="font-size: 8px; color: #718096; text-transform: uppercase;">
+                  Izaje & Logística Pesada
+                </div>
+              </td>
+              <td style="width: 45%;">
+                <div class="pdf-emitter-title">LUIS OMAR GHISELLINI JARA E.I.R.L. (GRÚAS SAN PABLO)</div>
+                <div class="pdf-emitter-info">
+                  RUT: 52.004.162-1 | Giro: ARRIENDO DE MAQUINARIAS Y VEHÍCULOS MOTORIZADOS<br>
+                  Casa Matriz: Botrolhue KM 9.5 Hijuela 24 Camino Labranza, Temuco<br>
+                  Contacto: +56 9 9443 7725
+                </div>
+              </td>
+              <td style="width: 30%; text-align: right;">
+                <div class="pdf-quote-badge">
+                  <div class="pdf-quote-title">COTIZACIÓN COMERCIAL</div>
+                  <div class="pdf-quote-meta">
+                    <strong>Número:</strong> GSP-2610-4853-001<br>
+                    <strong>Versión:</strong> 1<br>
+                    <strong>Fecha:</strong> 05/10/2026<br>
+                    <strong>Prioridad:</strong> NORMAL
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <!-- 1. DATOS DEL CLIENTE MANDANTE -->
+          <div class="pdf-section-title">1. Datos del Cliente Mandante</div>
+          <table class="pdf-info-table">
+            <tr>
+              <td class="pdf-info-label">Razón Social:</td>
+              <td class="pdf-info-value">Sociedad Minera Las Cenizas S.A.</td>
+              <td class="pdf-info-label">RUT Cliente:</td>
+              <td class="pdf-info-value">76.123.456-7</td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Dirección:</td>
+              <td class="pdf-info-value">Faena Minera Cabildo S/N, Cabildo</td>
+              <td class="pdf-info-label">Giro:</td>
+              <td class="pdf-info-value">Extracción y Explotación de Cobre</td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Contacto:</td>
+              <td class="pdf-info-value">Roberto Morales</td>
+              <td class="pdf-info-label">Teléfono:</td>
+              <td class="pdf-info-value">+56 9 8765 4321</td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Forma de Pago:</td>
+              <td class="pdf-info-value" style="text-transform: uppercase;">CRÉDITO 30 DÍAS</td>
+              <td class="pdf-info-label">Requiere OC/HES:</td>
+              <td class="pdf-info-value">SÍ</td>
+            </tr>
+          </table>
+
+          <!-- 2. DATOS DE OPERACIÓN E INGENIERÍA -->
+          <div class="pdf-section-title">2. Datos de Operación e Ingeniería</div>
+          <table class="pdf-info-table">
+            <tr>
+              <td class="pdf-info-label">Nombre Obra/Proyecto:</td>
+              <td class="pdf-info-value">Montaje Chancador Secundario N° 2</td>
+              <td class="pdf-info-label">Ubicación Obra:</td>
+              <td class="pdf-info-value">
+                • <strong>Dirección:</strong> Faena Minera Cabildo S/N<br>
+                • <strong>Comuna/Ciudad:</strong> Cabildo, Valparaíso<br>
+                • <strong>Coordenadas GPS:</strong> <span style="font-family: monospace; font-size: 8.5px;">-32.42710, -71.06640</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Horario Inicio Servicio:</td>
+              <td class="pdf-info-value">08-10-2026 08:00</td>
+              <td class="pdf-info-label">Término Estimado:</td>
+              <td class="pdf-info-value">10-10-2026 18:00</td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Detalle del Servicio:</td>
+              <td class="pdf-info-value" colspan="3">Montaje y posicionamiento estructural de tolvas y componentes pesados de chancador secundario.</td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Tipo de Carga:</td>
+              <td class="pdf-info-value">Equipos y Componentes Estructurales</td>
+              <td class="pdf-info-label">Peso de la Carga:</td>
+              <td class="pdf-info-value">38 Toneladas</td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Volumen (Dimensiones):</td>
+              <td class="pdf-info-value">6.50m × 3.20m × 2.80m (58.24 m³)</td>
+              <td class="pdf-info-label">Radios / Alturas Trab:</td>
+              <td class="pdf-info-value">Radio: 18m | Altura: 24m</td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Condiciones Operativas:</td>
+              <td class="pdf-info-value" colspan="3">
+                • <strong>Requiere Acreditación:</strong> SÍ&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Régimen Operacional:</strong> RURAL (> 30 km) (45 km estim. ida)&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Requiere Rigger:</strong> SÍ&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Prevencionista:</strong> SÍ<br>
+                • <strong>Cliente pone Combustible:</strong> <strong>NO (Suministrado por San Pablo)</strong>
+              </td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Visita Técnica Terreno:</td>
+              <td class="pdf-info-value" colspan="3">SÍ (Realizada por personal técnico certificado GSP)</td>
+            </tr>
+          </table>
+
+          <!-- 3. DETALLES DE SERVICIOS Y TARIFAS -->
+          <div class="pdf-section-title">3. Detalles de Servicios y Tarifas</div>
+          <table class="pdf-services-table">
+            <thead>
+              <tr>
+                <th style="width: 5%; text-align: center;">Item</th>
+                <th style="width: 38%;">Descripción del Servicio</th>
+                <th style="width: 17%; text-align: center;">Unidad de Cobro</th>
+                <th style="width: 16%; text-align: center;">Cantidad(es) / Base</th>
+                <th style="width: 12%; text-align: right;">Tarifa Unitario</th>
+                <th style="width: 12%; text-align: right;">Subtotal (Neto)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="text-align: center;">1</td>
+                <td>
+                  <div style="font-weight: bold; color: #f5a623; text-transform: uppercase; font-size: 8px;">
+                    GRÚAS TELESCÓPICAS — 100 TONELADAS
+                  </div>
+                  <div style="margin-top: 2px; font-size: 9px; color: #2d3748;">
+                    Liebherr LTM 1100 (100 Ton)
+                  </div>
+                </td>
+                <td style="text-align: center; font-size: 8px;">Horas Diarias Minimas</td>
+                <td style="text-align: center; font-weight: 600; color: #1e293b;">3 Días × 8 hrs/día</td>
+                <td style="text-align: right; font-family: monospace;">$ 185.000 / hr</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold;">$ 4.440.000</td>
+              </tr>
+              <tr>
+                <td style="text-align: center;">2</td>
+                <td>
+                  <div style="font-weight: bold; color: #f5a623; text-transform: uppercase; font-size: 8px;">
+                    TRASLADOS — CAMA BAJA
+                  </div>
+                  <div style="margin-top: 2px; font-size: 9px; color: #2d3748;">
+                    Flete Grúa Telescópica (Temuco - Cabildo - Temuco)
+                  </div>
+                </td>
+                <td style="text-align: center; font-size: 8px;">TRASLADO IDA/VUELTA</td>
+                <td style="text-align: center; font-weight: 600; color: #1e293b;">1 Viaje</td>
+                <td style="text-align: right; font-family: monospace;">$ 1.200.000</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold;">$ 1.200.000</td>
+              </tr>
+              <tr>
+                <td style="text-align: center;">3</td>
+                <td>
+                  <div style="font-weight: bold; color: #f5a623; text-transform: uppercase; font-size: 8px;">
+                    TRASLADOS — CAMA BAJA
+                  </div>
+                  <div style="margin-top: 2px; font-size: 9px; color: #2d3748;">
+                    Flete Cama Baja Traslado Contrapesos 26 Ton
+                  </div>
+                </td>
+                <td style="text-align: center; font-size: 8px;">TRASLADO IDA/VUELTA</td>
+                <td style="text-align: center; font-weight: 600; color: #1e293b;">1 Viaje</td>
+                <td style="text-align: right; font-family: monospace;">$ 950.000</td>
+                <td style="text-align: right; font-family: monospace; font-weight: bold;">$ 950.000</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- TOTALES -->
+          <table class="pdf-summary-table">
+            <tr>
+              <td class="pdf-summary-label">Total Neto:</td>
+              <td class="pdf-summary-value">$ 6.590.000</td>
+            </tr>
+            <tr>
+              <td class="pdf-summary-label">IVA (19%):</td>
+              <td class="pdf-summary-value">$ 1.252.100</td>
+            </tr>
+            <tr class="pdf-summary-total">
+              <td class="pdf-summary-label pdf-summary-total">Total General:</td>
+              <td class="pdf-summary-value pdf-summary-total">$ 7.842.100</td>
+            </tr>
+          </table>
+
+          <div style="clear: both;"></div>
+
+          <!-- 4. CONDICIONES COMERCIALES Y ESPECIALES -->
+          <div class="pdf-section-title">4. Condiciones Comerciales y Especiales</div>
+          <table class="pdf-info-table">
+            <tr>
+              <td class="pdf-info-label">Validez de Oferta:</td>
+              <td class="pdf-info-value"><strong>5 días hábiles</strong></td>
+              <td class="pdf-info-label">Moneda Cotizada:</td>
+              <td class="pdf-info-value" style="text-transform: uppercase;">CLP</td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Condición de Servicio:</td>
+              <td class="pdf-info-value" colspan="3" style="text-transform: uppercase;">
+                <strong>PROGRAMADO</strong> — Reserva garantizada de equipo. Se factura a todo evento según programación.
+              </td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Suministro Combustible:</td>
+              <td class="pdf-info-value" colspan="3">
+                <strong>NO</strong> — Suministrado por Grúas San Pablo (Incluido en tarifa del servicio).
+              </td>
+            </tr>
+            <tr>
+              <td class="pdf-info-label">Responsabilidad de Pensiones:</td>
+              <td class="pdf-info-value" colspan="3" style="font-size: 8.5px; line-height: 1.5;">
+                • <strong>Alojamiento:</strong> Costeado por Cliente&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Desayuno:</strong> Costeado por Cliente&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Almuerzo:</strong> Costeado por Cliente<br>
+                • <strong>Cena:</strong> Costeado por Cliente&nbsp;&nbsp;&nbsp;&nbsp;
+                • <strong>Traslado Personal:</strong> Costeado por San Pablo
+              </td>
+            </tr>
+          </table>
+
+          <div style="font-weight: bold; font-size: 8.5px; color: #2d3748; margin-top: 6px;">Exclusiones y Condiciones Especiales:</div>
+          <div class="pdf-conditions-box" style="white-space: pre-wrap;">• RÉGIMEN RURAL (> 30 km): La jornada de arriendo del equipo inicia a la llegada a faena y concluye al término del servicio diario. La movilización (flete ida y retorno) se factura de forma independiente.
+• CONDICIONES Y ACUERDOS COMERCIALES: GRÚAS TELESCÓPICAS Y CAMIÓN PLUMA (REQ-992).
+• Validez de la Oferta: 5 días hábiles a contar de la fecha de emisión.</div>
+
+          <div class="pdf-footer">
+            Documento de carácter confidencial emitido por el Holding de Empresas de Grúas San Pablo.<br>
+            Para cualquier consulta comercial o de operaciones, contactar a fono: +56 9 9443 7725 o al correo oficial de su ejecutivo asignado.
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="bg-slate-950 p-4 border-t border-slate-800 flex justify-between items-center flex-shrink-0">
+        <span class="text-xs text-slate-400 font-mono">
+          Estado: <strong class="text-emerald-400">Documento Generado Exitosamente</strong>
+        </span>
+        <div class="flex gap-3">
+          <button onclick="cerrarVisorPdfOficial()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer">
+            Cerrar Visor
+          </button>
+          <button onclick="cerrarVisorPdfOficial(); abrirModalEnviarOficial();" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-black uppercase transition-all shadow-md shadow-amber-500/20 flex items-center gap-2 cursor-pointer">
+            <span>Avanzar a Enviar Cotización ➔</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: MODAL ENVIAR COTIZACIÓN (EXACTO A ModalEnviarCotizacion.vue)       -->
+  <!-- ========================================================================= -->
+  <div id="modalEnviarEmailOficial" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
+      
+      <!-- Header (lines 5-16 of ModalEnviarCotizacion.vue) -->
+      <div class="bg-slate-950 p-5 border-b border-slate-800 flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="p-3 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-black text-white uppercase tracking-wider font-mono">Enviar Cotización por Email</h3>
+            <p class="text-sm text-slate-400 mt-0.5">Versión: <strong class="text-amber-400 font-mono font-bold">v1.0</strong> — <span class="font-mono text-white font-bold">GSP-2610-4853-001</span></p>
+          </div>
+        </div>
+        <button onclick="cerrarModalEnviarOficial()" class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 w-9 h-9 rounded-full font-bold text-base transition-colors cursor-pointer">✕</button>
+      </div>
+
+      <!-- Body Form (lines 18-127 of ModalEnviarCotizacion.vue) -->
+      <div class="p-6 space-y-6 overflow-y-auto flex-1 text-sm scrollbar-hide">
+        
+        <!-- Remitente Emisor (Fijo) -->
+        <div>
+          <label class="block text-xs text-slate-300 font-black uppercase mb-1.5 tracking-wider">Remitente Emisor (Fijo)</label>
+          <input
+            type="text"
+            readonly
+            value="notificaciones.gsp@leanglobal.cl"
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-amber-400 font-mono font-bold cursor-not-allowed"
+          />
+        </div>
+
+        <!-- GRILLA SUPERIOR 2 COLUMNAS (IZQ: CLIENTE / DER: CC PARAMETRIZADA) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Columna Izquierda: Destinatarios del Cliente -->
+          <div class="space-y-3 flex flex-col justify-between">
+            <div>
+              <label class="block text-xs text-slate-300 font-black uppercase tracking-wider mb-1.5">Destinatarios del Cliente *</label>
+              <div class="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="Agregar otro correo cliente + Enter..."
+                  class="flex-1 bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
+                />
+                <button class="bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold px-4 py-2.5 rounded-xl border border-slate-700 text-xs uppercase cursor-pointer">
+                  + Agregar
+                </button>
+              </div>
+            </div>
+
+            <!-- Tags de Correos Cliente -->
+            <div class="flex flex-wrap gap-2 bg-slate-950 p-3.5 rounded-2xl border border-slate-800 min-h-[100px] max-h-40 overflow-y-auto">
+              <span class="bg-amber-500/10 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl font-mono text-xs flex items-center gap-2 font-bold h-fit">
+                ✉️ rmorales@cenizas.cl
+                <button class="hover:text-rose-400 font-bold ml-1 text-sm">✕</button>
+              </span>
+            </div>
+          </div>
+
+          <!-- Columna Derecha: Copia Obligatoria (CC) Parametrizada: Emisor + COORD + Admin -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center mb-1">
+              <div>
+                <label class="block text-xs text-slate-300 font-black uppercase tracking-wider">Copia Conforme (CC) — Parametrizada *</label>
+                <p class="text-[10px] text-slate-400">Emisor Comercial + Rol COORD + Rol Admin</p>
+              </div>
+              <span class="text-xs text-amber-400 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">5 seleccionados</span>
+            </div>
+
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 max-h-48 overflow-y-auto space-y-1.5 scrollbar-hide min-h-[100px]">
+              
+              <!-- 1. Emisor -->
+              <label class="flex items-center justify-between p-2 hover:bg-slate-900/80 rounded-xl text-slate-200 cursor-pointer transition-colors border border-slate-800/50">
+                <div class="flex items-center gap-2.5 truncate">
+                  <input type="checkbox" checked class="w-4 h-4 accent-amber-500 rounded cursor-pointer" />
+                  <div class="flex flex-col truncate">
+                    <span class="font-bold text-white text-xs truncate">Jorge Ponce</span>
+                    <span class="text-[10px] text-slate-400 font-mono truncate">jorge.ponce@arriendosanpablo.cl</span>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider flex-shrink-0 ml-2 border-cyan-500/30 text-cyan-400 bg-cyan-500/10">
+                  EMISOR
+                </span>
+              </label>
+
+              <!-- 2. Coordinador Richard Jara -->
+              <label class="flex items-center justify-between p-2 hover:bg-slate-900/80 rounded-xl text-slate-200 cursor-pointer transition-colors border border-slate-800/50">
+                <div class="flex items-center gap-2.5 truncate">
+                  <input type="checkbox" checked class="w-4 h-4 accent-amber-500 rounded cursor-pointer" />
+                  <div class="flex flex-col truncate">
+                    <span class="font-bold text-white text-xs truncate">Richard Jara (Coordinación)</span>
+                    <span class="text-[10px] text-slate-400 font-mono truncate">logistica@arriendosanpablo.cl</span>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider flex-shrink-0 ml-2 border-amber-500/30 text-amber-400 bg-amber-500/10">
+                  COORD
+                </span>
+              </label>
+
+              <!-- 3. Sergio Gajardo (Admin) -->
+              <label class="flex items-center justify-between p-2 hover:bg-slate-900/80 rounded-xl text-slate-200 cursor-pointer transition-colors border border-slate-800/50">
+                <div class="flex items-center gap-2.5 truncate">
+                  <input type="checkbox" checked class="w-4 h-4 accent-amber-500 rounded cursor-pointer" />
+                  <div class="flex flex-col truncate">
+                    <span class="font-bold text-white text-xs truncate">Sergio Gajardo</span>
+                    <span class="text-[10px] text-slate-400 font-mono truncate">sgajardoc@gmail.com</span>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider flex-shrink-0 ml-2 border-purple-500/30 text-purple-400 bg-purple-500/10">
+                  ADMIN
+                </span>
+              </label>
+
+              <!-- 4. Jorge Ponce (Admin) -->
+              <label class="flex items-center justify-between p-2 hover:bg-slate-900/80 rounded-xl text-slate-200 cursor-pointer transition-colors border border-slate-800/50">
+                <div class="flex items-center gap-2.5 truncate">
+                  <input type="checkbox" checked class="w-4 h-4 accent-amber-500 rounded cursor-pointer" />
+                  <div class="flex flex-col truncate">
+                    <span class="font-bold text-white text-xs truncate">Jorge Ponce</span>
+                    <span class="text-[10px] text-slate-400 font-mono truncate">j.poncenavarrete@gmail.com</span>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider flex-shrink-0 ml-2 border-purple-500/30 text-purple-400 bg-purple-500/10">
+                  ADMIN
+                </span>
+              </label>
+
+              <!-- 5. Omar Ghiselini (Director General) -->
+              <label class="flex items-center justify-between p-2 hover:bg-slate-900/80 rounded-xl text-slate-200 cursor-pointer transition-colors border border-slate-800/50">
+                <div class="flex items-center gap-2.5 truncate">
+                  <input type="checkbox" checked class="w-4 h-4 accent-amber-500 rounded cursor-pointer" />
+                  <div class="flex flex-col truncate">
+                    <span class="font-bold text-white text-xs truncate">Omar Ghiselini (Director)</span>
+                    <span class="text-[10px] text-slate-400 font-mono truncate">omar.ghiselini@arriendosanpablo.cl</span>
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider flex-shrink-0 ml-2 border-purple-500/30 text-purple-400 bg-purple-500/10">
+                  ADMIN
+                </span>
+              </label>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN INFERIOR A ANCHO COMPLETO: SCRIPT COMERCIAL EDITABLE -->
+        <div class="space-y-3 border-t border-slate-800/80 pt-5">
+          <div>
+            <label class="block text-xs text-slate-300 font-black uppercase mb-1.5 tracking-wider">Asunto del Correo (Editable) *</label>
+            <input
+              type="text"
+              value="Cotización Grúas San Pablo: GSP-2610-4853-001 - Sociedad Minera Las Cenizas S.A."
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white font-bold focus:outline-none focus:border-amber-500 font-mono"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-300 font-black uppercase mb-1.5 tracking-wider">Script Comercial de Propuesta (Editable) *</label>
+            <textarea
+              rows="5"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-slate-100 font-sans text-xs leading-relaxed focus:outline-none focus:border-amber-500 font-medium"
+            >Estimado(a) Sociedad Minera Las Cenizas S.A.,
+
+Junto con saludar, adjuntamos la propuesta de cotización oficial v1.0 (Código: GSP-2610-4853-001) correspondiente al servicio solicitado para la obra "Montaje Chancador Secundario N° 2".
+
+Quedamos atentos a sus comentarios para coordinar los detalles operativos de la faena.
+
+Saludos cordiales,
+Equipo Comercial — Grúas San Pablo</textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer Buttons (lines 130-144 of ModalEnviarCotizacion.vue) -->
+      <div class="bg-slate-950 p-4 border-t border-slate-800 flex justify-between items-center flex-shrink-0">
+        <span class="text-xs text-slate-400 font-mono">📎 Adjunto: <strong class="text-amber-400 font-bold">v1.0.pdf</strong></span>
+        <div class="flex gap-3">
+          <button onclick="cerrarModalEnviarOficial()" class="px-4 py-2.5 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-wider cursor-pointer">Cancelar</button>
+          <button
+            id="btnDespacharEmail"
+            onclick="confirmarDespachoEmailDemo()"
+            class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+            <span>Enviar Cotización por Email</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LOADING OVERLAY GENERANDO PDF (lines 4778-4790 of GestorOportunidades.vue) -->
+  <div id="overlayGenerandoPdf" class="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center space-y-4">
+    <div class="relative w-16 h-16">
+      <div class="absolute inset-0 rounded-full border-4 border-amber-500/20 border-t-amber-500 animate-spin"></div>
+    </div>
+    <div class="text-center space-y-1">
+      <p class="text-white font-bold text-sm tracking-wide">Generando versión oficial de cotización...</p>
+      <p class="text-slate-400 text-xs font-mono">Compilando PDF e insertando registro en tfmg_file...</p>
+    </div>
+  </div>
+
+  <!-- MODAL DE GENERAR REQUERIMIENTO (lines 5340-5450) -->
+  <div id="modalGenerarRequerimiento" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0b1021] border border-amber-500/40 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl p-5 space-y-4">
+      <div class="flex justify-between items-center border-b border-white/10 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-amber-400 text-lg">⚡</span>
+          <h3 class="text-sm font-black text-white uppercase tracking-wider">Transferir a Operaciones (Generar Requerimiento)</h3>
+        </div>
+        <button onclick="cerrarModalRequerimientoDemo()" class="text-slate-400 hover:text-white font-bold cursor-pointer">✕</button>
+      </div>
+      <div class="text-xs text-slate-300 space-y-2">
+        <p>✅ <strong>Requisitos de Preventa Validados:</strong></p>
+        <ul class="list-disc list-inside space-y-1 text-slate-400 text-[11px]">
+          <li>Datos de Mandante y Faena completados.</li>
+          <li>Cotización formal v1.0 generada en el servidor.</li>
+          <li>Cotización enviada formalmente al cliente por email.</li>
+        </ul>
+        <p class="pt-2 text-amber-300 font-semibold">
+          Al confirmar, el requerimiento se transfiere automáticamente a Operaciones para <strong>Validación & Diff</strong> y <strong>Asignación de Recursos OT</strong>.
+        </p>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t border-white/10">
+        <button onclick="cerrarModalRequerimientoDemo()" class="px-3.5 py-2 bg-slate-800 text-slate-300 rounded-lg text-xs font-bold cursor-pointer">
+          Cancelar
+        </button>
+        <button onclick="confirmarTransferenciaOperaciones()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-xs uppercase tracking-wider cursor-pointer">
+          Confirmar Transferencia ➔
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT DE NAVEGACIÓN Y EXPLICACIÓN GUIADA -->
+  <script>
+    let currentStep = 1;
+    let isAutoPlaying = false;
+    let autoPlayInterval = null;
+    let speedMultiplier = 1;
+
+    const stepDefinitions = {
+      1: {
+        title: "Configuración de Oportunidad & Empresa Emisora",
+        badge: "PASO 1 DE 6",
+        text: "El ejecutivo comercial (Jorge Ponce) selecciona la empresa emisora oficial LUIS OMAR GHISELLINI JARA E.I.R.L. (GRÚAS SAN PABLO) (RUT 52.004.162-1, Temuco) y carga los datos del mandante Sociedad Minera Las Cenizas S.A. con condición de Crédito 30 días.",
+        rule: "REQ-569: Multi-Empresa & Enrolamiento Canónico GSP",
+        targetId: "fieldEmpresaEmisora",
+        tab: "servicios"
+      },
+      2: {
+        title: "Requerimientos Comerciales & Clasificación Rural/Urbana",
+        badge: "PASO 2 DE 6",
+        text: "Se definen los parámetros obligatorios: Requiere OC/HES (SÍ), Acreditación (SÍ), Distancia Estimada (45 km). El motor de reglas de GSP evalúa la distancia (> 30 km) y fija automáticamente el RÉGIMEN RURAL (>30km), determinando que el taxímetro de la grúa comience a la llegada a faena y los traslados se coticen independientes.",
+        rule: "Límites Operacionales: ≤ 30 km (Urbano) vs > 30 km (Rural)",
+        targetId: "boxRequerimientosComerciales",
+        tab: "servicios"
+      },
+      3: {
+        title: "Datos de Faena, Visita Técnica a Terreno & Mapa Geográfico",
+        badge: "PASO 3 DE 6",
+        text: "En la pestaña 'Datos Servicio & Visita', se visualiza el formulario real con: Obra, Horarios, Carga (38 Ton), Dimensiones (6.50 × 3.20 × 2.80 m = 58.24 m³), el toggle 'Requiere Visita Técnica a Terreno' con solicitud formal al Coordinador Richard Jara, y el MapSelector satelital en la columna derecha.",
+        rule: "MapSelector.vue & Protocolo de Viabilidad Técnica",
+        targetId: "tabContentTerreno",
+        tab: "terreno"
+      },
+      4: {
+        title: "Estructurador Canónico: Asistente Tarifario de 5 Casos",
+        badge: "PASO 4 DE 6",
+        text: "En 'Estructurador de Servicios', el Asistente detecta faena rural (45 km) y traslado de contrapesos, sugiriendo el 'CASO 4: RURAL (GRÚA + CONTRAPESOS)'. Se estructuran las 3 líneas en la grilla oficial de 8 columnas: Grúa Liebherr LTM 1100 (3 días × 8 hrs a $185.000) + Flete Grúa ($1.200.000) + Cama Baja Contrapesos ($950.000) = Total Neto $6.590.000 CLP.",
+        rule: "REQ-682: Cero Duplicidad de Fletes en PDF y Estructurador",
+        targetId: "asistenteMatriz",
+        tab: "servicios"
+      },
+      5: {
+        title: "Condiciones Comerciales Oficiales & Validez 5 Días Hábiles",
+        badge: "PASO 5 DE 6",
+        text: "Directamente debajo de la grilla de servicios, se inyectan las cláusulas canónicas de Grúas San Pablo (REQ-992). Se cautela la 'Validez de Oferta: 5 días hábiles' acordada con la Dirección General para reservar disponibilidad en el parque de grúas móviles.",
+        rule: "REQ-992: Vigencia Estricta de 5 Días Hábiles",
+        targetId: "boxCondicionesDebajoEstructurador",
+        tab: "servicios"
+      },
+      6: {
+        title: "Generación de PDF Oficial Emitido & Despacho por Email",
+        badge: "PASO 6 DE 6",
+        text: "Al hacer clic en 'Generar Cotización' en la barra superior, el backend compila el documento oficial A4 (con membrete de Luis Omar Ghisellini Jara E.I.R.L. y las 4 secciones). Luego se abre ModalEnviarCotizacion.vue con remitente fijo notificaciones.gsp@leanglobal.cl y copia obligatoria a Omar Ghiselini, Sergio Gajardo y Richard Jara.",
+        rule: "Gobernanza RBAC & Notificación Omnicanal con PDF Real",
+        targetId: "boxControlVersiones",
+        tab: "servicios"
+      }
+    };
+
+    function clearSpotlights() {
+      document.querySelectorAll('.spotlight-active').forEach(el => el.classList.remove('spotlight-active'));
+    }
+
+    function switchRightTab(tabName) {
+      document.getElementById('tabContentTerreno').classList.add('hidden');
+      document.getElementById('tabContentServicios').classList.add('hidden');
+      document.getElementById('tabContentCondiciones').classList.add('hidden');
+
+      document.getElementById('tabBtnTerreno').className = "py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap text-slate-400 hover:text-white border-b-2 border-transparent";
+      document.getElementById('tabBtnServicios').className = "py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap text-slate-400 hover:text-white border-b-2 border-transparent";
+      document.getElementById('tabBtnCondiciones').className = "py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap text-slate-400 hover:text-white border-b-2 border-transparent";
+
+      if (tabName === 'terreno') {
+        document.getElementById('tabContentTerreno').classList.remove('hidden');
+        document.getElementById('tabBtnTerreno').className = "py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap text-amber-500 border-b-2 border-amber-500";
+      } else if (tabName === 'servicios') {
+        document.getElementById('tabContentServicios').classList.remove('hidden');
+        document.getElementById('tabBtnServicios').className = "py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap text-amber-500 border-b-2 border-amber-500";
+      } else if (tabName === 'condiciones') {
+        document.getElementById('tabContentCondiciones').classList.remove('hidden');
+        document.getElementById('tabBtnCondiciones').className = "py-3 px-1 text-[10px] font-bold uppercase tracking-wider outline-none transition-all whitespace-nowrap text-amber-500 border-b-2 border-amber-500";
+      }
+    }
+
+    function goToStep(stepNum) {
+      currentStep = stepNum;
+      const def = stepDefinitions[stepNum];
+      if (!def) return;
+
+      for (let i = 1; i <= 6; i++) {
+        const btn = document.getElementById('btnStep' + i);
+        if (i === stepNum) {
+          btn.className = "step-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border border-amber-500/50 bg-amber-500/25 text-amber-300 shadow-md flex items-center gap-1 whitespace-nowrap";
+        } else {
+          btn.className = "step-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/10 bg-slate-900/60 text-slate-400 hover:text-white flex items-center gap-1 whitespace-nowrap";
+        }
+      }
+
+      document.getElementById('commentStepBadge').innerText = def.badge;
+      document.getElementById('commentTitle').innerText = def.title;
+      document.getElementById('commentText').innerHTML = def.text;
+      document.getElementById('commentRuleText').innerText = def.rule;
+
+      if (def.tab) {
+        switchRightTab(def.tab);
+      }
+
+      clearSpotlights();
+      const targetEl = document.getElementById(def.targetId);
+      if (targetEl) {
+        targetEl.classList.add('spotlight-active');
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      if (stepNum === 3) {
+        const mapEl = document.getElementById('columnaMapaSelector');
+        if (mapEl) mapEl.classList.add('spotlight-active');
+      }
+
+      if (stepNum === 5) {
+        const condEl = document.getElementById('boxCondicionesDebajoEstructurador');
+        if (condEl) condEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      if (stepNum === 6) {
+        abrirVisorPdfOficial();
+      } else {
+        cerrarVisorPdfOficial();
+        cerrarModalEnviarOficial();
+      }
+    }
+
+    function nextStep() {
+      if (currentStep < 6) {
+        goToStep(currentStep + 1);
+      } else {
+        goToStep(1);
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        goToStep(currentStep - 1);
+      }
+    }
+
+    function toggleAutoPlay() {
+      if (isAutoPlaying) {
+        stopAutoPlay();
+      } else {
+        startAutoPlay();
+      }
+    }
+
+    function startAutoPlay() {
+      isAutoPlaying = true;
+      document.getElementById('playIcon').innerText = "⏸";
+      document.getElementById('playText').innerText = "Pausar";
+      document.getElementById('btnAutoPlay').className = "px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider rounded-lg transition-all shadow-md flex items-center gap-1.5";
+
+      const delay = 6000 / speedMultiplier;
+      autoPlayInterval = setInterval(() => {
+        nextStep();
+      }, delay);
+    }
+
+    function stopAutoPlay() {
+      isAutoPlaying = false;
+      clearInterval(autoPlayInterval);
+      document.getElementById('playIcon').innerText = "▶";
+      document.getElementById('playText').innerText = "Animación Auto";
+      document.getElementById('btnAutoPlay').className = "px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider rounded-lg transition-all shadow-md shadow-amber-500/20 flex items-center gap-1.5";
+    }
+
+    function changeSpeed(val) {
+      speedMultiplier = parseFloat(val);
+      if (isAutoPlaying) {
+        stopAutoPlay();
+        startAutoPlay();
+      }
+    }
+
+    function abrirVisorPdfOficial() {
+      document.getElementById('modalPdfOficial').classList.remove('hidden');
+    }
+
+    function cerrarVisorPdfOficial() {
+      document.getElementById('modalPdfOficial').classList.add('hidden');
+    }
+
+    function abrirModalEnviarOficial() {
+      document.getElementById('modalEnviarEmailOficial').classList.remove('hidden');
+    }
+
+    function cerrarModalEnviarOficial() {
+      document.getElementById('modalEnviarEmailOficial').classList.add('hidden');
+    }
+
+    function generarCotizacionVersionDemo() {
+      const overlay = document.getElementById('overlayGenerandoPdf');
+      overlay.classList.remove('hidden');
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        abrirVisorPdfOficial();
+      }, 1000);
+    }
+
+    function confirmarDespachoEmailDemo() {
+      const btn = document.getElementById('btnDespacharEmail');
+      btn.innerHTML = "<span class='animate-spin'>⏳</span> Enviando Correo...";
+      btn.disabled = true;
+
+      setTimeout(() => {
+        btn.innerHTML = "<span>✓</span> ¡Correo Enviado con Éxito!";
+        btn.className = "bg-emerald-500 text-slate-950 font-black px-6 py-2.5 rounded-xl text-xs uppercase";
+        setTimeout(() => {
+          cerrarModalEnviarOficial();
+          btn.disabled = false;
+          btn.className = "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer";
+          btn.innerHTML = "<svg class='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 19l9 2-9-18-9 18 9-2zm0 0v-8'></path></svg><span>Enviar Cotización por Email</span>";
+          
+          alert("✉️ Correo comercial formal enviado exitosamente a rmorales@cenizas.cl con copia a Omar Ghiselini, Sergio Gajardo y Richard Jara.\n\nRegistro guardado en trazabilidad de envíos de la oportunidad.");
+        }, 1200);
+      }, 1000);
+    }
+
+    function abrirModalRequerimientoDemo() {
+      document.getElementById('modalGenerarRequerimiento').classList.remove('hidden');
+    }
+
+    function cerrarModalRequerimientoDemo() {
+      document.getElementById('modalGenerarRequerimiento').classList.add('hidden');
+    }
+
+    function confirmarTransferenciaOperaciones() {
+      cerrarModalRequerimientoDemo();
+      alert("🎉 Requerimiento transferido a Operaciones con éxito.\n\nLa oportunidad avanza a Etapa 2: Validación & Diff en la Torre de Control.");
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      goToStep(1);
+    });
+  </script>
+</body>
+</html>

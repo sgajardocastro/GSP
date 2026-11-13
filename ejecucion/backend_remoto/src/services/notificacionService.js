@@ -148,10 +148,12 @@ async function despacharWhatsAppHttp({ telefono, mensaje }) {
 }
 
 // 4. Despacho SMTP Transaccional (MessageModel)
-async function despacharEmailSmtp({ para, asunto, titulo, subtitulo, contenido, botonTexto, botonUrl }) {
+async function despacharEmailSmtp({ para, cc, asunto, titulo, subtitulo, contenido, botonTexto, botonUrl }) {
   try {
-    if (!para || !para.includes('@')) {
-      console.warn(`[NOTIF-MAIL] Dirección de correo inválida: ${para}`);
+    const paraStr = Array.isArray(para) ? para.filter(Boolean).join(', ') : String(para || '').trim();
+    const ccStr = Array.isArray(cc) ? cc.filter(Boolean).join(', ') : (cc ? String(cc).trim() : undefined);
+    if (!paraStr || !paraStr.includes('@')) {
+      console.warn(`[NOTIF-MAIL] Dirección de correo inválida: ${paraStr}`);
       return { success: false, error: 'EMAIL_INVALIDO' };
     }
 
@@ -164,13 +166,14 @@ async function despacharEmailSmtp({ para, asunto, titulo, subtitulo, contenido, 
     });
 
     const res = await messageModel.enviarYRegistrarCorreo({
-      para,
+      para: paraStr,
+      cc: ccStr || undefined,
       asunto,
       cuerpo: html,
       esHtml: true
     });
 
-    console.log(`[NOTIF-MAIL] Correo enviado a ${para} con asunto: "${asunto}"`);
+    console.log(`[NOTIF-MAIL] Correo enviado a ${paraStr}${ccStr ? ` (CC: ${ccStr})` : ''} con asunto: "${asunto}"`);
     return { success: true, res };
   } catch (error) {
     console.error(`[NOTIF-MAIL] Fallo en envío SMTP a ${para}:`, error.message);

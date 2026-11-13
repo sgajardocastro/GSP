@@ -409,6 +409,7 @@ module.exports = {
       const mergedPayload = {
         ...(payload || {}),
         id_proyecto_estado: 2, // ESTADOS_DB.COTIZANDO
+        allowStateRegression: true,
         id_user_modificacion: currentUser.id_user || null,
         json_field: {
           ...existingJson,
@@ -763,6 +764,7 @@ module.exports = {
           FROM tpry_proyecto p
           LEFT JOIN tpar_empresas e ON e.id_empresa = p.id_empresa_cliente
           WHERE p.json_field->'crm_v1'->'contrato'->'token_firma'->>'token' = $1
+             OR p.json_field->'crm_v1'->'contrato'->>'token_publico' = $1
         `;
         const resP = await client.query(query, [token]);
         if (resP.rowCount === 0) {
@@ -771,7 +773,10 @@ module.exports = {
         const p = resP.rows[0];
         const crm = p.json_field?.crm_v1 || {};
         const contrato = crm.contrato || {};
-        const tokenInfo = contrato.token_firma || {};
+        const tokenInfo = contrato.token_firma || {
+          token: contrato.token_publico,
+          estado: (contrato.estado === 'FIRMADO' || contrato.estado === 'FIRMADO_DIGITAL' || contrato.estado === 'FIRMADO_FISICO') ? 'FIRMADO' : 'PENDIENTE'
+        };
 
         if (tokenInfo.estado === 'FIRMADO') {
           return res.status(400).json({ 
@@ -853,6 +858,7 @@ module.exports = {
           SELECT p.id_proyecto, p.json_field
           FROM tpry_proyecto p
           WHERE p.json_field->'crm_v1'->'contrato'->'token_firma'->>'token' = $1
+             OR p.json_field->'crm_v1'->'contrato'->>'token_publico' = $1
         `;
         const resP = await client.query(query, [token]);
         if (resP.rowCount === 0) {
@@ -862,7 +868,10 @@ module.exports = {
         idPry = p.id_proyecto;
         const crm = p.json_field?.crm_v1 || {};
         const contrato = crm.contrato || {};
-        const tokenInfo = contrato.token_firma || {};
+        const tokenInfo = contrato.token_firma || {
+          token: contrato.token_publico,
+          estado: (contrato.estado === 'FIRMADO' || contrato.estado === 'FIRMADO_DIGITAL' || contrato.estado === 'FIRMADO_FISICO') ? 'FIRMADO' : 'PENDIENTE'
+        };
 
         if (tokenInfo.estado === 'FIRMADO') {
           return res.status(400).json({ success: false, error: "Este contrato ya fue firmado" });
@@ -892,11 +901,19 @@ module.exports = {
       try {
         const resP2 = await clientUpdate.query('SELECT json_field FROM tpry_proyecto WHERE id_proyecto = $1', [idPry]);
         const jf = resP2.rows[0].json_field || {};
-        if (jf.crm_v1?.contrato?.token_firma) {
+        if (jf.crm_v1?.contrato) {
+          if (!jf.crm_v1.contrato.token_firma) {
+            jf.crm_v1.contrato.token_firma = {
+              token: token,
+              creado_at: new Date().toISOString()
+            };
+          }
           jf.crm_v1.contrato.token_firma.estado = 'FIRMADO';
           jf.crm_v1.contrato.token_firma.firmado_at = fechaFirma.toISOString();
           jf.crm_v1.contrato.token_firma.ip = ip;
           jf.crm_v1.contrato.token_firma.user_agent = userAgent;
+          jf.crm_v1.contrato.estado = 'FIRMADO_DIGITAL';
+          jf.crm_v1.contrato.token_publico = token;
         }
         await clientUpdate.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [jf, idPry]);
       } finally {

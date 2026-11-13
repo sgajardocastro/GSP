@@ -228,7 +228,8 @@ async function cargarCatalogos() {
     apiAxios.get('/servicio/leanglobal/obtenerEquiposProyectos')
   ])
 
-  usuarios.value = Array.isArray(usuariosRes.data) ? usuariosRes.data : []
+  const rawUsers = Array.isArray(usuariosRes.data?.data) ? usuariosRes.data.data : (Array.isArray(usuariosRes.data) ? usuariosRes.data : [])
+  usuarios.value = rawUsers.filter(u => u && u.activo !== false && u.activo !== 0 && u.activo !== 'f' && u.activo !== 'false' && u.flag_activo !== false && u.is_active !== false)
   roles.value = Array.isArray(rolesRes.data) ? rolesRes.data : []
   usuariosRoles.value = Array.isArray(usuariosRolesRes.data) ? usuariosRolesRes.data : []
   equipos.value = Array.isArray(equiposRes.data) ? equiposRes.data : []

@@ -1,6 +1,6 @@
 <template>
-  <div v-if="visible" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-5 animate-fadeIn">
-    <div class="bg-[#0b1021] border border-emerald-500/40 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl shadow-black">
+  <div v-if="visible" :class="esMaximizada ? 'fixed inset-0 z-[100] flex flex-col bg-[#0b1021] p-0 w-screen h-screen' : 'fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-5 animate-fadeIn'">
+    <div :class="esMaximizada ? 'w-full h-full flex flex-col overflow-hidden bg-[#0b1021]' : 'bg-[#0b1021] border border-emerald-500/40 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl shadow-black'">
       
       <!-- CABECERA -->
       <div class="bg-[#050810] px-5 py-3.5 border-b border-white/10 flex justify-between items-center flex-shrink-0">
@@ -25,7 +25,19 @@
             </p>
           </div>
         </div>
-        <button @click="cerrar" class="text-slate-400 hover:text-white text-xl p-1 font-bold cursor-pointer transition-colors">✕</button>
+        <div class="flex items-center gap-2">
+          <!-- Botón Maximizar / Pantalla Completa -->
+          <button 
+            @click="toggleMaximizacion" 
+            :title="esMaximizada ? 'Restaurar tamaño normal' : 'Maximizar mapa a pantalla completa'"
+            type="button" 
+            class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-white/10"
+          >
+            <span>{{ esMaximizada ? '🗗' : '⛶' }}</span>
+            <span class="hidden sm:inline">{{ esMaximizada ? 'Restaurar' : 'Pantalla Completa' }}</span>
+          </button>
+          <button @click="cerrar" class="text-slate-400 hover:text-white text-xl p-1 font-bold cursor-pointer transition-colors">✕</button>
+        </div>
       </div>
 
       <!-- TARJETAS DE MÉTRICAS OPERATIVAS -->
@@ -80,12 +92,41 @@
       </div>
 
       <!-- CUERPO PRINCIPAL: MAPA + TIMELINE -->
-      <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden min-h-[380px]">
+      <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden min-h-[380px] h-full">
         
-        <!-- MAPA LEAFLET INTERACTIVO (7 COLUMNAS) -->
-        <div class="lg:col-span-7 relative bg-slate-950 border-r border-white/10 h-72 lg:h-full min-h-[300px]">
+        <!-- MAPA LEAFLET INTERACTIVO -->
+        <div 
+          :class="[
+            !mostrarBitacora ? 'lg:col-span-12' : (esMaximizada ? 'lg:col-span-9' : 'lg:col-span-7'),
+            'relative bg-slate-950 h-72 lg:h-full min-h-[300px]',
+            mostrarBitacora ? 'border-r border-white/10' : ''
+          ]"
+        >
           <div ref="mapContainer" class="w-full h-full z-0"></div>
           
+          <!-- Controles Flotantes Superiores en Mapa (Centrar & Toggle Bitácora) -->
+          <div class="absolute top-3 left-12 z-[1000] flex items-center gap-1.5">
+            <button 
+              @click="centrarRutaCompleta" 
+              type="button" 
+              title="Ajustar y encuadrar toda la ruta"
+              class="bg-black/85 hover:bg-slate-800 text-slate-200 hover:text-white backdrop-blur-sm px-2.5 py-1.5 rounded-lg border border-white/10 text-[10.5px] font-bold shadow-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>🎯</span>
+              <span>Centrar Ruta</span>
+            </button>
+
+            <button 
+              @click="toggleBitacora" 
+              type="button" 
+              :title="mostrarBitacora ? 'Ocultar panel de bitácora para ver el mapa al 100%' : 'Mostrar panel de bitácora'"
+              class="bg-black/85 hover:bg-slate-800 text-slate-200 hover:text-white backdrop-blur-sm px-2.5 py-1.5 rounded-lg border border-white/10 text-[10.5px] font-bold shadow-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>📋</span>
+              <span>{{ mostrarBitacora ? 'Ocultar Bitácora' : 'Ver Bitácora' }}</span>
+            </button>
+          </div>
+
           <!-- Badge flotante de coordenadas y estado -->
           <div class="absolute bottom-3 left-3 z-[1000] bg-black/80 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/10 text-[10px] font-mono text-slate-300 shadow-lg">
             <span>🛰️ Ruta Georreferenciada</span>
@@ -108,25 +149,71 @@
               <span class="text-slate-200">Llegada a Faena</span>
             </div>
           </div>
+
+          <!-- Selector de Capas de Mapa (100% Gratuitas, sin API Key) -->
+          <div class="absolute bottom-3 right-3 z-[1000] bg-black/85 backdrop-blur-sm p-1 rounded-xl border border-white/10 flex items-center gap-1 shadow-lg font-sans">
+            <button 
+              @click="cambiarCapa('osm')" 
+              type="button" 
+              :class="capaActiva === 'osm' ? 'bg-blue-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'"
+              class="px-2.5 py-1 rounded-lg text-[10.5px] transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <span>🗺️</span> Calles (OSM)
+            </button>
+            <button 
+              @click="cambiarCapa('satelite')" 
+              type="button" 
+              :class="capaActiva === 'satelite' ? 'bg-blue-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'"
+              class="px-2.5 py-1 rounded-lg text-[10.5px] transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <span>🛰️</span> Satélite HD
+            </button>
+            <button 
+              @click="cambiarCapa('topo')" 
+              type="button" 
+              :class="capaActiva === 'topo' ? 'bg-blue-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'"
+              class="px-2.5 py-1 rounded-lg text-[10.5px] transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <span>⛰️</span> Topográfico
+            </button>
+          </div>
         </div>
 
-        <!-- TIMELINE DE HITOS Y AUDITORÍA (5 COLUMNAS) -->
-        <div class="lg:col-span-5 p-4 space-y-3.5 bg-[#070b16] overflow-y-auto max-h-[50vh] lg:max-h-full text-xs">
+        <!-- TIMELINE DE HITOS Y AUDITORÍA (COLAPSIBLE) -->
+        <div 
+          v-if="mostrarBitacora"
+          :class="esMaximizada ? 'lg:col-span-3' : 'lg:col-span-5'"
+          class="p-4 space-y-3.5 bg-[#070b16] overflow-y-auto max-h-[50vh] lg:max-h-full text-xs"
+        >
           <div class="flex justify-between items-center border-b border-white/10 pb-2">
             <span class="font-bold text-amber-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
               <span>📋</span> Bitácora Cronológica de Ruta
             </span>
-            <span class="text-[9.5px] text-slate-400 font-mono">Token: {{ viaje?.token_viaje?.substring(0, 14) }}...</span>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[9.5px] text-slate-400 font-mono">Token: {{ viaje?.token_viaje?.substring(0, 10) }}...</span>
+              <button 
+                @click="toggleBitacora" 
+                title="Ocultar panel" 
+                class="text-slate-400 hover:text-white p-0.5 rounded cursor-pointer"
+              >✕</button>
+            </div>
           </div>
 
           <!-- Timeline Items -->
           <div class="space-y-3 relative pl-3 before:content-[''] before:absolute before:left-1 before:top-2 before:bottom-2 before:w-[2px] before:bg-white/10">
             
             <!-- 1. Salida de Patio -->
-            <div class="relative pl-3 space-y-1">
-              <div class="absolute -left-[14px] top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-[#070b16]"></div>
+            <div 
+              @click="centrarEnPunto(viaje?.latitud_salida_patio, viaje?.longitud_salida_patio, 'salida')"
+              title="Hacer clic para enfocar este punto en el mapa"
+              class="relative pl-3 space-y-1 cursor-pointer group rounded-xl p-1.5 hover:bg-white/5 transition-colors"
+            >
+              <div class="absolute -left-[14px] top-2.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-[#070b16]"></div>
               <div class="flex justify-between items-baseline">
-                <strong class="text-white text-xs">1. Salida de Patio (Base GSP)</strong>
+                <strong class="text-white text-xs group-hover:text-emerald-400 transition-colors flex items-center gap-1">
+                  1. Salida de Patio (Base GSP)
+                  <span class="text-[10px] text-emerald-400/80 font-normal">🔍</span>
+                </strong>
                 <span class="text-[10px] text-slate-400 font-mono">{{ formatearFechaHora(viaje?.fecha_salida_patio) }}</span>
               </div>
               <div class="bg-black/40 p-2 rounded-lg border border-white/5 text-[11px] font-mono text-slate-300 space-y-0.5">
@@ -136,33 +223,21 @@
                   <span>🔐 PIN Validado (SHA-256):</span>
                   <span class="truncate max-w-[120px]" :title="viaje?.pin_hash">{{ viaje?.pin_hash?.substring(0, 10) }}...</span>
                 </div>
-              </div>
-            </div>
-
-            <!-- 2. Pings en Ruta -->
-            <div class="relative pl-3 space-y-1">
-              <div class="absolute -left-[14px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-[#070b16]"></div>
-              <div class="flex justify-between items-baseline">
-                <strong class="text-white text-xs">2. Telemetría en Ruta (Convoy)</strong>
-                <span class="text-[10px] text-blue-300 font-mono">{{ totalPings }} registros</span>
-              </div>
-              <div class="bg-black/40 p-2 rounded-lg border border-white/5 text-[11px] font-mono text-slate-300 space-y-0.5">
-                <div class="flex justify-between">
-                  <span>Velocidad Promedio:</span>
-                  <strong class="text-white">{{ velocidadPromedio }} km/h</strong>
-                </div>
-                <div class="flex justify-between">
-                  <span>Velocidad Máxima:</span>
-                  <strong class="text-emerald-400">{{ velocidadMaxima }} km/h</strong>
+                <!-- Foto de Odómetro/Horómetro de Salida -->
+                <div v-if="viaje?.foto_tablero_salida_path" class="mt-2 pt-2 border-t border-white/10">
+                  <span class="text-[10px] text-slate-400 block mb-1">📸 Foto Tablero Salida:</span>
+                  <a :href="viaje.foto_tablero_salida_path" target="_blank" class="block" @click.stop>
+                    <img :src="viaje.foto_tablero_salida_path" alt="Tablero Salida" class="h-28 w-full object-cover rounded-lg border border-white/15 hover:border-emerald-400 transition-colors" />
+                  </a>
                 </div>
               </div>
             </div>
 
-            <!-- 3. Carga de Combustible si existe -->
+            <!-- 2. Carga de Combustible si existe -->
             <div v-if="Number(viaje?.total_litros) > 0" class="relative pl-3 space-y-1">
               <div class="absolute -left-[14px] top-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-4 ring-[#070b16]"></div>
               <div class="flex justify-between items-baseline">
-                <strong class="text-amber-300 text-xs">3. Carga de Combustible (Copec)</strong>
+                <strong class="text-amber-300 text-xs">2. Carga de Combustible (Copec)</strong>
                 <span class="text-[10px] text-amber-400 font-mono font-bold">{{ viaje?.total_litros }} L</span>
               </div>
               <div class="bg-black/40 p-2 rounded-lg border border-white/5 text-[11px] font-mono text-slate-300 space-y-0.5">
@@ -171,11 +246,18 @@
               </div>
             </div>
 
-            <!-- 4. Llegada a Faena -->
-            <div class="relative pl-3 space-y-1">
-              <div class="absolute -left-[14px] top-1 w-2.5 h-2.5 rounded-full" :class="viaje?.fecha_llegada_faena ? 'bg-emerald-500' : 'bg-slate-600'"></div>
+            <!-- 3. Llegada a Faena -->
+            <div 
+              @click="centrarEnPunto(viaje?.latitud_llegada_faena, viaje?.longitud_llegada_faena, 'llegada')"
+              title="Hacer clic para enfocar este punto en el mapa"
+              class="relative pl-3 space-y-1 cursor-pointer group rounded-xl p-1.5 hover:bg-white/5 transition-colors"
+            >
+              <div class="absolute -left-[14px] top-2.5 w-2.5 h-2.5 rounded-full" :class="viaje?.fecha_llegada_faena ? 'bg-emerald-500' : 'bg-slate-600'"></div>
               <div class="flex justify-between items-baseline">
-                <strong class="text-white text-xs">4. Arribo a Faena (Destino)</strong>
+                <strong class="text-white text-xs group-hover:text-red-400 transition-colors flex items-center gap-1">
+                  3. Arribo a Faena (Destino)
+                  <span class="text-[10px] text-red-400/80 font-normal">🔍</span>
+                </strong>
                 <span class="text-[10px] text-slate-400 font-mono">{{ formatearFechaHora(viaje?.fecha_llegada_faena) || 'En Tránsito' }}</span>
               </div>
               <div v-if="viaje?.fecha_llegada_faena" class="bg-black/40 p-2 rounded-lg border border-white/5 text-[11px] font-mono text-slate-300 space-y-1">
@@ -183,6 +265,13 @@
                 <div>Horómetro Llegada: <strong class="text-amber-400">{{ viaje?.horometro_final || 0 }} HRS</strong></div>
                 <div v-if="viaje?.obs_termino" class="text-[10.5px] text-slate-300 font-sans italic border-t border-white/5 pt-1">
                   "{{ viaje.obs_termino }}"
+                </div>
+                <!-- Foto de Odómetro/Horómetro de Llegada -->
+                <div v-if="viaje?.foto_tablero_llegada_path" class="mt-2 pt-2 border-t border-white/10">
+                  <span class="text-[10px] text-slate-400 block mb-1">📸 Foto Tablero Llegada:</span>
+                  <a :href="viaje.foto_tablero_llegada_path" target="_blank" class="block" @click.stop>
+                    <img :src="viaje.foto_tablero_llegada_path" alt="Tablero Llegada" class="h-28 w-full object-cover rounded-lg border border-white/15 hover:border-emerald-400 transition-colors" />
+                  </a>
                 </div>
               </div>
               <div v-else class="text-[10px] text-amber-400/80 italic">
@@ -200,8 +289,16 @@
           Grúas San Pablo • Auditoría Telemetría Offline-First
         </span>
         <div class="flex items-center gap-2.5">
+          <button 
+            @click="toggleMaximizacion" 
+            type="button" 
+            class="px-3.5 py-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-white/10 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <span>{{ esMaximizada ? '🗗' : '⛶' }}</span>
+            <span>{{ esMaximizada ? 'Restaurar Ventana' : 'Maximizar Mapa' }}</span>
+          </button>
           <a 
-            :href="`https://servidor.leanglobal.cl/lg-gsp-dev/viaje/${viaje?.token_viaje}`" 
+            :href="urlHojaConductor" 
             target="_blank" 
             class="px-3.5 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors no-underline cursor-pointer"
           >
@@ -240,12 +337,22 @@ let startMarker = null
 let endMarker = null
 let pingMarkers = []
 
+const esMaximizada = ref(false)
+const mostrarBitacora = ref(true)
+
 const cerrar = () => {
   emit('update:visible', false)
   emit('close')
 }
 
 // Métricas Computadas
+const urlHojaConductor = computed(() => {
+  if (!props.viaje?.token_viaje) return '#'
+  const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
+  const base = isProd ? 'https://servidor.leanglobal.cl/lg-gsp-prod' : 'https://servidor.leanglobal.cl/lg-gsp-dev'
+  return `${base}/viaje/${props.viaje.token_viaje}`
+})
+
 const distanciaRecorridaKm = computed(() => {
   if (!props.viaje) return 0
   const ini = parseFloat(props.viaje.km_inicial) || 0
@@ -268,21 +375,6 @@ const totalPings = computed(() => {
   return 0
 })
 
-const velocidadMaxima = computed(() => {
-  const pings = props.viaje?.pings_ruta
-  if (!Array.isArray(pings) || pings.length === 0) return 0
-  const speeds = pings.map(p => parseFloat(p.kmh) || 0)
-  return Math.max(...speeds, 0)
-})
-
-const velocidadPromedio = computed(() => {
-  const pings = props.viaje?.pings_ruta
-  if (!Array.isArray(pings) || pings.length === 0) return 0
-  const speeds = pings.map(p => parseFloat(p.kmh) || 0).filter(s => s > 0)
-  if (speeds.length === 0) return 0
-  const sum = speeds.reduce((acc, s) => acc + s, 0)
-  return Math.round(sum / speeds.length)
-})
 
 const formatearFechaHora = (isoStr) => {
   if (!isoStr) return ''
@@ -355,6 +447,86 @@ const obtenerGeometriaVial = async (puntos) => {
 
 let routeGlow = null
 
+const capaActiva = ref('osm')
+let currentTileLayer = null
+
+const capasDisponibles = {
+  osm: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    options: {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }
+  },
+  satelite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    options: {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri'
+    }
+  },
+  topo: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    options: {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri'
+    }
+  }
+}
+
+const cambiarCapa = (tipo) => {
+  if (!map || !capasDisponibles[tipo]) return
+  capaActiva.value = tipo
+  if (currentTileLayer) {
+    map.removeLayer(currentTileLayer)
+  }
+  const config = capasDisponibles[tipo]
+  currentTileLayer = L.tileLayer(config.url, config.options).addTo(map)
+}
+
+const toggleMaximizacion = async () => {
+  esMaximizada.value = !esMaximizada.value
+  await nextTick()
+  setTimeout(() => {
+    if (map) {
+      map.invalidateSize()
+      centrarRutaCompleta()
+    }
+  }, 250)
+}
+
+const toggleBitacora = async () => {
+  mostrarBitacora.value = !mostrarBitacora.value
+  await nextTick()
+  setTimeout(() => {
+    if (map) {
+      map.invalidateSize()
+    }
+  }, 200)
+}
+
+const centrarRutaCompleta = () => {
+  if (!map) return
+  if (routePolyline) {
+    map.fitBounds(routePolyline.getBounds(), { padding: [50, 50] })
+  } else if (props.viaje?.latitud_salida_patio && props.viaje?.longitud_salida_patio) {
+    map.setView([parseFloat(props.viaje.latitud_salida_patio), parseFloat(props.viaje.longitud_salida_patio)], 14)
+  }
+}
+
+const centrarEnPunto = (lat, lng, tipo) => {
+  if (!map || !lat || !lng) return
+  const pLat = parseFloat(lat)
+  const pLng = parseFloat(lng)
+  if (isNaN(pLat) || isNaN(pLng)) return
+  map.flyTo([pLat, pLng], 17, { duration: 1.2 })
+  if (tipo === 'salida' && startMarker) {
+    startMarker.openPopup()
+  } else if (tipo === 'llegada' && endMarker) {
+    endMarker.openPopup()
+  }
+}
+
 // Inicialización de Mapa Leaflet
 const inicializarMapa = () => {
   if (!mapContainer.value) return
@@ -365,13 +537,16 @@ const inicializarMapa = () => {
     map = null
   }
 
-  // Coordenadas por defecto (Chillán / San Pablo)
-  let initialLat = -36.6172
-  let initialLng = -72.1148
+  // Coordenadas por defecto (Base GSP Temuco)
+  let initialLat = -38.7614
+  let initialLng = -72.7163
 
   if (props.viaje?.latitud_salida_patio && props.viaje?.longitud_salida_patio) {
     initialLat = parseFloat(props.viaje.latitud_salida_patio)
     initialLng = parseFloat(props.viaje.longitud_salida_patio)
+  } else if (props.viaje?.latitud_llegada_faena && props.viaje?.longitud_llegada_faena) {
+    initialLat = parseFloat(props.viaje.latitud_llegada_faena)
+    initialLng = parseFloat(props.viaje.longitud_llegada_faena)
   }
 
   map = L.map(mapContainer.value, {
@@ -379,10 +554,8 @@ const inicializarMapa = () => {
     attributionControl: false
   }).setView([initialLat, initialLng], 14)
 
-  // Capa base CartoDB Voyager
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19
-  }).addTo(map)
+  // Capa base seleccionada (100% gratuita, sin API Key requerida)
+  cambiarCapa(capaActiva.value || 'osm')
 
   dibujarRuta()
 }
@@ -527,6 +700,8 @@ const dibujarRuta = async () => {
 
 watch(() => props.visible, async (newVal) => {
   if (newVal) {
+    esMaximizada.value = false
+    mostrarBitacora.value = true
     await nextTick()
     setTimeout(() => {
       inicializarMapa()

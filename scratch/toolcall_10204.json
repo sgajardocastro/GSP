@@ -1,0 +1,10 @@
+[
+  {
+    "name": "read_file",
+    "args": {
+      "EndLine": 530,
+      "Path": "d:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\ejecucion\\frontend\\src\\views\\Torre.vue",
+      "StartLine": 180
+    }
+  }
+]

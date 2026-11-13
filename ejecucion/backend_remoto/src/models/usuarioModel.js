@@ -67,26 +67,37 @@ class Usuario {
   async iniciarEnrolamiento(rut, nombre, correo, roles, id_empresa) {
     try {
       console.log(`[Enrolamiento] Iniciando para RUT: ${rut}, Email: ${correo}`);
-      const rutNorm = String(rut).trim().toUpperCase();
+      const rutNorm = String(rut).replace(/\./g, '').trim().toUpperCase();
+      const correoNorm = String(correo || '').trim().toLowerCase();
+      const partesNombre = String(nombre || '').trim().split(/\s+/);
+      const nameFrst = partesNombre[0] || '';
+      const apellidoPat = partesNombre.slice(1).join(' ') || '';
 
       // 1) Upsert manual del usuario en tsec_users
       let id_user;
-      const checkRes = await this.pool.query('SELECT id_user, email FROM tsec_users WHERE UPPER(rut) = $1', [rutNorm]);
+      const checkRes = await this.pool.query("SELECT id_user, email FROM tsec_users WHERE UPPER(REPLACE(rut, '.', '')) = $1", [rutNorm]);
       
       if (checkRes.rows.length > 0) {
         id_user = checkRes.rows[0].id_user;
         const existingEmail = checkRes.rows[0].email;
-        if (existingEmail && existingEmail.toLowerCase() !== String(correo).toLowerCase()) {
+        if (existingEmail && existingEmail.trim().toLowerCase() !== correoNorm) {
           throw new Error(`El RUT ${rutNorm} ya se encuentra registrado en el sistema con el correo ${existingEmail}. No es posible sobrescribir una cuenta existente.`);
         }
         await this.pool.query(
-          'UPDATE tsec_users SET email = $1, flag_proc_enrol = true, codi_user = $1, id_empresa = $2, fecha_actualizacion = NOW() WHERE id_user = $3',
-          [correo, id_empresa, id_user]
+          `UPDATE tsec_users
+           SET email = $1, flag_proc_enrol = true, codi_user = $1, id_empresa = $2,
+               name_frst = COALESCE(NULLIF(TRIM(name_frst), ''), $3),
+               apellido_pat = COALESCE(NULLIF(TRIM(apellido_pat), ''), $4),
+               activo = COALESCE(activo, true),
+               fecha_actualizacion = NOW()
+           WHERE id_user = $5`,
+          [correoNorm, id_empresa, nameFrst, apellidoPat, id_user]
         );
       } else {
         const insRes = await this.pool.query(
-          'INSERT INTO tsec_users (rut, email, flag_proc_enrol, codi_user, id_empresa, fecha_creacion, fecha_actualizacion) VALUES ($1, $2, true, $2, $3, NOW(), NOW()) RETURNING id_user',
-          [rutNorm, correo, id_empresa]
+          `INSERT INTO tsec_users (rut, email, flag_proc_enrol, codi_user, id_empresa, name_frst, apellido_pat, activo, fecha_creacion, fecha_actualizacion)
+           VALUES ($1, $2, true, $2, $3, $4, $5, true, NOW(), NOW()) RETURNING id_user`,
+          [rutNorm, correoNorm, id_empresa, nameFrst, apellidoPat]
         );
         id_user = insRes.rows[0].id_user;
       }
@@ -375,6 +386,7 @@ class Usuario {
       SET
         rut           = COALESCE($2, rut),
         email         = COALESCE($3, email),
+        codi_user     = COALESCE($3, email, codi_user),
         name_frst     = COALESCE($4, name_frst),
         name_sec      = COALESCE($5, name_sec),
         apellido_pat  = COALESCE($6, apellido_pat),

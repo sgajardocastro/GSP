@@ -126,6 +126,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import apiAxios from '@/services/api'
+import { abrirCamaraWebRTC } from '@/utils/inAppCamera'
 
 const props = defineProps({
   label: String,
@@ -248,8 +249,15 @@ const toggleComment = () => {
   showCommentBox.value = !showCommentBox.value
 }
 
-function triggerInput() {
-  fileInput.value?.click()
+async function triggerInput() {
+  const res = await abrirCamaraWebRTC({
+    titulo: localLabel.value || 'Evidencia Fotográfica',
+    maxDimension: 1280,
+    quality: props.compression ? (props.compression / 100) : 0.75
+  })
+  if (res && res.file) {
+    await onFileChange({ target: { files: [res.file], value: '' } })
+  }
 }
 
 async function onFileChange(event) {

@@ -1,0 +1,5 @@
+{
+  "Path": "d:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\ejecucion\\backend_remoto\\src\\models\\mantenimientoModel.js",
+  "Replacement": "      // Si proviene de Bodega WMS y ya fue ENTREGADO (con movimiento Kardex), reintegrar stock y registrar contracuenta\n      if (rep.origen_insumo === 'BODEGA_WMS' && rep.id_producto && rep.estado === 'ENTREGADO' && rep.id_movimiento_kardex) {",
+  "Target": "      // Si proviene de Bodega WMS, reintegrar stock y registrar movimiento de contracuenta\n      if (rep.origen_insumo === 'BODEGA_WMS' && rep.id_producto) {"
+}

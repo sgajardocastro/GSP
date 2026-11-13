@@ -8,7 +8,7 @@ const rootDir = 'd:/SGajardo/Google Drive/Antigravity/Grúas San Pablo/Propuesta
 const pkgPath = path.join(rootDir, 'ejecucion/frontend/package.json');
 const releaseLogPath = path.join(rootDir, 'RELEASE_LOG.md');
 const tareasPath = path.join(rootDir, 'Gestión/tareas.md');
-const localDist = path.join(rootDir, 'ejecucion/frontend/dist');
+const localDist = fs.existsSync(path.join(rootDir, 'ejecucion/frontend/dist_prod')) ? path.join(rootDir, 'ejecucion/frontend/dist_prod') : path.join(rootDir, 'ejecucion/frontend/dist');
 const remoteDir = '/var/www/html/lg-gsp-prod';
 
 /**
@@ -32,17 +32,17 @@ function validarGobernanzaAntesDeDesplegar() {
   const releaseLogContent = fs.readFileSync(releaseLogPath, 'utf8');
 
   // Buscar bloque para esta versión exacta
-  const regexVersion = new RegExp(`##\\s*\\[Portal Web GSP\\]\\s*-\\s*Versi[oó]n\\s*${versionActual.replace('.', '\\.')}`, 'i');
+  const regexVersion = new RegExp(`##\\s*\\[Portal Web GSP[^\\]]*\\]\\s*-\\s*Versi[oó]n\\s*${versionActual.replace('.', '\\.')}`, 'i');
   if (!regexVersion.test(releaseLogContent)) {
     console.error("\n==========================================================================");
     console.error(`❌ DESPLIEGUE BLOQUEADO: La versión ${versionActual} no está documentada en RELEASE_LOG.md`);
-    console.error(`   Debes crear el bloque: "## [Portal Web GSP] - Versión ${versionActual}" antes de desplegar.`);
+    console.error(`   Debes crear el bloque: "## [Portal Web GSP & Backend] - Versión ${versionActual}" antes de desplegar.`);
     console.error("==========================================================================\n");
     process.exit(1);
   }
 
   // Extraer el código REQ asociado
-  const bloqueMatch = releaseLogContent.match(new RegExp(`##\\s*\\[Portal Web GSP\\]\\s*-\\s*Versi[oó]n\\s*${versionActual.replace('.', '\\.')}[\\s\\S]*?(?=##\\s*\\[|$)`, 'i'));
+  const bloqueMatch = releaseLogContent.match(new RegExp(`##\\s*\\[Portal Web GSP[^\\]]*\\]\\s*-\\s*Versi[oó]n\\s*${versionActual.replace('.', '\\.')}[\\s\\S]*?(?=##\\s*\\[|$)`, 'i'));
   const bloqueTexto = bloqueMatch ? bloqueMatch[0] : '';
   const reqMatch = bloqueTexto.match(/REQ-\d+/i);
   if (!reqMatch) {
@@ -138,13 +138,7 @@ async function sincronizarBaseDeDatosProd(governanceInfo) {
       governanceInfo.nombreReq,
       governanceInfo.descripcion
     ]);
-    // Sincronizar también REQ-704 y REQ-735 en PROD
-    await clientProd.query(`
-      UPDATE sch_leangsp_prod.tcfg_backlog 
-      SET estado = 'Implementado', fecha_implementacion = CURRENT_DATE, updated_at = NOW()
-      WHERE codigo_req IN ('REQ-633', 'REQ-704', 'REQ-735');
-    `);
-    console.log(`✅ REQ-633, REQ-704 y REQ-735 sincronizados como Implementado en sch_leangsp_prod.tcfg_backlog`);
+    console.log(`✅ ${governanceInfo.req} sincronizado como Implementado en sch_leangsp_prod.tcfg_backlog`);
 
     // 2. Sincronizar Release
     const qRelease = `
@@ -165,7 +159,7 @@ async function sincronizarBaseDeDatosProd(governanceInfo) {
       `v${governanceInfo.version}`,
       governanceInfo.titulo,
       governanceInfo.descripcion,
-      JSON.stringify(['REQ-633', 'REQ-704', 'REQ-735'])
+      JSON.stringify([governanceInfo.req])
     ]);
     console.log(`✅ v${governanceInfo.version} sincronizada en sch_leangsp_prod.tcfg_releases`);
     await clientProd.end();

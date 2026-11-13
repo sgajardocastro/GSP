@@ -1,0 +1,10 @@
+[
+  {
+    "name": "edit_file",
+    "args": {
+      "Path": "d:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\ejecucion\\frontend\\src\\views\\Torre.vue",
+      "Replacement": "                ☰ Compacta (Full Sucursal)\n              </button>\n            </div>\n          </div>\n        </div>\n\n        <!-- Tira Interactiva de Fechas con Fichas (incorporada desde Vista Cardex) -->\n        <div v-if=\"fechasDisponiblesKardex.length > 0\" class=\"flex items-center gap-1 overflow-x-auto py-1 border-t border-white/5 max-w-full\">\n          <span class=\"text-[10px] text-slate-400 font-bold uppercase px-1 shrink-0\">Fechas con fichas:</span>\n          <button\n            v-for=\"itemFecha in fechasDisponiblesKardex\"\n            :key=\"itemFecha.iso\"\n            type=\"button\"\n            @click=\"seleccionarFechaPuntualKardex(itemFecha.iso)\"\n            class=\"px-2 py-1 rounded-lg text-[10px] font-mono font-bold border transition-all shrink-0 cursor-pointer flex items-center gap-1\"\n            :class=\"fechaPuntualKardex === itemFecha.iso\n              ? 'bg-cyan-500 text-slate-950 border-cyan-300 font-black scale-105 shadow-md shadow-cyan-500/30'\n              : 'bg-[#070b14] text-cyan-300 border-cyan-500/25 hover:border-cyan-400'\"\n          >\n            <span>{{ itemFecha.label }}</span>\n            <span class=\"px-1 rounded bg-black/30 text-[9px]\" :class=\"fechaPuntualKardex === itemFecha.iso ? 'text-white' : 'text-amber-300'\">\n              {{ itemFecha.count }}\n            </span>\n          </button>\n        </div>\n\n        <!-- Fila 2: Selectores por Operador, Rigger, Equipo, Cliente y Comercial -->",
+      "Target": "                ☰ Compacta (Full Sucursal)\n              </button>\n            </div>\n          </div>\n        </div>\n\n        <!-- Fila 2: Selectores por Operador, Rigger, Equipo, Cliente y Comercial -->"
+    }
+  }
+]

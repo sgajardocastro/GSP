@@ -73,6 +73,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import apiAxios from '@/services/api'
+import { abrirCamaraWebRTC } from '@/utils/inAppCamera'
 
 const API_BASE = (process.env.VUE_APP_API_BASE_URL || '').replace(/\/$/, '')
 
@@ -173,11 +174,19 @@ async function onFileChange(event) {
   event.target.value = ''
 }
 
-function triggerInput(tipo) {
-  // tipo: 'camera' o 'gallery'
-  const wrapper =
-    tipo === 'camera' ? fileInputCamera.value : fileInputGallery.value
-
+async function triggerInput(tipo) {
+  if (tipo === 'camera') {
+    const res = await abrirCamaraWebRTC({
+      titulo: props.label || 'Tomar Fotografía',
+      maxDimension: 1280,
+      quality: props.compression || 0.75
+    })
+    if (res && res.file) {
+      await onFileChange({ target: { files: [res.file], value: '' } })
+    }
+    return
+  }
+  const wrapper = fileInputGallery.value
   wrapper?.$el?.querySelector('input')?.click()
 }
 

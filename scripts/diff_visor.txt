@@ -1,0 +1,273 @@
+﻿diff --git a/ejecucion/frontend/src/components/Operaciones/ModalVisorReport.vue b/ejecucion/frontend/src/components/Operaciones/ModalVisorReport.vue
+index 7de6eee..f5590f6 100644
+--- a/ejecucion/frontend/src/components/Operaciones/ModalVisorReport.vue
++++ b/ejecucion/frontend/src/components/Operaciones/ModalVisorReport.vue
+@@ -451,13 +451,13 @@
+                       Terreno: {{ reportLocal?.horas_operadas || 0 }}h
+                     </div>
+                     <div class="text-2xl font-black font-mono" :class="esHorasOperadasModificadas ? 'text-emerald-400' : 'text-white'">
+-                      {{ horasOperacionReal }} <span class="text-[10px] text-slate-400 font-normal">HRS</span>
++                      {{ formatHorasHHMM(horasOperacionReal) }} <span class="text-[10px] text-slate-400 font-normal">HRS</span>
+                     </div>
+                   </div>
+                 </div>
+                 <div class="pt-2 border-t border-white/5 mt-2">
+                   <span class="text-[10px] text-slate-400 block font-mono">
+-                    {{ horasComputablesCliente }}h netas (incl. {{ formAjustes.horas_standby_cliente }}h SB Cli)
++                    {{ formatHorasHHMM(horasComputablesCliente) }}h netas (incl. {{ formatHorasHHMM(formAjustes.horas_standby_cliente) }}h SB Cli)
+                   </span>
+                 </div>
+               </div>
+@@ -477,17 +477,17 @@
+ 
+                   <div class="mt-1">
+                     <div v-if="esHorasFacturablesModificadas" class="text-[10px] line-through text-rose-400 font-mono">
+-                      Terreno: {{ reportLocal?.horas_facturables || reportLocal?.horas_operadas || 0 }}h
++                      Terreno: {{ formatHorasHHMM(reportLocal?.horas_facturables || reportLocal?.horas_operadas || 0) }}h
+                     </div>
+                     <div class="text-2xl font-black font-mono text-amber-400">
+-                      {{ horasFacturablesCalculadas }} <span class="text-[10px] text-amber-300 font-normal">HRS</span>
++                      {{ formatHorasHHMM(horasFacturablesCalculadas) }} <span class="text-[10px] text-amber-300 font-normal">HRS</span>
+                     </div>
+                   </div>
+                 </div>
+ 
+                 <div class="pt-2 border-t border-white/5 mt-2">
+                   <span class="text-[10px] text-amber-500/80 block font-mono truncate">
+-                    {{ baseMinima > 0 ? `Base ${baseMinima}h` : 'Sin mín. diario (Mensual)' }} · Imputables {{ horasComputablesCliente }}h
++                    {{ baseMinima > 0 ? `Base ${formatHorasHHMM(baseMinima)}h` : 'Sin mín. diario (Mensual)' }} · Imputables {{ formatHorasHHMM(horasComputablesCliente) }}h
+                   </span>
+                 </div>
+               </div>
+@@ -497,7 +497,7 @@
+                 <div>
+                   <span class="text-[10px] text-slate-400 font-bold uppercase block">⚡ Sobretiempo</span>
+                   <div class="text-2xl font-black font-mono mt-1" :class="sobretiempoCalculado > 0 ? 'text-yellow-400' : 'text-slate-500'">
+-                    +{{ sobretiempoCalculado }} <span class="text-[10px] font-normal">HRS</span>
++                    +{{ formatHorasHHMM(sobretiempoCalculado) }} <span class="text-[10px] font-normal">HRS</span>
+                   </div>
+                 </div>
+                 <div class="pt-2 border-t border-white/5 mt-2">
+@@ -596,7 +596,7 @@
+                 <div>
+                   <label class="text-[9.5px] text-cyan-300 uppercase font-bold block mb-1">Total Hrs Pagar</label>
+                   <div class="text-sm font-mono font-black text-cyan-300 bg-cyan-950/30 px-2.5 py-1 rounded-lg border border-cyan-500/30 text-center">
+-                    {{ horasTotalesLiqOperador }} hrs
++                    {{ formatHorasHHMM(horasTotalesLiqOperador) }} hrs
+                   </div>
+                 </div>
+ 
+@@ -895,6 +895,18 @@
+                     title="Clic para ampliar foto"
+                   />
+                 </div>
++                <!-- SPEC-098 v1.1.0: Switch privacidad Foto Inicio -->
++                <div class="pt-1.5 flex items-center justify-center">
++                  <label v-if="!esValidado || modoAjuste" class="flex items-center gap-1.5 text-[10px] text-slate-300 hover:text-white cursor-pointer select-none">
++                    <input type="checkbox" v-model="privacidadPdf.incluir_foto_inicio" class="rounded text-emerald-500 focus:ring-0 cursor-pointer" />
++                    <span :class="privacidadPdf.incluir_foto_inicio ? 'text-emerald-400 font-bold' : 'text-slate-400'">
++                      {{ privacidadPdf.incluir_foto_inicio ? '✓ En PDF Mandante' : 'Excluir de PDF' }}
++                    </span>
++                  </label>
++                  <span v-else class="text-[9px] font-mono px-1.5 py-0.5 rounded" :class="privacidadPdf.incluir_foto_inicio ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-slate-800 text-slate-400 border border-white/10'">
++                    {{ privacidadPdf.incluir_foto_inicio ? '📄 En PDF Mandante' : '🔒 Excluido de PDF' }}
++                  </span>
++                </div>
+               </div>
+ 
+               <div 
+@@ -911,6 +923,18 @@
+                     title="Clic para ampliar foto"
+                   />
+                 </div>
++                <!-- SPEC-098 v1.1.0: Switch privacidad Foto Término -->
++                <div class="pt-1.5 flex items-center justify-center">
++                  <label v-if="!esValidado || modoAjuste" class="flex items-center gap-1.5 text-[10px] text-slate-300 hover:text-white cursor-pointer select-none">
++                    <input type="checkbox" v-model="privacidadPdf.incluir_foto_termino" class="rounded text-emerald-500 focus:ring-0 cursor-pointer" />
++                    <span :class="privacidadPdf.incluir_foto_termino ? 'text-emerald-400 font-bold' : 'text-slate-400'">
++                      {{ privacidadPdf.incluir_foto_termino ? '✓ En PDF Mandante' : 'Excluir de PDF' }}
++                    </span>
++                  </label>
++                  <span v-else class="text-[9px] font-mono px-1.5 py-0.5 rounded" :class="privacidadPdf.incluir_foto_termino ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-slate-800 text-slate-400 border border-white/10'">
++                    {{ privacidadPdf.incluir_foto_termino ? '📄 En PDF Mandante' : '🔒 Excluido de PDF' }}
++                  </span>
++                </div>
+               </div>
+             </div>
+ 
+@@ -997,9 +1021,17 @@
+                   <span class="truncate font-semibold">{{ doc.titulo || doc.nombre_archivo }}</span>
+                   <span class="text-[10px] text-cyan-400 shrink-0">↗ Ver</span>
+                 </a>
+-                <div class="flex items-center gap-1.5 shrink-0">
++                <div class="flex items-center gap-2 shrink-0">
++                  <!-- SPEC-098 v1.1.0: Casilla granular por documento del día -->
++                  <label v-if="!esValidado || modoAjuste" class="flex items-center gap-1 text-[10px] cursor-pointer select-none" title="Incluir en PDF oficial de cliente">
++                    <input type="checkbox" :checked="isDocIncluidoEnPdf(doc.id_doc)" @change="toggleDocEnPdf(doc.id_doc)" class="rounded text-cyan-500 focus:ring-0 cursor-pointer" />
++                    <span :class="isDocIncluidoEnPdf(doc.id_doc) ? 'text-cyan-300 font-bold' : 'text-slate-400'">PDF</span>
++                  </label>
++                  <span v-else class="text-[9px] font-mono px-1.5 py-0.5 rounded" :class="isDocIncluidoEnPdf(doc.id_doc) ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800 text-slate-500'">
++                    {{ isDocIncluidoEnPdf(doc.id_doc) ? 'PDF' : 'Interno' }}
++                  </span>
+                   <button
+-                    v-if="!readonly && doc.id_doc"
++                    v-if="!readonly && doc.id_doc && (!esValidado || modoAjuste)"
+                     type="button"
+                     @click="quitarDocumentoDiaDesdeVisor(doc)"
+                     class="text-slate-400 hover:text-rose-400 text-xs cursor-pointer px-1"
+@@ -1081,9 +1113,20 @@
+             </div>
+ 
+             <div v-else class="space-y-1.5">
+-              <label class="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">
+-                {{ hayModificaciones ? 'Justificación del Ajuste:' : 'Observaciones de Validación (Opcional):' }}
+-              </label>
++              <div class="flex items-center justify-between">
++                <label class="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">
++                  {{ hayModificaciones ? 'Observaciones de Validación / Justificación:' : 'Observaciones de Validación (Opcional):' }}
++                </label>
++                <button
++                  v-if="esValidado && esObsValidacionModificada"
++                  type="button"
++                  @click="guardarObsValidadorDirecto"
++                  :disabled="guardandoObsDirecto"
++                  class="px-2.5 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-mono font-black cursor-pointer disabled:opacity-50"
++                >
++                  {{ guardandoObsDirecto ? '⏳ Guardando...' : '💾 Actualizar Observación' }}
++                </button>
++              </div>
+               <textarea 
+                 v-model="obsValidacion" 
+                 rows="2"
+@@ -1483,6 +1526,50 @@ const tituloDocVisor = ref('')
+ const subiendoDocVisor = ref(false)
+ const inputArchivoDocVisorRef = ref(null)
+ 
++// SPEC-098 v1.1.0 / REQ-1147: Estado reactivo de privacidad de fotos y anexos para PDF de cliente
++const privacidadPdf = reactive({
++  incluir_foto_inicio: false,
++  incluir_foto_termino: false,
++  docs_incluidos_pdf: []
++})
++
++const isDocIncluidoEnPdf = (idDoc) => {
++  if (!idDoc) return false
++  return privacidadPdf.docs_incluidos_pdf.map(Number).includes(Number(idDoc))
++}
++
++const toggleDocEnPdf = (idDoc) => {
++  if (!idDoc) return
++  const numId = Number(idDoc)
++  const idx = privacidadPdf.docs_incluidos_pdf.map(Number).indexOf(numId)
++  if (idx >= 0) {
++    privacidadPdf.docs_incluidos_pdf.splice(idx, 1)
++  } else {
++    privacidadPdf.docs_incluidos_pdf.push(numId)
++  }
++}
++
++const inicializarPrivacidad = (rep) => {
++  if (!rep) return
++  const aj = typeof rep.ajustes_analista === 'string'
++    ? (() => { try { return JSON.parse(rep.ajustes_analista) } catch (_) { return {} } })()
++    : (rep.ajustes_analista || {})
++  const priv = rep.privacidad_pdf || aj.privacidad_pdf || null
++  if (priv) {
++    privacidadPdf.incluir_foto_inicio = priv.incluir_foto_inicio === true
++    privacidadPdf.incluir_foto_termino = priv.incluir_foto_termino === true
++    privacidadPdf.docs_incluidos_pdf = Array.isArray(priv.docs_incluidos_pdf)
++      ? [...priv.docs_incluidos_pdf].map(Number)
++      : []
++  } else {
++    // Por defecto (INV-PRIV-01): Fotos internas de flota quedan excluidas
++    privacidadPdf.incluir_foto_inicio = false
++    privacidadPdf.incluir_foto_termino = false
++    // Por omisión, si hay documentos anexos y no se ha configurado privacidad, incluir los existentes
++    privacidadPdf.docs_incluidos_pdf = documentosDiaVisor.value.map(d => Number(d.id_doc)).filter(Boolean)
++  }
++}
++
+ const documentosDiaVisor = computed(() => {
+   const lista = []
+   const vistos = new Set()
+@@ -1681,6 +1768,7 @@ watch(() => props.report, (newRep) => {
+     modoAjuste.value = false
+ 
+     inicializarLiquidacionDesdeReport(newRep)
++    inicializarPrivacidad(newRep)
+     cargarUsuariosOperativos()
+ 
+     // Inicializar mapa de firma
+@@ -1692,6 +1780,9 @@ watch(() => props.report, (newRep) => {
+ 
+ watch(() => props.visible, (val) => {
+   if (val) {
++    if (reportLocal.value) {
++      inicializarPrivacidad(reportLocal.value)
++    }
+     if (props.readonly) {
+       modoAjuste.value = false
+     } else {
+@@ -2110,8 +2201,49 @@ const esLiquidacionPersonalModificada = computed(() => {
+   )
+ })
+ 
++const esObsValidacionModificada = computed(() => {
++  if (!reportLocal.value) return false
++  return String(obsValidacion.value || '').trim() !== String(reportLocal.value.obs_validador || '').trim()
++})
++
++const guardandoObsDirecto = ref(false)
++const guardarObsValidadorDirecto = async () => {
++  if (!reportLocal.value?.id_proyecto) return
++  try {
++    guardandoObsDirecto.value = true
++    const fechaIso = reportLocal.value.fecha_reporte_iso || (reportLocal.value.fecha_reporte ? String(reportLocal.value.fecha_reporte).slice(0, 10) : '')
++    const { data } = await apiAxios.post('/operaciones/control-vivo/override-hito', {
++      id_proyecto: reportLocal.value.id_proyecto,
++      id_equipo: reportLocal.value.id_equipo || 0,
++      fecha: fechaIso,
++      dia: reportLocal.value.dia_correlativo || 1,
++      id_reporte_avance: reportLocal.value.id_reporte_avance || null,
++      clave_actividad: 'OBS_VALIDADOR',
++      obs_validador: obsValidacion.value
++    })
++    if (data && data.success) {
++      reportLocal.value.obs_validador = data.data?.obs_validador || ''
++      emit('report-validado', reportLocal.value)
++    }
++  } catch (err) {
++    console.error('Error actualizando observación de validación:', err)
++    alert('❌ No se pudo actualizar la observación: ' + (err.response?.data?.message || err.message))
++  } finally {
++    guardandoObsDirecto.value = false
++  }
++}
++
++const formatHorasHHMM = (val) => {
++  const num = parseFloat(val)
++  if (isNaN(num) || num <= 0) return '00:00'
++  const totalMin = Math.round(num * 60)
++  const h = Math.floor(totalMin / 60)
++  const m = totalMin % 60
++  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
++}
++
+ const hayModificaciones = computed(() => {
+-  return esHorarioModificado.value || esColacionModificada.value || esHorometroModificado.value || esOdometroModificado.value || esOperadorModificado.value || esRiggerModificado.value || esStandbyModificado.value || esLiquidacionPersonalModificada.value
++  return esHorarioModificado.value || esColacionModificada.value || esHorometroModificado.value || esOdometroModificado.value || esOperadorModificado.value || esRiggerModificado.value || esStandbyModificado.value || esLiquidacionPersonalModificada.value || esObsValidacionModificada.value
+ })
+ 
+ const formatearFecha = (fechaStr) => {
+@@ -2253,6 +2385,11 @@ const ejecutarValidacionConPin = async () => {
+       id_user_validador: idUser,
+       pin: pinCompleto.value,
+       obs_validador: justificacionFinal,
++      privacidad_pdf: {
++        incluir_foto_inicio: privacidadPdf.incluir_foto_inicio === true,
++        incluir_foto_termino: privacidadPdf.incluir_foto_termino === true,
++        docs_incluidos_pdf: [...privacidadPdf.docs_incluidos_pdf]
++      },
+       ajustes: hayModificaciones.value ? {
+         hora_inicio: formAjustes.value.hora_inicio,
+         hora_termino: formAjustes.value.hora_termino,

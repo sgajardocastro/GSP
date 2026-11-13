@@ -18,6 +18,9 @@ import * as directives from 'vuetify/directives'
 import './registerServiceWorker'
 import router from './router'
 import { VOtpInput } from 'vuetify/components'
+import { instalarInterceptorGlobalCamaraInApp } from './utils/inAppCamera'
+
+instalarInterceptorGlobalCamaraInApp()
 
 // 1) Crear app
 const app = createApp(App)

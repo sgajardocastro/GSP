@@ -1,178 +1,203 @@
 # 📱 Especificación Técnica 64: Cotizador Express Móvil en PWA (Mobile Quotation Generator)
 
 **Código de Requerimiento:** `REQ-994`  
-**Estado:** `Especificación Lista para Revisión`  
+**Estado:** `CANÓNICO VIGENTE`  
 **Autor:** Sergio Gajardo / Antigravity Agent  
-**Fecha:** 05 de Octubre de 2026  
-**Versión:** 1.0.0  
+**Fecha:** 06 de Octubre de 2026  
+**Versión:** 1.1.0  
 **Impacto Arquitectónico:** PWA (`ejecucion/pwa`), Backend GSP (`ejecucion/backend_remoto`), Base de Datos PostgreSQL (`sch_leangsp` / `sch_leangsp_prod`).
 
 ---
 
-## 1. Resumen Ejecutivo y Caso de Uso de Terreno
+## 1. 📌 Resumen Ejecutivo y Caso de Uso de Terreno
 
 Actualmente, la plataforma cuenta con un robusto motor comercial y estructurador de tarifas en la consola de escritorio ([GestorOportunidades.vue](file:///D:/SGajardo/Google%20Drive/Antigravity/Grúas%20San%20Pablo/Propuesta%20Gestión%20Operación%20Grúas/ejecucion/frontend/src/views/Comercial/GestorOportunidades.vue)). No obstante, cuando los ejecutivos comerciales, supervisores de maniobra o el Director se encuentran en terreno (visitando obras mineras, puertos, o reuniones imprevistas con mandantes), la experiencia de escritorio es impráctica en pantallas móviles.
 
-El objetivo de esta especificación es crear el módulo **Cotizador Express Móvil** dentro de la PWA que permita cotizar un servicio de grúa o camión pluma en **60 segundos** y despacharlo de inmediato al WhatsApp del cliente como un documento PDF formal con la validez estricta de 5 días hábiles.
+El objetivo de esta especificación es crear el módulo **Cotizador Express Móvil** dentro de la PWA que permita cotizar un servicio de grúa móvil telescópica o camión pluma en **60 segundos** y despacharlo de inmediato al WhatsApp del cliente mandante como un documento PDF formal con la validez estricta de 5 días hábiles.
 
 ---
 
-## 2. Diagrama de Flujo del Proceso
+## 2. 🏛️ Invariante de Simetría Estructural (tpry_proyecto + json_field.crm_v1)
 
-```mermaid
-flowchart TD
-    A["📱 PWA: Acceso a 'Cotizador Express'"] --> B["Paso 1: Cliente & Faena<br/>• Búsqueda predictiva o Nuevo Express<br/>• Contacto mandante + Teléfono"]
-    B --> C["Paso 2: Parametrización del Servicio<br/>• Tipo de Equipo (Grúa Telescópica / Pluma)<br/>• Duración estimada (días / turnos)<br/>• Horas mínimas estándar (8h/9h)<br/>• Tramo de Traslado (Ida y Vuelta)"]
-    C --> D["Paso 3: Cálculo y Condiciones Comerciales<br/>• Tarifa base + Horas Adicionales + Traslados<br/>• Inyección canónica REQ-992 (6 secciones)<br/>• Cláusula de Validez: 5 días hábiles"]
-    D --> E["⚡ Emisión y Generación de PDF Oficial"]
-    E --> F["📲 Despacho Inmediato<br/>• Enlace de WhatsApp directo con PDF<br/>• Sincronización en CRM Web (tpry_proyecto)"]
+> **Regla de Oro Arquitectónica:** La cotización creada desde la aplicación móvil **DEBE ser 100% simétrica y compatible** con la base de datos relacional y el motor web de escritorio. No se permiten esquemas aislados o simplistas en la base de datos.
+>
+> Al ingresar una cotización express desde el teléfono:
+> 1. Se crea un registro en `tpry_proyecto` con correlativo formal generado vía `generarCodigoTransaccional()` (ej: `GSP-2610-4671-003`).
+> 2. Se inyecta `json_field.crm_v1` conteniendo el arreglo canónico `lineas_servicio` idéntico al generado por el Gestor Web.
+> 3. Se compila el documento PDF oficial mediante el generador canónico de GSP (`generarCotizacionVersion`), registrando el archivo en el storage engine y en `crm_v1.cotizaciones_historicas`.
+> 4. La oportunidad queda en `id_proyecto_estado = 2` (Cotización Enviada), haciéndose inmediatamente visible en la Torre de Control ([Torre.vue](file:///D:/SGajardo/Google%20Drive/Antigravity/Grúas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/ejecucion/frontend/src/views/Torre.vue)) y completamente editable en el CRM de escritorio ([GestorOportunidades.vue](file:///D:/SGajardo/Google%20Drive/Antigravity/Grúas%20San%20Pablo/Propuesta%20Gesti%C3%B3n%20Operaci%C3%B3n%20Gr%C3%BAas/ejecucion/frontend/src/views/CRM/GestorOportunidades.vue)).
+
+---
+
+## 3. 🔄 Diagrama del Flujo E2E (Patrón Fachada y Normalizador Canónico)
+
+```
+  ┌────────────────────────────────────────────────────────┐
+  │         📱 APP MÓVIL PWA (CotizadorExpress.vue)         │
+  │  Paso 1: Mandante & Faena (20 seg)                     │
+  │  Paso 2: Equipo, Días, Horas mínimas & Flete (25 seg)  │
+  │  Paso 3: Total Neto, IVA & Despacho (15 seg)           │
+  └───────────────────────────┬────────────────────────────┘
+                              │
+                              │ POST /api/comercial/express/cotizar
+                              ▼
+  ┌────────────────────────────────────────────────────────┐
+  │         ⚙️ BACKEND NORMALIZADOR CANÓNICO                │
+  │  1. Resuelve cliente o crea prospecto provisional       │
+  │  2. Genera codi_proyecto (GSP-YYMM-CLIENT-XXX)         │
+  │  3. Ensambla crm_v1.lineas_servicio formal             │
+  │  4. Inyecta 6 condiciones comerciales + 5 días validez  │
+  │  5. Compila PDF oficial (generarCotizacionVersion)     │
+  │  6. Persiste en tpry_proyecto con id_proyecto_estado = 2│
+  │  7. Construye enlace de WhatsApp (https://wa.me/...)   │
+  └───────────────────────────┬────────────────────────────┘
+                              │
+               ┌──────────────┴──────────────┐
+               ▼                             ▼
+  ┌─────────────────────────┐   ┌─────────────────────────┐
+  │  📱 PWA SALIDA ÉXITO    │   │  🖥️ GESTOR WEB CRM      │
+  │  • [ 💬 Enviar WhatsApp]│   │  • Visible en Kanban    │
+  │  • [ 📄 Ver PDF Oficial]│   │  • Grilla lineas lista  │
+  │  • Tarjeta Resumen      │   │  • PDF V1 en Historial  │
+  └─────────────────────────┘   └─────────────────────────┘
 ```
 
 ---
 
-## 3. Experiencia de Usuario Móvil (Wizard de 3 Pasos)
+## 4. 🚜 Catálogo Canónico Rápido de Equipos y Tarifas de Referencia
 
-### Paso 1: Cliente y Localización (20 segundos)
-- **Selector de Empresa Mandante:** Input con búsqueda reactiva (`v-autocomplete` o filtrado de clientes registrados en `tpar_empresas`).
-- **Botón `+ Prospecto Rápido`:** Permite registrar en un modal de 3 campos:
-  - Nombre Empresa o Razón Social.
-  - Nombre Contacto y Teléfono Móvil (WhatsApp).
-  - Correo electrónico.
-- **Faena / Ubicación:** Comuna / Faena (ej: "Minera Escondida", "Puerto Mejillones", "Santiago Centro").
+Para permitir cotizaciones en 60 segundos sin latencia, el backend expone un catálogo agrupado de flota con tarifas diarias de referencia (piso estándar de 9 horas):
 
-### Paso 2: Configuración del Servicio de Izaje (25 segundos)
-- **Tarjetas de Selección Rápida de Equipo:**
-  - 🏗️ **Grúa Telescópica:** Selector de tonelaje (ej: 30t, 50t, 70t, 100t, 130t, 220t).
-  - 🚛 **Camión Pluma:** Selector de capacidad (ej: 10t, 15t, 20t).
-- **Parámetros Operacionales:**
-  - **Días de servicio:** Stepper numérico `[-] 1 [+]` (días).
-  - **Horas Mínimas Diarias:** Selector rápido `[8h]` `[9h (Estándar)]` `[10h]`.
-  - **Valor Turno / Día (CLP o UF):** Precargado según tarifa de catálogo pero editable con candado de rol.
-  - **Traslados / Desplazamientos:** Switch `[X] Incluye Movilización y Desmovilización` con origen y destino predeterminados y tarifa fija.
+### 4.1. Grúas Telescópicas (Móviles Industriales AT/RT)
+| Tonelaje / Modelo | Capacidad | Horas Mínimas | Tarifa Diaria Ref. (CLP) |
+| :--- | :--- | :--- | :--- |
+| **Grúa 40 TON** (Liebherr LTM 1040) | 40 Ton | 9 hrs | \$950.000 |
+| **Grúa 50 TON** (Liebherr LTM 1050 / Tadano ATF 50) | 50 Ton | 9 hrs | \$1.200.000 |
+| **Grúa 70 TON** (Liebherr LTM 1070 / XCMG XCT70) | 70 Ton | 9 hrs | \$1.650.000 |
+| **Grúa 100 TON** (Liebherr LTM 1100 / Tadano ATF 100 / XCMG) | 100 Ton | 9 hrs | \$2.400.000 |
+| **Grúa 150 TON** (Liebherr LTM 1150) | 150 Ton | 9 hrs | \$3.400.000 |
+| **Grúa 220 TON** (Liebherr LTM 1220) | 220 Ton | 9 hrs | \$4.800.000 |
+| **Grúa 250 TON** (XCMG XCA250) | 250 Ton | 9 hrs | \$5.500.000 |
 
-### Paso 3: Totalización, Condiciones Comerciales y Despacho (15 segundos)
-- **Resumen Financiero Claro:**
-  - Subtotal Equipos: `$ X.XXX.XXX`
-  - Subtotal Traslados: `$ XXX.XXX`
-  - **Total Neto:** `$ X.XXX.XXX` + IVA (19%).
-- **Condiciones Comerciales Oficiales:**
-  - Inyección no editable en PDF de las 6 cláusulas canónicas (Personal Técnico, Seguros, Cláusulas Específicas, Combustible, etc.).
-  - **Validez de la oferta:** Estrictamente **5 días hábiles**.
-- **Acciones Finales:**
-  - 📄 **Ver Preview PDF.**
-  - 💬 **Enviar por WhatsApp:** Dispara `https://api.whatsapp.com/send?phone=569XXXX&text=Hola%20...%20te%20adjunto%20la%20cotizaci%C3%B3n%20formal%20GSP...` con el link directo de descarga.
-  - 💾 **Guardar Oportunidad:** Queda creada automáticamente en estado `BORRADOR` o `COTIZADO` en `tpry_proyecto` visible en la Torre de Control y Gestor de Oportunidades web.
+### 4.2. Camiones Pluma
+| Capacidad | Horas Mínimas | Tarifa Diaria Ref. (CLP) |
+| :--- | :--- | :--- |
+| **Camión Pluma 10-12 TON** (Tremac / Internacional) | 9 hrs | \$420.000 |
+| **Camión Pluma 15-18 TON** (Mercedes / VW Constellation) | 9 hrs | \$540.000 |
+| **Camión Pluma 20-25 TON** (Volvo FH / Scania) | 9 hrs | \$680.000 |
+
+### 4.3. Traslados (Movilización / Desmovilización)
+- **Flete Estándar Ida y Vuelta:** \$450.000 (editable en UI).
+
+*Nota: Todas las tarifas sugeridas son auto-pobladas pero 100% editables por el comercial antes de confirmar.*
 
 ---
 
-## 4. Estructura de Datos (JSON Schema Payload)
+## 5. 🖥️ Experiencia de Usuario Móvil (Componente CotizadorExpress.vue)
 
+### Paso 1: Mandante y Localización (20 segundos)
+- **Selector Predictivo de Cliente:**
+  - Input con búsqueda en tiempo real sobre `/api/empresas?search=...`.
+  - Al seleccionar, auto-completa Razón Social, RUT y Contacto habitual.
+- **Acceso `+ Prospecto Rápido`:**
+  - Si el cliente no está en la base, permite digitar Nombre/Razón Social, Nombre Contacto y Celular WhatsApp en 3 campos.
+- **Faena / Obra:** Nombre de la Faena o Comuna (ej. "Minera Centinela", "Planta Celulosa Arauco", "Temuco").
+
+### Paso 2: Configuración del Servicio (25 segundos)
+- **Selector de Familia:** Segmented control táctil `[ Grúas Telescópicas ]` `[ Camiones Pluma ]`.
+- **Chips de Capacidad:** Botonera táctil de selección rápida (40t, 50t, 70t, 100t, 150t, 220t, 250t).
+- **Parámetros de Turno:**
+  - **Días de Servicio:** Stepper numérico táctil grande `[-] 1 [+]` días.
+  - **Piso Mínimo:** Botones `[ 8 hrs ]` `[ 9 hrs (Estándar) ]` `[ 10 hrs ]`.
+  - **Tarifa Diaria:** Campo numérico con valor sugerido editable.
+- **Traslado:** Switch `[X] Incluye Traslado (Movilización Ida/Vuelta)` con valor estimado \$450.000 editable.
+
+### Paso 3: Resumen Financiero y Emisión (15 segundos)
+- **Tarjeta de Desglose en Vivo:**
+  - Subtotal Equipos: \$ X.XXX.XXX
+  - Subtotal Traslado: \$ XXX.XXX
+  - **Total Neto:** \$ X.XXX.XXX
+  - IVA (19%): \$ XXX.XXX
+  - **Total General:** \$ X.XXX.XXX
+- **Condición Inviolable:** Badge informativo `Validez de la oferta: 5 días hábiles`.
+- **Botón Maestro:** `[ ⚡ Emitir Cotización Oficial GSP ]`.
+
+### Pantalla de Éxito y Despacho Inmediato
+- Indicador verde de éxito: `✅ Cotización GSP-2610-XXXX-003 Generada`.
+- Botón principal de ancho completo verde WhatsApp:
+  `[ 💬 Enviar Cotización por WhatsApp al Mandante ]`
+  (Abre WhatsApp con mensaje pre-redactado y enlace directo de descarga al PDF oficial).
+- Botón secundario: `[ 📄 Previsualizar PDF Oficial ]`.
+- Enlace: `[ ➕ Nueva Cotización ]` y `[ 🏠 Volver al Inicio ]`.
+
+---
+
+## 6. 🔌 Endpoints Backend Requeridos
+
+### 6.1. `GET /api/comercial/express/catalogo`
+Retorna la matriz de equipos y tarifas sugeridas para alimentar los selectores móviles.
+
+### 6.2. `POST /api/comercial/express/cotizar`
+* **Payload de Entrada:**
 ```json
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "CotizacionExpressPwaPayload",
-  "type": "object",
-  "required": [
-    "cliente",
-    "servicio",
-    "valores",
-    "origen"
-  ],
-  "properties": {
-    "origen": {
-      "type": "string",
-      "enum": ["PWA_EXPRESS"]
-    },
-    "id_empresa_emisora": {
-      "type": "integer",
-      "description": "ID de la empresa del grupo (1: Grúas San Pablo, 2: Transportes San Pablo, etc.)",
-      "default": 1
-    },
-    "cliente": {
-      "type": "object",
-      "required": ["nombre", "telefono"],
-      "properties": {
-        "id_empresa": { "type": ["integer", "null"] },
-        "nombre": { "type": "string" },
-        "rut": { "type": "string" },
-        "contacto_nombre": { "type": "string" },
-        "telefono": { "type": "string" },
-        "email": { "type": "string" },
-        "obra_nombre": { "type": "string" },
-        "comuna": { "type": "string" }
-      }
-    },
-    "servicio": {
-      "type": "object",
-      "required": ["tipo_equipo", "dias_servicio", "horas_minimas_dia"],
-      "properties": {
-        "tipo_equipo": { "type": "string", "enum": ["GRUA_TELESCOPICA", "CAMION_PLUMA"] },
-        "tonelaje_o_modelo": { "type": "string" },
-        "dias_servicio": { "type": "integer", "minimum": 1 },
-        "horas_minimas_dia": { "type": "number", "default": 9.0 },
-        "fecha_estimada_inicio": { "type": "string", "format": "date" },
-        "incluye_traslado": { "type": "boolean", "default": true },
-        "origen_traslado": { "type": "string", "default": "Base San Pablo" },
-        "destino_traslado": { "type": "string" }
-      }
-    },
-    "valores": {
-      "type": "object",
-      "required": ["neto", "total"],
-      "properties": {
-        "moneda": { "type": "string", "enum": ["CLP", "UF"], "default": "CLP" },
-        "tarifa_dia": { "type": "number" },
-        "valor_hora_adicional": { "type": "number" },
-        "valor_traslado": { "type": "number" },
-        "neto": { "type": "number" },
-        "iva": { "type": "number" },
-        "total": { "type": "number" }
-      }
-    },
-    "condiciones": {
-      "type": "object",
-      "properties": {
-        "dias_validez": { "type": "integer", "default": 5 },
-        "forma_pago": { "type": "string", "default": "30 días contra factura previa orden de compra" }
-      }
-    }
+  "id_empresa_emisora": 9,
+  "cliente": {
+    "id_empresa": 42,
+    "nombre": "Constructora Besalco S.A.",
+    "rut": "96.543.210-K",
+    "contacto_nombre": "Carlos Ruiz",
+    "telefono": "+56912345678",
+    "email": "cruiz@besalco.cl",
+    "obra_nombre": "Parque Eólico San Gabriel",
+    "obra_comuna": "Renaico"
+  },
+  "servicio": {
+    "tipo_equipo": "GRUA_TELESCOPICA",
+    "tonelaje": "100 TON",
+    "dias_servicio": 3,
+    "horas_minimas_dia": 9,
+    "tarifa_dia": 2400000,
+    "incluye_traslado": true,
+    "valor_traslado": 450000,
+    "fecha_estimada_inicio": "2026-10-10"
+  },
+  "condiciones": {
+    "moneda": "CLP",
+    "validez_dias": 5,
+    "cliente_pone_combustible": false,
+    "condicion_servicio": "programado"
+  }
+}
+```
+
+* **Respuesta Exitosa (201 Created):**
+```json
+{
+  "success": true,
+  "id_proyecto": 105,
+  "codi_proyecto": "GSP-2610-0042-005",
+  "pdf_url": "/api/archivo/ver/892",
+  "whatsapp_share_link": "https://wa.me/56912345678?text=Estimado%2Fa...",
+  "cotizacion": {
+    "id_cotizacion": 892,
+    "version": 1,
+    "nombre_archivo": "GSP-2610-0042-005V1-892.pdf",
+    "monto": 7650000,
+    "url": "/api/archivo/ver/892"
   }
 }
 ```
 
 ---
 
-## 5. Endpoints Backend Requeridos
+## 7. 🧪 Criterios de Aceptación (QA & BDD)
 
-1. `POST /api/comercial/express/cotizar`:
-   - Valida el payload según el esquema.
-   - Crea el registro formal en `tpry_proyecto` con correlativo automático `GSP-COT-YYYY-XXXX`.
-   - Inyecta la metadata completa en `json_field.crm_v1` y las condiciones comerciales estándar.
-   - Genera el documento PDF formal mediante el servicio `pdfService`.
-   - Retorna: `{ success: true, id_proyecto, codi_proyecto, pdf_url, whatsapp_share_link }`.
-
-2. `GET /api/comercial/express/catalogo-rapido`:
-   - Devuelve la lista simplificada de equipos tipos (Grúas y Plumas) con sus tarifas base sugeridas y horas mínimas para poblar los selectores móviles sin sobrecargar la red.
-
----
-
-## 6. Criterios de Aceptación (BDD / Gherkin)
-
-### Escenario 1: Cotización express exitosa en 60 segundos
-```gherkin
-Dado que el ejecutivo comercial ingresa a la PWA y pulsa "Cotizador Express"
-Cuando busca el cliente "BHP Billiton", selecciona "Grúa Telescópica 100 TON", fija 3 días de servicio y marca traslado incluido
-Y pulsa "Generar Cotización"
-Entonces el sistema crea la oportunidad formal en tpry_proyecto con folio "GSP-COT-2026-XXXX"
-Y genera el PDF oficial con las 6 secciones de condiciones comerciales y "Validez de la Oferta: 5 días hábiles"
-Y muestra el botón "Enviar por WhatsApp" con el enlace directo al número del contacto.
-```
-
-### Escenario 2: Creación de prospecto express sin RUT obligatorio inicial
-```gherkin
-Dado que el mandante en terreno no tiene a mano el RUT de la empresa
-Cuando el comercial ingresa "Constructora del Norte", contacto "Carlos Ruiz" y celular "+56912345678"
-Y emite la cotización express
-Entonces el sistema registra el prospecto provisionalmente sin bloquear la emisión del presupuesto
-Y queda marcado en la Consola Web para que administración complete el RUT antes de emitir la OT definitiva.
-```
+| ID | Escenario de Prueba | Criterio de Aceptación |
+| :--- | :--- | :--- |
+| **QA-64-01** | Búsqueda predictiva de cliente | Al teclear 3 letras en el selector de mandante, sugiere clientes de `tpar_empresas` con su contacto. |
+| **QA-64-02** | Registro de prospecto rápido | Si el cliente no existe, permite ingresarlo con nombre y WhatsApp sin exigir RUT obligatorio de inmediato. |
+| **QA-64-03** | Cálculo reactivo de totales | Al cambiar el stepper de días o alternar el switch de traslado, el Neto, IVA y Total se actualizan instantáneamente en pantalla. |
+| **QA-64-04** | Simetría estructural con Gestor Web | La cotización creada en móvil se abre en `GestorOportunidades.vue` mostrando `lineas_servicio` pobladas, contacto y totales sin arrojar errores en consola. |
+| **QA-64-05** | Emisión y almacenamiento de PDF oficial | El archivo PDF se compila con membrete oficial de GSP (Omar Ghisellini E.I.R.L.), tabla de ítems, 6 cláusulas legales y queda visible en `cotizaciones_historicas`. |
+| **QA-64-06** | Despacho por WhatsApp | El botón de WhatsApp abre la aplicación de mensajería con el número del contacto y el enlace directo al PDF generado. |

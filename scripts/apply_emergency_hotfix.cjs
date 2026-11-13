@@ -43,8 +43,9 @@ async function applyHotfix() {
   const curlEquipos = await ssh.execCommand('curl -s -i "https://servidor.leanglobal.cl/lg-gsp-prod/api/tequ-equipos?_id_empresa=9" | head -n 25');
   console.log('Respuesta Equipos Prod:\n', curlEquipos.stdout);
 
-  const curlClientes = await ssh.execCommand('curl -s -i "https://servidor.leanglobal.cl/lg-gsp-prod/api/empresas?_id_empresa=9" | head -n 25');
-  console.log('Respuesta Clientes Prod:\n', curlClientes.stdout);
+  console.log('\n=== 8. PRUEBA REAL DE GENERACIÓN DE COTIZACIÓN PROYECTO 18 ===');
+  const curlGen = await ssh.execCommand('curl -s -i -X POST "https://servidor.leanglobal.cl/lg-gsp-prod/api/proyectos/18/generar-cotizacion?_id_empresa=11" -H "Content-Type: application/json" -d "{}"');
+  console.log('Respuesta Generación Cotización Proyecto 18:\n', curlGen.stdout.slice(0, 500));
 
   ssh.dispose();
   console.log('\n=== HOTFIX APLICADO Y CERTIFICADO CON ÉXITO ===');

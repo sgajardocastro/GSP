@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GSP Enterprise • Diseño Real de Formularios de Mantenimiento</title>
+  <!-- Tailwind CSS Engine (Google Static CDN permitido) -->
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    /* Glow utilities */
+    .glow-amber {
+      box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.25);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25);
+    }
+  </style>
+</head>
+<body class="bg-[#0B0F19] text-slate-100 min-h-screen antialiased selection:bg-amber-500/30 selection:text-amber-300">
+
+  <!-- TOP BAR HEADER OFICIAL GSP ENTERPRISE -->
+  <header class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-40 px-4 md:px-8 py-3.5">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20 text-lg">
+          ⚙️
+        </div>
+        <div>
+          <div class="flex items-center gap-2.5">
+            <span class="text-xs font-black tracking-widest uppercase text-amber-400 font-mono">GRÚAS SAN PABLO</span>
+            <span class="text-[10px] bg-slate-800 text-slate-300 font-bold px-2 py-0.5 rounded border border-slate-700">TALLER & FLOTA PESADA</span>
+          </div>
+          <h1 class="text-base md:text-lg font-black tracking-tight text-white uppercase font-mono">
+            Diseño Real de Formularios de Mantenimiento (OTM)
+          </h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Spec 48 Canónica Unificada
+        </span>
+        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-amber-500/10 text-amber-400 border border-amber-500/30 font-mono">
+          Fase 1: Materiales Manuales
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- REGLA DE DOMINIO RECTOR: BANNER DE SEGREGACIÓN ABSOLUTA -->
+  <div class="max-w-7xl mx-auto px-4 md:px-8 pt-6 pb-2">
+    <div class="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-slate-900/90 to-slate-900/90 p-4 md:p-5 shadow-2xl relative overflow-hidden">
+      <div class="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[11px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 font-mono">
+              REGLA DE DOMINIO RECTOR
+            </span>
+            <h2 class="text-sm font-bold text-white uppercase tracking-wide">
+              Segregación Estricta: OTs de Negocio GSP vs OTs de Mantenimiento Taller
+            </h2>
+          </div>
+          <p class="text-xs text-slate-300 max-w-4xl leading-relaxed">
+            Las <strong>OTs de Negocio</strong> (<span class="font-mono text-amber-300">GSP-2610-XXXX</span>) atienden clientes mandantes externos (Arauco, Pocuro, Enel), devengan ingresos comerciales (IFRS 15) y culminan en EDP / Factura DTE.  
+            Las <strong>OTs de Mantenimiento</strong> (<span class="font-mono text-cyan-300">MNT-2610-XXX</span>) son 100% de taller interno, atienden la salud mecánica de los 110 activos propios, generan <strong>costos internos</strong> y se cierran con PIN de 4 dígitos.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <div class="bg-slate-950/80 px-3 py-2 rounded-xl border border-slate-800 text-center">
+            <div class="text-[10px] text-slate-400 font-bold uppercase">OT Negocio</div>
+            <div class="text-xs font-mono font-bold text-amber-400">GSP-2610-4851</div>
+            <div class="text-[9px] text-emerald-400 font-bold uppercase mt-0.5">DEVENGADO $</div>
+          </div>
+          <span class="text-slate-600 font-black">≠</span>
+          <div class="bg-slate-950/80 px-3 py-2 rounded-xl border border-cyan-500/30 text-center">
+            <div class="text-[10px] text-slate-400 font-bold uppercase">OT Mantención</div>
+            <div class="text-xs font-mono font-bold text-cyan-400">MNT-2610-042</div>
+            <div class="text-[9px] text-rose-400 font-bold uppercase mt-0.5">COSTO TALLER</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVEGADOR DE FORMULARIOS REALES (SWITCHER TABS) -->
+  <main class="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
+    <div class="flex items-center justify-between gap-2 overflow-x-auto pb-2 border-b border-slate-800">
+      <div class="flex gap-2">
+        <button onclick="switchTab('f1')" id="tab-f1" class="tab-btn px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all whitespace-nowrap bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20">
+          <span>🛠️ 1. Apertura OTM</span>
+        </button>
+        <button onclick="switchTab('f2')" id="tab-f2" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>📋 2. Checklist Tareas</span>
+        </button>
+        <button onclick="switchTab('f3')" id="tab-f3" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>🛢️ 3. Materiales Manuales</span>
+        </button>
+        <button onclick="switchTab('f4')" id="tab-f4" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>🔧 4. Mano de Obra HH</span>
+        </button>
+        <button onclick="switchTab('f5')" id="tab-f5" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>🏭 5. Servicios Terceros</span>
+        </button>
+        <button onclick="switchTab('f6')" id="tab-f6" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>🔒 6. Cierre con PIN</span>
+        </button>
+        <button onclick="switchTab('f7')" id="tab-f7" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all whitespace-nowrap text-slate-400 hover:text-white hover:bg-slate-900">
+          <span>📊 7. Expediente OTM 360°</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- FORMULARIO 1: APERTURA OTM (TOGGLE PREVENTIVO VS CORRECTIVO) -->
+    <!-- ================================================================= -->
+    <section id="view-f1" class="form-view space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Formulario Principal -->
+        <div class="lg:col-span-2 bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+            <div>
+              <span class="text-[11px] font-mono font-black text-amber-400 uppercase tracking-widest">FORMULARIO 1 • TALLER GSP</span>
+              <h3 class="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+                <span>Apertura de Orden de Trabajo de Mantenimiento</span>
+                <span class="text-xs font-mono font-normal text-slate-400">(tmnt_ot)</span>
+              </h3>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-500 font-mono block">FOLIO PROPUESTO</span>
+              <span class="text-sm font-mono font-black text-cyan-400 bg-cyan-950/60 px-2.5 py-1 rounded-lg border border-cyan-800/50">
+                OTM-2610-042
+              </span>
+            </div>
+          </div>
+
+          <!-- TOGGLE RECTOR: PREVENTIVO VS CORRECTIVO -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+              Naturaleza de la Intervención Mecánica *
+            </label>
+            <div class="grid grid-cols-2 gap-3 p-1.5 bg-slate-950/90 rounded-2xl border border-slate-800">
+              <button type="button" onclick="setTipoMantenimiento('PREVENTIVO')" id="btn-tipo-prev" class="py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all bg-blue-500/20 text-blue-400 border border-blue-500/40 shadow-lg">
+                <span class="text-base">🛡️</span>
+                <span>Mantención Preventiva (Pauta)</span>
+              </button>
+              <button type="button" onclick="setTipoMantenimiento('CORRECTIVO')" id="btn-tipo-corr" class="py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all text-slate-400 hover:text-white">
+                <span class="text-base">🚨</span>
+                <span>Mantención Correctiva (Avería)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- SELECTOR DE EQUIPO Y HORÓMETRO EN VIVO -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Equipo / Activo de Flota (tequ_equipo) *
+              </label>
+              <select id="select-equipo" onchange="actualizarEquipoSeleccionado()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-colors">
+                <option value="GR-01" selected>GR-01 | GZBC-43 • Liebherr LTM 1070-4.2 (70 Ton)</option>
+                <option value="GR-04">GR-04 | GZBC-61 • Liebherr LTM 1250-5.1 (250 Ton)</option>
+                <option value="GR-07">GR-07 | HDKL-12 • Grove GMK 5220 (220 Ton)</option>
+                <option value="CP-03">CP-03 | JRPW-99 • Camión Pluma Mercedes Actros + Fassi 455</option>
+                <option value="TR-02">TR-02 | PAD-33 • Tractocamión Scania R500 Cama Baja</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Horómetro de Entrada (Taller) *
+              </label>
+              <div class="relative">
+                <input id="input-horometro" type="number" step="0.5" value="4820.5" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono font-bold focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-colors">
+                <span class="absolute right-3.5 top-2.5 text-slate-400 font-mono text-xs font-bold">hrs</span>
+              </div>
+              <span class="text-[10px] text-slate-500 mt-1 block">Heredado del último report diario en faena (4.818,0 hrs).</span>
+            </div>
+          </div>
+
+          <!-- BLOQUE DINÁMICO: SI ES PREVENTIVO -->
+          <div id="bloque-preventivo" class="space-y-4 p-4 rounded-xl bg-blue-950/20 border border-blue-800/40">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🛡️</span> Parámetros de Pauta Preventiva
+              </span>
+              <span class="text-[11px] font-mono text-blue-300 font-bold">Horas de Operación Acumuladas: 250,5 hrs desde último service</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <label class="cursor-pointer border border-blue-500/40 bg-blue-900/20 p-3 rounded-xl flex flex-col justify-between hover:border-blue-400 transition-colors">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-white font-mono">P-250</span>
+                  <input type="radio" name="pauta" checked class="text-amber-500 focus:ring-amber-500">
+                </div>
+                <div class="text-[11px] text-blue-200 mt-2 font-medium">Servicio 250 hrs: Aceite motor, filtros primarios y engrase general</div>
+              </label>
+
+              <label class="cursor-pointer border border-slate-800 bg-slate-950/60 p-3 rounded-xl flex flex-col justify-between hover:border-slate-700 transition-colors">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-400 font-mono">P-500</span>
+                  <input type="radio" name="pauta" class="text-amber-500 focus:ring-amber-500">
+                </div>
+                <div class="text-[11px] text-slate-400 mt-2 font-medium">Servicio 500 hrs: Filtros de combustible, transmisión y frenos</div>
+              </label>
+
+              <label class="cursor-pointer border border-slate-800 bg-slate-950/60 p-3 rounded-xl flex flex-col justify-between hover:border-slate-700 transition-colors">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-400 font-mono">P-1000</span>
+                  <input type="radio" name="pauta" class="text-amber-500 focus:ring-amber-500">
+                </div>
+                <div class="text-[11px] text-slate-400 mt-2 font-medium">Overhaul Anual: Fluido hidráulico, tornamesa y certificación estructural</div>
+              </label>
+            </div>
+          </div>
+
+          <!-- BLOQUE DINÁMICO: SI ES CORRECTIVO (OCULTO POR DEFECTO) -->
+          <div id="bloque-correctivo" class="hidden space-y-4 p-4 rounded-xl bg-rose-950/20 border border-rose-800/40">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🚨</span> Vinculación con Aviso de Avería de Terreno
+              </span>
+              <span class="text-[10px] font-mono text-rose-300 font-bold bg-rose-950 px-2 py-0.5 rounded border border-rose-800">
+                PARADA EN FAENA
+              </span>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Seleccionar Aviso de Avería Pendiente (tcnt_aviso_averia)
+              </label>
+              <select class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono">
+                <option value="AVR-038">AVR-2026-0038 • Pérdida de presión en gato estabilizador trasero izq. (Faena Planta Arauco)</option>
+                <option value="AVR-039">AVR-2026-0039 • Alarma testigo sobrecalentamiento convertidor de torque (Patio Santiago)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- DESCRIPCIÓN DEL TRABAJO / DIAGNÓSTICO -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+              Diagnóstico Mecánico y Alcance del Trabajo Solicitado *
+            </label>
+            <textarea rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs leading-relaxed focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-colors" placeholder="Detalle técnico del motivo de ingreso al taller...">Ingreso programado por cumplimiento de intervalo de 250 horas de operación en faena celulosa Arauco. Corresponde drenado completo de cárter de motor diésel Liebherr D936L A6, reemplazo de cartuchos de filtro de aceite primario y secundario, purga y cambio de filtro racor separador de agua. Inspección visual de posibles fugas en vástagos telescópicos y engrase de cremallera de giro.</textarea>
+          </div>
+
+          <!-- SUPERVISOR Y MECÁNICO ASIGNADO -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Supervisor Autorizador (Jefe de Taller) *
+              </label>
+              <select class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-semibold">
+                <option selected>Jorge Ponce (Jefe de Mantenimiento & Taller)</option>
+                <option>Rodrigo Fuentes (Supervisor de Turno Taller)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Mecánico Principal Responsable *
+              </label>
+              <select class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-semibold">
+                <option selected>Claudio Navarrete (Técnico Hidráulico Senior)</option>
+                <option>Marcelo Venegas (Mecánico Diésel Especialista)</option>
+                <option>Andrés Valenzuela (Técnico Electricista)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- BOTONES DE ACCIÓN -->
+          <div class="flex items-center justify-between pt-4 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-500">
+              Al abrir la OT, el equipo pasará a estado <strong class="text-amber-400 font-mono">EN_MANTENCION</strong> en el radar de flota.
+            </span>
+            <div class="flex items-center gap-3">
+              <button type="button" class="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-wider">
+                Limpiar
+              </button>
+              <button type="button" onclick="simularCreacionOt()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-transform active:scale-95">
+                <span>🛠️ Crear y Emitir OTM-2610-042 ➔</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ficha Técnica del Activo Seleccionado (Sidebar Reactivo) -->
+        <div class="space-y-4">
+          <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">FICHA DEL ACTIVO</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                DISPONIBLE EN PATIO
+              </span>
+            </div>
+
+            <div>
+              <div class="text-xs font-mono font-bold text-slate-400" id="card-codigo">GR-01</div>
+              <h4 class="text-base font-black text-white" id="card-nombre">Liebherr LTM 1070-4.2</h4>
+              <p class="text-xs text-amber-400 font-bold font-mono mt-0.5" id="card-patente">Patente: GZBC-43</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                <span class="text-[10px] text-slate-500 font-bold uppercase block">Capacidad</span>
+                <span class="font-mono font-black text-white">70 Toneladas</span>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                <span class="text-[10px] text-slate-500 font-bold uppercase block">Pluma Máx</span>
+                <span class="font-mono font-black text-white">50.0 mts</span>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                <span class="text-[10px] text-slate-500 font-bold uppercase block">Horómetro Base</span>
+                <span class="font-mono font-black text-amber-400">4.820,5 hrs</span>
+              </div>
+              <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                <span class="text-[10px] text-slate-500 font-bold uppercase block">Último Service</span>
+                <span class="font-mono font-bold text-slate-300">4.570,0 hrs</span>
+              </div>
+            </div>
+
+            <!-- Semáforo de Próximo Mantenimiento -->
+            <div class="p-3 rounded-xl bg-slate-950 border border-amber-500/30 space-y-1.5">
+              <div class="flex justify-between text-[11px] font-bold">
+                <span class="text-amber-400">Intervalo 250 hrs:</span>
+                <span class="font-mono text-white">250,5 / 250 hrs</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-gradient-to-r from-amber-500 to-rose-500 h-full w-full"></div>
+              </div>
+              <span class="text-[10px] text-amber-300 block font-medium">⚠️ Cumplió intervalo de servicio. Requiere intervención inmediata.</span>
+            </div>
+
+            <!-- Certificaciones Vigentes -->
+            <div class="pt-2 border-t border-slate-800 text-[11px] space-y-1.5">
+              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Certificación Estructural:</div>
+              <div class="flex items-center justify-between text-slate-300">
+                <span>Bureau Veritas (Pluma e Izaje)</span>
+                <span class="font-mono text-emerald-400 font-bold">Vence 18-Nov-2026</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- FORMULARIO 2: CHECKLIST DE TAREAS OPERATIVAS (tmnt_ot_actividad) -->
+    <!-- ================================================================= -->
+    <section id="view-f2" class="form-view hidden space-y-6">
+      <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-mono font-black text-amber-400 uppercase tracking-widest">FORMULARIO 2 • PROTOCOLO OPERATIVO</span>
+              <span class="text-xs font-mono font-bold text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">OTM-2610-042</span>
+            </div>
+            <h3 class="text-lg font-black text-white uppercase tracking-tight">
+              Checklist de Actividades e Inspección Mecánica
+            </h3>
+          </div>
+
+          <!-- Barra de Progreso Global -->
+          <div class="flex items-center gap-4 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+            <div>
+              <span class="text-[10px] text-slate-400 font-bold uppercase block">Avance de Pauta</span>
+              <span class="text-sm font-mono font-black text-emerald-400" id="txt-progreso-checklist">4 de 6 completadas (66%)</span>
+            </div>
+            <div class="w-28 bg-slate-800 h-2.5 rounded-full overflow-hidden">
+              <div id="bar-progreso-checklist" class="bg-emerald-500 h-full transition-all duration-300" style="width: 66%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLA DE CHECKLIST INTERACTIVA (DISEÑO REAL DE PRODUCCIÓN) -->
+        <div class="overflow-x-auto rounded-xl border border-slate-800/80">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-950/90 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 font-mono">
+                <th class="p-3.5 w-12 text-center">#</th>
+                <th class="p-3.5">Sistema / Tarea Operativa</th>
+                <th class="p-3.5 w-32">HH Est.</th>
+                <th class="p-3.5 w-48">Técnico Asignado</th>
+                <th class="p-3.5 w-40">Estado FSM</th>
+                <th class="p-3.5 w-32 text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-checklist-body" class="divide-y divide-slate-800/60 font-medium">
+              <!-- Fila 1 -->
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="p-3.5 text-center font-mono font-bold text-slate-500">01</td>
+                <td class="p-3.5">
+                  <div class="font-bold text-white text-sm">Drenar cárter y reemplazo de filtros de aceite motor</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">Retirar tapón magnético, inspeccionar presencia de viruta metálica y montar filtros Mann W 940 lubricados.</div>
+                </td>
+                <td class="p-3.5 font-mono text-white">1.5 hrs</td>
+                <td class="p-3.5 font-semibold text-slate-300">Marcelo Venegas</td>
+                <td class="p-3.5">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    <span>✅</span> COMPLETADA
+                  </span>
+                </td>
+                <td class="p-3.5 text-center">
+                  <button class="text-[11px] text-slate-400 hover:text-white font-bold underline">Editar</button>
+                </td>
+              </tr>
+              <!-- Fila 2 -->
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="p-3.5 text-center font-mono font-bold text-slate-500">02</td>
+                <td class="p-3.5">
+                  <div class="font-bold text-white text-sm">Purga y reemplazo de cartucho separador de agua Racor</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">Drenaje de vaso decantador transparente, revisión de empaque O-ring y cebado con bombín manual.</div>
+                </td>
+                <td class="p-3.5 font-mono text-white">1.0 hrs</td>
+                <td class="p-3.5 font-semibold text-slate-300">Marcelo Venegas</td>
+                <td class="p-3.5">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    <span>✅</span> COMPLETADA
+                  </span>
+                </td>
+                <td class="p-3.5 text-center">
+                  <button class="text-[11px] text-slate-400 hover:text-white font-bold underline">Editar</button>
+                </td>
+              </tr>
+              <!-- Fila 3 -->
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="p-3.5 text-center font-mono font-bold text-slate-500">03</td>
+                <td class="p-3.5">
+                  <div class="font-bold text-white text-sm">Inspección de presión de alivio en banco hidráulico principal</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">Conectar manómetro digital en toma de prueba M1, acelerar a 1.800 RPM y verificar 320 bar nominales.</div>
+                </td>
+                <td class="p-3.5 font-mono text-white">2.0 hrs</td>
+                <td class="p-3.5 font-semibold text-slate-300">Claudio Navarrete</td>
+                <td class="p-3.5">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                    <span>⏳</span> EN_PROCESO
+                  </span>
+                </td>
+                <td class="p-3.5 text-center">
+                  <button class="text-[11px] text-amber-400 hover:text-amber-300 font-bold">Marcar OK</button>
+                </td>
+              </tr>
+              <!-- Fila 4 -->
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="p-3.5 text-center font-mono font-bold text-slate-500">04</td>
+                <td class="p-3.5">
+                  <div class="font-bold text-white text-sm">Engrase forzado de corona de giro y piñón de ataque</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">Aplicación de grasa EP-2 mediante grasera neumática en 8 puntos de la tornamesa mientras se gira 360°.</div>
+                </td>
+                <td class="p-3.5 font-mono text-white">1.0 hrs</td>
+                <td class="p-3.5 font-semibold text-slate-300">Claudio Navarrete</td>
+                <td class="p-3.5">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    <span>✅</span> COMPLETADA
+                  </span>
+                </td>
+                <td class="p-3.5 text-center">
+                  <button class="text-[11px] text-slate-400 hover:text-white font-bold underline">Editar</button>
+                </td>
+              </tr>
+              <!-- Fila 5 -->
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="p-3.5 text-center font-mono font-bold text-slate-500">05</td>
+                <td class="p-3.5">
+                  <div class="font-bold text-white text-sm">Torqueo de pernos en zapata de cilindros estabilizadores</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">Verificación con torquímetro calibrado a 450 Nm en los 4 apoyos outriggers.</div>
+                </td>
+                <td class="p-3.5 font-mono text-white">1.5 hrs</td>
+                <td class="p-3.5 font-semibold text-slate-300">Claudio Navarrete</td>
+                <td class="p-3.5">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    <span>✅</span> COMPLETADA
+                  </span>
+                </td>
+                <td class="p-3.5 text-center">
+                  <button class="text-[11px] text-slate-400 hover:text-white font-bold underline">Editar</button>
+                </td>
+              </tr>
+              <!-- Fila 6 -->
+              <tr class="hover:bg-slate-800/40 transition-colors">
+                <td class="p-3.5 text-center font-mono font-bold text-slate-500">06</td>
+                <td class="p-3.5">
+                  <div class="font-bold text-white text-sm">Prueba dinámica de elevación de pluma y corte por LMI / PAT</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">Desplegar secciones telescópicas al 100%, validar lectura de largo y ángulo contra tabla de carga oficial.</div>
+                </td>
+                <td class="p-3.5 font-mono text-white">2.0 hrs</td>
+                <td class="p-3.5 font-semibold text-slate-300">Jorge Ponce</td>
+                <td class="p-3.5">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700">
+                    <span>⭕</span> PENDIENTE
+                  </span>
+                </td>
+                <td class="p-3.5 text-center">
+                  <button class="text-[11px] text-amber-400 hover:text-amber-300 font-bold">Iniciar</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- FORMULARIO RÁPIDO PARA AGREGAR NUEVA TAREA AL CHECKLIST -->
+        <div class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+            <span>+</span> Agregar Tarea Extraordinaria a la Pauta
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 text-xs">
+            <div class="md:col-span-6">
+              <input id="new-tarea-desc" type="text" placeholder="Descripción de la tarea (ej: Revisión de manguera de retorno de enfriador)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div class="md:col-span-2">
+              <input id="new-tarea-hh" type="number" step="0.5" placeholder="HH Est. (1.5)" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-mono placeholder-slate-500 focus:border-amber-500 focus:outline-none">
+            </div>
+            <div class="md:col-span-2">
+              <select id="new-tarea-tec" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white focus:border-amber-500 focus:outline-none">
+                <option value="Claudio Navarrete">Claudio Navarrete</option>
+                <option value="Marcelo Venegas">Marcelo Venegas</option>
+                <option value="Jorge Ponce">Jorge Ponce</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <button type="button" onclick="agregarTareaChecklist()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold py-2 rounded-xl border border-amber-500/30 uppercase tracking-wider transition-colors">
+                + Añadir Tarea
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- FORMULARIO 3: REGISTRO MANUAL DE MATERIALES (tmnt_ot_repuesto)    -->
+    <!-- ================================================================= -->
+    <section id="view-f3" class="form-view hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Formulario de Imputación Manual (Fase 1: 100% Libre sin WMS) -->
+        <div class="lg:col-span-2 bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-mono font-black text-amber-400 uppercase tracking-widest">FORMULARIO 3 • FASE 1 INMEDIATA</span>
+                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">SIN BLOQUEO WMS</span>
+              </div>
+              <h3 class="text-lg font-black text-white uppercase tracking-tight">
+                Imputación Manual de Insumos, Repuestos y Lubricantes
+              </h3>
+            </div>
+            <span class="text-xs font-mono font-bold text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+              OTM-2610-042
+            </span>
+          </div>
+
+          <!-- AVISO ACLARATORIO DEL MODELO MANUAL -->
+          <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start gap-3">
+            <span class="text-amber-400 text-lg">💡</span>
+            <div class="text-xs text-slate-300 leading-relaxed">
+              <strong class="text-white">Registro directo sin catálogo restrictivo:</strong> El mecánico o jefe de taller digita libremente el repuesto, lubricante o pieza consumida, indicando cantidad y costo unitario. El sistema costea en tiempo real e imputa al expediente de la máquina.
+            </div>
+          </div>
+
+          <!-- CAMPOS DEL FORMULARIO DE INGRESO MANUAL -->
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Descripción Libre del Material o Repuesto Consumido *
+              </label>
+              <input id="mat-desc" type="text" placeholder="Ej: Aceite Hidráulico Shell Tellus S2 V 68 (Balde 20L)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-medium focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-colors">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Cantidad *
+                </label>
+                <input id="mat-cant" type="number" step="0.1" value="2" oninput="calcularTotalMaterial()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono font-bold focus:border-amber-500 focus:outline-none transition-colors">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Unidad de Medida *
+                </label>
+                <select id="mat-um" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono">
+                  <option value="LITROS">LITROS (Lts)</option>
+                  <option value="UNIDAD" selected>UNIDAD (Unid)</option>
+                  <option value="METROS">METROS (Mts)</option>
+                  <option value="KG">KILOS (Kg)</option>
+                  <option value="JUEGO">JUEGO / KIT</option>
+                  <option value="GLOBAL">GLOBAL (Gl)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Costo Unitario Neto ($ CLP) *
+                </label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2.5 text-slate-500 font-mono text-xs">$</span>
+                  <input id="mat-costo-unit" type="number" value="38500" oninput="calcularTotalMaterial()" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-7 pr-3 py-2.5 text-white text-xs font-mono font-bold focus:border-amber-500 focus:outline-none transition-colors">
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Proveedor / N° Factura / Guía Despacho (Opcional)
+                </label>
+                <input id="mat-doc" type="text" placeholder="Ej: Factura Copec 44102 / Ferretería Central" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono focus:border-amber-500 focus:outline-none transition-colors">
+              </div>
+
+              <!-- CÁLCULO REACTIVO AUTOMÁTICO EN PANTALLA -->
+              <div class="p-3 bg-slate-950 rounded-xl border border-amber-500/30 flex items-center justify-between">
+                <div>
+                  <span class="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">Costo Total Renglón</span>
+                  <span class="text-xs text-slate-400 font-mono">(Cantidad × Costo Unitario)</span>
+                </div>
+                <div id="mat-total-preview" class="text-lg font-mono font-black text-emerald-400">
+                  $ 77.000
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+              <button type="button" onclick="agregarMaterialManual()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-transform active:scale-95">
+                <span>+ Agregar Material a la OT</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TABLA DE MATERIALES IMPUTADOS EN LA OT ACTUAL -->
+          <div class="space-y-3 pt-4 border-t border-slate-800/80">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-white uppercase tracking-wider">
+                Materiales e Insumos Imputados a esta OTM (3 Registros)
+              </h4>
+              <span class="text-xs font-mono text-emerald-400 font-bold">
+                Subtotal Materiales: <strong id="lbl-subtotal-materiales" class="text-sm font-black">$ 440.500</strong>
+              </span>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 font-mono">
+                    <th class="p-3">Descripción Insumo</th>
+                    <th class="p-3 w-24 text-right">Cant.</th>
+                    <th class="p-3 w-20">U.M.</th>
+                    <th class="p-3 w-28 text-right">Costo Unit.</th>
+                    <th class="p-3 w-32 text-right">Total ($)</th>
+                    <th class="p-3 w-36">Documento/Guía</th>
+                    <th class="p-3 w-16 text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-materiales-body" class="divide-y divide-slate-800/60 font-medium">
+                  <tr class="hover:bg-slate-800/30">
+                    <td class="p-3 font-semibold text-white">Aceite Hidráulico Shell Tellus S2 V 68 (Tambor)</td>
+                    <td class="p-3 text-right font-mono font-bold text-amber-400">40.0</td>
+                    <td class="p-3 font-mono text-slate-400">LITROS</td>
+                    <td class="p-3 text-right font-mono text-slate-300">$ 8.500</td>
+                    <td class="p-3 text-right font-mono font-black text-emerald-400">$ 340.000</td>
+                    <td class="p-3 font-mono text-slate-400 text-[11px]">Fact. Copec 8912</td>
+                    <td class="p-3 text-center"><button class="text-rose-400 hover:text-rose-300 font-bold">✕</button></td>
+                  </tr>
+                  <tr class="hover:bg-slate-800/30">
+                    <td class="p-3 font-semibold text-white">Filtro de Aceite Motor Diésel Mann W 940/5</td>
+                    <td class="p-3 text-right font-mono font-bold text-amber-400">2.0</td>
+                    <td class="p-3 font-mono text-slate-400">UNIDAD</td>
+                    <td class="p-3 text-right font-mono text-slate-300">$ 38.000</td>
+                    <td class="p-3 text-right font-mono font-black text-emerald-400">$ 76.000</td>
+                    <td class="p-3 font-mono text-slate-400 text-[11px]">Guía Mann 4402</td>
+                    <td class="p-3 text-center"><button class="text-rose-400 hover:text-rose-300 font-bold">✕</button></td>
+                  </tr>
+                  <tr class="hover:bg-slate-800/30">
+                    <td class="p-3 font-semibold text-white">Filtro Racor Separador de Combustible 2010PM-OR</td>
+                    <td class="p-3 text-right font-mono font-bold text-amber-400">1.0</td>
+                    <td class="p-3 font-mono text-slate-400">UNIDAD</td>
+                    <td class="p-3 text-right font-mono text-slate-300">$ 24.500</td>
+                    <td class="p-3 text-right font-mono font-black text-emerald-400">$ 24.500</td>
+                    <td class="p-3 font-mono text-slate-400 text-[11px]">Bodega Taller</td>
+                    <td class="p-3 text-center"><button class="text-rose-400 hover:text-rose-300 font-bold">✕</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel Lateral Informativo -->
+        <div class="space-y-4">
+          <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
+            <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block border-b border-slate-800 pb-2">
+              RESUMEN DE INSUMOS
+            </span>
+
+            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Líneas de Insumos:</span>
+                <span class="font-mono font-bold text-white">3 ítems</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Lubricantes Totales:</span>
+                <span class="font-mono font-bold text-white">40.0 Litros</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Filtros Instalados:</span>
+                <span class="font-mono font-bold text-white">3 unidades</span>
+              </div>
+              <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
+                <span class="text-xs font-bold text-slate-300 uppercase">Costo Insumos:</span>
+                <span class="text-base font-mono font-black text-emerald-400">$ 440.500</span>
+              </div>
+            </div>
+
+            <div class="text-[11px] text-slate-400 leading-relaxed bg-amber-500/5 border border-amber-500/20 p-3 rounded-xl">
+              <strong class="text-amber-300">Trazabilidad para Cierre:</strong>
+              Al momento del cierre con PIN, estos materiales se congelan en la tabla <code class="text-slate-200">tmnt_ot_repuesto</code> y no podrán alterarse sin reapertura de auditoría.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- FORMULARIO 4: IMPUTACIÓN DE MANO DE OBRA HH (tmnt_ot_hh)          -->
+    <!-- ================================================================= -->
+    <section id="view-f4" class="form-view hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <div class="lg:col-span-2 bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+            <div>
+              <span class="text-[11px] font-mono font-black text-amber-400 uppercase tracking-widest">FORMULARIO 4 • RECURSOS HUMANOS TALLER</span>
+              <h3 class="text-lg font-black text-white uppercase tracking-tight">
+                Imputación de Horas Hombre (HH Mecánicos)
+              </h3>
+            </div>
+            <span class="text-xs font-mono font-bold text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+              OTM-2610-042
+            </span>
+          </div>
+
+          <!-- CAMPOS DE IMPUTACIÓN DE HH -->
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Técnico Mecánico Ejecutor *
+                </label>
+                <select id="hh-tecnico" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-semibold focus:border-amber-500 focus:outline-none">
+                  <option value="Claudio Navarrete">Claudio Navarrete (Mecánico Hidráulico Senior)</option>
+                  <option value="Marcelo Venegas">Marcelo Venegas (Mecánico Diésel Especialista)</option>
+                  <option value="Andrés Valenzuela">Andrés Valenzuela (Técnico Electricista)</option>
+                  <option value="Jorge Ponce">Jorge Ponce (Jefe Taller / Certificador)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Fecha de Ejecución *
+                </label>
+                <input type="date" value="2026-10-07" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono focus:border-amber-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Descripción Detallada del Trabajo Efectuado *
+              </label>
+              <input id="hh-desc" type="text" placeholder="Ej: Desmontaje y cambio de sellos hidráulicos en bancada de válvulas..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs focus:border-amber-500 focus:outline-none">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Horas Reales Trabajadas *
+                </label>
+                <div class="relative">
+                  <input id="hh-horas" type="number" step="0.5" value="4.5" oninput="calcularTotalHh()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono font-bold focus:border-amber-500 focus:outline-none">
+                  <span class="absolute right-3.5 top-2.5 text-slate-400 font-mono text-xs">hrs</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Tarifa / Hora Taller ($ CLP) *
+                </label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2.5 text-slate-500 font-mono text-xs">$</span>
+                  <input id="hh-tarifa" type="number" value="18000" oninput="calcularTotalHh()" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-7 pr-3 py-2.5 text-white text-xs font-mono font-bold focus:border-amber-500 focus:outline-none">
+                </div>
+              </div>
+
+              <!-- CÁLCULO REACTIVO AUTOMÁTICO EN BD Y UI -->
+              <div class="p-3 bg-slate-950 rounded-xl border border-amber-500/30 flex items-center justify-between">
+                <div>
+                  <span class="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">Costo Mano de Obra</span>
+                  <span class="text-xs text-slate-400 font-mono">(Horas × Tarifa)</span>
+                </div>
+                <div id="hh-total-preview" class="text-lg font-mono font-black text-emerald-400">
+                  $ 81.000
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+              <button type="button" onclick="agregarHhManual()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-transform active:scale-95">
+                <span>+ Imputar HH a la OT</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TABLA DE HORAS REGISTRADAS -->
+          <div class="space-y-3 pt-4 border-t border-slate-800/80">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-white uppercase tracking-wider">
+                Registros de Tiempo en esta OTM (2 Mecánicos)
+              </h4>
+              <span class="text-xs font-mono text-emerald-400 font-bold">
+                Subtotal Mano de Obra: <strong id="lbl-subtotal-hh" class="text-sm font-black">$ 180.000</strong>
+              </span>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 font-mono">
+                    <th class="p-3">Técnico Mecánico</th>
+                    <th class="p-3">Descripción de Trabajo</th>
+                    <th class="p-3 w-24 text-right">Horas</th>
+                    <th class="p-3 w-28 text-right">Tarifa/Hr</th>
+                    <th class="p-3 w-32 text-right">Costo HH ($)</th>
+                    <th class="p-3 w-16 text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-hh-body" class="divide-y divide-slate-800/60 font-medium">
+                  <tr class="hover:bg-slate-800/30">
+                    <td class="p-3 font-bold text-white">Claudio Navarrete</td>
+                    <td class="p-3 text-slate-300">Medición de presiones hidráulicas y engrase de corona 360°</td>
+                    <td class="p-3 text-right font-mono font-bold text-amber-400">4.5 hrs</td>
+                    <td class="p-3 text-right font-mono text-slate-300">$ 18.000</td>
+                    <td class="p-3 text-right font-mono font-black text-emerald-400">$ 81.000</td>
+                    <td class="p-3 text-center"><button class="text-rose-400 hover:text-rose-300 font-bold">✕</button></td>
+                  </tr>
+                  <tr class="hover:bg-slate-800/30">
+                    <td class="p-3 font-bold text-white">Marcelo Venegas</td>
+                    <td class="p-3 text-slate-300">Drenado cárter motor diésel, cambio de filtros de aceite y racor</td>
+                    <td class="p-3 text-right font-mono font-bold text-amber-400">6.0 hrs</td>
+                    <td class="p-3 text-right font-mono text-slate-300">$ 16.500</td>
+                    <td class="p-3 text-right font-mono font-black text-emerald-400">$ 99.000</td>
+                    <td class="p-3 text-center"><button class="text-rose-400 hover:text-rose-300 font-bold">✕</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
+            <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block border-b border-slate-800 pb-2">
+              EFICIENCIA Y HORAS HOMBRE
+            </span>
+
+            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Total HH Imputadas:</span>
+                <span class="font-mono font-bold text-white">10.5 hrs</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Horas Planificadas Pauta:</span>
+                <span class="font-mono font-bold text-white">9.0 hrs</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Desviación HH:</span>
+                <span class="font-mono font-bold text-amber-400">+1.5 hrs (+16%)</span>
+              </div>
+              <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
+                <span class="text-xs font-bold text-slate-300 uppercase">Costo Total HH:</span>
+                <span class="text-base font-mono font-black text-emerald-400">$ 180.000</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- FORMULARIO 5: SERVICIOS EXTERNOS TERCERIZADOS                     -->
+    <!-- ================================================================= -->
+    <section id="view-f5" class="form-view hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <div class="lg:col-span-2 bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+            <div>
+              <span class="text-[11px] font-mono font-black text-amber-400 uppercase tracking-widest">FORMULARIO 5 • MAESTRANZAS & TERCEROS</span>
+              <h3 class="text-lg font-black text-white uppercase tracking-tight">
+                Servicios Externos Especializados
+              </h3>
+            </div>
+            <span class="text-xs font-mono font-bold text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+              OTM-2610-042
+            </span>
+          </div>
+
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Proveedor / Maestranza Tercera *
+                </label>
+                <input id="srv-prov" type="text" placeholder="Ej: Maestranza y Rectificados Bío-Bío SpA" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-medium focus:border-amber-500 focus:outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  N° Factura / Orden de Compra *
+                </label>
+                <input id="srv-doc" type="text" placeholder="Ej: Factura Electrónica N° 14890" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono focus:border-amber-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                Descripción del Trabajo Especializado *
+              </label>
+              <textarea id="srv-desc" rows="2" placeholder="Ej: Cromado duro de vástago de cilindro de basculamiento y rectificado en torno horizontal..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs focus:border-amber-500 focus:outline-none"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Monto Neto Facturado ($ CLP) *
+                </label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2.5 text-slate-500 font-mono text-xs">$</span>
+                  <input id="srv-costo" type="number" value="350000" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-7 pr-3 py-2.5 text-white text-xs font-mono font-bold focus:border-amber-500 focus:outline-none">
+                </div>
+              </div>
+
+              <div class="flex justify-end pt-5">
+                <button type="button" onclick="agregarServicioTercero()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-transform active:scale-95">
+                  <span>+ Registrar Servicio Externo</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLA DE SERVICIOS REGISTRADOS -->
+          <div class="space-y-3 pt-4 border-t border-slate-800/80">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-white uppercase tracking-wider">
+                Servicios Externos Cargados a esta OTM (1 Registro)
+              </h4>
+              <span class="text-xs font-mono text-emerald-400 font-bold">
+                Subtotal Terceros: <strong id="lbl-subtotal-srv" class="text-sm font-black">$ 350.000</strong>
+              </span>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 font-mono">
+                    <th class="p-3">Proveedor / Razón Social</th>
+                    <th class="p-3">Detalle del Servicio</th>
+                    <th class="p-3 w-36">N° Factura / OC</th>
+                    <th class="p-3 w-32 text-right">Monto Neto ($)</th>
+                    <th class="p-3 w-16 text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-srv-body" class="divide-y divide-slate-800/60 font-medium">
+                  <tr class="hover:bg-slate-800/30">
+                    <td class="p-3 font-bold text-white">Maestranza y Cromados del Sur SpA</td>
+                    <td class="p-3 text-slate-300">Rectificado y cromado duro de vástago pluma telescópica</td>
+                    <td class="p-3 font-mono text-amber-400">Fact. 12093</td>
+                    <td class="p-3 text-right font-mono font-black text-emerald-400">$ 350.000</td>
+                    <td class="p-3 text-center"><button class="text-rose-400 hover:text-rose-300 font-bold">✕</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-3">
+            <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block border-b border-slate-800 pb-2">
+              POLÍTICA DE SERVICIOS EXTERNOS
+            </span>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Todo gasto de tercero requiere respaldo de factura o guía de recepción conforme. Se prohíbe el cierre de la OTM si el monto neto difiere del documento tributario autorizado.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- FORMULARIO 6: CIERRE SUPERVISADO CON PIN Y BALANZA CUATRIPARTITA  -->
+    <!-- ================================================================= -->
+    <section id="view-f6" class="form-view hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <div class="lg:col-span-2 bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+            <div>
+              <span class="text-[11px] font-mono font-black text-amber-400 uppercase tracking-widest">FORMULARIO 6 • AUDITORÍA Y CIERRE DEFINITIVO</span>
+              <h3 class="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+                <span>Cierre Supervisado de OT con PIN de Autorización</span>
+                <span class="text-xs font-mono font-normal text-slate-400">(tmnt_ot_cierre)</span>
+              </h3>
+            </div>
+            <span class="text-xs font-mono font-bold text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+              OTM-2610-042
+            </span>
+          </div>
+
+          <!-- BALANZA FINANCIERA CUATRIPARTITA -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">
+              1. Balanza Financiera Consolidada del Mantenimiento
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-center">
+              <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">Materiales (F3)</span>
+                <div id="cierre-sub-mat" class="text-base font-mono font-black text-white mt-1">$ 440.500</div>
+              </div>
+              <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">Mano de Obra HH (F4)</span>
+                <div id="cierre-sub-hh" class="text-base font-mono font-black text-white mt-1">$ 180.000</div>
+              </div>
+              <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">Terceros (F5)</span>
+                <div id="cierre-sub-srv" class="text-base font-mono font-black text-white mt-1">$ 350.000</div>
+              </div>
+              <div class="bg-slate-950 p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-500/5">
+                <span class="text-[10px] text-emerald-400 font-bold uppercase block">Costo Total OTM</span>
+                <div id="cierre-total-consolidado" class="text-lg font-mono font-black text-emerald-400 mt-1">$ 970.500</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AUDITORÍA DE CONDICIONES PREVIAS (HARD GATES) -->
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">
+              2. Candados y Condiciones Previas para el Cierre
+            </h4>
+            <div class="space-y-2 text-xs">
+              <div class="flex items-center gap-2 text-emerald-400 font-medium">
+                <span>✅</span>
+                <span>Todas las tareas obligatorias del checklist han sido concluidas y validadas por el mecánico.</span>
+              </div>
+              <div class="flex items-center gap-2 text-emerald-400 font-medium">
+                <span>✅</span>
+                <span>Registro de insumos y lubricantes con respaldo de documento de compra / bodega.</span>
+              </div>
+              <div class="flex items-center gap-2 text-emerald-400 font-medium">
+                <span>✅</span>
+                <span>Horómetro final de salida del taller registrado: <strong class="font-mono text-white">4.825,0 hrs</strong> (delta de prueba: 4.5 hrs).</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- INGRESO DEL PIN DE AUTORIZACIÓN (TECLADO DIGITAL / INPUT) -->
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  3. PIN de Seguridad del Supervisor Autorizador *
+                </label>
+                <p class="text-[11px] text-slate-400">Requiere el código secreto de 4 dígitos de Jorge Ponce (Jefe Taller)</p>
+              </div>
+              <span class="text-[10px] font-mono text-slate-500">PIN DEMO: 1234</span>
+            </div>
+
+            <!-- PIN DISPLAY & INPUT -->
+            <div class="flex justify-center my-4">
+              <div class="flex gap-3">
+                <div id="pin-dot-1" class="w-12 h-14 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center text-2xl font-mono font-black text-amber-400">·</div>
+                <div id="pin-dot-2" class="w-12 h-14 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center text-2xl font-mono font-black text-amber-400">·</div>
+                <div id="pin-dot-3" class="w-12 h-14 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center text-2xl font-mono font-black text-amber-400">·</div>
+                <div id="pin-dot-4" class="w-12 h-14 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center text-2xl font-mono font-black text-amber-400">·</div>
+              </div>
+            </div>
+
+            <!-- PIN PAD NUMÉRICO INTERACTIVO -->
+            <div class="max-w-xs mx-auto grid grid-cols-3 gap-2.5">
+              <button onclick="pressPin('1')" class="py-3 bg-slate-950 hover:bg-slate-800 text-white font-mono font-bold text-lg rounded-xl border border-slate-800 transition-colors">1</button>
+              <button onclick="pressPin('2')" class="py-3 bg-slate-950 hover:bg-slate-800 text-white font-mono font-bold text-lg rounded-xl border border-slate-800 transition-colors">2</button>
+              <button onclick="pressPin('3')" class="py-3 bg-slate-950 hover:bg-slate-800 text-white font-mono font-bold text-lg rounded-xl border border-slate-800 transition-colors">3</button>
+              <button onclick="pressPin('4')" class="py-3 bg-slate-950 hover:bg-slate-800 text-white font-mono font-bold text-lg rounded-xl border border-slate-800 transition-colors">4</button>
+              <button onclick="pressPin('5')" class="py-3 bg-slate-950 hover:bg-slate-800 text-white font-mono font-bold text-lg rounded-xl border border-slate-800 transition-colors">5</button>
+              <button onclick="pressPin('6')" class="py-3 bg-slate-950 hover:bg-slate-800 text-white font-mono font-bold text-lg rounded-xl border border-slate-800 transition-colors">6</button>
+              <button onclick="pressPin('7')" class="py-3 bg-slate-950 hover:bg-slate-800 text-white font-mono font-bold text-lg rounded-xl border border-slate-800 transition-colors">7</button>
+              <button onclick="pressPin('8')" class="py-3 bg-slate-950 hover:bg-slate-800 text-white font-mono font-bold text-lg rounded-xl border border-slate-800 transition-colors">8</button>
+              <button onclick="pressPin('9')" class="py-3 bg-slate-950 hover:bg-slate-800 text-white font-mono font-bold text-lg rounded-xl border border-slate-800 transition-colors">9</button>
+              <button onclick="clearPin()" class="py-3 bg-slate-950 hover:bg-rose-950 text-rose-400 font-bold text-xs uppercase rounded-xl border border-slate-800 transition-colors">Borrar</button>
+              <button onclick="pressPin('0')" class="py-3 bg-slate-950 hover:bg-slate-800 text-white font-mono font-bold text-lg rounded-xl border border-slate-800 transition-colors">0</button>
+              <button onclick="validarPinYCerrar()" class="py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase rounded-xl border border-emerald-500 transition-colors shadow-lg shadow-emerald-600/30">Cerrar</button>
+            </div>
+
+            <!-- MENSAJE DE VALIDACIÓN -->
+            <div id="pin-feedback" class="text-center text-xs font-bold pt-2 hidden"></div>
+          </div>
+        </div>
+
+        <!-- PANEL DE EFECTOS DEL CIERRE -->
+        <div class="space-y-4">
+          <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
+            <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block border-b border-slate-800 pb-2">
+              EFECTO INMUTABLE DEL CIERRE
+            </span>
+
+            <div class="space-y-3 text-xs text-slate-300">
+              <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                <span class="text-amber-400 font-bold block">1. Transición de la OTM:</span>
+                <p class="text-slate-400">Pasa de <code class="text-white">EN_PROCESO</code> a <code class="text-emerald-400 font-bold">CERRADA</code>. No admitirá más imputación de HH ni repuestos.</p>
+              </div>
+
+              <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                <span class="text-amber-400 font-bold block">2. Liberación de la Grúa:</span>
+                <p class="text-slate-400">El activo <strong class="text-white">GR-01 Liebherr LTM 1070</strong> pasa inmediatamente a estado <code class="text-emerald-400 font-bold">OPERATIVO</code> en la consola de despacho de Torre de Control.</p>
+              </div>
+
+              <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                <span class="text-amber-400 font-bold block">3. Registro de Auditoría:</span>
+                <p class="text-slate-400">Se genera hash SHA-256 en <code class="text-slate-200">tmnt_ot_cierre</code> con timestamp, id de supervisor, horómetro final y desglose financiero.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- FORMULARIO 7: EXPEDIENTE OTM 360° INTEGRADO (VISTA COMPLETA)       -->
+    <!-- ================================================================= -->
+    <section id="view-f7" class="form-view hidden space-y-6">
+      <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+        
+        <!-- Header del Expediente OTM -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+          <div class="flex items-center gap-4">
+            <div class="p-3 bg-cyan-500/10 text-cyan-400 rounded-xl border border-cyan-500/30 font-mono font-black text-xl">
+              OTM
+            </div>
+            <div>
+              <div class="flex items-center gap-3">
+                <h3 class="text-xl font-black text-white font-mono">OTM-2610-042</h3>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  EN_PROCESO
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                  PREVENTIVO 250H
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">
+                Activo: <strong class="text-white">GR-01 | Liebherr LTM 1070-4.2</strong> (Patente GZBC-43) • Supervisor: <strong>Jorge Ponce</strong> • Apertura: 07-Oct-2026 08:30
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4 text-right">
+            <div>
+              <span class="text-[10px] text-slate-500 uppercase font-mono block">Costo Acumulado Real</span>
+              <span class="text-xl font-mono font-black text-emerald-400">$ 970.500</span>
+            </div>
+            <button onclick="switchTab('f6')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/20">
+              Proceder al Cierre con PIN ➔
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Strip Integrado -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Horómetro Ingreso</span>
+            <span class="text-lg font-mono font-black text-white">4.820,5 hrs</span>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Checklist Tareas</span>
+            <span class="text-lg font-mono font-black text-emerald-400">4 / 6 OK (66%)</span>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">HH Consumidas</span>
+            <span class="text-lg font-mono font-black text-amber-400">10.5 hrs</span>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Insumos y Repuestos</span>
+            <span class="text-lg font-mono font-black text-cyan-400">3 Registros</span>
+          </div>
+        </div>
+
+        <!-- Matriz de las 3 Fuentes de Costo en Paralelo -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Col 1: Materiales -->
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-800/80 pb-2">
+              <span class="text-xs font-bold text-amber-400 uppercase">🛢️ Insumos Manuales</span>
+              <span class="font-mono text-xs font-bold text-white">$ 440.500</span>
+            </div>
+            <ul class="text-xs space-y-2 text-slate-300">
+              <li class="flex justify-between"><span>Aceite Shell Tellus 68 (40L)</span><strong class="font-mono text-slate-200">$340.000</strong></li>
+              <li class="flex justify-between"><span>Filtro Aceite Mann W940 (2u)</span><strong class="font-mono text-slate-200">$76.000</strong></li>
+              <li class="flex justify-between"><span>Filtro Racor 2010PM (1u)</span><strong class="font-mono text-slate-200">$24.500</strong></li>
+            </ul>
+          </div>
+
+          <!-- Col 2: Mano de Obra -->
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-800/80 pb-2">
+              <span class="text-xs font-bold text-amber-400 uppercase">🔧 Mano de Obra HH</span>
+              <span class="font-mono text-xs font-bold text-white">$ 180.000</span>
+            </div>
+            <ul class="text-xs space-y-2 text-slate-300">
+              <li class="flex justify-between"><span>C. Navarrete (4.5 hrs)</span><strong class="font-mono text-slate-200">$81.000</strong></li>
+              <li class="flex justify-between"><span>M. Venegas (6.0 hrs)</span><strong class="font-mono text-slate-200">$99.000</strong></li>
+            </ul>
+          </div>
+
+          <!-- Col 3: Servicios Terceros -->
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-800/80 pb-2">
+              <span class="text-xs font-bold text-amber-400 uppercase">🏭 Servicios Externos</span>
+              <span class="font-mono text-xs font-bold text-white">$ 350.000</span>
+            </div>
+            <ul class="text-xs space-y-2 text-slate-300">
+              <li class="flex justify-between"><span>Cromado Vástago (Maestranza)</span><strong class="font-mono text-slate-200">$350.000</strong></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- SCRIPTS INTERACTIVOS (LOGICA REACTIVA DEL DISEÑO) -->
+  <script>
+    // Tab switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.form-view').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-500', 'text-slate-950', 'shadow-lg', 'shadow-amber-500/20');
+        btn.classList.add('text-slate-400');
+      });
+
+      const targetView = document.getElementById('view-' + tabId);
+      const targetBtn = document.getElementById('tab-' + tabId);
+      if (targetView && targetBtn) {
+        targetView.classList.remove('hidden');
+        targetBtn.classList.remove('text-slate-400');
+        targetBtn.classList.add('bg-amber-500', 'text-slate-950', 'shadow-lg', 'shadow-amber-500/20');
+      }
+    }
+
+    // Toggle Preventivo vs Correctivo
+    function setTipoMantenimiento(tipo) {
+      const btnPrev = document.getElementById('btn-tipo-prev');
+      const btnCorr = document.getElementById('btn-tipo-corr');
+      const bloquePrev = document.getElementById('bloque-preventivo');
+      const bloqueCorr = document.getElementById('bloque-correctivo');
+
+      if (tipo === 'PREVENTIVO') {
+        btnPrev.className = 'py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all bg-blue-500/20 text-blue-400 border border-blue-500/40 shadow-lg';
+        btnCorr.className = 'py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all text-slate-400 hover:text-white';
+        bloquePrev.classList.remove('hidden');
+        bloqueCorr.classList.add('hidden');
+      } else {
+        btnCorr.className = 'py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-lg';
+        btnPrev.className = 'py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all text-slate-400 hover:text-white';
+        bloqueCorr.classList.remove('hidden');
+        bloquePrev.classList.add('hidden');
+      }
+    }
+
+    // Fleet selector reactivity
+    const fleetData = {
+      'GR-01': { nombre: 'Liebherr LTM 1070-4.2', patente: 'GZBC-43', horometro: 4820.5 },
+      'GR-04': { nombre: 'Liebherr LTM 1250-5.1', patente: 'GZBC-61', horometro: 6114.0 },
+      'GR-07': { nombre: 'Grove GMK 5220', patente: 'HDKL-12', horometro: 3940.5 },
+      'CP-03': { nombre: 'Mercedes Actros + Fassi 455', patente: 'JRPW-99', horometro: 5410.0 },
+      'TR-02': { nombre: 'Scania R500 Cama Baja', patente: 'PAD-33', horometro: 8200.0 }
+    };
+
+    function actualizarEquipoSeleccionado() {
+      const val = document.getElementById('select-equipo').value;
+      const data = fleetData[val];
+      if (data) {
+        document.getElementById('card-codigo').textContent = val;
+        document.getElementById('card-nombre').textContent = data.nombre;
+        document.getElementById('card-patente').textContent = 'Patente: ' + data.patente;
+        document.getElementById('input-horometro').value = data.horometro;
+      }
+    }
+
+    // Material calculations
+    function calcularTotalMaterial() {
+      const cant = parseFloat(document.getElementById('mat-cant').value) || 0;
+      const costo = parseFloat(document.getElementById('mat-costo-unit').value) || 0;
+      const total = cant * costo;
+      document.getElementById('mat-total-preview').textContent = '$ ' + total.toLocaleString('es-CL');
+    }
+
+    function agregarMaterialManual() {
+      const desc = document.getElementById('mat-desc').value.trim();
+      const cant = parseFloat(document.getElementById('mat-cant').value) || 0;
+      const um = document.getElementById('mat-um').value;
+      const costo = parseFloat(document.getElementById('mat-costo-unit').value) || 0;
+      const doc = document.getElementById('mat-doc').value.trim() || 'Interno Taller';
+
+      if (!desc || cant <= 0 || costo <= 0) {
+        alert('Por favor complete la descripción, cantidad y costo unitario válido.');
+        return;
+      }
+
+      const total = cant * costo;
+      const tbody = document.getElementById('tabla-materiales-body');
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-800/30';
+      tr.innerHTML = `
+        <td class="p-3 font-semibold text-white">${desc}</td>
+        <td class="p-3 text-right font-mono font-bold text-amber-400">${cant.toFixed(1)}</td>
+        <td class="p-3 font-mono text-slate-400">${um}</td>
+        <td class="p-3 text-right font-mono text-slate-300">$ ${costo.toLocaleString('es-CL')}</td>
+        <td class="p-3 text-right font-mono font-black text-emerald-400">$ ${total.toLocaleString('es-CL')}</td>
+        <td class="p-3 font-mono text-slate-400 text-[11px]">${doc}</td>
+        <td class="p-3 text-center"><button onclick="this.closest('tr').remove()" class="text-rose-400 hover:text-rose-300 font-bold">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      // Clean
+      document.getElementById('mat-desc').value = '';
+      alert('Material ' + desc + ' imputado exitosamente a la OTM-2610-042');
+    }
+
+    // HH calculations
+    function calcularTotalHh() {
+      const horas = parseFloat(document.getElementById('hh-horas').value) || 0;
+      const tarifa = parseFloat(document.getElementById('hh-tarifa').value) || 0;
+      const total = horas * tarifa;
+      document.getElementById('hh-total-preview').textContent = '$ ' + total.toLocaleString('es-CL');
+    }
+
+    function agregarHhManual() {
+      const tec = document.getElementById('hh-tecnico').value;
+      const desc = document.getElementById('hh-desc').value.trim();
+      const horas = parseFloat(document.getElementById('hh-horas').value) || 0;
+      const tarifa = parseFloat(document.getElementById('hh-tarifa').value) || 0;
+
+      if (!desc || horas <= 0 || tarifa <= 0) {
+        alert('Complete la descripción del trabajo, horas reales y tarifa.');
+        return;
+      }
+
+      const total = horas * tarifa;
+      const tbody = document.getElementById('tabla-hh-body');
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-800/30';
+      tr.innerHTML = `
+        <td class="p-3 font-bold text-white">${tec}</td>
+        <td class="p-3 text-slate-300">${desc}</td>
+        <td class="p-3 text-right font-mono font-bold text-amber-400">${horas.toFixed(1)} hrs</td>
+        <td class="p-3 text-right font-mono text-slate-300">$ ${tarifa.toLocaleString('es-CL')}</td>
+        <td class="p-3 text-right font-mono font-black text-emerald-400">$ ${total.toLocaleString('es-CL')}</td>
+        <td class="p-3 text-center"><button onclick="this.closest('tr').remove()" class="text-rose-400 hover:text-rose-300 font-bold">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+      document.getElementById('hh-desc').value = '';
+      alert('Horas hombre de ' + tec + ' imputadas con éxito.');
+    }
+
+    // External Service
+    function agregarServicioTercero() {
+      const prov = document.getElementById('srv-prov').value.trim();
+      const doc = document.getElementById('srv-doc').value.trim();
+      const desc = document.getElementById('srv-desc').value.trim();
+      const costo = parseFloat(document.getElementById('srv-costo').value) || 0;
+
+      if (!prov || !doc || !desc || costo <= 0) {
+        alert('Todos los campos del servicio externo son obligatorios.');
+        return;
+      }
+
+      const tbody = document.getElementById('tabla-srv-body');
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-800/30';
+      tr.innerHTML = `
+        <td class="p-3 font-bold text-white">${prov}</td>
+        <td class="p-3 text-slate-300">${desc}</td>
+        <td class="p-3 font-mono text-amber-400">${doc}</td>
+        <td class="p-3 text-right font-mono font-black text-emerald-400">$ ${costo.toLocaleString('es-CL')}</td>
+        <td class="p-3 text-center"><button onclick="this.closest('tr').remove()" class="text-rose-400 hover:text-rose-300 font-bold">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+      document.getElementById('srv-desc').value = '';
+      alert('Servicio de ' + prov + ' registrado exitosamente.');
+    }
+
+    // Checklist add
+    function agregarTareaChecklist() {
+      const desc = document.getElementById('new-tarea-desc').value.trim();
+      const hh = parseFloat(document.getElementById('new-tarea-hh').value) || 1.0;
+      const tec = document.getElementById('new-tarea-tec').value;
+
+      if (!desc) {
+        alert('Indique la descripción de la tarea.');
+        return;
+      }
+
+      const tbody = document.getElementById('tabla-checklist-body');
+      const rowCount = tbody.querySelectorAll('tr').length + 1;
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-800/40 transition-colors';
+      tr.innerHTML = `
+        <td class="p-3.5 text-center font-mono font-bold text-slate-500">${rowCount < 10 ? '0' + rowCount : rowCount}</td>
+        <td class="p-3.5">
+          <div class="font-bold text-white text-sm">${desc}</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Tarea extraordinaria añadida a la pauta.</div>
+        </td>
+        <td class="p-3.5 font-mono text-white">${hh.toFixed(1)} hrs</td>
+        <td class="p-3.5 font-semibold text-slate-300">${tec}</td>
+        <td class="p-3.5">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700">
+            <span>⭕</span> PENDIENTE
+          </span>
+        </td>
+        <td class="p-3.5 text-center">
+          <button onclick="this.closest('tr').remove()" class="text-rose-400 hover:text-rose-300 font-bold text-xs">Eliminar</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+      document.getElementById('new-tarea-desc').value = '';
+      alert('Tarea agregada exitosamente al checklist.');
+    }
+
+    // PIN pad logic
+    let enteredPin = '';
+    function pressPin(digit) {
+      if (enteredPin.length < 4) {
+        enteredPin += digit;
+        updatePinDisplay();
+      }
+    }
+
+    function clearPin() {
+      enteredPin = '';
+      updatePinDisplay();
+      document.getElementById('pin-feedback').classList.add('hidden');
+    }
+
+    function updatePinDisplay() {
+      for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById('pin-dot-' + i);
+        if (i <= enteredPin.length) {
+          dot.textContent = '●';
+          dot.classList.add('border-amber-500', 'bg-amber-950/40');
+        } else {
+          dot.textContent = '·';
+          dot.classList.remove('border-amber-500', 'bg-amber-950/40');
+        }
+      }
+    }
+
+    function validarPinYCerrar() {
+      const feedback = document.getElementById('pin-feedback');
+      feedback.classList.remove('hidden');
+
+      if (enteredPin === '1234') {
+        feedback.className = 'text-center text-xs font-black pt-2 text-emerald-400 uppercase tracking-widest';
+        feedback.innerHTML = '✅ PIN AUTORIZADO CORRECTAMENTE • OTM-2610-042 CERRADA DEFINITIVAMENTE';
+        setTimeout(() => {
+          alert('¡OTM-2610-042 CERRADA EXITOSAMENTE!\n\n• Costo Total Consolidado: $ 970.500\n• Equipo GR-01 Liebherr LTM 1070 liberado y en estado OPERATIVO.');
+          switchTab('f7');
+        }, 600);
+      } else {
+        feedback.className = 'text-center text-xs font-black pt-2 text-rose-400 uppercase tracking-widest';
+        feedback.innerHTML = '❌ PIN INCORRECTO. INTENTE NUEVAMENTE (DEMO: 1234)';
+        clearPin();
+      }
+    }
+
+    function simularCreacionOt() {
+      alert('¡OT Creada con Éxito!\n\nFolio: OTM-2610-042\nEquipo: GR-01 (Liebherr LTM 1070-4.2)\nTipo: MANTENCIÓN PREVENTIVA\nHorómetro Entrada: 4.820,5 hrs\n\nNavegando a Checklist Operativo...');
+      switchTab('f2');
+    }
+  </script>
+</body>
+</html>

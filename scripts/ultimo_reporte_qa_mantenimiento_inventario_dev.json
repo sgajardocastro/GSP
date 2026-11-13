@@ -1,0 +1,127 @@
+{
+  "timestamp": "2026-10-21T12:38:52.177Z",
+  "total_pruebas": 13,
+  "pasadas": 13,
+  "falladas": 0,
+  "tasa_exito": "100%",
+  "dictamen": "APROBADO",
+  "resultados": [
+    {
+      "code": "TC-M01",
+      "name": "Apertura / Consulta de OT en DEV (GET /api/mantenimiento/ots/:id)",
+      "input": "{\"id_ot\":\"17\"}",
+      "expected": "HTTP 200, OT activa y medidores de flota presentes (horometro: 100, odometro: 5000)",
+      "actual": "HTTP 200, OT #MNT-2610-014, Horómetro: 100.00, Odómetro: 5000.0",
+      "passed": true,
+      "details": "Lectura íntegra de cabecera y medidores del activo"
+    },
+    {
+      "code": "TC-M02",
+      "name": "Registro de Medidores de Entrada en OT (PUT /api/mantenimiento/ots/:id/medidores-inicio)",
+      "input": "{\"horometro_grua_inicio\":105,\"horometro_chasis_inicio\":85,\"odometro_inicio\":5050}",
+      "expected": "HTTP 200, medidores persistidos en BD (horometro_grua: 105, chasis: 85, odometro: 5050)",
+      "actual": "HTTP 200, BD: Grua=105, Chasis=85, Odo=5050",
+      "passed": true,
+      "details": "Validación canónica Spec 71 / MantenimientoView"
+    },
+    {
+      "code": "TC-M03",
+      "name": "Registro de Mano de Obra HH (POST /api/mantenimiento/ots/:id/hh)",
+      "input": "{\"rut_tecnico\":\"18236231-K\",\"nombre_tecnico\":\"Héctor Paredes Araya (Técnico QA)\",\"horas\":2,\"descripcion_trabajo\":\"Inspección de actuadores y pruebas de presión QA\"}",
+      "expected": "HTTP 201, Costo calculado automático = $30.000 (2h x $15.000), Técnico persistido",
+      "actual": "HTTP 201, Costo: $30000.00, Técnico: Héctor Paredes Araya (Técnico QA), ID HH: 9",
+      "passed": true,
+      "details": "Cálculo basado en parámetro tmnt_parametro.tarifa_hh_default"
+    },
+    {
+      "code": "TC-M04",
+      "name": "Insumo Bodega WMS con Saldo Disponible (POST /api/mantenimiento/ots/:id/materiales)",
+      "input": "{\"origen_insumo\":\"BODEGA_WMS\",\"id_producto\":2849,\"id_ubicacion\":7,\"cantidad\":1}",
+      "expected": "HTTP 201, Stock físico decrementa a 9, asiento SALIDA_OT generado en Kardex con PMP",
+      "actual": "HTTP 201, Stock BD: 9, Kardex Mov #675 [SALIDA_OT, Folio: OT-17, PMP: $418]",
+      "passed": true,
+      "details": "Validación de consistencia transaccional y enlace WMS"
+    },
+    {
+      "code": "TC-M05",
+      "name": "Regla dura de Stock Cero WMS (Validación de exceso de cantidad)",
+      "input": "{\"origen_insumo\":\"BODEGA_WMS\",\"id_producto\":2849,\"id_ubicacion\":7,\"cantidad\":999999}",
+      "expected": "HTTP 400 con mensaje \"Stock insuficiente\", stock físico inmutable sin corrupción de BD",
+      "actual": "HTTP 400, Mensaje: \"Stock insuficiente en bodega para el producto NEUM-00002. Solicitado: 999999, Disponible: 9.\", Stock BD preservado en 9",
+      "passed": true,
+      "details": "Candado duro contra inventario negativo"
+    },
+    {
+      "code": "TC-M06",
+      "name": "Insumo Compra Directa / Terreno (POST /api/mantenimiento/ots/:id/materiales)",
+      "input": "{\"origen_insumo\":\"COMPRA_DIRECTA\",\"descripcion_material\":\"Insumo QA Compra Directa Terreno\",\"cantidad\":2,\"unidad_medida\":\"UNIDAD\",\"costo_unitario\":12500,\"proveedor_o_documento\":\"Ferretería Industrial QA\",\"numero_documento_compra\":\"FAC-QA-4835\"}",
+      "expected": "HTTP 201, Costo manual $12.500 y Factura registrados, id_movimiento_kardex = NULL, tinv_stock intacto",
+      "actual": "HTTP 201, ID Repuesto: 21, Factura: FAC-QA-4835, Kardex: null, Stock WMS intacto",
+      "passed": true,
+      "details": "Aislamiento de compras directas frente al inventario valorizado"
+    },
+    {
+      "code": "TC-M07",
+      "name": "Reversión / Anulación de Insumo Bodega WMS (DELETE /api/mantenimiento/materiales/:id)",
+      "input": "{\"id_ot_repuesto\":\"20\"}",
+      "expected": "HTTP 200, Restitución física en tinv_stock (10 == 10), asiento DEVOLUCION_OT en Kardex",
+      "actual": "HTTP 200, Stock restituido a 10, Asiento Kardex #676 [DEVOLUCION_OT, Reversa #675]",
+      "passed": true,
+      "details": "Trazabilidad bidireccional y balance perfecto de existencias"
+    },
+    {
+      "code": "TC-M08",
+      "name": "Validación de Regla de Horómetro y Cierre FES de OT (POST /api/mantenimiento/ots/:id/cerrar)",
+      "input": "{\"paso1\":{\"pin\":\"1234\",\"horometro_cierre\":50,\"id_user_cierre\":55},\"paso2\":{\"pin\":\"1234\",\"horometro_cierre\":110,\"id_user_cierre\":55,\"observacion_final\":\"Cierre supervisado QA determinista\",\"diagnostico_final\":\"Prueba E2E ejecutada con éxito\"}}",
+      "expected": "Paso 1: HTTP 422 rechazo por horómetro menor. Paso 2: HTTP 200 CERRADA, Balance total = $55.000",
+      "actual": "Paso 1: HTTP 422 (\"El horómetro de cierre (50) no puede ser menor al horómetro de inicio (105.00).\"), Paso 2: HTTP 200, Estado: CERRADA, Total OT: $55000",
+      "passed": true,
+      "details": "Validación de reglas de negocio de cierre, PIN FES y liquidación contable"
+    },
+    {
+      "code": "TC-I01",
+      "name": "Consulta de Productos y Ubicación Física (GET /api/inventario/productos y ubicaciones)",
+      "input": "{\"endpoints\":[\"/inventario/productos\",\"/inventario/ubicaciones\",\"/inventario/existencias\"]}",
+      "expected": "HTTP 200, Retorno de catálogo completo y casillero físico de estantería (estanteria, nivel, codigo)",
+      "actual": "Catálogo: 2854 items, Ubicaciones: 63 racks, Existencias mapeadas a casillero físico",
+      "passed": true,
+      "details": "Validación del modelo WMS con ubicación física por estantería/nivel"
+    },
+    {
+      "code": "TC-I02",
+      "name": "Recepción de Materiales (POST /api/inventario/recepciones [RECEPCION_COMPRA])",
+      "input": "{\"tipo_ingreso\":\"COMPRA\",\"proveedor_o_origen\":\"Distribuidora Industrial QA SpA\",\"documento_referencia\":\"OC-QA-8941\",\"lineas\":[{\"id_producto\":2849,\"cantidad_recibida\":2,\"costo_unitario_moneda\":2500,\"id_ubicacion_destino\":7,\"lote_texto\":\"LOTE-QA-2026\"}]}",
+      "expected": "HTTP 201 CONFIRMADA, Incremento de stock a 12, asiento RECEPCION_COMPRA en Kardex",
+      "actual": "HTTP 201, Folio: REC-2610-0002, Stock BD: 12 (+2), Kardex Mov #677 [RECEPCION_COMPRA]",
+      "passed": true,
+      "details": "Validación de ingreso formal de insumos a bodega"
+    },
+    {
+      "code": "TC-I03",
+      "name": "Consulta de Kardex y Trazabilidad (GET /api/inventario/kardex)",
+      "input": "{\"endpoint\":\"/inventario/kardex\"}",
+      "expected": "HTTP 200, Presencia y coherencia de asientos SALIDA_OT, DEVOLUCION_OT y RECEPCION_COMPRA",
+      "actual": "HTTP 200, Total Movimientos: 150, SALIDA_OT: true, DEVOLUCION_OT: true, RECEPCION_COMPRA: true",
+      "passed": true,
+      "details": "Auditoría y trazabilidad integral del Kardex inmutable"
+    },
+    {
+      "code": "TC-F01",
+      "name": "Disponibilidad Frontend Web (https://servidor.leanglobal.cl/lg-gsp-dev/)",
+      "input": "{\"url\":\"https://servidor.leanglobal.cl/lg-gsp-dev/\"}",
+      "expected": "HTTP 200 OK, Content-Type: text/html",
+      "actual": "HTTP 200, Content-Type: text/html",
+      "passed": true,
+      "details": "Servicio Web operativo bajo Nginx"
+    },
+    {
+      "code": "TC-F02",
+      "name": "Disponibilidad Frontend PWA (https://servidor.leanglobal.cl/pwa-gsp-dev/)",
+      "input": "{\"url\":\"https://servidor.leanglobal.cl/pwa-gsp-dev/\"}",
+      "expected": "HTTP 200 OK, Content-Type: text/html",
+      "actual": "HTTP 200, Content-Type: text/html",
+      "passed": true,
+      "details": "Servicio PWA operativo bajo Nginx"
+    }
+  ]
+}

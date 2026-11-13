@@ -84,14 +84,25 @@
           </select>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Fecha Programada</label>
-          <input 
-            type="date" 
-            v-model="form.fecha_visita" 
-            required
-            class="w-full bg-[#050810] border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-amber-500 transition-colors [color-scheme:dark]" 
-          />
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Fecha Programada *</label>
+            <input 
+              type="date" 
+              v-model="form.fecha_visita" 
+              required
+              class="w-full bg-[#050810] border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-amber-500 transition-colors [color-scheme:dark]" 
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">Hora Programada *</label>
+            <input 
+              type="time" 
+              v-model="form.hora_visita" 
+              required
+              class="w-full bg-[#050810] border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-amber-500 transition-colors [color-scheme:dark]" 
+            />
+          </div>
         </div>
 
         <div>
@@ -177,6 +188,7 @@ const especialistas = ref([])
 const form = ref({
   id_ejecutor: '',
   fecha_visita: '',
+  hora_visita: '09:00',
   comentarios_coordinador: ''
 })
 
@@ -207,7 +219,8 @@ onMounted(async () => {
     // Cargar usuarios / especialistas
     try {
       const usersRes = await apiAxios.get('/servicio/leanglobal/obtenerUsuarios')
-      especialistas.value = Array.isArray(usersRes.data) ? usersRes.data : []
+      const rawUsers = Array.isArray(usersRes.data?.data) ? usersRes.data.data : (Array.isArray(usersRes.data) ? usersRes.data : [])
+      especialistas.value = rawUsers.filter(u => u && u.activo !== false && u.activo !== 0 && u.activo !== 'f' && u.activo !== 'false' && u.flag_activo !== false && u.is_active !== false)
     } catch (e) {
       console.warn("No se pudo cargar especialistas", e)
       especialistas.value = []
@@ -310,6 +323,9 @@ const confirmarConPin = async () => {
     }
 
     // 2. Crear e instanciar survey de Visita a Terreno vía API oficial POST /api/survey con body_exec poblado
+    const horaProg = (form.value.hora_visita && form.value.hora_visita.trim()) ? form.value.hora_visita.trim() : '09:00'
+    const timestampCompleto = `${form.value.fecha_visita}T${horaProg.length === 5 ? horaProg + ':00' : horaProg}`
+
     const payloadSurvey = {
       id_tipo_srv: 2,
       id_template: 80,
@@ -323,8 +339,8 @@ const confirmarConPin = async () => {
       header_exec: JSON.stringify(headerSeed),
       body_exec: JSON.stringify(bodySeed),
       approval_exec: JSON.stringify(approvalSeed),
-      fecha_plan_ini: form.value.fecha_visita,
-      fecha_plan_fin: form.value.fecha_visita,
+      fecha_plan_ini: timestampCompleto,
+      fecha_plan_fin: timestampCompleto,
       latitud: proyectoData.value.coordenadas_mapa?.lat || null,
       longitud: proyectoData.value.coordenadas_mapa?.lng || null,
       id_proyecto: proyectoData.value.id_proyecto,
@@ -345,7 +361,8 @@ const confirmarConPin = async () => {
 
     await apiAxios.post(`/visitas/token/${token}/asignar`, {
       id_ejecutor: form.value.id_ejecutor,
-      fecha_visita: form.value.fecha_visita,
+      fecha_visita: timestampCompleto,
+      hora_visita: horaProg,
       id_coordinador: proyectoData.value.coordinador?.id_user || storageUser?.id_user || null,
       comentarios_coordinador: form.value.comentarios_coordinador || '',
       fes_pin_hash: pinHash

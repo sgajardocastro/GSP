@@ -1,8 +1,14 @@
 # Especificación Técnica Nº 56: Ajustes Operacionales de Segunda Sesión de Marcha Blanca — Prevencionista Fantasma, Reasignación Centralizada, Rigger Bajo Operador y Filtros con Advertencia de Capacidad
 
-* **Código de Especificación**: `Spec 56`
+> [!NOTE]
+> **DOCUMENTO CONSOLIDADO EN SPEC 16 (SECCIÓN 14)**  
+> Esta especificación corresponde al delta operacional de la Segunda Sesión de Marcha Blanca (`REQ-017` / Portal Web v1.0.62) implementado sobre el módulo `GestorOportunidades.vue`.  
+> Por coherencia de gobernanza y preservación de la especificación madre del Gestor de Oportunidades, este contenido ha sido formalmente anexado e integrado como **Sección 14 de `Spec 16`** (`16_crm_gestor_oportunidades_spec.md`).  
+> Este documento se conserva únicamente con fines de trazabilidad histórica de versiones.
+
+* **Código de Especificación**: `Spec 56` (Consolidada en `Spec 16`)
 * **Archivo**: `.agents/specs/56_ajustes_operacionales_segunda_sesion_marcha_blanca_spec.md`
-* **Versión**: `1.0.0`
+* **Versión**: `1.0.0 (Archivada / Integrada en Spec 16)`
 * **Fecha**: `30 de Septiembre de 2026`
 * **Requerimiento Backlog**: `REQ-017`
 * **Versión SemVer**: `Portal Web GSP v1.0.62`
@@ -82,7 +88,7 @@ Durante la Segunda Sesión de Marcha Blanca en vivo con la Gerencia General (Jor
 1. **Agrupación en Dos Niveles (`getEquiposAgrupados`):**
    * El `<select>` de asignación de equipos se estructura en dos `<optgroup>` semánticos:
      - **Grupo 1 (`🎯 Equipos Sugeridos (Compromiso Comercial)`):** Grúas que cumplen con la subcategoría/tonelaje comercialmente pactado.
-     - **Grupo 2 (`🚜 Flota Alternativa / Mayores Prestaciones`):** Toda la flota disponible en el maestro para cubrir indisponibilidades de última hora.
+     - **Grupo 2 (`🚚 Flota Alternativa / Mayores Prestaciones`):** Toda la flota disponible en el maestro para cubrir indisponibilidades de última hora.
 2. **Aviso de Mayor Prestación:**
    * Si el usuario selecciona un equipo perteneciente al Grupo 2 (*Alternativas / Mayores Prestaciones*), el sistema renderiza un banner informativo destacado bajo el selector:
      ```html
