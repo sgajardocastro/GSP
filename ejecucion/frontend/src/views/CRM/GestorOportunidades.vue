@@ -7553,6 +7553,44 @@ const guardarCambiosAsignacion = async () => {
         }
       })
 
+      // REQ-1105 / SPEC-22: Extraer operadores asignados directamente en el árbol de servicios
+      ;(servicios.value || []).forEach(s => {
+        const esTransporte = (s.linea_servicio || '').toUpperCase().includes('TRANSP') || (s.tipo && s.tipo.includes('CAMION'))
+        const cargoSrv = esTransporte ? 'Chofer Transporte' : 'Operador Grúa'
+        if (s.operador_asignado_id && !isNaN(parseInt(s.operador_asignado_id))) {
+          const uid = parseInt(s.operador_asignado_id)
+          if (!mapPersonas.has(uid)) {
+            mapPersonas.set(uid, { id_user: uid, cargo: cargoSrv, id_linea_servicio: s.id_linea })
+          }
+        }
+        if (s.primario?.operador_asignado_id && !isNaN(parseInt(s.primario.operador_asignado_id))) {
+          const uid = parseInt(s.primario.operador_asignado_id)
+          if (!mapPersonas.has(uid)) {
+            mapPersonas.set(uid, { id_user: uid, cargo: cargoSrv, id_linea_servicio: s.primario.id_linea })
+          }
+        }
+        if (Array.isArray(s.turnos_operadores)) {
+          s.turnos_operadores.forEach(t => {
+            if (t.operador_id && !isNaN(parseInt(t.operador_id))) {
+              const uid = parseInt(t.operador_id)
+              if (!mapPersonas.has(uid)) {
+                mapPersonas.set(uid, { id_user: uid, cargo: cargoSrv, fecha_plan_ini: t.fecha_ini, fecha_plan_fin: t.fecha_fin, id_linea_servicio: s.id_linea })
+              }
+            }
+          })
+        }
+        if (Array.isArray(s.ramas)) {
+          s.ramas.forEach(r => {
+            if (r.operador_asignado_id && !isNaN(parseInt(r.operador_asignado_id))) {
+              const uid = parseInt(r.operador_asignado_id)
+              if (!mapPersonas.has(uid)) {
+                mapPersonas.set(uid, { id_user: uid, cargo: cargoSrv, id_linea_servicio: r.id_linea })
+              }
+            }
+          })
+        }
+      })
+
       for (const p of mapPersonas.values()) {
         const fIni = p.fecha_plan_ini ? new Date(p.fecha_plan_ini + 'T08:00').toISOString() : fechaIniGbl
         const fFin = p.fecha_plan_fin ? new Date(p.fecha_plan_fin + 'T18:00').toISOString() : fechaFinGbl
@@ -15249,6 +15287,32 @@ const confirmarAsignacionOT = async () => {
           poolPersonas.push(re)
         }
       }
+
+      // REQ-1105 / SPEC-22: Extraer operadores asignados directamente en el árbol de servicios
+      ;(servicios.value || []).forEach(s => {
+        const esTransporte = (s.linea_servicio || '').toUpperCase().includes('TRANSP') || (s.tipo && s.tipo.includes('CAMION'))
+        const cargoSrv = esTransporte ? 'Chofer Transporte' : 'Operador Grúa'
+        if (s.operador_asignado_id && !poolPersonas.some(p => String(p.id_user) === String(s.operador_asignado_id))) {
+          poolPersonas.push({ id_user: s.operador_asignado_id, cargo: cargoSrv, id_linea_servicio: s.id_linea })
+        }
+        if (s.primario?.operador_asignado_id && !poolPersonas.some(p => String(p.id_user) === String(s.primario.operador_asignado_id))) {
+          poolPersonas.push({ id_user: s.primario.operador_asignado_id, cargo: cargoSrv, id_linea_servicio: s.primario.id_linea })
+        }
+        if (Array.isArray(s.turnos_operadores)) {
+          s.turnos_operadores.forEach(t => {
+            if (t.operador_id && !poolPersonas.some(p => String(p.id_user) === String(t.operador_id))) {
+              poolPersonas.push({ id_user: t.operador_id, cargo: cargoSrv, fecha_plan_ini: t.fecha_ini, fecha_plan_fin: t.fecha_fin, id_linea_servicio: s.id_linea })
+            }
+          })
+        }
+        if (Array.isArray(s.ramas)) {
+          s.ramas.forEach(r => {
+            if (r.operador_asignado_id && !poolPersonas.some(p => String(p.id_user) === String(r.operador_asignado_id))) {
+              poolPersonas.push({ id_user: r.operador_asignado_id, cargo: cargoSrv, id_linea_servicio: r.id_linea })
+            }
+          })
+        }
+      })
 
       const mapPersonas = new Map()
       poolPersonas.forEach(p => {

@@ -1696,6 +1696,40 @@ class ProyectoModel {
         ORDER BY re.fecha_plan_ini ASC, re.id_rel_equipo ASC
       `, [id_proyecto]);
 
+      // REQ-1105 / SPEC-22: Sincronización relacional proactiva hacia tpry_rel_persona si existen operadores asignados en servicios
+      const { rows: testPersCount } = await client.query('SELECT COUNT(*)::int as total FROM tpry_rel_persona WHERE id_proyecto = $1', [id_proyecto]);
+      if (testPersCount[0]?.total === 0) {
+        const poolSync = [];
+        const serviciosList = crm.servicios || jf.crm_v1?.servicios || [];
+        serviciosList.forEach(s => {
+          const esTrans = (s.linea_servicio || '').toUpperCase().includes('TRANSP') || (s.tipo || '').toUpperCase().includes('CAMION');
+          const rol = esTrans ? 'Chofer Transporte' : 'Operador Grúa';
+          if (s.operador_asignado_id && !poolSync.some(p => p.id_user === Number(s.operador_asignado_id))) {
+            poolSync.push({ id_user: Number(s.operador_asignado_id), rol_asignado: rol });
+          }
+          if (Array.isArray(s.turnos_operadores)) {
+            s.turnos_operadores.forEach(t => {
+              if (t.operador_id && !poolSync.some(p => p.id_user === Number(t.operador_id))) {
+                poolSync.push({ id_user: Number(t.operador_id), rol_asignado: rol, f_ini: t.fecha_ini, f_fin: t.fecha_fin });
+              }
+            });
+          }
+        });
+        if (ejec.operador_id && !poolSync.some(p => p.id_user === Number(ejec.operador_id))) {
+          poolSync.push({ id_user: Number(ejec.operador_id), rol_asignado: 'Operador Grúa' });
+        }
+        if (ejec.chofer_id && !poolSync.some(p => p.id_user === Number(ejec.chofer_id))) {
+          poolSync.push({ id_user: Number(ejec.chofer_id), rol_asignado: 'Chofer Transporte' });
+        }
+        for (const ps of poolSync) {
+          await client.query(`
+            INSERT INTO tpry_rel_persona (
+              id_proyecto, id_user, rol_asignado, fecha_plan_ini, fecha_plan_fin, estado_real, id_user_creacion
+            ) VALUES ($1, $2, $3, COALESCE($4, NOW()), COALESCE($5, NOW()), 'PROGRAMADO', $6)
+          `, [id_proyecto, ps.id_user, ps.rol_asignado, ps.f_ini ? new Date(ps.f_ini) : null, ps.f_fin ? new Date(ps.f_fin) : null, id_user || 1]);
+        }
+      }
+
       const { rows: personasAsignadasBD } = await client.query(`
         SELECT 
           rp.id_rel_persona,
@@ -1708,10 +1742,10 @@ class ProyectoModel {
           u.name_frst,
           u.apellido_pat,
           u.apellido_mat,
-          u.rut_user,
+          u.rut as rut_user,
           u.email,
-          u.fono,
-          u.cargo
+          u.movil as fono,
+          rp.rol_asignado as cargo
         FROM tpry_rel_persona rp
         INNER JOIN tsec_users u ON rp.id_user = u.id_user
         WHERE rp.id_proyecto = $1 AND rp.estado_real != 'CANCELADO'
@@ -1832,6 +1866,7 @@ class ProyectoModel {
         // =========================================================================
         // GENERACIÓN DE FLOTA 100% RELACIONAL DESDE BASE DE DATOS
         // =========================================================================
+        const personasAsignadasUsadas = new Set();
         equiposAsignadosBD.forEach((eq) => {
           const pat = (eq.patente || eq.ppu || eq.codigo_interno || '').toUpperCase();
           const rolNorm = String(eq.rol_equipo || '').toUpperCase();
@@ -1841,17 +1876,24 @@ class ProyectoModel {
           // Cruzar operador asignado desde personasAsignadasBD
           let personaAsociada = null;
           if (eq.id_linea_servicio) {
-            personaAsociada = personasAsignadasBD.find(p => Number(p.id_linea_servicio) === Number(eq.id_linea_servicio));
+            personaAsociada = personasAsignadasBD.find(p => !personasAsignadasUsadas.has(p.id_rel_persona) && Number(p.id_linea_servicio) === Number(eq.id_linea_servicio));
           }
           if (!personaAsociada) {
             if (esPrimario) {
-              personaAsociada = personasAsignadasBD.find(p => String(p.rol_asignado || '').toUpperCase().includes('OPERADOR'));
+              personaAsociada = personasAsignadasBD.find(p => !personasAsignadasUsadas.has(p.id_rel_persona) && String(p.rol_asignado || '').toUpperCase().includes('OPERADOR'));
             } else {
               personaAsociada = personasAsignadasBD.find(p => {
+                if (personasAsignadasUsadas.has(p.id_rel_persona)) return false;
                 const r = String(p.rol_asignado || '').toUpperCase();
                 return r.includes('CHOFER') || r.includes('TRANSPORTE') || r.includes('CONDUCTOR') || r.includes('PLUMA');
               });
             }
+          }
+          if (!personaAsociada) {
+            personaAsociada = personasAsignadasBD.find(p => !personasAsignadasUsadas.has(p.id_rel_persona));
+          }
+          if (personaAsociada) {
+            personasAsignadasUsadas.add(personaAsociada.id_rel_persona);
           }
           
           let choferLabel = 'Sin Operador Asignado';
@@ -2320,7 +2362,7 @@ class ProyectoModel {
       fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
 
       await new Promise((resolve, reject) => {
-        const cmd = `xvfb-run --server-args="-screen 0 794x1123x24" wkhtmltopdf --disable-smart-shrinking --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 8mm --margin-bottom 8mm --margin-left 8mm --margin-right 8mm "${tempHtmlPath}" "${filepath}"`;
+        const cmd = `xvfb-run -a --server-args="-screen 0 794x1123x24" wkhtmltopdf --disable-smart-shrinking --enable-local-file-access --load-error-handling ignore --load-media-error-handling ignore --page-size A4 --orientation Portrait --margin-top 8mm --margin-bottom 8mm --margin-left 8mm --margin-right 8mm "${tempHtmlPath}" "${filepath}"`;
         exec(cmd, (error, stdout, stderr) => {
           try {
             if (fs.existsSync(tempHtmlPath)) fs.unlinkSync(tempHtmlPath);
