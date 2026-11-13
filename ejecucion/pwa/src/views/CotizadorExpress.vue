@@ -584,12 +584,12 @@
             </div>
           </div>
 
-          <!-- PISO MÍNIMO CONTRACTUAL (INFORMATIVO) -->
+          <!-- MODALIDAD COMERCIAL CANÓNICA -->
           <div class="pa-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-800 dark:text-emerald-300 mb-3 d-flex align-center ga-2">
-            <span class="text-base">⏱️</span>
+            <span class="text-base">📅</span>
             <div>
-              <strong>Piso Mínimo Contractual: 9 Horas / Día</strong>
-              <div class="text-[10px] opacity-80">Jornada estándar con Operador y Rigger certificados.</div>
+              <strong>Unidad Canónica: Valor Fijo Diario (Jornada)</strong>
+              <div class="text-[10px] opacity-80">Tarifa fija por jornada diaria completa. Incluye Operador y Rigger certificados.</div>
             </div>
           </div>
 
@@ -707,8 +707,8 @@
               <span class="text-amber-700 dark:text-amber-400 font-bold">{{ form.servicio.capacidad_label }}</span>
             </div>
             <div class="d-flex justify-space-between py-1">
-              <span class="text-slate-500 font-sans">Jornadas / Mínimo:</span>
-              <span class="text-slate-900 dark:text-white">{{ form.servicio.dias_servicio }} día(s) (Piso 9 hrs/día)</span>
+              <span class="text-slate-500 font-sans">Modalidad / Jornadas:</span>
+              <span class="text-slate-900 dark:text-white">{{ form.servicio.dias_servicio }} día(s) (Valor Fijo Diario)</span>
             </div>
           </div>
 
@@ -740,7 +740,7 @@
           <div class="pa-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[10px] text-amber-900 dark:text-amber-200 mb-3 space-y-0.5">
             <div class="font-black uppercase tracking-wider mb-0.5">⚖️ Cláusulas Contractuales GSP:</div>
             <div>• <strong>Validez:</strong> 5 días hábiles desde emisión.</div>
-            <div>• <strong>Piso mínimo:</strong> 9 horas diarias de servicio continuo.</div>
+            <div>• <strong>Modalidad:</strong> Tarifa por Jornada (Valor Fijo Diario).</div>
             <div>• <strong>Personal:</strong> Incluye Operador y Rigger certificados.</div>
             <div>• <strong>Combustible:</strong> Suministrado por Grúas San Pablo.</div>
           </div>
@@ -825,11 +825,12 @@ const form = ref({
   servicio: {
     tipo_equipo: 'GRUAS_TELESCOPICAS',
     capacidad_label: '70 TON',
+    unidad: 'Valor Fijo Diario',
     dias_servicio: 1,
-    horas_minimas_dia: 9,
     tarifa_dia: 1650000,
     incluye_traslado: true,
     valor_traslado: 450000,
+    unidad_traslado: 'Traslado Ida/Vuelta',
     fecha_estimada_inicio: new Date().toISOString().split('T')[0]
   },
   condiciones: {
@@ -920,7 +921,7 @@ const seleccionarFamilia = (tipo) => {
 const seleccionarOpcionEquipo = (op) => {
   form.value.servicio.capacidad_label = op.label
   form.value.servicio.tarifa_dia = op.tarifa_sugerida
-  form.value.servicio.horas_minimas_dia = op.horas_min || 9
+  form.value.servicio.unidad = 'Valor Fijo Diario'
 }
 
 // Cálculos Financieros Reactivos
@@ -971,6 +972,60 @@ const emitirCotizacionExpress = async () => {
   errorEmision.value = ''
   try {
     const payload = JSON.parse(JSON.stringify(form.value))
+
+    // Alineación canónica: Valor Fijo Diario para jornadas (sin inflación 9x) y Traslado Ida/Vuelta
+    payload.servicio.unidad = 'Valor Fijo Diario'
+    payload.servicio.horas_minimas_dia = 0
+    const dias = Math.max(1, Number(form.value.servicio.dias_servicio) || 1)
+    const tarifaDia = Number(form.value.servicio.tarifa_dia) || 0
+    payload.servicio.dias_servicio = dias
+    payload.servicio.cantidad = dias
+    payload.servicio.cantidad_dias = dias
+    payload.servicio.unidad_traslado = 'Traslado Ida/Vuelta'
+
+    const esPluma = form.value.servicio.tipo_equipo === 'CAMIONES_PLUMA'
+    const subcat = esPluma ? 'Camión Pluma' : 'Grúa Telescópica'
+    const cap = form.value.servicio.capacidad_label || ''
+
+    const flatLines = [
+      {
+        _uid: `line-${Date.now()}-1`,
+        tipo: esPluma ? 'CAMIONES' : 'GRUAS TELESCOPICAS',
+        subcategoria: subcat,
+        descripcion: `Arriendo ${subcat} ${cap} con Operador y Rigger`,
+        unidad: 'Valor Fijo Diario',
+        cantidad: dias,
+        cantidad_dias: dias,
+        cantidad_horas: null,
+        pisoMinimo: 0,
+        valorUnitario: tarifaDia,
+        valor_unitario: tarifaDia,
+        subtotal: dias * tarifaDia,
+        is_linea_base: true
+      }
+    ]
+
+    if (form.value.servicio.incluye_traslado) {
+      const vTraslado = Number(form.value.servicio.valor_traslado) || 0
+      flatLines.push({
+        _uid: `line-${Date.now()}-2`,
+        tipo: 'TRASLADOS',
+        subcategoria: 'Flete / Movilización',
+        descripcion: 'Movilización y Desmovilización Ida y Vuelta Faena',
+        unidad: 'Traslado Ida/Vuelta',
+        cantidad: 1,
+        cantidad_dias: 1,
+        cantidad_horas: null,
+        pisoMinimo: 0,
+        valorUnitario: vTraslado,
+        valor_unitario: vTraslado,
+        subtotal: vTraslado,
+        is_linea_base: true
+      })
+    }
+
+    payload.lineas_servicio = flatLines
+
     const { data } = await apiAxios.post('/proyectos/express/cotizar', payload)
 
     if (data.success) {

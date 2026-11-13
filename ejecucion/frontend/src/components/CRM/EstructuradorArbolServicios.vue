@@ -1,31 +1,33 @@
 <template>
   <div class="space-y-4">
-    <!-- BARRA SUPERIOR DE ACCIONES: CATÁLOGO DE LAS 4 LÍNEAS DE SERVICIO (CAPA 1) -->
-    <div class="rounded-xl border border-white/10 bg-[#080d1a] p-3 shadow-sm">
-      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div class="space-y-0.5">
+    <!-- BARRA SUPERIOR: CATÁLOGO DE LAS 4 LÍNEAS DE SERVICIO COMERCIAL -->
+    <div class="surface-card rounded-lg p-4">
+      <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+        <div>
           <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-white uppercase tracking-wider">Estructurador de Servicios por Unidades de Trabajo</span>
-            <span class="text-[10px] px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-bold">Arquitectura 2 Capas</span>
+            <span class="w-2 h-5 rounded-sm inline-block bg-amber-500"></span>
+            <h1 class="text-sm font-semibold text-slate-100">Estructura Comercial de Servicios</h1>
+            <span class="text-xs px-2 py-0.5 rounded font-mono font-medium bg-slate-800 text-slate-300 border border-slate-700">
+              Arquitectura de Árbol
+            </span>
           </div>
-          <p class="text-[11px] text-slate-400">
-            Define la solución comercial contratada (Capa 1) y asocia sus recursos, traslados y dotación física subordinada (Capa 2).
+          <p class="text-xs mt-1 text-slate-400">
+            Cotización comercial simple: equipo o cargo principal, traslado global y personal cuando aplique. Equipos de apoyo y accesorios internos los asigna Operaciones.
           </p>
         </div>
 
-        <!-- 4 BOTONES DE LÍNEA DE SERVICIO -->
+        <!-- 4 BOTONES DE LÍNEA DE NEGOCIO -->
         <div class="flex flex-wrap items-center gap-2">
-          <!-- 1. TRANSPORTE -->
+          <!-- 1. IZAJE -->
           <button
             type="button"
-            @click="agregarServicio('TRANSPORTE')"
+            @click="agregarServicio('IZAJE')"
             :disabled="disabled"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-200 border border-blue-500/40 hover:border-blue-400 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-            title="Añadir Unidad de Trabajo de Transporte de Carga o Flete (OT-FLETE)"
+            class="field-input px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-slate-800/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            title="Añadir Servicio de Grúa, Horquilla o Manipulador con Operador"
           >
-            <span>🚚</span>
-            <span>+ TRANSPORTE</span>
-            <span class="text-[9px] bg-blue-500/30 px-1 py-0.2 rounded font-mono">OT-FLETE</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-amber-500"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 21h16"/><path d="M7 18h10"/></svg>
+            <span>+ Izaje</span>
           </button>
 
           <!-- 2. RENTAL -->
@@ -33,51 +35,48 @@
             type="button"
             @click="agregarServicio('RENTAL')"
             :disabled="disabled"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 border border-purple-500/40 hover:border-purple-400 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-            title="Añadir Unidad de Arriendo Continuo en Faena (OT-RENTAL)"
+            class="field-input px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-slate-800/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            title="Añadir Arriendo de Plataformas en Faena sin Operador"
           >
-            <span>📅</span>
-            <span>+ RENTAL</span>
-            <span class="text-[9px] bg-purple-500/30 px-1 py-0.2 rounded font-mono">OT-RENTAL</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-slate-300"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/></svg>
+            <span>+ Rental</span>
           </button>
 
-          <!-- 3. PROFESIONAL -->
+          <!-- 3. TRANSPORTE -->
+          <button
+            type="button"
+            @click="agregarServicio('TRANSPORTE')"
+            :disabled="disabled"
+            class="field-input px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-slate-800/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            title="Añadir Transporte de Carga en Cama Baja o Rampla"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-slate-300"><rect x="1" y="5" width="15" height="12" rx="1"/><polygon points="16 8 20 8 23 11 23 17 16 17 16 8"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="18.5" r="2"/></svg>
+            <span>+ Transporte</span>
+          </button>
+
+          <!-- 4. PROFESIONAL -->
           <button
             type="button"
             @click="agregarServicio('PROFESIONAL')"
             :disabled="disabled"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 bg-teal-600/20 hover:bg-teal-600/30 text-teal-200 border border-teal-500/40 hover:border-teal-400 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-            title="Añadir Dotación de Especialistas Certificados o Asesorías Técnicas (OT-STAFF)"
+            class="field-input px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-slate-800/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            title="Añadir Dotación Profesional (Rigger, Operador o Conductor)"
           >
-            <span>👷</span>
-            <span>+ PROFESIONAL</span>
-            <span class="text-[9px] bg-teal-500/30 px-1 py-0.2 rounded font-mono">OT-STAFF</span>
-          </button>
-
-          <!-- 4. IZAJE -->
-          <button
-            type="button"
-            @click="agregarServicio('IZAJE')"
-            :disabled="disabled"
-            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/50 hover:border-amber-400 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-            title="Añadir Maniobra de Grúa e Izaje Industrial (OT-MANIOBRA)"
-          >
-            <span>⚙️</span>
-            <span>+ IZAJE</span>
-            <span class="text-[9px] bg-amber-500/30 px-1 py-0.2 rounded font-mono">OT-MANIOBRA</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-slate-300"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>+ Profesional</span>
           </button>
         </div>
       </div>
 
-      <!-- RESUMEN GLOBAL COMPACTO -->
-      <div v-if="localServicios.length > 0" class="mt-2.5 pt-2 border-t border-white/5 flex flex-wrap items-center justify-between text-[11px] text-slate-400 gap-2">
+      <!-- RESUMEN COMPACTO -->
+      <div v-if="localServicios.length > 0" class="mt-3 pt-2.5 border-t border-slate-800 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
         <div class="flex items-center gap-3">
-          <span>Unidades de Trabajo: <strong class="text-white">{{ localServicios.length }}</strong></span>
-          <span>Ítems Planos Sincronizados: <strong class="text-white">{{ totalItemsPlanos }}</strong></span>
+          <span>Servicios: <strong class="text-slate-200">{{ localServicios.length }}</strong></span>
+          <span>Ítems Sincronizados: <strong class="text-slate-200">{{ totalItemsPlanos }}</strong></span>
         </div>
         <div class="flex items-center gap-2">
           <span>Total Neto Cotizado:</span>
-          <span class="text-amber-400 font-mono font-bold text-xs">{{ formatMoneda(totalNetoServicios) }}</span>
+          <span class="text-slate-100 font-mono font-bold text-sm">{{ formatMoneda(totalNetoServicios) }}</span>
         </div>
       </div>
     </div>
@@ -85,696 +84,630 @@
     <!-- ESTADO VACÍO -->
     <div
       v-if="localServicios.length === 0"
-      class="rounded-xl border border-dashed border-white/10 bg-[#0a0f1e]/40 p-8 text-center space-y-3"
+      class="surface-card rounded-lg p-10 text-center space-y-2.5"
     >
-      <div class="text-3xl text-slate-600">🌳</div>
-      <div class="space-y-1">
-        <h4 class="text-sm font-bold text-slate-200">No hay servicios estructurados en el árbol</h4>
-        <p class="text-xs text-slate-400 max-w-md mx-auto">
-          Seleccione una de las 4 líneas comerciales en la cabecera (+ TRANSPORTE, + RENTAL, + PROFESIONAL, + IZAJE) para configurar la propuesta.
-        </p>
+      <div class="mx-auto w-9 h-9 rounded-md flex items-center justify-center bg-slate-800 text-slate-400">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
       </div>
+      <div class="text-sm font-semibold text-slate-200">Sin servicios agregados a la cotización</div>
+      <p class="text-xs max-w-md mx-auto text-slate-400">
+        Seleccione una línea de negocio en la barra superior (+ Izaje, + Rental, + Transporte o + Profesional).
+      </p>
       <div class="pt-2 flex flex-wrap justify-center gap-2">
         <button
           type="button"
           @click="agregarServicio('IZAJE')"
           :disabled="disabled"
-          class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 cursor-pointer disabled:opacity-50"
+          class="field-input px-3 py-1.5 text-xs font-semibold text-amber-400 border-amber-500/40 hover:bg-slate-800 cursor-pointer disabled:opacity-50"
         >
-          ⚙️ Crear Servicio de Izaje
+          + Izaje (Grúa, Horquilla, Manipulador)
         </button>
         <button
           type="button"
-          @click="agregarServicio('TRANSPORTE')"
+          @click="agregarServicio('RENTAL')"
           :disabled="disabled"
-          class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white cursor-pointer disabled:opacity-50"
+          class="field-input px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 cursor-pointer disabled:opacity-50"
         >
-          🚚 Crear Servicio de Transporte
+          + Rental (Plataformas Tijera / Brazos)
         </button>
       </div>
     </div>
 
-    <!-- LISTADO DE UNIDADES DE TRABAJO (ÁRBOLES) -->
-    <div v-else class="space-y-4">
-      <div
-        v-for="(servicio, srvIdx) in localServicios"
-        :key="servicio.id_servicio"
-        class="rounded-xl border bg-[#060a14] overflow-hidden shadow-sm transition-all"
-        :class="getLineaBorderClass(servicio.linea_servicio)"
+    <!-- CONTENEDOR DE ÁRBOLES -->
+    <div v-else class="space-y-3.5">
+      <section
+        v-for="(srv, srvIdx) in localServicios"
+        :key="srv.id_servicio || srvIdx"
+        class="surface-card rounded-lg"
       >
-        <!-- CABECERA DE LA UNIDAD DE TRABAJO (CAPA 1) -->
-        <div class="px-3.5 py-2.5 bg-[#090e1c] border-b border-white/5 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-2 flex-1 min-w-[300px]">
-            <!-- Correlativo -->
-            <span class="w-6 h-6 rounded-full bg-white/10 text-white font-mono font-bold text-xs flex items-center justify-center">
-              {{ srvIdx + 1 }}
-            </span>
-
-            <!-- Badge Línea de Servicio -->
-            <span
-              class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border font-mono"
-              :class="getLineaBadgeClass(servicio.linea_servicio)"
+        <!-- CABECERA DEL SERVICIO -->
+        <div class="px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 bg-[#161f30] border-b border-[#1f2937] rounded-t-lg">
+          <div class="flex items-center gap-2.5 flex-1 min-w-[260px]">
+            <!-- Botón Colapsar / Expandir -->
+            <button
+              type="button"
+              @click="toggleColapso(srvIdx)"
+              class="p-1 rounded cursor-pointer text-slate-400 hover:text-slate-200"
+              title="Expandir / Contraer"
             >
-              {{ servicio.linea_servicio }}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                :style="{ transform: srv.colapsado ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }"
+              >
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </button>
+
+            <!-- Correlativo -->
+            <span class="tabular font-mono text-xs font-semibold text-slate-400">
+              {{ String(srvIdx + 1).padStart(2, '0') }}
             </span>
 
-            <!-- Badge Tipo OT Handoff -->
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-300 border border-white/10 font-mono" title="Tipo de Orden de Trabajo a generar en Operaciones">
-              {{ servicio.tipo_ot }}
+            <!-- Badge Línea de Negocio -->
+            <span class="px-2 py-0.5 rounded text-xs font-semibold bg-[#111827] text-slate-200 border border-[#334155]">
+              {{ LINEA_LABELS[srv.linea_servicio] || srv.linea_servicio }}
             </span>
 
-            <!-- Nombre / Glosa del Servicio (Editable) -->
+            <!-- Título Descriptivo del Servicio -->
             <input
               type="text"
-              v-model="servicio.nombre_servicio"
+              v-model="srv.nombre_servicio"
               @input="onFieldChange"
               :disabled="disabled"
-              placeholder="Nombre o descripción del servicio..."
-              class="flex-1 min-w-[200px] bg-transparent border-b border-white/10 focus:border-amber-500 text-xs sm:text-sm font-bold text-white outline-none px-1 py-0.5 placeholder-slate-500"
+              placeholder="Título descriptivo del servicio..."
+              class="bg-transparent border-0 border-b border-transparent focus:border-slate-400 outline-none text-xs sm:text-sm font-semibold flex-1 min-w-[180px] px-1 py-0.5 text-slate-100 placeholder-slate-500"
               maxlength="200"
             />
           </div>
 
-          <!-- SUB-TOTAL DEL SERVICIO Y ACCIONES DE LA UNIDAD -->
-          <div class="flex items-center gap-3 ml-auto">
+          <div class="flex items-center gap-3">
+            <!-- Subtotal del Servicio -->
             <div class="text-right">
-              <span class="text-[9px] text-slate-400 block uppercase font-mono">Subtotal Servicio</span>
-              <span class="text-xs sm:text-sm font-mono font-bold text-amber-400">
-                {{ formatMoneda(servicio.subtotal_servicio) }}
+              <span class="text-xs mr-1.5 text-slate-400">Subtotal:</span>
+              <span class="tabular font-mono text-sm font-bold text-slate-100">
+                {{ formatMoneda(srv.subtotal_servicio) }}
               </span>
             </div>
 
-            <!-- Botones Ordenar Arriba / Abajo -->
-            <div class="flex items-center gap-1">
+            <!-- Acciones: Subir / Bajar / Eliminar -->
+            <div class="flex items-center gap-0.5">
               <button
                 type="button"
                 @click="moverServicio(srvIdx, -1)"
                 :disabled="disabled || srvIdx === 0"
-                class="p-1 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed text-xs"
-                title="Subir unidad de servicio"
+                class="p-1 rounded cursor-pointer text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Subir"
               >
-                ▲
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m18 15-6-6-6 6"/></svg>
               </button>
               <button
                 type="button"
                 @click="moverServicio(srvIdx, 1)"
                 :disabled="disabled || srvIdx === localServicios.length - 1"
-                class="p-1 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed text-xs"
-                title="Bajar unidad de servicio"
+                class="p-1 rounded cursor-pointer text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Bajar"
               >
-                ▼
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <button
+                type="button"
+                @click="eliminarServicio(srvIdx)"
+                :disabled="disabled"
+                class="p-1 rounded cursor-pointer text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30"
+                title="Eliminar servicio completo"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
               </button>
             </div>
-
-            <!-- Botón Eliminar Servicio Completo -->
-            <button
-              type="button"
-              @click="eliminarServicio(srvIdx)"
-              :disabled="disabled"
-              class="px-2 py-1 text-xs text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors disabled:opacity-30 cursor-pointer"
-              title="Eliminar esta Unidad de Trabajo completa y sus ramas subordinadas"
-            >
-              ✕
-            </button>
           </div>
         </div>
 
-        <!-- TREE TABLE DE RECURSOS (CAPA 2: NODO PRIMARIO + RAMAS HIJAS) -->
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs min-w-[920px]">
+        <!-- TABLA EN ÁRBOL ESTILO EXPLORADOR -->
+        <div v-show="!srv.colapsado" class="overflow-x-auto pb-1">
+          <table class="tree-table w-full text-left border-collapse">
             <thead>
-              <tr class="bg-black/30 border-b border-white/5 text-slate-400 font-bold uppercase text-[9px] tracking-wider">
-                <th class="py-2 px-3 w-[150px]">Jerarquía / Rol</th>
-                <th class="py-2 px-3 w-[170px]">Categoría</th>
-                <th class="py-2 px-3 w-[160px]">Subcategoría</th>
-                <th class="py-2 px-3 min-w-[240px]">Descripción del Recurso / Ítem *</th>
-                <th class="py-2 px-3 w-[140px]">Modalidad / Unidad</th>
-                <th class="py-2 px-3 text-center w-[150px]">Magnitud / Cantidades</th>
-                <th class="py-2 px-3 text-right w-[110px]">Tarifa Unitaria</th>
-                <th class="py-2 px-3 text-right w-[110px]">Subtotal</th>
-                <th class="py-2 px-3 text-center w-[40px]"></th>
+              <tr class="text-xs font-medium text-slate-400 border-b border-[#1f2937]">
+                <th class="py-2.5 px-4 w-[26%]">
+                  {{ srv.linea_servicio === 'PROFESIONAL' ? 'Cargo' : 'Equipo / Ítem' }}
+                </th>
+                <th class="py-2.5 px-2.5 w-[26%]">Glosa Comercial</th>
+                <th class="py-2.5 px-2.5 w-[17%]">Unidad de Cobro</th>
+                <th class="py-2.5 px-2.5 w-[13%]">Magnitud</th>
+                <th class="py-2.5 px-2.5 w-[10%] text-right">Tarifa Neto</th>
+                <th class="py-2.5 pl-2.5 pr-4 w-[8%] text-right">Subtotal</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/5">
-              <!-- FILA RAÍZ: RECURSO PRIMARIO (NODO RAÍZ) -->
-              <tr class="bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
-                <!-- Jerarquía / Rol -->
-                <td class="py-2 px-3 font-mono">
-                  <div class="flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
-                      Primario
-                    </span>
+            <tbody>
+              <!-- NODO RAÍZ PRINCIPAL (ESTILO EXPLORADOR CON [-]/[+]) -->
+              <tr class="hover:bg-white/[0.02] transition-colors">
+                <td
+                  class="py-2 px-4 tree-parent-cell"
+                  :class="{ 'has-children': !srv.colapsado }"
+                >
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      class="tree-toggle-box"
+                      @click="toggleColapso(srvIdx)"
+                      :title="srv.colapsado ? 'Expandir ramas' : 'Contraer ramas'"
+                    >
+                      {{ srv.colapsado ? '+' : '−' }}
+                    </button>
+                    <div class="flex-1 min-w-0">
+                      <!-- Si PROFESIONAL: select directo de cargos -->
+                      <select
+                        v-if="srv.linea_servicio === 'PROFESIONAL'"
+                        v-model="srv.primario.recurso"
+                        @change="onCargoPrimarioChange(srv)"
+                        :disabled="disabled"
+                        class="field-input w-full px-2.5 py-1.5 text-xs font-semibold cursor-pointer"
+                      >
+                        <option
+                          v-for="cargo in CARGOS_PERSONAL_GSP"
+                          :key="cargo"
+                          :value="cargo"
+                        >
+                          {{ cargo }}
+                        </option>
+                      </select>
+
+                      <!-- Si IZAJE, RENTAL, TRANSPORTE: selector emergente con popover -->
+                      <button
+                        v-else
+                        type="button"
+                        @click="abrirEquipoPrimarioPopover($event, srvIdx)"
+                        :disabled="disabled"
+                        class="field-input w-full px-2.5 py-1.5 text-left flex items-center justify-between gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        <span class="font-semibold text-xs truncate">
+                          {{ srv.primario.recurso || 'Seleccionar equipo...' }}
+                        </span>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-slate-400 flex-shrink-0"><path d="m6 9 6 6 6-6"/></svg>
+                      </button>
+                    </div>
                   </div>
                 </td>
 
-                <!-- Categoría -->
-                <td class="py-2 px-3">
-                  <select
-                    v-model="servicio.primario.tipo"
-                    @change="onTipoPrimarioChange(servicio)"
-                    :disabled="disabled"
-                    class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white outline-none transition-colors"
-                    :class="!servicio.primario.tipo ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
-                  >
-                    <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar * --</option>
-                    <option
-                      v-for="cat in dbCategories"
-                      :key="cat.id_categoria"
-                      :value="cat.nombre_categoria"
-                      class="bg-[#0a0f1e] text-white"
-                    >
-                      {{ cat.nombre_categoria }}
-                    </option>
-                  </select>
-                </td>
-
-                <!-- Subcategoría -->
-                <td class="py-2 px-3">
-                  <select
-                    v-model="servicio.primario.subcategoria"
-                    @change="onSubcategoriaPrimarioChange(servicio)"
-                    :disabled="disabled"
-                    class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white outline-none transition-colors"
-                    :class="!servicio.primario.subcategoria ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
-                  >
-                    <option value="" class="bg-[#0a0f1e] text-slate-400">-- Seleccionar * --</option>
-                    <option
-                      v-for="sub in getSubcategoriesForType(servicio.primario.tipo, servicio.primario)"
-                      :key="sub.id_subcategoria"
-                      :value="sub.nombre_subcategoria"
-                      class="bg-[#0a0f1e] text-white"
-                    >
-                      {{ sub.nombre_subcategoria }}
-                    </option>
-                  </select>
-                </td>
-
-                <!-- Descripción -->
-                <td class="py-2 px-3">
+                <!-- Glosa Comercial Primario -->
+                <td class="py-2 px-2.5">
                   <input
                     type="text"
-                    v-model="servicio.primario.descripcion"
+                    v-model="srv.primario.descripcion"
                     @input="onFieldChange"
                     :disabled="disabled"
-                    placeholder="Descripción obligatoria del servicio principal..."
-                    class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:border-amber-500 outline-none transition-colors"
-                    :class="!servicio.primario.descripcion ? 'border-amber-500/40 bg-amber-500/5' : 'border-white/10'"
+                    placeholder="Glosa comercial..."
+                    class="field-input w-full px-2.5 py-1.5"
                     maxlength="250"
                   />
                 </td>
 
-                <!-- Unidad de Cobro -->
-                <td class="py-2 px-3">
+                <!-- Unidad de Cobro Primario (10 Unidades Canónicas Limpias) -->
+                <td class="py-2 px-2.5">
                   <select
-                    v-model="servicio.primario.unidad"
-                    @change="onUnidadChange(servicio.primario)"
+                    v-model="srv.primario.unidad"
+                    @change="onUnidadChange(srv.primario)"
                     :disabled="disabled"
-                    class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500"
+                    class="field-input w-full px-2 py-1.5 text-xs cursor-pointer"
                   >
-                    <template v-if="servicio.primario.tipo === 'TRASLADOS'">
-                      <option value="TRASLADO IDA" class="bg-[#0a0f1e] text-white">TRASLADO IDA</option>
-                      <option value="TRASLADO RETORNO" class="bg-[#0a0f1e] text-white">TRASLADO RETORNO</option>
-                      <option value="TRASLADO IDA/VUELTA" class="bg-[#0a0f1e] text-white">TRASLADO IDA/VUELTA</option>
-                      <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado (Estándar)</option>
-                    </template>
-                    <template v-else>
-                      <option value="Horas Diarias Minimas" class="bg-[#0a0f1e] text-white">Horas Diarias Minimas</option>
-                      <option value="Horas Mes Minimas" class="bg-[#0a0f1e] text-white">Horas Mes Minimas</option>
-                      <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado</option>
-                      <option value="Valor Fijo" class="bg-[#0a0f1e] text-white">Valor Fijo</option>
-                    </template>
+                    <option
+                      v-for="u in getUnidadesDisponibles(srv, null)"
+                      :key="u"
+                      :value="u"
+                    >
+                      {{ u }}
+                    </option>
                   </select>
                 </td>
 
-                <!-- Cantidades / Magnitud -->
-                <td class="py-2 px-3">
-                  <!-- Horas Diarias Mínimas -->
-                  <div v-if="servicio.primario.unidad === 'Horas Diarias Minimas'" class="flex items-center justify-center gap-1 bg-slate-900/60 p-1 rounded border border-white/5">
-                    <span class="text-[9px] text-slate-400 font-mono">D:</span>
+                <!-- Magnitud Primario -->
+                <td class="py-2 px-2.5">
+                  <!-- Cobro Único: Badge limpio fijo -->
+                  <div
+                    v-if="UNIDADES_COBRO_UNICO.has(srv.primario.unidad)"
+                    class="px-2.5 py-1.5 rounded text-xs text-center font-medium select-none bg-slate-900 text-slate-400 border border-slate-800"
+                  >
+                    Cobro único (1)
+                  </div>
+
+                  <!-- Horas Diarias Mínimas: [días] d × [hrs_mín] h -->
+                  <div
+                    v-else-if="srv.primario.unidad === 'Horas Diarias Minimas'"
+                    class="flex items-center gap-1"
+                  >
+                    <div class="relative flex-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="90"
+                        v-model.number="srv.primario.dias"
+                        @input="onDiasInput(srv.primario)"
+                        :disabled="disabled"
+                        class="field-input w-full pl-2 pr-6 py-1.5 text-right tabular font-medium"
+                        title="Cantidad de días"
+                      />
+                      <span class="absolute right-1.5 top-1.5 text-xs pointer-events-none text-slate-400">d</span>
+                    </div>
+                    <span class="text-xs text-slate-400">×</span>
+                    <div class="relative flex-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        step="0.5"
+                        v-model.number="srv.primario.horas_min"
+                        @input="onHorasInput(srv.primario)"
+                        :disabled="disabled"
+                        class="field-input w-full pl-2 pr-6 py-1.5 text-right tabular font-medium"
+                        title="Piso de horas mínimas diarias"
+                      />
+                      <span class="absolute right-1.5 top-1.5 text-xs pointer-events-none text-slate-400">h</span>
+                    </div>
+                  </div>
+
+                  <!-- Horas Mes Mínimas: [meses] m × [hrs_mín] h -->
+                  <div
+                    v-else-if="srv.primario.unidad === 'Horas Mes Minimas'"
+                    class="flex items-center gap-1"
+                  >
+                    <div class="relative w-16">
+                      <input
+                        type="number"
+                        min="1"
+                        v-model.number="srv.primario.meses"
+                        @input="onMesesInput(srv.primario)"
+                        :disabled="disabled"
+                        class="field-input w-full pl-2 pr-6 py-1.5 text-right tabular font-medium"
+                        title="Meses"
+                      />
+                      <span class="absolute right-1.5 top-1.5 text-xs pointer-events-none text-slate-400">m</span>
+                    </div>
+                    <span class="text-xs text-slate-400">×</span>
+                    <div class="relative flex-1">
+                      <input
+                        type="number"
+                        min="1"
+                        v-model.number="srv.primario.horas_min"
+                        @input="onHorasInput(srv.primario)"
+                        :disabled="disabled"
+                        class="field-input w-full pl-2 pr-6 py-1.5 text-right tabular font-medium"
+                        title="Horas mínimas mes"
+                      />
+                      <span class="absolute right-1.5 top-1.5 text-xs pointer-events-none text-slate-400">h</span>
+                    </div>
+                  </div>
+
+                  <!-- Otras Unidades (Cantidad con sufijo contextual) -->
+                  <div v-else class="relative">
                     <input
                       type="number"
-                      v-model.number="servicio.primario.cantidad_dias"
-                      @input="onDiasInput(servicio.primario)"
-                      :disabled="disabled"
                       min="1"
-                      max="30"
-                      class="w-10 bg-[#0a0f1e] border rounded px-1 py-0.5 text-center text-xs text-white font-mono"
-                      :class="(servicio.primario.cantidad_dias < 1 || servicio.primario.cantidad_dias > 30) ? 'border-red-500 text-red-300' : 'border-white/10'"
-                      title="Días (1-30)"
-                    />
-                    <span class="text-[9px] text-amber-400 font-mono">H:</span>
-                    <input
-                      type="number"
-                      v-model.number="servicio.primario.cantidad_horas"
-                      @input="onHorasInput(servicio.primario)"
-                      :disabled="disabled"
-                      min="1"
-                      max="24"
                       step="0.5"
-                      class="w-12 bg-[#0a0f1e] border rounded px-1 py-0.5 text-center text-xs text-amber-300 font-mono"
-                      :class="(servicio.primario.cantidad_horas < 1 || servicio.primario.cantidad_horas > 24) ? 'border-red-500 text-red-300' : 'border-amber-500/40'"
-                      title="Horas Diarias (1-24)"
-                    />
-                  </div>
-
-                  <!-- Horas Mes Mínimas -->
-                  <div v-else-if="servicio.primario.unidad === 'Horas Mes Minimas' || servicio.primario.unidad === 'Horas Mensuales Minimas'" class="flex items-center justify-center gap-1 bg-slate-900/60 p-1 rounded border border-white/5">
-                    <span class="text-[9px] text-slate-400 font-mono">M:</span>
-                    <input
-                      type="number"
-                      v-model.number="servicio.primario.cantidad_meses"
-                      @input="onMesesInput(servicio.primario)"
-                      :disabled="disabled"
-                      min="1"
-                      class="w-10 bg-[#0a0f1e] border rounded px-1 py-0.5 text-center text-xs text-white font-mono"
-                      :class="servicio.primario.cantidad_meses < 1 ? 'border-red-500 text-red-300' : 'border-white/10'"
-                      title="Meses (>= 1)"
-                    />
-                    <span class="text-[9px] text-amber-400 font-mono">H:</span>
-                    <input
-                      type="number"
-                      v-model.number="servicio.primario.cantidad_horas"
-                      @input="onHorasInput(servicio.primario)"
-                      :disabled="disabled"
-                      min="2"
-                      class="w-14 bg-[#0a0f1e] border rounded px-1 py-0.5 text-center text-xs text-amber-300 font-mono"
-                      :class="servicio.primario.cantidad_horas <= 1 ? 'border-red-500 text-red-300' : 'border-amber-500/40'"
-                      title="Horas Mensuales (Piso Mínimo)"
-                    />
-                  </div>
-
-                  <!-- Valor Fijo / Traslados (SPEC-128: Cobro Único) -->
-                  <div v-else-if="servicio.primario.unidad === 'Valor Fijo' || servicio.primario.tipo === 'TRASLADOS' || String(servicio.primario.unidad || '').startsWith('TRASLADO')" class="text-center py-1 bg-slate-900/40 rounded border border-white/5">
-                    <span class="text-[10px] text-amber-400 font-mono font-bold uppercase">Cobro Único</span>
-                  </div>
-
-                  <!-- Traslado / Cantidad -->
-                  <div v-else class="flex items-center justify-center gap-1 bg-slate-900/60 p-1 rounded border border-white/5">
-                    <span class="text-[9px] text-slate-400 font-mono">Cant:</span>
-                    <input
-                      type="number"
-                      v-model.number="servicio.primario.cantidad"
+                      v-model.number="srv.primario.cantidad"
                       @input="onFieldChange"
                       :disabled="disabled"
-                      min="1"
-                      class="w-12 bg-[#0a0f1e] border rounded px-1 py-0.5 text-center text-xs text-white font-mono"
-                      :class="servicio.primario.cantidad < 1 ? 'border-red-500 text-red-300' : 'border-white/10'"
-                      title="Cantidad"
+                      class="field-input w-full pl-2.5 pr-11 py-1.5 text-right tabular font-medium"
                     />
+                    <span class="absolute right-2.5 top-1.5 text-xs pointer-events-none text-slate-400">
+                      {{ getSufijoUnidad(srv.primario.unidad) }}
+                    </span>
                   </div>
                 </td>
 
-                <!-- Tarifa Unitaria -->
-                <td class="py-2 px-3">
-                  <div class="relative flex items-center">
-                    <span class="absolute left-1.5 text-slate-500 text-xs font-mono pointer-events-none">$</span>
+                <!-- Tarifa Unitario Primario -->
+                <td class="py-2 px-2.5">
+                  <div class="relative">
+                    <span class="absolute left-2 top-1.5 text-xs pointer-events-none text-slate-400">$</span>
                     <input
                       type="text"
-                      :value="formatMiles(servicio.primario.valor_unitario)"
-                      @input="onValorUnitarioInput($event, servicio.primario)"
+                      :value="formatMiles(srv.primario.valor_unitario)"
+                      @input="onTarifaInput($event, srv.primario)"
                       :disabled="disabled"
                       placeholder="0"
-                      class="w-full bg-[#0a0f1e] border border-white/10 focus:border-amber-500 rounded pl-4 pr-1.5 py-1 text-right text-xs text-amber-300 font-mono font-bold outline-none"
+                      class="field-input w-full pl-5 pr-2 py-1.5 text-right tabular font-mono font-medium"
                     />
                   </div>
                 </td>
 
-                <!-- Subtotal -->
-                <td class="py-2 px-3 text-right font-mono font-bold text-amber-400">
-                  {{ formatMoneda(servicio.primario.subtotal) }}
-                </td>
-
-                <!-- Acción (Bloqueado para Primario) -->
-                <td class="py-2 px-3 text-center text-slate-600" title="El recurso primario define la unidad y no se elimina independientemente">
-                  🔒
+                <!-- Subtotal Primario -->
+                <td class="py-2 pl-2.5 pr-4 text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <span class="tabular font-mono text-xs font-semibold text-slate-100">
+                      {{ formatMoneda(srv.primario.subtotal) }}
+                    </span>
+                    <span class="w-5 inline-block"></span>
+                  </div>
                 </td>
               </tr>
 
-              <!-- FILAS HIJAS: RAMAS SUBORDINADAS (CAPA 2: HIJOS CONECTADOS) -->
+              <!-- RAMAS SUBORDINADAS (LÍNEAS CONTINUAS SÓLIDAS) -->
               <tr
-                v-for="(rama, rIdx) in servicio.ramas"
+                v-for="(rama, rIdx) in srv.ramas"
                 :key="rama.id_linea || rIdx"
                 class="hover:bg-white/[0.02] transition-colors"
               >
-                <!-- Jerarquía / Conector Tipográfico + Rol -->
-                <td class="py-2 px-3 font-mono">
-                  <div class="flex items-center gap-1.5">
-                    <!-- Conector tipográfico de árbol: ├── para intermedias y └── para la última -->
-                    <span class="text-slate-500 font-bold select-none text-xs">
-                      {{ rIdx === servicio.ramas.length - 1 ? '└──' : '├──' }}
+                <!-- Celda con conector de árbol -->
+                <td class="py-1.5 pr-4 tree-branch-cell">
+                  <!-- Rama Traslado: CERO dropdown, solo etiqueta limpia Traslado -->
+                  <div v-if="rama.rol === 'Traslado'" class="flex items-center py-1">
+                    <span class="text-xs font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                      Traslado
                     </span>
-                    <span
-                      class="px-1.5 py-0.5 rounded text-[9px] font-bold border uppercase font-mono"
-                      :class="getRolBadgeClass(rama.rol_arbol)"
+                  </div>
+
+                  <!-- Rama Personal: Badge Personal + Selector de Cargos GSP -->
+                  <div v-else class="flex items-center gap-2">
+                    <span class="text-xs font-medium px-2 py-0.5 rounded flex-shrink-0 bg-slate-800 text-slate-400 border border-slate-700">
+                      Personal
+                    </span>
+                    <select
+                      v-model="rama.recurso"
+                      @change="onCargoRamaChange(rama)"
+                      :disabled="disabled"
+                      class="field-input flex-1 min-w-0 px-2.5 py-1.5 text-xs font-medium cursor-pointer"
                     >
-                      {{ rama.rol_arbol }}
-                    </span>
+                      <option
+                        v-for="cargo in CARGOS_PERSONAL_GSP"
+                        :key="cargo"
+                        :value="cargo"
+                      >
+                        {{ cargo }}
+                      </option>
+                    </select>
                   </div>
                 </td>
 
-                <!-- Categoría -->
-                <td class="py-2 px-3">
-                  <select
-                    v-model="rama.tipo"
-                    @change="onTipoRamaChange(rama)"
-                    :disabled="disabled"
-                    class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white outline-none transition-colors"
-                    :class="!rama.tipo ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
-                  >
-                    <option value="" class="bg-[#0a0f1e] text-slate-400">-- Categoría * --</option>
-                    <option
-                      v-for="cat in dbCategories"
-                      :key="cat.id_categoria"
-                      :value="cat.nombre_categoria"
-                      class="bg-[#0a0f1e] text-white"
-                    >
-                      {{ cat.nombre_categoria }}
-                    </option>
-                  </select>
-                </td>
-
-                <!-- Subcategoría -->
-                <td class="py-2 px-3">
-                  <select
-                    v-model="rama.subcategoria"
-                    @change="onFieldChange"
-                    :disabled="disabled"
-                    class="w-full bg-[#0a0f1e] border rounded px-2 py-1 text-xs text-white outline-none transition-colors"
-                    :class="!rama.subcategoria ? 'border-red-500/80 bg-red-500/10 text-red-300' : 'border-white/10 focus:border-amber-500'"
-                  >
-                    <option value="" class="bg-[#0a0f1e] text-slate-400">-- Subcategoría * --</option>
-                    <option
-                      v-for="sub in getSubcategoriesForType(rama.tipo, rama)"
-                      :key="sub.id_subcategoria"
-                      :value="sub.nombre_subcategoria"
-                      class="bg-[#0a0f1e] text-white"
-                    >
-                      {{ sub.nombre_subcategoria }}
-                    </option>
-                  </select>
-                </td>
-
-                <!-- Descripción -->
-                <td class="py-2 px-3">
+                <!-- Glosa Comercial Rama -->
+                <td class="py-1.5 px-2.5">
                   <input
                     type="text"
                     v-model="rama.descripcion"
                     @input="onFieldChange"
                     :disabled="disabled"
-                    placeholder="Descripción obligatoria de la rama..."
-                    class="w-full bg-[#0a0f1e] border rounded px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:border-amber-500 outline-none transition-colors"
-                    :class="!rama.descripcion ? 'border-amber-500/40 bg-amber-500/5' : 'border-white/10'"
+                    placeholder="Glosa comercial..."
+                    class="field-input w-full px-2.5 py-1.5"
                     maxlength="250"
                   />
                 </td>
 
-                <!-- Unidad de Cobro -->
-                <td class="py-2 px-3">
+                <!-- Unidad de Cobro Rama -->
+                <td class="py-1.5 px-2.5">
                   <select
                     v-model="rama.unidad"
                     @change="onUnidadChange(rama)"
                     :disabled="disabled"
-                    class="w-full bg-[#0a0f1e] border border-white/10 rounded px-2 py-1 text-xs text-white outline-none focus:border-amber-500"
+                    class="field-input w-full px-2 py-1.5 text-xs cursor-pointer"
                   >
-                    <template v-if="rama.tipo === 'TRASLADOS'">
-                      <option value="TRASLADO IDA" class="bg-[#0a0f1e] text-white">TRASLADO IDA</option>
-                      <option value="TRASLADO RETORNO" class="bg-[#0a0f1e] text-white">TRASLADO RETORNO</option>
-                      <option value="TRASLADO IDA/VUELTA" class="bg-[#0a0f1e] text-white">TRASLADO IDA/VUELTA</option>
-                      <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado (Estándar)</option>
-                    </template>
-                    <template v-else>
-                      <option value="Horas Diarias Minimas" class="bg-[#0a0f1e] text-white">Horas Diarias Minimas</option>
-                      <option value="Horas Mes Minimas" class="bg-[#0a0f1e] text-white">Horas Mes Minimas</option>
-                      <option value="Traslado" class="bg-[#0a0f1e] text-white">Traslado</option>
-                      <option value="Valor Fijo" class="bg-[#0a0f1e] text-white">Valor Fijo</option>
-                    </template>
+                    <option
+                      v-for="u in getUnidadesDisponibles(srv, rama)"
+                      :key="u"
+                      :value="u"
+                    >
+                      {{ u }}
+                    </option>
                   </select>
                 </td>
 
-                <!-- Cantidades / Magnitud -->
-                <td class="py-2 px-3">
+                <!-- Magnitud Rama -->
+                <td class="py-1.5 px-2.5">
+                  <!-- Cobro Único -->
+                  <div
+                    v-if="UNIDADES_COBRO_UNICO.has(rama.unidad)"
+                    class="px-2.5 py-1.5 rounded text-xs text-center font-medium select-none bg-slate-900 text-slate-400 border border-slate-800"
+                  >
+                    Cobro único (1)
+                  </div>
+
                   <!-- Horas Diarias Mínimas -->
-                  <div v-if="rama.unidad === 'Horas Diarias Minimas'" class="flex items-center justify-center gap-1 bg-slate-900/60 p-1 rounded border border-white/5">
-                    <span class="text-[9px] text-slate-400 font-mono">D:</span>
-                    <input
-                      type="number"
-                      v-model.number="rama.cantidad_dias"
-                      @input="onDiasInput(rama)"
-                      :disabled="disabled"
-                      min="1"
-                      max="30"
-                      class="w-10 bg-[#0a0f1e] border rounded px-1 py-0.5 text-center text-xs text-white font-mono"
-                      :class="(rama.cantidad_dias < 1 || rama.cantidad_dias > 30) ? 'border-red-500 text-red-300' : 'border-white/10'"
-                      title="Días (1-30)"
-                    />
-                    <span class="text-[9px] text-amber-400 font-mono">H:</span>
-                    <input
-                      type="number"
-                      v-model.number="rama.cantidad_horas"
-                      @input="onHorasInput(rama)"
-                      :disabled="disabled"
-                      min="1"
-                      max="24"
-                      step="0.5"
-                      class="w-12 bg-[#0a0f1e] border rounded px-1 py-0.5 text-center text-xs text-amber-300 font-mono"
-                      :class="(rama.cantidad_horas < 1 || rama.cantidad_horas > 24) ? 'border-red-500 text-red-300' : 'border-amber-500/40'"
-                      title="Horas Diarias (1-24)"
-                    />
+                  <div
+                    v-else-if="rama.unidad === 'Horas Diarias Minimas'"
+                    class="flex items-center gap-1"
+                  >
+                    <div class="relative flex-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="90"
+                        v-model.number="rama.dias"
+                        @input="onDiasInput(rama)"
+                        :disabled="disabled"
+                        class="field-input w-full pl-2 pr-6 py-1.5 text-right tabular font-medium"
+                        title="Cantidad de días"
+                      />
+                      <span class="absolute right-1.5 top-1.5 text-xs pointer-events-none text-slate-400">d</span>
+                    </div>
+                    <span class="text-xs text-slate-400">×</span>
+                    <div class="relative flex-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        step="0.5"
+                        v-model.number="rama.horas_min"
+                        @input="onHorasInput(rama)"
+                        :disabled="disabled"
+                        class="field-input w-full pl-2 pr-6 py-1.5 text-right tabular font-medium"
+                        title="Piso de horas mínimas diarias"
+                      />
+                      <span class="absolute right-1.5 top-1.5 text-xs pointer-events-none text-slate-400">h</span>
+                    </div>
                   </div>
 
                   <!-- Horas Mes Mínimas -->
-                  <div v-else-if="rama.unidad === 'Horas Mes Minimas' || rama.unidad === 'Horas Mensuales Minimas'" class="flex items-center justify-center gap-1 bg-slate-900/60 p-1 rounded border border-white/5">
-                    <span class="text-[9px] text-slate-400 font-mono">M:</span>
+                  <div
+                    v-else-if="rama.unidad === 'Horas Mes Minimas'"
+                    class="flex items-center gap-1"
+                  >
+                    <div class="relative w-16">
+                      <input
+                        type="number"
+                        min="1"
+                        v-model.number="rama.meses"
+                        @input="onMesesInput(rama)"
+                        :disabled="disabled"
+                        class="field-input w-full pl-2 pr-6 py-1.5 text-right tabular font-medium"
+                        title="Meses"
+                      />
+                      <span class="absolute right-1.5 top-1.5 text-xs pointer-events-none text-slate-400">m</span>
+                    </div>
+                    <span class="text-xs text-slate-400">×</span>
+                    <div class="relative flex-1">
+                      <input
+                        type="number"
+                        min="1"
+                        v-model.number="rama.horas_min"
+                        @input="onHorasInput(rama)"
+                        :disabled="disabled"
+                        class="field-input w-full pl-2 pr-6 py-1.5 text-right tabular font-medium"
+                        title="Horas mínimas mes"
+                      />
+                      <span class="absolute right-1.5 top-1.5 text-xs pointer-events-none text-slate-400">h</span>
+                    </div>
+                  </div>
+
+                  <!-- Otras Unidades -->
+                  <div v-else class="relative">
                     <input
                       type="number"
-                      v-model.number="rama.cantidad_meses"
-                      @input="onMesesInput(rama)"
-                      :disabled="disabled"
                       min="1"
-                      class="w-10 bg-[#0a0f1e] border rounded px-1 py-0.5 text-center text-xs text-white font-mono"
-                      :class="rama.cantidad_meses < 1 ? 'border-red-500 text-red-300' : 'border-white/10'"
-                      title="Meses (>= 1)"
-                    />
-                    <span class="text-[9px] text-amber-400 font-mono">H:</span>
-                    <input
-                      type="number"
-                      v-model.number="rama.cantidad_horas"
-                      @input="onHorasInput(rama)"
-                      :disabled="disabled"
-                      min="2"
-                      class="w-14 bg-[#0a0f1e] border rounded px-1 py-0.5 text-center text-xs text-amber-300 font-mono"
-                      :class="rama.cantidad_horas <= 1 ? 'border-red-500 text-red-300' : 'border-amber-500/40'"
-                      title="Horas Mensuales"
-                    />
-                  </div>
-
-                  <!-- Valor Fijo / Traslados (SPEC-128: Cobro Único) -->
-                  <div v-else-if="rama.unidad === 'Valor Fijo' || rama.tipo === 'TRASLADOS' || String(rama.unidad || '').startsWith('TRASLADO')" class="text-center py-1 bg-slate-900/40 rounded border border-white/5">
-                    <span class="text-[10px] text-amber-400 font-mono font-bold uppercase">Cobro Único</span>
-                  </div>
-
-                  <!-- Traslado / Cantidad -->
-                  <div v-else class="flex items-center justify-center gap-1 bg-slate-900/60 p-1 rounded border border-white/5">
-                    <span class="text-[9px] text-slate-400 font-mono">Cant:</span>
-                    <input
-                      type="number"
+                      step="0.5"
                       v-model.number="rama.cantidad"
                       @input="onFieldChange"
                       :disabled="disabled"
-                      min="1"
-                      class="w-12 bg-[#0a0f1e] border rounded px-1 py-0.5 text-center text-xs text-white font-mono"
-                      :class="rama.cantidad < 1 ? 'border-red-500 text-red-300' : 'border-white/10'"
-                      title="Cantidad"
+                      class="field-input w-full pl-2.5 pr-11 py-1.5 text-right tabular font-medium"
                     />
+                    <span class="absolute right-2.5 top-1.5 text-xs pointer-events-none text-slate-400">
+                      {{ getSufijoUnidad(rama.unidad) }}
+                    </span>
                   </div>
                 </td>
 
-                <!-- Tarifa Unitaria -->
-                <td class="py-2 px-3">
-                  <div class="relative flex items-center">
-                    <span class="absolute left-1.5 text-slate-500 text-xs font-mono pointer-events-none">$</span>
+                <!-- Tarifa Neto Rama -->
+                <td class="py-1.5 px-2.5">
+                  <div class="relative">
+                    <span class="absolute left-2 top-1.5 text-xs pointer-events-none text-slate-400">$</span>
                     <input
                       type="text"
                       :value="formatMiles(rama.valor_unitario)"
-                      @input="onValorUnitarioInput($event, rama)"
+                      @input="onTarifaInput($event, rama)"
                       :disabled="disabled"
                       placeholder="0"
-                      class="w-full bg-[#0a0f1e] border border-white/10 focus:border-amber-500 rounded pl-4 pr-1.5 py-1 text-right text-xs text-amber-300 font-mono font-bold outline-none"
+                      class="field-input w-full pl-5 pr-2 py-1.5 text-right tabular font-mono font-medium"
                     />
                   </div>
                 </td>
 
-                <!-- Subtotal -->
-                <td class="py-2 px-3 text-right font-mono font-bold text-amber-400">
-                  {{ formatMoneda(rama.subtotal) }}
+                <!-- Subtotal Rama + Botón Eliminar Rama -->
+                <td class="py-1.5 pl-2.5 pr-4 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <span class="tabular font-mono text-xs font-medium text-slate-300">
+                      {{ formatMoneda(rama.subtotal) }}
+                    </span>
+                    <button
+                      type="button"
+                      @click="eliminarRama(srv, rIdx)"
+                      :disabled="disabled"
+                      class="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30"
+                      title="Quitar ítem"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                  </div>
                 </td>
+              </tr>
 
-                <!-- Acción: Podar Rama -->
-                <td class="py-2 px-3 text-center">
+              <!-- FILA DE AGREGAR ÍTEM AL FINAL DEL ÁRBOL (TERMINA EN CODO └── [+]) -->
+              <tr class="hover:bg-white/[0.01] transition-colors">
+                <td colspan="6" class="py-2 pr-4 tree-branch-cell is-last">
                   <button
                     type="button"
-                    @click="eliminarRama(servicio, rIdx)"
+                    @click="abrirAddMenuPopover($event, srvIdx)"
                     :disabled="disabled"
-                    class="text-slate-500 hover:text-red-400 disabled:opacity-30 transition-colors p-1"
-                    title="Podar / Eliminar esta rama subordinada"
+                    class="tree-add-branch-btn inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold cursor-pointer text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/90 hover:border-amber-500/60 transition-all shadow-sm group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    ✕
+                    <span class="w-4 h-4 rounded-sm flex items-center justify-center font-bold text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono leading-none group-hover:bg-amber-500/30">+</span>
+                    <span class="text-xs">Agregar ítem...</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-400 group-hover:text-amber-400"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+      </section>
+    </div>
 
-        <!-- BARRA CONTEXTUAL DE RAMAS DIRECTAS POR LÍNEA DE SERVICIO -->
-        <div class="px-3.5 py-2 bg-[#070b16] border-t border-white/5 flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <span class="text-[10px] uppercase font-bold text-slate-400 font-mono mr-1">Ramas directas:</span>
+    <!-- POPOVER FLOTANTE A NIVEL RAÍZ PARA AGREGAR ÍTEM (FIXED Z-[100] CON GETBOUNDINGCLIENTRECT) -->
+    <div
+      v-if="addMenuVisible"
+      ref="addMenuPopoverRef"
+      :style="addMenuStyle"
+      class="combo-popover fixed z-[100] w-64 p-1.5 shadow-2xl border border-slate-700 rounded-lg bg-[#111827]"
+    >
+      <div class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border-b border-white/10 mb-1 text-slate-400">
+        Seleccionar ítem para agregar:
+      </div>
+      <div class="space-y-0.5">
+        <button
+          v-for="b in getAddMenuItems(currentAddMenuSrv)"
+          :key="b.key"
+          type="button"
+          @click="ejecutarAgregarRama(b.key)"
+          class="w-full text-left px-2.5 py-1.5 rounded text-xs hover:bg-slate-800/90 flex items-center gap-2 cursor-pointer transition-colors text-slate-200 hover:text-white"
+        >
+          <span class="w-4 h-4 rounded-sm flex items-center justify-center font-bold text-xs bg-amber-500/20 text-amber-300 font-mono leading-none">+</span>
+          <span class="font-medium">{{ b.label }}</span>
+        </button>
+      </div>
+    </div>
 
-            <!-- BOTONES SEGÚN LÍNEA: TRANSPORTE -->
-            <template v-if="servicio.linea_servicio === 'TRANSPORTE'">
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'CAMIONETA_ESCOLTA')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-blue-300 text-[11px] font-bold border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Camioneta Escolta
-              </button>
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'CONDUCTOR_ADICIONAL')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-blue-300 text-[11px] font-bold border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Conductor Adicional
-              </button>
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'RAMPLA_EXTRA')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-blue-300 text-[11px] font-bold border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Rampla / Flete Extra
-              </button>
-            </template>
-
-            <!-- BOTONES SEGÚN LÍNEA: RENTAL -->
-            <template v-else-if="servicio.linea_servicio === 'RENTAL'">
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'FLETE_ENTREGA')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-purple-300 text-[11px] font-bold border border-purple-500/20 hover:border-purple-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Flete de Entrega
-              </button>
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'FLETE_RETIRO')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-purple-300 text-[11px] font-bold border border-purple-500/20 hover:border-purple-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Flete de Retiro
-              </button>
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'OPERADOR_FAENA')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-purple-300 text-[11px] font-bold border border-purple-500/20 hover:border-purple-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Operador en Faena
-              </button>
-            </template>
-
-            <!-- BOTONES SEGÚN LÍNEA: PROFESIONAL -->
-            <template v-else-if="servicio.linea_servicio === 'PROFESIONAL'">
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'VIATICO_ALOJAMIENTO')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-teal-300 text-[11px] font-bold border border-teal-500/20 hover:border-teal-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Viático Alojamiento
-              </button>
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'VIATICO_ALIMENTACION')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-teal-300 text-[11px] font-bold border border-teal-500/20 hover:border-teal-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Viático Alimentación
-              </button>
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'TRASLADO_PERSONAL')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-teal-300 text-[11px] font-bold border border-teal-500/20 hover:border-teal-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Traslado de Personal
-              </button>
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'PLAN_RIGGING')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-teal-300 text-[11px] font-bold border border-teal-500/20 hover:border-teal-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Plan de Rigging / Memoria
-              </button>
-            </template>
-
-            <!-- BOTONES SEGÚN LÍNEA: IZAJE -->
-            <template v-else-if="servicio.linea_servicio === 'IZAJE'">
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'APOYO_CONTRAPESOS')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-amber-300 text-[11px] font-bold border border-amber-500/20 hover:border-amber-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Equipo de Apoyo (Contrapesos)
-              </button>
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'TRASLADO_GRUA')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-amber-300 text-[11px] font-bold border border-amber-500/20 hover:border-amber-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Traslado Grúa
-              </button>
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'PERSONAL_RIGGER')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-amber-300 text-[11px] font-bold border border-amber-500/20 hover:border-amber-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Personal / Rigger
-              </button>
-              <button
-                type="button"
-                @click="agregarRamaContextual(servicio, 'BALANCIN')"
-                :disabled="disabled"
-                class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-amber-300 text-[11px] font-bold border border-amber-500/20 hover:border-amber-500/40 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40"
-              >
-                + Balancín / Canastillo
-              </button>
-            </template>
-
-            <!-- RAMA PERSONALIZADA LIBRE -->
-            <button
-              type="button"
-              @click="agregarRamaGenerica(servicio)"
-              :disabled="disabled"
-              class="px-2 py-1 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-300 text-[11px] font-bold border border-white/10 hover:border-white/20 transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40 ml-1"
-              title="Añadir otra rama o recurso auxiliar libre"
-            >
-              + Otra Rama
-            </button>
+    <!-- POPOVER BUSCABLE FLOTANTE A NIVEL RAÍZ PARA SELECCIÓN DE EQUIPOS (FIXED Z-[90]) -->
+    <div
+      v-if="resourcePopoverVisible"
+      ref="resourcePopoverRef"
+      :style="resourcePopoverStyle"
+      class="combo-popover fixed z-[90] w-80 p-2 shadow-2xl border border-slate-700 rounded-lg bg-[#111827]"
+    >
+      <div class="relative mb-1.5">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="absolute left-2.5 top-2 text-slate-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input
+          ref="resourceSearchInputRef"
+          type="text"
+          v-model="resourceSearchQuery"
+          placeholder="Filtrar equipo..."
+          class="field-input w-full pl-8 pr-2.5 py-1.5 text-xs"
+        />
+      </div>
+      <div class="max-h-60 overflow-y-auto space-y-0.5">
+        <div
+          v-for="grupo in filteredEquiposGrupos"
+          :key="grupo.grupo"
+          class="space-y-0.5"
+        >
+          <div class="px-2 pt-1.5 pb-0.5 text-xs font-semibold text-slate-400">
+            {{ grupo.grupo }}
           </div>
-
-          <span class="text-[10px] text-slate-500 font-mono">
-            Ramas activas: {{ servicio.ramas.length }}
-          </span>
+          <button
+            v-for="it in grupo.items"
+            :key="it"
+            type="button"
+            @click="seleccionarEquipoPrimario(it)"
+            class="w-full text-left px-2.5 py-1.5 rounded text-xs cursor-pointer flex items-center justify-between transition-colors"
+            :class="isEquipoSeleccionado(it) ? 'bg-slate-800 text-slate-100 font-semibold' : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'"
+          >
+            <span>{{ it }}</span>
+            <span v-if="isEquipoSeleccionado(it)" class="font-bold text-amber-400">✓</span>
+          </button>
+        </div>
+        <div
+          v-if="filteredEquiposGrupos.length === 0"
+          class="px-2.5 py-3 text-xs text-center text-slate-500"
+        >
+          Sin coincidencias
         </div>
       </div>
     </div>
@@ -782,7 +715,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 
 const props = defineProps({
   lines: {
@@ -817,19 +750,154 @@ const props = defineProps({
 
 const emit = defineEmits(['update:lines', 'update:servicios'])
 
-// Estado local de servicios en árbol
+// =========================================================================
+// 1. CATÁLOGOS CANÓNICOS DE GSP (100% ALINEADOS A LA MAQUETA Y REUNIÓN 11-NOV)
+// =========================================================================
+// Únicos 3 cargos reales de personal en GSP
+const CARGOS_PERSONAL_GSP = ['Operador', 'Rigger', 'Conductor']
+
+// Catálogo de Equipos por Línea (Acuerdo 11-Nov: Horquillas y Manipuladores en IZAJE; Plataformas en RENTAL)
+const CATALOGO_EQUIPOS_PRIMARIOS = {
+  IZAJE: [
+    {
+      grupo: 'Grúas Telescópicas',
+      items: [
+        'Grúa Telescópica 40 Ton', 'Grúa Telescópica 50 Ton', 'Grúa Telescópica 60 Ton',
+        'Grúa Telescópica 70 Ton', 'Grúa Telescópica 80 Ton', 'Grúa Telescópica 90 Ton',
+        'Grúa Telescópica 100 Ton', 'Grúa Telescópica 120 Ton', 'Grúa Telescópica 130 Ton',
+        'Grúa Telescópica 160 Ton', 'Grúa Telescópica 200 Ton', 'Grúa Telescópica 220 Ton',
+        'Grúa Telescópica 250 Ton', 'Grúa Telescópica 300 Ton', 'Grúa Telescópica 350 Ton',
+        'Grúa Telescópica 400 Ton'
+      ]
+    },
+    {
+      grupo: 'Camiones Pluma',
+      items: ['Camión Pluma']
+    },
+    {
+      grupo: 'Grúas Horquilla (En Izaje)',
+      items: ['Grúa Horquilla 3.5 Ton', 'Grúa Horquilla 5 Ton', 'Grúa Horquilla 7 Ton', 'Grúa Horquilla 10 Ton']
+    },
+    {
+      grupo: 'Manipuladores Telescópicos (En Izaje)',
+      items: ['Manipulador Telescópico']
+    }
+  ],
+  RENTAL: [
+    {
+      grupo: 'Plataformas Tijera',
+      items: ['Plataforma Tijera Eléctrica 8m', 'Plataforma Tijera Eléctrica 10m', 'Plataforma Tijera Eléctrica 12m', 'Plataforma Tijera Diesel 15m']
+    },
+    {
+      grupo: 'Brazos Articulados y Alza Hombres',
+      items: ['Brazo Articulado 16m', 'Brazo Articulado 20m', 'Brazo Telescópico 26m', 'Alza Hombre Eléctrico']
+    }
+  ],
+  TRANSPORTE: [
+    {
+      grupo: 'Transporte y Fletes',
+      items: ['Camión Cama Baja', 'Camión Rampla', 'Tractocamión']
+    }
+  ]
+}
+
+// ESTRICTAMENTE LAS 10 UNIDADES CANÓNICAS LIMPIAS (SIN SINÓNIMOS)
+const UNIDADES_COBRO_UNICO = new Set([
+  'Valor Fijo',
+  'Traslado Ida',
+  'Traslado Vuelta',
+  'Traslado Ida/Vuelta'
+])
+
+const UNIDADES_POR_CONTEXTO = {
+  IZAJE_PRIMARIO: [
+    'Horas Diarias Minimas',
+    'Valor Fijo',
+    'Valor Fijo Diario',
+    'Valor Fijo Semanal',
+    'Horas Mes Minimas',
+    'Valor Fijo Mensual',
+    'Hora Efectiva'
+  ],
+  RENTAL_PRIMARIO: [
+    'Valor Fijo Mensual',
+    'Horas Mes Minimas',
+    'Valor Fijo Semanal',
+    'Valor Fijo Diario'
+  ],
+  TRANSPORTE_PRIMARIO: [
+    'Traslado Ida/Vuelta',
+    'Traslado Ida',
+    'Traslado Vuelta',
+    'Valor Fijo',
+    'Valor Fijo Diario',
+    'Horas Diarias Minimas'
+  ],
+  PROFESIONAL_PRIMARIO: [
+    'Valor Fijo',
+    'Valor Fijo Diario',
+    'Horas Diarias Minimas',
+    'Hora Efectiva',
+    'Valor Fijo Semanal',
+    'Valor Fijo Mensual'
+  ],
+  RAMA_TRASLADO: [
+    'Traslado Ida/Vuelta',
+    'Traslado Ida',
+    'Traslado Vuelta',
+    'Valor Fijo'
+  ],
+  RAMA_PERSONAL: [
+    'Valor Fijo',
+    'Valor Fijo Diario',
+    'Horas Diarias Minimas',
+    'Hora Efectiva',
+    'Valor Fijo Semanal',
+    'Valor Fijo Mensual'
+  ]
+}
+
+const LINEA_LABELS = {
+  IZAJE: 'Izaje',
+  RENTAL: 'Rental',
+  TRANSPORTE: 'Transporte',
+  PROFESIONAL: 'Profesional'
+}
+
+// =========================================================================
+// 2. ESTADO LOCAL Y CONTROL DE POPOVERS FLOTANTES
+// =========================================================================
 const localServicios = ref([])
 const isInternalSyncing = ref(false)
+
+// Popover flotante de Agregar Ítem
+const addMenuVisible = ref(false)
+const addMenuStyle = ref({ top: '0px', left: '0px' })
+const activeAddMenuSrvIdx = ref(null)
+const addMenuPopoverRef = ref(null)
+
+// Popover flotante de Selección de Equipo Primario
+const resourcePopoverVisible = ref(false)
+const resourcePopoverStyle = ref({ top: '0px', left: '0px' })
+const activeResourceSrvIdx = ref(null)
+const resourceSearchQuery = ref('')
+const resourcePopoverRef = ref(null)
+const resourceSearchInputRef = ref(null)
+
+const currentAddMenuSrv = computed(() => {
+  if (activeAddMenuSrvIdx.value === null) return null
+  return localServicios.value[activeAddMenuSrvIdx.value] || null
+})
 
 // Helper de ID único
 const genId = (prefix = 'lin') => `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
 
-// Helper de Moneda
+// Helper de Formato de Moneda
 const formatMoneda = (val) => {
   if (typeof props.formatCurrency === 'function') {
     return props.formatCurrency(val)
   }
-  return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(val || 0)
+  return '$' + new Intl.NumberFormat('es-CL').format(Math.round(Number(val) || 0))
 }
 
 // Helper de Formato Miles
@@ -843,27 +911,40 @@ const formatMiles = (val) => {
   return new Intl.NumberFormat('es-CL').format(num)
 }
 
-// Cálculo determinista del subtotal de una línea
-const calcularSubtotalLinea = (line) => {
-  if (!line) return 0
-  const val = Number(line.valor_unitario !== undefined ? line.valor_unitario : line.valorUnitario) || 0
-  const unidad = String(line.unidad || '').toUpperCase()
-  const tipo = String(line.tipo || '').toUpperCase()
-  if (unidad.includes('FIJO') || unidad.includes('ALZADA') || tipo.includes('FIJO') || tipo === 'TRASLADOS' || unidad.startsWith('TRASLADO')) {
-    return val
+// Sufijos para magnitudes
+const getSufijoUnidad = (u) => {
+  const map = {
+    'Hora Efectiva': 'hrs',
+    'Valor Fijo Diario': 'días',
+    'Valor Fijo Semanal': 'sem',
+    'Valor Fijo Mensual': 'mes'
   }
-  if (line.unidad === 'Horas Diarias Minimas') {
-    const dias = Number(line.cantidad_dias !== undefined && line.cantidad_dias !== null ? line.cantidad_dias : line.cantidad) || 1
-    const horas = Number(line.cantidad_horas !== undefined && line.cantidad_horas !== null ? line.cantidad_horas : line.pisoMinimo) || 8
-    return dias * horas * val
+  return map[u] || 'unid'
+}
+
+// =========================================================================
+// 3. MOTOR ÚNICO DE VALORIZACIÓN CANÓNICA
+// =========================================================================
+const calcularSubtotalNodo = (nodo) => {
+  if (!nodo) return 0
+  const tarifa = Number(nodo.valor_unitario !== undefined ? nodo.valor_unitario : nodo.valorUnitario) || 0
+  const u = nodo.unidad
+  if (UNIDADES_COBRO_UNICO.has(u)) {
+    nodo.cantidad = 1
+    return tarifa
   }
-  if (line.unidad === 'Horas Mes Minimas' || line.unidad === 'Horas Mensuales Minimas') {
-    const meses = Number(line.cantidad_meses !== undefined && line.cantidad_meses !== null ? line.cantidad_meses : line.cantidad) || 1
-    const horas = Number(line.cantidad_horas !== undefined && line.cantidad_horas !== null ? line.cantidad_horas : line.pisoMinimo) || 180
-    return meses * horas * val
+  if (u === 'Horas Diarias Minimas') {
+    const dias = Math.max(1, Number(nodo.dias !== undefined && nodo.dias !== null ? nodo.dias : nodo.cantidad_dias || nodo.cantidad) || 1)
+    const hrs = Math.max(1, Number(nodo.horas_min !== undefined && nodo.horas_min !== null ? nodo.horas_min : nodo.cantidad_horas || nodo.pisoMinimo) || 8)
+    return Math.round(dias * hrs * tarifa)
   }
-  const cant = Number(line.cantidad) || 1
-  return cant * val
+  if (u === 'Horas Mes Minimas') {
+    const meses = Math.max(1, Number(nodo.meses !== undefined && nodo.meses !== null ? nodo.meses : nodo.cantidad_meses || nodo.cantidad) || 1)
+    const hrs = Math.max(1, Number(nodo.horas_min !== undefined && nodo.horas_min !== null ? nodo.horas_min : nodo.cantidad_horas || nodo.pisoMinimo) || 180)
+    return Math.round(meses * hrs * tarifa)
+  }
+  const cant = Math.max(1, Number(nodo.cantidad) || 1)
+  return Math.round(cant * tarifa)
 }
 
 // Subtotal total del árbol
@@ -876,168 +957,160 @@ const totalItemsPlanos = computed(() => {
   return localServicios.value.reduce((acc, s) => acc + 1 + (s.ramas?.length || 0), 0)
 })
 
-// Obtener subcategorías para un tipo dado (con tramos de grúas canónicos 40T a 400T)
-const getSubcategoriesForType = (type, line = null) => {
-  if (!type) return []
-  const normType = String(type).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
-  const category = (props.dbCategories || []).find(c => {
-    const normCat = String(c.nombre_categoria).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase()
-    return normCat === normType || c.nombre_categoria === type
+// Unidades disponibles según contexto de nodo
+const getUnidadesDisponibles = (srv, rama = null) => {
+  if (rama === null) {
+    return UNIDADES_POR_CONTEXTO[`${srv.linea_servicio}_PRIMARIO`] || UNIDADES_POR_CONTEXTO.IZAJE_PRIMARIO
+  }
+  if (rama.rol === 'Traslado') {
+    return UNIDADES_POR_CONTEXTO.RAMA_TRASLADO
+  }
+  return UNIDADES_POR_CONTEXTO.RAMA_PERSONAL
+}
+
+// =========================================================================
+// 4. FILTRADO Y POPOVER DE EQUIPOS PRIMARIOS
+// =========================================================================
+const filteredEquiposGrupos = computed(() => {
+  if (activeResourceSrvIdx.value === null) return []
+  const srv = localServicios.value[activeResourceSrvIdx.value]
+  if (!srv) return []
+  const grupos = CATALOGO_EQUIPOS_PRIMARIOS[srv.linea_servicio] || CATALOGO_EQUIPOS_PRIMARIOS.IZAJE
+  const q = (resourceSearchQuery.value || '').toLowerCase().trim()
+
+  return grupos
+    .map(g => ({
+      grupo: g.grupo,
+      items: g.items.filter(it => it.toLowerCase().includes(q))
+    }))
+    .filter(g => g.items.length > 0)
+})
+
+const isEquipoSeleccionado = (it) => {
+  if (activeResourceSrvIdx.value === null) return false
+  const srv = localServicios.value[activeResourceSrvIdx.value]
+  return srv?.primario?.recurso === it
+}
+
+const abrirEquipoPrimarioPopover = (ev, srvIdx) => {
+  ev.stopPropagation()
+  cerrarTodosPopovers()
+  activeResourceSrvIdx.value = srvIdx
+  resourceSearchQuery.value = ''
+
+  const rect = ev.currentTarget.getBoundingClientRect()
+  const topPos = Math.min(window.innerHeight - 290, rect.bottom + 4)
+  const leftPos = Math.min(window.innerWidth - 330, Math.max(12, rect.left))
+
+  resourcePopoverStyle.value = {
+    top: `${topPos}px`,
+    left: `${leftPos}px`
+  }
+  resourcePopoverVisible.value = true
+
+  nextTick(() => {
+    if (resourceSearchInputRef.value) {
+      resourceSearchInputRef.value.focus()
+    }
   })
-  let subs = category ? [...(category.subcategories || [])] : []
+}
 
-  if (normType === 'GRUAS TELESCOPICAS') {
-    const TONELAJES_CANONICOS = [
-      40, 50, 55, 60, 70, 75, 80, 90, 100, 110, 120, 130, 140, 
-      150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 
-      260, 270, 280, 290, 300, 320, 350, 400
+const seleccionarEquipoPrimario = (nombreEquipo) => {
+  if (activeResourceSrvIdx.value === null) return
+  const srv = localServicios.value[activeResourceSrvIdx.value]
+  if (srv && srv.primario) {
+    srv.primario.recurso = nombreEquipo
+    if (!srv.primario.descripcion || srv.primario.descripcion.startsWith('Servicio de ')) {
+      srv.primario.descripcion = `Servicio de ${nombreEquipo}`
+    }
+  }
+  cerrarTodosPopovers()
+  sincronizarYProyectar()
+}
+
+// =========================================================================
+// 5. POPOVER DE AGREGAR ÍTEMS POR LÍNEA (ESTILO EXPLORADOR)
+// =========================================================================
+const getAddMenuItems = (srv) => {
+  if (!srv) return []
+  const botonesPorLinea = {
+    IZAJE: [
+      { key: 'TRASLADO_IDA_VUELTA', label: 'Traslado' },
+      { key: 'PERSONAL_RIGGER', label: 'Personal (Rigger / Operador)' }
+    ],
+    RENTAL: [
+      { key: 'FLETE_IDA', label: 'Flete Entrega (Ida)' },
+      { key: 'FLETE_VUELTA', label: 'Flete Retiro (Vuelta)' }
+    ],
+    TRANSPORTE: [
+      { key: 'TRASLADO_VUELTA', label: 'Tramo Vuelta' },
+      { key: 'PERSONAL_CONDUCTOR', label: 'Personal (Conductor)' }
+    ],
+    PROFESIONAL: [
+      { key: 'TRASLADO_PERSONAL', label: 'Traslado' },
+      { key: 'PERSONAL_EXTRA', label: 'Personal Adicional' }
     ]
-    const subGruasMap = new Map()
-    TONELAJES_CANONICOS.forEach((ton, i) => {
-      const nombre = `GRUA ${ton} TON`
-      subGruasMap.set(nombre, { id_subcategoria: 4000 + i, nombre_subcategoria: nombre, tonelaje_num: ton })
-    })
-    subs.forEach(s => {
-      const tonMatch = (s.nombre_subcategoria || '').match(/(\d+)/)
-      const ton = tonMatch ? parseInt(tonMatch[1], 10) : 0
-      if (!subGruasMap.has(s.nombre_subcategoria)) {
-        subGruasMap.set(s.nombre_subcategoria, { ...s, tonelaje_num: ton })
-      }
-    })
-    if (line?.subcategoria && !subGruasMap.has(line.subcategoria)) {
-      const tonMatch = line.subcategoria.match(/(\d+)/)
-      subGruasMap.set(line.subcategoria, { id_subcategoria: 9997, nombre_subcategoria: line.subcategoria, tonelaje_num: tonMatch ? parseInt(tonMatch[1], 10) : 0 })
-    }
-    subs = Array.from(subGruasMap.values()).sort((a, b) => a.tonelaje_num - b.tonelaje_num)
   }
-
-  if (normType === 'TRASLADOS') {
-    if (line?.subcategoria && !subs.some(s => s.nombre_subcategoria === line.subcategoria)) {
-      subs.unshift({ id_subcategoria: 9998, nombre_subcategoria: line.subcategoria })
-    }
-  }
-
-  return subs
+  return botonesPorLinea[srv.linea_servicio] || botonesPorLinea.IZAJE
 }
 
-// Clases visuales según línea de servicio
-const getLineaBadgeClass = (linea) => {
-  switch (linea) {
-    case 'TRANSPORTE': return 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-    case 'RENTAL':     return 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-    case 'PROFESIONAL':return 'bg-teal-500/20 text-teal-300 border-teal-500/40'
-    case 'IZAJE':      return 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-    default:           return 'bg-slate-700 text-slate-300 border-slate-600'
+const abrirAddMenuPopover = (ev, srvIdx) => {
+  ev.stopPropagation()
+  cerrarTodosPopovers()
+  activeAddMenuSrvIdx.value = srvIdx
+
+  const rect = ev.currentTarget.getBoundingClientRect()
+  const popHeight = 110
+
+  let topPos = rect.bottom + 4
+  if (topPos + popHeight > window.innerHeight && rect.top - popHeight - 4 > 0) {
+    topPos = rect.top - popHeight - 4
   }
+  const leftPos = Math.min(window.innerWidth - 270, Math.max(12, rect.left))
+
+  addMenuStyle.value = {
+    top: `${topPos}px`,
+    left: `${leftPos}px`
+  }
+  addMenuVisible.value = true
 }
 
-const getLineaBorderClass = (linea) => {
-  switch (linea) {
-    case 'TRANSPORTE': return 'border-blue-500/30'
-    case 'RENTAL':     return 'border-purple-500/30'
-    case 'PROFESIONAL': return 'border-teal-500/30'
-    case 'IZAJE':      return 'border-amber-500/30'
-    default:           return 'border-white/10'
-  }
+const ejecutarAgregarRama = (recetaKey) => {
+  if (activeAddMenuSrvIdx.value === null) return
+  const srvIdx = activeAddMenuSrvIdx.value
+  cerrarTodosPopovers()
+  agregarRama(srvIdx, recetaKey)
 }
 
-const getRolBadgeClass = (rol) => {
-  switch (rol) {
-    case 'PRIMARIO':  return 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-    case 'APOYO':     return 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-    case 'TRASLADO':  return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
-    case 'PERSONAL':  return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-    case 'ACCESORIO': return 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-    default:          return 'bg-slate-800 text-slate-300 border-white/10'
+const cerrarTodosPopovers = () => {
+  addMenuVisible.value = false
+  resourcePopoverVisible.value = false
+  activeAddMenuSrvIdx.value = null
+  activeResourceSrvIdx.value = null
+}
+
+const onDocumentClick = (e) => {
+  const addPop = addMenuPopoverRef.value
+  const resPop = resourcePopoverRef.value
+  const isAddBtn = e.target.closest && e.target.closest('.tree-add-branch-btn')
+  if (
+    (!addPop || !addPop.contains(e.target)) &&
+    (!resPop || !resPop.contains(e.target)) &&
+    !isAddBtn
+  ) {
+    cerrarTodosPopovers()
   }
 }
 
-// Handlers de cambio en campos
-const onFieldChange = () => {
-  sincronizarYProyectar()
-}
-
-const onValorUnitarioInput = (e, item) => {
-  const raw = e.target.value.replace(/\D/g, '')
-  const num = raw ? parseInt(raw, 10) : 0
-  item.valor_unitario = num
-  item.valorUnitario = num
-  e.target.value = num > 0 ? new Intl.NumberFormat('es-CL').format(num) : ''
-  sincronizarYProyectar()
-}
-
-const onDiasInput = (item) => {
-  item.cantidad = item.cantidad_dias
-  sincronizarYProyectar()
-}
-
-const onHorasInput = (item) => {
-  item.pisoMinimo = item.cantidad_horas
-  sincronizarYProyectar()
-}
-
-const onMesesInput = (item) => {
-  item.cantidad = item.cantidad_meses
-  sincronizarYProyectar()
-}
-
-const onUnidadChange = (item) => {
-  if (!item) return
-  if (item.unidad === 'Valor Fijo') {
-    item.cantidad = 1
-    item.cantidad_dias = null
-    item.cantidad_meses = null
-    item.cantidad_horas = null
-    item.pisoMinimo = 0
-  } else if (item.unidad === 'Horas Diarias Minimas') {
-    if (!item.cantidad_dias || item.cantidad_dias < 1) item.cantidad_dias = 1
-    if (!item.cantidad_horas || item.cantidad_horas < 1) item.cantidad_horas = 8
-    item.cantidad = item.cantidad_dias
-    item.pisoMinimo = item.cantidad_horas
-  } else if (item.unidad === 'Horas Mes Minimas' || item.unidad === 'Horas Mensuales Minimas') {
-    item.unidad = 'Horas Mes Minimas'
-    if (!item.cantidad_meses || item.cantidad_meses < 1) item.cantidad_meses = 1
-    if (!item.cantidad_horas || item.cantidad_horas < 2) item.cantidad_horas = 180
-    item.cantidad = item.cantidad_meses
-    item.pisoMinimo = item.cantidad_horas
-  } else {
-    if (!item.cantidad || item.cantidad < 1) item.cantidad = 1
-    item.cantidad_dias = null
-    item.cantidad_meses = null
-    item.cantidad_horas = null
-    item.pisoMinimo = 0
+// =========================================================================
+// 6. OPERACIONES DE ÁRBOL
+// =========================================================================
+const toggleColapso = (srvIdx) => {
+  if (localServicios.value[srvIdx]) {
+    localServicios.value[srvIdx].colapsado = !localServicios.value[srvIdx].colapsado
   }
-  sincronizarYProyectar()
 }
 
-const onTipoPrimarioChange = (servicio) => {
-  const p = servicio.primario
-  const subs = getSubcategoriesForType(p.tipo, p)
-  p.subcategoria = subs[0]?.nombre_subcategoria || ''
-  if (!p.descripcion || p.descripcion.trim() === '') {
-    p.descripcion = `Servicio de ${p.subcategoria || p.tipo}`
-  }
-  sincronizarYProyectar()
-}
-
-const onSubcategoriaPrimarioChange = (servicio) => {
-  const p = servicio.primario
-  if (!p.descripcion || p.descripcion.startsWith('Servicio de')) {
-    p.descripcion = `Servicio de ${p.subcategoria}`
-  }
-  sincronizarYProyectar()
-}
-
-const onTipoRamaChange = (rama) => {
-  const subs = getSubcategoriesForType(rama.tipo, rama)
-  rama.subcategoria = subs[0]?.nombre_subcategoria || ''
-  if (!rama.descripcion || rama.descripcion.trim() === '') {
-    rama.descripcion = `${rama.subcategoria || rama.tipo}`
-  }
-  sincronizarYProyectar()
-}
-
-// Reordenar unidades de servicio
 const moverServicio = (index, delta) => {
   const newIndex = index + delta
   if (newIndex < 0 || newIndex >= localServicios.value.length) return
@@ -1046,13 +1119,12 @@ const moverServicio = (index, delta) => {
   sincronizarYProyectar()
 }
 
-// Eliminar unidad de servicio completa
 const eliminarServicio = (index) => {
   const srv = localServicios.value[index]
   if (!srv) return
   const totalRamas = srv.ramas?.length || 0
   if (totalRamas > 0 || (srv.primario?.valor_unitario > 0)) {
-    if (!confirm(`¿Eliminar la Unidad de Servicio "${srv.nombre_servicio}" y sus ${totalRamas} ramas subordinadas?`)) {
+    if (!confirm(`¿Eliminar el servicio "${srv.nombre_servicio}" y sus ${totalRamas} ítems asociados?`)) {
       return
     }
   }
@@ -1060,298 +1132,297 @@ const eliminarServicio = (index) => {
   sincronizarYProyectar()
 }
 
-// Eliminar rama individual
-const eliminarRama = (servicio, ramaIndex) => {
-  servicio.ramas.splice(ramaIndex, 1)
+const eliminarRama = (srv, ramaIndex) => {
+  srv.ramas.splice(ramaIndex, 1)
   sincronizarYProyectar()
 }
 
-// AGREGAR NUEVA UNIDAD DE SERVICIO (CAPA 1)
 const agregarServicio = (linea) => {
   const idSrv = genId('srv')
   const idRoot = genId('lin_root')
 
-  let tipoOt = 'OT-MANIOBRA'
-  let nombreDefault = 'Servicio de Grúa e Izaje'
-  let primarioDefault = {
-    id_linea: idRoot,
-    id_servicio: idSrv,
-    id_padre: null,
-    rol_arbol: 'PRIMARIO',
-    linea_servicio: 'IZAJE',
-    tipo_ot: 'OT-MANIOBRA',
-    tipo: 'GRUAS TELESCOPICAS',
-    subcategoria: 'GRUA 70 TON',
-    descripcion: 'Servicio de izaje con grúa',
-    unidad: 'Horas Diarias Minimas',
-    cantidad_dias: 1,
-    cantidad_horas: 8,
-    cantidad_meses: null,
-    cantidad: 1,
-    pisoMinimo: 8,
-    valor_unitario: 0,
-    valorUnitario: 0,
-    subtotal: 0
-  }
-
-  if (linea === 'TRANSPORTE') {
-    tipoOt = 'OT-FLETE'
-    nombreDefault = 'Servicio de Transporte y Flete'
-    primarioDefault = {
-      ...primarioDefault,
-      linea_servicio: 'TRANSPORTE',
-      tipo_ot: 'OT-FLETE',
-      tipo: 'CAMIONES',
-      subcategoria: 'CAMION RAMPLA',
-      descripcion: 'Servicio de transporte y flete de carga',
-      unidad: 'Valor Fijo',
-      cantidad: 1,
-      cantidad_dias: null,
-      cantidad_horas: null,
-      cantidad_meses: null,
-      pisoMinimo: 0
-    }
-  } else if (linea === 'RENTAL') {
-    tipoOt = 'OT-RENTAL'
-    nombreDefault = 'Arriendo Mensual de Equipos (Rental)'
-    primarioDefault = {
-      ...primarioDefault,
-      linea_servicio: 'RENTAL',
-      tipo_ot: 'OT-RENTAL',
-      tipo: 'GRUA HORQUILLA',
-      subcategoria: 'GRUA HORQUILLA 3.5 TON',
-      descripcion: 'Arriendo mensual de equipo en faena',
-      unidad: 'Horas Mes Minimas',
-      cantidad_meses: 1,
-      cantidad_horas: 180,
-      cantidad: 1,
-      pisoMinimo: 180,
-      cantidad_dias: null
-    }
-  } else if (linea === 'PROFESIONAL') {
-    tipoOt = 'OT-STAFF'
-    nombreDefault = 'Dotación de Personal Especializado'
-    primarioDefault = {
-      ...primarioDefault,
-      linea_servicio: 'PROFESIONAL',
-      tipo_ot: 'OT-STAFF',
-      tipo: 'PERSONAL CERTIFICADO',
-      subcategoria: 'RIGGER',
-      descripcion: 'Servicio de Rigger Certificado de Maniobra',
-      unidad: 'Horas Diarias Minimas',
-      cantidad_dias: 1,
-      cantidad_horas: 8,
-      cantidad_meses: null,
-      cantidad: 1,
-      pisoMinimo: 8
+  const defaults = {
+    IZAJE: {
+      titulo: 'Servicio de Izaje y Maniobra',
+      primario: {
+        recurso: 'Grúa Telescópica 70 Ton',
+        descripcion: 'Servicio de grúa con operador en faena',
+        unidad: 'Horas Diarias Minimas',
+        dias: 1, horas_min: 8, meses: 1, cantidad: 1,
+        valor_unitario: 115000
+      }
+    },
+    RENTAL: {
+      titulo: 'Arriendo de Plataforma en Obra',
+      primario: {
+        recurso: 'Plataforma Tijera Eléctrica 12m',
+        descripcion: 'Arriendo mensual de plataforma sin operador (Contrato + Acta 360°)',
+        unidad: 'Valor Fijo Mensual',
+        dias: 1, horas_min: 0, meses: 1, cantidad: 1,
+        valor_unitario: 850000
+      }
+    },
+    TRANSPORTE: {
+      titulo: 'Servicio de Transporte de Carga',
+      primario: {
+        recurso: 'Camión Cama Baja',
+        descripcion: 'Transporte punto a punto',
+        unidad: 'Traslado Ida/Vuelta',
+        dias: 1, horas_min: 0, meses: 1, cantidad: 1,
+        valor_unitario: 380000
+      }
+    },
+    PROFESIONAL: {
+      titulo: 'Servicio de Personal en Obra',
+      primario: {
+        recurso: 'Rigger',
+        descripcion: 'Servicio de Rigger en obra',
+        unidad: 'Horas Diarias Minimas',
+        dias: 1, horas_min: 8, meses: 1, cantidad: 1,
+        valor_unitario: 18000
+      }
     }
   }
 
+  const cfg = defaults[linea] || defaults.IZAJE
   const nuevoServicio = {
     id_servicio: idSrv,
     linea_servicio: linea,
-    tipo_ot: tipoOt,
-    nombre_servicio: nombreDefault,
-    primario: primarioDefault,
+    colapsado: false,
+    nombre_servicio: cfg.titulo,
+    primario: {
+      id_linea: idRoot,
+      id_servicio: idSrv,
+      id_padre: null,
+      rol_arbol: 'PRIMARIO',
+      recurso: cfg.primario.recurso,
+      descripcion: cfg.primario.descripcion,
+      unidad: cfg.primario.unidad,
+      dias: cfg.primario.dias,
+      cantidad_dias: cfg.primario.dias,
+      horas_min: cfg.primario.horas_min,
+      cantidad_horas: cfg.primario.horas_min,
+      pisoMinimo: cfg.primario.horas_min,
+      meses: cfg.primario.meses,
+      cantidad_meses: cfg.primario.meses,
+      cantidad: cfg.primario.cantidad,
+      valor_unitario: cfg.primario.valor_unitario,
+      valorUnitario: cfg.primario.valor_unitario,
+      subtotal: 0
+    },
     ramas: [],
     subtotal_servicio: 0
   }
+
+  nuevoServicio.primario.subtotal = calcularSubtotalNodo(nuevoServicio.primario)
+  nuevoServicio.subtotal_servicio = nuevoServicio.primario.subtotal
 
   localServicios.value.push(nuevoServicio)
   sincronizarYProyectar()
 }
 
-// AGREGAR RAMAS CONTEXTUALES SEGÚN RECETA
-const agregarRamaContextual = (servicio, receta) => {
-  const idRama = genId('lin_rama')
-  const idPadre = servicio.primario?.id_linea || null
+const agregarRama = (srvIdx, recetaKey) => {
+  const srv = localServicios.value[srvIdx]
+  if (!srv) return
 
-  let nuevaRama = {
-    id_linea: idRama,
-    id_servicio: servicio.id_servicio,
-    id_padre: idPadre,
-    rol_arbol: 'APOYO',
-    linea_servicio: servicio.linea_servicio,
-    tipo_ot: servicio.tipo_ot,
-    tipo: 'OTROS',
-    subcategoria: '',
-    descripcion: '',
-    unidad: 'Valor Fijo',
-    cantidad_dias: null,
-    cantidad_horas: null,
-    cantidad_meses: null,
-    cantidad: 1,
-    pisoMinimo: 0,
-    valor_unitario: 0,
-    valorUnitario: 0,
-    subtotal: 0
+  const map = {
+    TRASLADO_IDA_VUELTA: {
+      rol: 'Traslado',
+      rol_arbol: 'TRASLADO',
+      recurso: 'Traslado',
+      descripcion: 'Traslado de equipo a obra (Ida y Vuelta)',
+      unidad: 'Traslado Ida/Vuelta',
+      cantidad: 1, dias: 1, horas_min: 0, meses: 1,
+      valor_unitario: 0
+    },
+    PERSONAL_RIGGER: {
+      rol: 'Personal',
+      rol_arbol: 'PERSONAL',
+      recurso: 'Rigger',
+      descripcion: 'Servicio de Rigger en obra',
+      unidad: 'Horas Diarias Minimas',
+      cantidad: 1,
+      dias: srv.primario.dias || srv.primario.cantidad_dias || 1,
+      horas_min: srv.primario.horas_min || srv.primario.cantidad_horas || 8,
+      meses: 1,
+      valor_unitario: 18000
+    },
+    FLETE_IDA: {
+      rol: 'Traslado',
+      rol_arbol: 'TRASLADO',
+      recurso: 'Traslado',
+      descripcion: 'Flete de entrega inicial en obra',
+      unidad: 'Traslado Ida',
+      cantidad: 1, dias: 1, horas_min: 0, meses: 1,
+      valor_unitario: 95000
+    },
+    FLETE_VUELTA: {
+      rol: 'Traslado',
+      rol_arbol: 'TRASLADO',
+      recurso: 'Traslado',
+      descripcion: 'Flete de retiro desde obra',
+      unidad: 'Traslado Vuelta',
+      cantidad: 1, dias: 1, horas_min: 0, meses: 1,
+      valor_unitario: 95000
+    },
+    TRASLADO_VUELTA: {
+      rol: 'Traslado',
+      rol_arbol: 'TRASLADO',
+      recurso: 'Traslado',
+      descripcion: 'Tramo de vuelta',
+      unidad: 'Traslado Vuelta',
+      cantidad: 1, dias: 1, horas_min: 0, meses: 1,
+      valor_unitario: 0
+    },
+    PERSONAL_CONDUCTOR: {
+      rol: 'Personal',
+      rol_arbol: 'PERSONAL',
+      recurso: 'Conductor',
+      descripcion: 'Servicio de Conductor en obra',
+      unidad: 'Valor Fijo',
+      cantidad: 1, dias: 1, horas_min: 0, meses: 1,
+      valor_unitario: 0
+    },
+    TRASLADO_PERSONAL: {
+      rol: 'Traslado',
+      rol_arbol: 'TRASLADO',
+      recurso: 'Traslado',
+      descripcion: 'Movilización de personal a obra',
+      unidad: 'Traslado Ida/Vuelta',
+      cantidad: 1, dias: 1, horas_min: 0, meses: 1,
+      valor_unitario: 0
+    },
+    PERSONAL_EXTRA: {
+      rol: 'Personal',
+      rol_arbol: 'PERSONAL',
+      recurso: 'Operador',
+      descripcion: 'Servicio de Operador en obra',
+      unidad: 'Valor Fijo Diario',
+      cantidad: 1, dias: 1, horas_min: 0, meses: 1,
+      valor_unitario: 0
+    }
   }
 
-  switch (receta) {
-    // TRANSPORTE
-    case 'CAMIONETA_ESCOLTA':
-      nuevaRama.rol_arbol = 'APOYO'
-      nuevaRama.tipo = 'VEHICULOS LIVIANOS'
-      nuevaRama.subcategoria = 'CAMIONETA'
-      nuevaRama.descripcion = 'Camioneta Escolta de Transporte'
-      nuevaRama.unidad = 'Valor Fijo'
-      nuevaRama.cantidad = 1
-      break
-    case 'CONDUCTOR_ADICIONAL':
-      nuevaRama.rol_arbol = 'PERSONAL'
-      nuevaRama.tipo = 'PERSONAL CERTIFICADO'
-      nuevaRama.subcategoria = 'CONDUCTOR'
-      nuevaRama.descripcion = 'Segundo Conductor / Relevo en Ruta'
-      nuevaRama.unidad = 'Valor Fijo'
-      nuevaRama.cantidad = 1
-      break
-    case 'RAMPLA_EXTRA':
-      nuevaRama.rol_arbol = 'TRASLADO'
-      nuevaRama.tipo = 'CAMIONES'
-      nuevaRama.subcategoria = 'CAMION RAMPLA'
-      nuevaRama.descripcion = 'Rampla Adicional de Transporte'
-      nuevaRama.unidad = 'Traslado'
-      nuevaRama.cantidad = 1
-      break
-
-    // RENTAL
-    case 'FLETE_ENTREGA':
-      nuevaRama.rol_arbol = 'TRASLADO'
-      nuevaRama.tipo = 'TRASLADOS'
-      nuevaRama.subcategoria = 'MOVILIZACIÓN GRÚA'
-      nuevaRama.descripcion = 'Flete de Entrega en Obra (Día 1)'
-      nuevaRama.unidad = 'TRASLADO IDA'
-      nuevaRama.cantidad = 1
-      break
-    case 'FLETE_RETIRO':
-      nuevaRama.rol_arbol = 'TRASLADO'
-      nuevaRama.tipo = 'TRASLADOS'
-      nuevaRama.subcategoria = 'MOVILIZACIÓN GRÚA'
-      nuevaRama.descripcion = 'Flete de Retiro desde Obra'
-      nuevaRama.unidad = 'TRASLADO RETORNO'
-      nuevaRama.cantidad = 1
-      break
-    case 'OPERADOR_FAENA':
-      nuevaRama.rol_arbol = 'PERSONAL'
-      nuevaRama.tipo = 'PERSONAL CERTIFICADO'
-      nuevaRama.subcategoria = 'OPERADOR'
-      nuevaRama.descripcion = 'Operador de Maquinaria en Faena'
-      nuevaRama.unidad = 'Horas Mes Minimas'
-      nuevaRama.cantidad_meses = 1
-      nuevaRama.cantidad_horas = 180
-      nuevaRama.cantidad = 1
-      nuevaRama.pisoMinimo = 180
-      break
-
-    // PROFESIONAL
-    case 'VIATICO_ALOJAMIENTO':
-      nuevaRama.rol_arbol = 'APOYO'
-      nuevaRama.tipo = 'OTROS'
-      nuevaRama.subcategoria = 'VIATICO ALOJAMIENTO'
-      nuevaRama.descripcion = 'Viático de Alojamiento por Persona'
-      nuevaRama.unidad = 'Valor Fijo'
-      nuevaRama.cantidad = 1
-      break
-    case 'VIATICO_ALIMENTACION':
-      nuevaRama.rol_arbol = 'APOYO'
-      nuevaRama.tipo = 'OTROS'
-      nuevaRama.subcategoria = 'VIATICO ALIMENTACION'
-      nuevaRama.descripcion = 'Viático de Alimentación por Persona'
-      nuevaRama.unidad = 'Valor Fijo'
-      nuevaRama.cantidad = 1
-      break
-    case 'TRASLADO_PERSONAL':
-      nuevaRama.rol_arbol = 'TRASLADO'
-      nuevaRama.tipo = 'TRASLADOS'
-      nuevaRama.subcategoria = 'TRASLADO PERSONAL'
-      nuevaRama.descripcion = 'Movilización y Traslado de Personal'
-      nuevaRama.unidad = 'Traslado'
-      nuevaRama.cantidad = 1
-      break
-    case 'PLAN_RIGGING':
-      nuevaRama.rol_arbol = 'APOYO'
-      nuevaRama.tipo = 'OTROS'
-      nuevaRama.subcategoria = 'ESTUDIO RIGGING'
-      nuevaRama.descripcion = 'Plan de Rigging y Memoria de Cálculo'
-      nuevaRama.unidad = 'Valor Fijo'
-      nuevaRama.cantidad = 1
-      break
-
-    // IZAJE
-    case 'APOYO_CONTRAPESOS':
-      nuevaRama.rol_arbol = 'APOYO'
-      nuevaRama.tipo = 'CAMIONES'
-      nuevaRama.subcategoria = 'CAMION RAMPLA'
-      nuevaRama.descripcion = 'Camión Rampla para Transporte de Contrapesos'
-      nuevaRama.unidad = 'Traslado'
-      nuevaRama.cantidad = 1
-      break
-    case 'TRASLADO_GRUA':
-      nuevaRama.rol_arbol = 'TRASLADO'
-      nuevaRama.tipo = 'TRASLADOS'
-      nuevaRama.subcategoria = 'MOVILIZACIÓN GRÚA'
-      nuevaRama.descripcion = 'Movilización Grúa (Ida y Vuelta)'
-      nuevaRama.unidad = 'TRASLADO IDA/VUELTA'
-      nuevaRama.cantidad = 1
-      break
-    case 'PERSONAL_RIGGER':
-      nuevaRama.rol_arbol = 'PERSONAL'
-      nuevaRama.tipo = 'PERSONAL CERTIFICADO'
-      nuevaRama.subcategoria = 'RIGGER'
-      nuevaRama.descripcion = 'Rigger Certificado de Maniobra'
-      nuevaRama.unidad = 'Horas Diarias Minimas'
-      nuevaRama.cantidad_dias = 1
-      nuevaRama.cantidad_horas = 8
-      nuevaRama.cantidad = 1
-      nuevaRama.pisoMinimo = 8
-      break
-    case 'BALANCIN':
-      nuevaRama.rol_arbol = 'ACCESORIO'
-      nuevaRama.tipo = 'ACCESORIOS'
-      nuevaRama.subcategoria = 'BALANCIN'
-      nuevaRama.descripcion = 'Balancín de Carga / Canastillo Certificado'
-      nuevaRama.unidad = 'Valor Fijo'
-      nuevaRama.cantidad = 1
-      break
-
-    default:
-      nuevaRama.descripcion = 'Recurso Auxiliar'
-      break
-  }
-
-  servicio.ramas.push(nuevaRama)
-  sincronizarYProyectar()
-}
-
-// AGREGAR RAMA GENÉRICA LIBRE
-const agregarRamaGenerica = (servicio) => {
+  const template = map[recetaKey] || map.TRASLADO_IDA_VUELTA
   const idRama = genId('lin_rama')
-  const idPadre = servicio.primario?.id_linea || null
+
   const nuevaRama = {
     id_linea: idRama,
-    id_servicio: servicio.id_servicio,
-    id_padre: idPadre,
-    rol_arbol: 'APOYO',
-    linea_servicio: servicio.linea_servicio,
-    tipo_ot: servicio.tipo_ot,
-    tipo: 'ACCESORIOS',
-    subcategoria: '',
-    descripcion: '',
-    unidad: 'Valor Fijo',
-    cantidad_dias: null,
-    cantidad_horas: null,
-    cantidad_meses: null,
-    cantidad: 1,
-    pisoMinimo: 0,
-    valor_unitario: 0,
-    valorUnitario: 0,
+    id_servicio: srv.id_servicio,
+    id_padre: srv.primario?.id_linea || null,
+    rol: template.rol,
+    rol_arbol: template.rol_arbol,
+    recurso: template.recurso,
+    descripcion: template.descripcion,
+    unidad: template.unidad,
+    dias: template.dias,
+    cantidad_dias: template.dias,
+    horas_min: template.horas_min,
+    cantidad_horas: template.horas_min,
+    pisoMinimo: template.horas_min,
+    meses: template.meses,
+    cantidad_meses: template.meses,
+    cantidad: template.cantidad,
+    valor_unitario: template.valor_unitario,
+    valorUnitario: template.valor_unitario,
     subtotal: 0
   }
-  servicio.ramas.push(nuevaRama)
+
+  nuevaRama.subtotal = calcularSubtotalNodo(nuevaRama)
+  srv.ramas.push(nuevaRama)
   sincronizarYProyectar()
 }
 
-// DUAL-WRITE: SINCRONIZACIÓN Y PROYECCIÓN APLANADA HACIA `lines`
+// =========================================================================
+// 7. HANDLERS DE EDICIÓN Y SINCRONIZACIÓN
+// =========================================================================
+const onFieldChange = () => {
+  sincronizarYProyectar()
+}
+
+const onCargoPrimarioChange = (srv) => {
+  const p = srv.primario
+  if (!p.descripcion || p.descripcion.startsWith('Servicio de ')) {
+    p.descripcion = `Servicio de ${p.recurso} en obra`
+  }
+  sincronizarYProyectar()
+}
+
+const onCargoRamaChange = (rama) => {
+  if (!rama.descripcion || rama.descripcion.startsWith('Servicio de ')) {
+    rama.descripcion = `Servicio de ${rama.recurso} en obra`
+  }
+  sincronizarYProyectar()
+}
+
+const onUnidadChange = (nodo) => {
+  if (!nodo) return
+  if (UNIDADES_COBRO_UNICO.has(nodo.unidad)) {
+    nodo.cantidad = 1
+    nodo.dias = null
+    nodo.cantidad_dias = null
+    nodo.horas_min = null
+    nodo.cantidad_horas = null
+    nodo.meses = null
+    nodo.cantidad_meses = null
+    nodo.pisoMinimo = 0
+  } else if (nodo.unidad === 'Horas Diarias Minimas') {
+    if (!nodo.dias || nodo.dias < 1) nodo.dias = 1
+    if (!nodo.horas_min || nodo.horas_min < 1) nodo.horas_min = 8
+    nodo.cantidad_dias = nodo.dias
+    nodo.cantidad_horas = nodo.horas_min
+    nodo.pisoMinimo = nodo.horas_min
+    nodo.cantidad = nodo.dias
+  } else if (nodo.unidad === 'Horas Mes Minimas') {
+    if (!nodo.meses || nodo.meses < 1) nodo.meses = 1
+    if (!nodo.horas_min || nodo.horas_min < 2) nodo.horas_min = 180
+    nodo.cantidad_meses = nodo.meses
+    nodo.cantidad_horas = nodo.horas_min
+    nodo.pisoMinimo = nodo.horas_min
+    nodo.cantidad = nodo.meses
+  } else {
+    if (!nodo.cantidad || nodo.cantidad < 1) nodo.cantidad = 1
+    nodo.dias = null
+    nodo.cantidad_dias = null
+    nodo.horas_min = null
+    nodo.cantidad_horas = null
+    nodo.meses = null
+    nodo.cantidad_meses = null
+    nodo.pisoMinimo = 0
+  }
+  sincronizarYProyectar()
+}
+
+const onDiasInput = (nodo) => {
+  nodo.cantidad_dias = nodo.dias
+  nodo.cantidad = nodo.dias
+  sincronizarYProyectar()
+}
+
+const onHorasInput = (nodo) => {
+  nodo.cantidad_horas = nodo.horas_min
+  nodo.pisoMinimo = nodo.horas_min
+  sincronizarYProyectar()
+}
+
+const onMesesInput = (nodo) => {
+  nodo.cantidad_meses = nodo.meses
+  nodo.cantidad = nodo.meses
+  sincronizarYProyectar()
+}
+
+const onTarifaInput = (ev, nodo) => {
+  const digits = ev.target.value.replace(/\D/g, '')
+  const num = digits ? parseInt(digits, 10) : 0
+  nodo.valor_unitario = num
+  nodo.valorUnitario = num
+  ev.target.value = num > 0 ? new Intl.NumberFormat('es-CL').format(num) : ''
+  sincronizarYProyectar()
+}
+
+// =========================================================================
+// 8. DUAL-WRITE: PROYECCIÓN APLANADA HACIA lines Y ÁRBOL HACIA servicios
+// =========================================================================
 const sincronizarYProyectar = () => {
   isInternalSyncing.value = true
   const flatLines = []
@@ -1361,18 +1432,59 @@ const sincronizarYProyectar = () => {
 
     // 1. Proyectar Nodo Primario
     if (srv.primario) {
-      srv.primario.id_linea = srv.primario.id_linea || genId('lin_root')
-      srv.primario.id_servicio = srv.id_servicio
-      srv.primario.id_padre = null
-      srv.primario.rol_arbol = 'PRIMARIO'
-      srv.primario.linea_servicio = srv.linea_servicio
-      srv.primario.tipo_ot = srv.tipo_ot
-      srv.primario.valor_unitario = Number(srv.primario.valor_unitario || srv.primario.valorUnitario) || 0
-      srv.primario.valorUnitario = srv.primario.valor_unitario
-      srv.primario.subtotal = calcularSubtotalLinea(srv.primario)
-      subtotalSrv += srv.primario.subtotal
+      const p = srv.primario
+      p.id_linea = p.id_linea || genId('lin_root')
+      p.id_servicio = srv.id_servicio
+      p.id_padre = null
+      p.rol_arbol = 'PRIMARIO'
+      p.linea_servicio = srv.linea_servicio
+      p.tipo_ot = srv.linea_servicio === 'TRANSPORTE' ? 'OT-FLETE' : srv.linea_servicio === 'RENTAL' ? 'OT-RENTAL' : srv.linea_servicio === 'PROFESIONAL' ? 'OT-STAFF' : 'OT-MANIOBRA'
 
-      flatLines.push({ ...srv.primario })
+      // Clasificación canónica de categoría/tipo para BD
+      if (srv.linea_servicio === 'PROFESIONAL') {
+        p.tipo = 'PERSONAL CERTIFICADO'
+        p.subcategoria = p.recurso
+      } else if (srv.linea_servicio === 'TRANSPORTE') {
+        p.tipo = 'CAMIONES'
+        p.subcategoria = p.recurso
+      } else if (srv.linea_servicio === 'RENTAL') {
+        p.tipo = String(p.recurso).includes('Tijera') ? 'PLATAFORMAS TIJERA' : 'ALZA HOMBRES'
+        p.subcategoria = p.recurso
+      } else {
+        // IZAJE
+        if (String(p.recurso).includes('Horquilla')) p.tipo = 'GRUA HORQUILLA'
+        else if (String(p.recurso).includes('Manipulador')) p.tipo = 'MANIPULADORES'
+        else if (String(p.recurso).includes('Camión Pluma')) p.tipo = 'CAMIONES'
+        else p.tipo = 'GRUAS TELESCOPICAS'
+        p.subcategoria = p.recurso
+      }
+
+      p.valor_unitario = Number(p.valor_unitario !== undefined ? p.valor_unitario : p.valorUnitario) || 0
+      p.valorUnitario = p.valor_unitario
+      p.subtotal = calcularSubtotalNodo(p)
+      subtotalSrv += p.subtotal
+
+      flatLines.push({
+        id_linea: p.id_linea,
+        id_servicio: srv.id_servicio,
+        id_padre: null,
+        rol_arbol: 'PRIMARIO',
+        linea_servicio: srv.linea_servicio,
+        tipo_ot: p.tipo_ot,
+        tipo: p.tipo,
+        subcategoria: p.subcategoria,
+        descripcion: p.descripcion,
+        unidad: p.unidad,
+        cantidad: p.cantidad || 1,
+        cantidad_dias: p.dias || p.cantidad_dias || null,
+        cantidad_horas: p.horas_min || p.cantidad_horas || null,
+        cantidad_meses: p.meses || p.cantidad_meses || null,
+        pisoMinimo: p.horas_min || p.pisoMinimo || null,
+        valor_unitario: p.valor_unitario,
+        valorUnitario: p.valor_unitario,
+        subtotal: p.subtotal,
+        is_linea_base: true
+      })
     }
 
     // 2. Proyectar Ramas Subordinadas
@@ -1382,188 +1494,136 @@ const sincronizarYProyectar = () => {
         rama.id_servicio = srv.id_servicio
         rama.id_padre = srv.primario?.id_linea || null
         rama.linea_servicio = srv.linea_servicio
-        rama.tipo_ot = srv.tipo_ot
-        rama.valor_unitario = Number(rama.valor_unitario || rama.valorUnitario) || 0
+        rama.tipo_ot = srv.linea_servicio === 'TRANSPORTE' ? 'OT-FLETE' : srv.linea_servicio === 'RENTAL' ? 'OT-RENTAL' : srv.linea_servicio === 'PROFESIONAL' ? 'OT-STAFF' : 'OT-MANIOBRA'
+
+        if (rama.rol === 'Traslado') {
+          rama.rol_arbol = 'TRASLADO'
+          rama.tipo = 'TRASLADOS'
+          rama.subcategoria = 'MOVILIZACIÓN GRÚA'
+        } else {
+          rama.rol_arbol = 'PERSONAL'
+          rama.tipo = 'PERSONAL CERTIFICADO'
+          rama.subcategoria = rama.recurso
+        }
+
+        rama.valor_unitario = Number(rama.valor_unitario !== undefined ? rama.valor_unitario : rama.valorUnitario) || 0
         rama.valorUnitario = rama.valor_unitario
-        rama.subtotal = calcularSubtotalLinea(rama)
+        rama.subtotal = calcularSubtotalNodo(rama)
         subtotalSrv += rama.subtotal
 
-        flatLines.push({ ...rama })
+        flatLines.push({
+          id_linea: rama.id_linea,
+          id_servicio: srv.id_servicio,
+          id_padre: srv.primario?.id_linea || null,
+          rol_arbol: rama.rol_arbol,
+          linea_servicio: srv.linea_servicio,
+          tipo_ot: rama.tipo_ot,
+          tipo: rama.tipo,
+          subcategoria: rama.subcategoria,
+          descripcion: rama.descripcion,
+          unidad: rama.unidad,
+          cantidad: rama.cantidad || 1,
+          cantidad_dias: rama.dias || rama.cantidad_dias || null,
+          cantidad_horas: rama.horas_min || rama.cantidad_horas || null,
+          cantidad_meses: rama.meses || rama.cantidad_meses || null,
+          pisoMinimo: rama.horas_min || rama.pisoMinimo || null,
+          valor_unitario: rama.valor_unitario,
+          valorUnitario: rama.valor_unitario,
+          subtotal: rama.subtotal,
+          is_linea_base: true
+        })
       })
     }
 
     srv.subtotal_servicio = subtotalSrv
   })
 
-  // Emitir dual-write
   emit('update:lines', flatLines)
   emit('update:servicios', JSON.parse(JSON.stringify(localServicios.value)))
 
-  // Liberar el flag tras un tick
   setTimeout(() => {
     isInternalSyncing.value = false
   }, 10)
 }
 
-// HELPERS DE CLASIFICACIÓN HEURÍSTICA (SECCIÓN 26.5)
-const isPersonalLine = (l) => {
-  if (!l) return false
-  const tipo = (l.tipo || l.categoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-  const sub = (l.subcategoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-  if (tipo === 'PERSONAL CERTIFICADO' || tipo === 'PERSONAL' || tipo.includes('PERSONAL')) return true
-  if (tipo !== '') return false
-  return sub === 'RIGGER' || sub === 'PREVENCIONISTA' || sub === 'OPERADOR' || sub === 'SUPERVISOR'
-}
-
-const isTrasladoLine = (l) => {
-  if (!l) return false
-  const tipo = (l.tipo || l.categoria || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-  const unidad = (l.unidad || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-  return tipo === 'TRASLADOS' || tipo === 'TRASLADO' || tipo.includes('TRASLADO') || tipo.includes('FLETE') ||
-         unidad.includes('TRASLADO') || unidad === 'FLETE' || unidad === 'VIAJE'
-}
-
-const clasificarLineaServicio = (l) => {
-  if (!l) return 'IZAJE'
-  const unidad = (l.unidad || '').toUpperCase()
-  const tipo = (l.tipo || '').toUpperCase()
-  const sub = (l.subcategoria || '').toUpperCase()
-
-  if (unidad.includes('MES')) return 'RENTAL'
-  if (tipo === 'CAMIONES' && (sub.includes('CAMA BAJA') || sub.includes('RAMPLA') || unidad.includes('TRASLADO'))) {
-    return 'TRANSPORTE'
-  }
-  return 'IZAJE'
-}
-
-const resolverTipoOT = (linea) => {
-  switch (linea) {
-    case 'TRANSPORTE': return 'OT-FLETE'
-    case 'RENTAL':     return 'OT-RENTAL'
-    case 'PROFESIONAL':return 'OT-STAFF'
-    case 'IZAJE':      return 'OT-MANIOBRA'
-    default:           return 'OT-MANIOBRA'
-  }
-}
-
-// HIDRATADOR RETROCOMPATIBLE (SECCIÓN 26.5)
+// =========================================================================
+// 9. HIDRATACIÓN RETROCOMPATIBLE DESDE LÍNEAS PLANAS
+// =========================================================================
 const hidratarArbolDesdeLineasPlanas = (lineasPlanas) => {
   if (!Array.isArray(lineasPlanas) || lineasPlanas.length === 0) return []
 
-  // Paso 1: Si ya vienen con id_servicio e id_padre / rol_arbol
-  const tieneEstructuraArbol = lineasPlanas.some(l => l.id_servicio && (l.rol_arbol === 'PRIMARIO' || l.id_padre))
-  if (tieneEstructuraArbol) {
-    const serviciosMap = new Map()
+  const serviciosMap = new Map()
 
-    lineasPlanas.forEach(l => {
-      const idSrv = l.id_servicio || `srv_${l.id_linea || Math.random().toString(36).substring(2, 7)}`
-      if (!serviciosMap.has(idSrv)) {
-        const lineaSrv = l.linea_servicio || clasificarLineaServicio(l)
-        serviciosMap.set(idSrv, {
-          id_servicio: idSrv,
-          linea_servicio: lineaSrv,
-          tipo_ot: l.tipo_ot || resolverTipoOT(lineaSrv),
-          nombre_servicio: l.descripcion || l.subcategoria || `Servicio de ${lineaSrv}`,
-          primario: null,
-          ramas: [],
-          subtotal_servicio: 0
-        })
-      }
-      const srv = serviciosMap.get(idSrv)
-      const itemClon = {
-        ...l,
-        valor_unitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0,
-        valorUnitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0,
-        subtotal: calcularSubtotalLinea(l)
-      }
+  lineasPlanas.forEach(l => {
+    const idSrv = l.id_servicio || `srv_${l.id_linea || Math.random().toString(36).substring(2, 7)}`
+    if (!serviciosMap.has(idSrv)) {
+      const lineaSrv = l.linea_servicio || (String(l.unidad).includes('MES') ? 'RENTAL' : String(l.tipo).includes('CAMION') ? 'TRANSPORTE' : 'IZAJE')
+      serviciosMap.set(idSrv, {
+        id_servicio: idSrv,
+        linea_servicio: lineaSrv,
+        colapsado: false,
+        nombre_servicio: l.descripcion || l.subcategoria || `Servicio de ${LINEA_LABELS[lineaSrv] || lineaSrv}`,
+        primario: null,
+        ramas: [],
+        subtotal_servicio: 0
+      })
+    }
 
-      if (l.rol_arbol === 'PRIMARIO' || (!l.id_padre && !srv.primario)) {
-        itemClon.rol_arbol = 'PRIMARIO'
-        itemClon.id_padre = null
-        srv.primario = itemClon
-      } else {
-        itemClon.rol_arbol = itemClon.rol_arbol || (isPersonalLine(l) ? 'PERSONAL' : isTrasladoLine(l) ? 'TRASLADO' : 'APOYO')
-        srv.ramas.push(itemClon)
-      }
-    })
+    const srv = serviciosMap.get(idSrv)
+    const esPrimario = l.rol_arbol === 'PRIMARIO' || (!l.id_padre && !srv.primario)
 
-    const resultado = Array.from(serviciosMap.values()).map(srv => {
-      if (!srv.primario && srv.ramas.length > 0) {
-        srv.primario = srv.ramas.shift()
-        srv.primario.rol_arbol = 'PRIMARIO'
-        srv.primario.id_padre = null
-      }
-      srv.subtotal_servicio = (srv.primario?.subtotal || 0) + srv.ramas.reduce((acc, r) => acc + (r.subtotal || 0), 0)
-      return srv
-    })
-    return resultado
-  }
-
-  // Paso 2: Legado puro sin id_servicio (Opción A: Agrupación simple sin adivinanza)
-  const idSrv = `srv_legacy_${Date.now()}`
-  const raiz = lineasPlanas[0]
-  const lineaDetectada = clasificarLineaServicio(raiz)
-  const tipoOtDetectado = resolverTipoOT(lineaDetectada)
-
-  const servicioUnico = {
-    id_servicio: idSrv,
-    linea_servicio: lineaDetectada,
-    tipo_ot: tipoOtDetectado,
-    nombre_servicio: 'Unidad de Trabajo General (Formato Clásico)',
-    primario: {
-      ...raiz,
-      id_linea: raiz.id_linea || `lin_${Date.now()}_root`,
+    const nodoNormalizado = {
+      id_linea: l.id_linea || genId('lin'),
       id_servicio: idSrv,
-      id_padre: null,
-      rol_arbol: 'PRIMARIO',
-      linea_servicio: lineaDetectada,
-      tipo_ot: tipoOtDetectado,
-      valor_unitario: Number(raiz.valor_unitario !== undefined ? raiz.valor_unitario : raiz.valorUnitario) || 0,
-      valorUnitario: Number(raiz.valor_unitario !== undefined ? raiz.valor_unitario : raiz.valorUnitario) || 0,
-      subtotal: calcularSubtotalLinea(raiz)
-    },
-    ramas: [],
-    subtotal_servicio: calcularSubtotalLinea(raiz)
-  }
-
-  lineasPlanas.slice(1).forEach((l, idx) => {
-    const esPersonal = isPersonalLine(l)
-    const esTraslado = isTrasladoLine(l)
-    const esAccesorio = (l.tipo || '').toUpperCase() === 'ACCESORIOS'
-    let rol = 'APOYO'
-    if (esPersonal) rol = 'PERSONAL'
-    else if (esTraslado) rol = 'TRASLADO'
-    else if (esAccesorio) rol = 'ACCESORIO'
-
-    servicioUnico.ramas.push({
-      ...l,
-      id_linea: l.id_linea || `lin_${Date.now()}_${idx + 1}_rama`,
-      id_servicio: idSrv,
-      id_padre: servicioUnico.primario.id_linea,
-      rol_arbol: rol,
-      linea_servicio: lineaDetectada,
-      tipo_ot: tipoOtDetectado,
+      id_padre: l.id_padre || null,
+      rol_arbol: esPrimario ? 'PRIMARIO' : (l.rol_arbol || 'TRASLADO'),
+      rol: (l.rol_arbol === 'PERSONAL' || String(l.tipo).includes('PERSONAL')) ? 'Personal' : 'Traslado',
+      recurso: l.subcategoria || l.recurso || l.descripcion || 'Servicio',
+      descripcion: l.descripcion || '',
+      unidad: l.unidad || 'Horas Diarias Minimas',
+      dias: Number(l.cantidad_dias !== undefined && l.cantidad_dias !== null ? l.cantidad_dias : l.dias || l.cantidad) || 1,
+      cantidad_dias: Number(l.cantidad_dias !== undefined && l.cantidad_dias !== null ? l.cantidad_dias : l.dias || l.cantidad) || 1,
+      horas_min: Number(l.cantidad_horas !== undefined && l.cantidad_horas !== null ? l.cantidad_horas : l.horas_min || l.pisoMinimo) || 8,
+      cantidad_horas: Number(l.cantidad_horas !== undefined && l.cantidad_horas !== null ? l.cantidad_horas : l.horas_min || l.pisoMinimo) || 8,
+      pisoMinimo: Number(l.cantidad_horas !== undefined && l.cantidad_horas !== null ? l.cantidad_horas : l.horas_min || l.pisoMinimo) || 8,
+      meses: Number(l.cantidad_meses !== undefined && l.cantidad_meses !== null ? l.cantidad_meses : l.meses || l.cantidad) || 1,
+      cantidad_meses: Number(l.cantidad_meses !== undefined && l.cantidad_meses !== null ? l.cantidad_meses : l.meses || l.cantidad) || 1,
+      cantidad: Number(l.cantidad) || 1,
       valor_unitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0,
       valorUnitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0,
-      subtotal: calcularSubtotalLinea(l)
-    })
+      subtotal: 0
+    }
+
+    nodoNormalizado.subtotal = calcularSubtotalNodo(nodoNormalizado)
+
+    if (esPrimario) {
+      srv.primario = nodoNormalizado
+    } else {
+      srv.ramas.push(nodoNormalizado)
+    }
   })
 
-  servicioUnico.subtotal_servicio = (servicioUnico.primario?.subtotal || 0) +
-    servicioUnico.ramas.reduce((acc, r) => acc + (r.subtotal || 0), 0)
+  const resultado = Array.from(serviciosMap.values()).map(srv => {
+    if (!srv.primario && srv.ramas.length > 0) {
+      srv.primario = srv.ramas.shift()
+      srv.primario.rol_arbol = 'PRIMARIO'
+      srv.primario.id_padre = null
+    }
+    srv.subtotal_servicio = (srv.primario?.subtotal || 0) + srv.ramas.reduce((acc, r) => acc + (r.subtotal || 0), 0)
+    return srv
+  })
 
-  return [servicioUnico]
+  return resultado
 }
 
 // Carga e inicialización reactiva
 const cargarArbol = () => {
   if (Array.isArray(props.servicios) && props.servicios.length > 0) {
     localServicios.value = JSON.parse(JSON.stringify(props.servicios))
-    // Recalcular subtotales
     localServicios.value.forEach(s => {
-      if (s.primario) s.primario.subtotal = calcularSubtotalLinea(s.primario)
+      if (s.primario) s.primario.subtotal = calcularSubtotalNodo(s.primario)
       if (Array.isArray(s.ramas)) {
-        s.ramas.forEach(r => { r.subtotal = calcularSubtotalLinea(r) })
+        s.ramas.forEach(r => { r.subtotal = calcularSubtotalNodo(r) })
       }
       s.subtotal_servicio = (s.primario?.subtotal || 0) + (s.ramas || []).reduce((acc, r) => acc + (r.subtotal || 0), 0)
     })
@@ -1583,7 +1643,6 @@ watch(() => props.servicios, (newSrv) => {
 
 watch(() => props.lines, (newLines) => {
   if (isInternalSyncing.value) return
-  // Si localServicios está vacío pero entraron líneas, hidratar
   if ((!localServicios.value || localServicios.value.length === 0) && Array.isArray(newLines) && newLines.length > 0) {
     localServicios.value = hidratarArbolDesdeLineasPlanas(newLines)
   }
@@ -1591,6 +1650,11 @@ watch(() => props.lines, (newLines) => {
 
 onMounted(() => {
   cargarArbol()
+  document.addEventListener('click', onDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocumentClick)
 })
 
 defineExpose({
@@ -1599,3 +1663,122 @@ defineExpose({
   sincronizarYProyectar
 })
 </script>
+
+<style scoped>
+.surface-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.field-input {
+  background: #0d1320;
+  border: 1px solid #1f2937;
+  color: #f8fafc;
+  border-radius: 6px;
+  font-size: 12.5px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field-input:hover { border-color: #334155; }
+.field-input:focus {
+  outline: none;
+  border-color: #cbd5e1;
+  box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.15);
+}
+.field-input::placeholder { color: #64748b; }
+
+/* Conectores limpios de árbol continuo sólido de 1px (#475569) */
+.tree-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.tree-table tbody tr td {
+  border: none !important;
+}
+.tree-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tree-toggle-box {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #334155;
+  background: #0d1320;
+  color: #94a3b8;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: all 0.12s ease;
+}
+.tree-toggle-box:hover {
+  border-color: #f59e0b;
+  color: #f8fafc;
+  background: #161f30;
+}
+
+/* Celda del nodo padre con conector continuo que baja a los hijos */
+.tree-parent-cell {
+  position: relative;
+}
+.tree-parent-cell.has-children::before {
+  content: "";
+  position: absolute;
+  left: 24px;
+  top: 25px;
+  bottom: 0;
+  width: 1px;
+  background: #475569;
+  pointer-events: none;
+}
+
+/* Celdas de ramas hijas con conector continuo ├── */
+.tree-branch-cell {
+  position: relative;
+  padding-left: 38px !important;
+}
+.tree-branch-cell::before {
+  content: "";
+  position: absolute;
+  left: 24px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #475569;
+  pointer-events: none;
+}
+.tree-branch-cell.is-last::before {
+  bottom: 50%;
+}
+.tree-branch-cell::after {
+  content: "";
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  width: 12px;
+  height: 1px;
+  background: #475569;
+  pointer-events: none;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] { -moz-appearance: textfield; }
+
+.combo-popover {
+  background: #111827;
+  border: 1px solid #334155;
+  box-shadow: 0 14px 30px -5px rgba(0, 0, 0, 0.55);
+  border-radius: 8px;
+}
+</style>
