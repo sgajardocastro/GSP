@@ -2169,10 +2169,20 @@ class ProyectoModel {
         // =========================================================================
         // GENERACIÓN DE FLOTA 100% RELACIONAL DESDE BASE DE DATOS
         // =========================================================================
+        const patentesProcesadasBD = new Set();
         equiposAsignadosBD.forEach((eq) => {
           const pat = (eq.patente || eq.ppu || eq.codigo_interno || '').toUpperCase();
           const rolNorm = String(eq.rol_equipo || '').toUpperCase();
           const tipoNorm = String(eq.tipo || '').toUpperCase();
+          const esRelevo = Boolean(eq.observaciones?.includes('Relevo') || eq.json_field?.es_reemplazo);
+          
+          // SPEC-134: Deduplicación defensiva por patente física (evita productos cruz de asignación múltiple)
+          const dedupKey = esRelevo ? `${pat}_RELEVO_${eq.fecha_plan_ini}` : (pat || `EQ_${eq.id_equipo}`);
+          if (patentesProcesadasBD.has(dedupKey)) {
+            console.warn(`[SPEC-134] Omitiendo duplicado relacional de equipo ${pat} (id_rel_equipo: ${eq.id_rel_equipo})`);
+            return;
+          }
+          patentesProcesadasBD.add(dedupKey);
           const esPrimario = rolNorm === 'PRIMARIO' || tipoNorm.includes('GRUA') || tipoNorm.includes('TELESCOPICA');
           
           const esRentalEq = (String(eq.tipo || eq.modelo || eq.observaciones || '').toUpperCase().includes('PLATAFORMA') ||
@@ -2362,6 +2372,7 @@ class ProyectoModel {
         // =========================================================================
         // GENERACIÓN DE TRIPULACIÓN 100% RELACIONAL DESDE BASE DE DATOS
         // =========================================================================
+        const personasVistasTrip = new Set();
         personasAsignadasBD.forEach((p) => {
           const rolUpper = String(p.rol_asignado || p.cargo || '').toUpperCase();
           const esChoferTransporte = rolUpper.includes('CHOFER') || rolUpper.includes('CONDUCTOR');
@@ -2369,6 +2380,12 @@ class ProyectoModel {
             // REQ-1172: Chofer asociado en Tabla 3 Flota/Transporte; omitir de Tabla 4 Dotación de Obra
             return;
           }
+
+          // SPEC-134: Deduplicar por id_user en Tabla 4
+          if (p.id_user && personasVistasTrip.has(p.id_user)) {
+            return;
+          }
+          if (p.id_user) personasVistasTrip.add(p.id_user);
 
           const nombreCompleto = `${p.name_frst || ''} ${p.apellido_pat || ''} ${p.apellido_mat || ''}`.replace(/\s+/g, ' ').trim();
           const rng = fmtRangoTurnoOT(p.fecha_plan_ini, p.fecha_plan_fin);

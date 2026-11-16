@@ -2,6 +2,18 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP & Backend] - Versión 1.0.227
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-11-16 16:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/home/nodeadmin/proyectos/lean-services-gsp/src`
+- **Requerimientos Asociados:** `REQ-1180` / `SPEC-134` / `CASO-20261116-04` (Erradicación de Duplicados en OT)
+- **Especificación Técnica:** Resolución Estructural en 4 Niveles de Duplicados Relacionales de Flota y Blindaje Defensivo en OT:
+  - **[Nivel 1: Portal Web (`GestorOportunidades.vue`)]**: Unificación de `personasMap` y `equiposMap` en `guardarCambiosAsignacion()`. Se erradica la clave disyuntiva `${eqId}_${dbLineaId || 'null'}` que generaba duplicados al iterar primero sobre `linesValidas` y luego sobre `servicios`. Consolidación automática de `id_linea_servicio` manteniendo la compatibilidad con relevos formales (`esReemplazo`).
+  - **[Nivel 2: Backend Controlador (`asignacionRecursosController.js`)]**: Deduplicación previa al upsert unificando por `id_equipo` (salvo relevos temporales) y consolidación de `id_linea_servicio`. Cláusula `SELECT eqExistente` ampliada con `(COALESCE(id_linea_servicio, 0) = COALESCE($3, 0) OR id_linea_servicio IS NULL OR $3 IS NULL)` y ordenamiento preferente para reutilizar registros preexistentes mediante `UPDATE` en lugar de insertar clones con `NULL`. Deduplicación homóloga para `tpry_rel_persona`.
+  - **[Nivel 3: Backend Modelo de OT (`proyectoModel.js`)]**: Inyección de conjuntos de control defensivo `patentesProcesadasBD` en Tabla 3 (Flota & Convoy) y `personasVistasTrip` en Tabla 4 (Tripulación). Garantiza que ninguna patente física se imprima repetida en el documento oficial ante contingencias relacionales.
+  - **[Nivel 4: Base de Datos PostgreSQL (`sch_leangsp`)]**: Saneamiento relacional en `tpry_rel_equipo` y `tpry_rel_persona`, pasando a `CANCELADO` los registros huérfanos con línea nula para los proyectos 203 y 204.
+  - **[Certificación Empírica E2E]**: OT v15 (`OT-GSP-2611-00139V15-274.pdf`) emitida y auditada mediante `pdftotext`: exactamente 2 vehículos (PAD-33 Rental y DRCX-62 Traslado con Alfonso Porperrello), eliminando el producto cruz al 100%.
+
 ## [PWA GSP] - Versión 1.0.68
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-11-16 15:45:00 (-03:00)

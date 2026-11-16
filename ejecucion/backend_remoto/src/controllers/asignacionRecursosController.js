@@ -258,15 +258,26 @@ const sincronizarAsignacionesProyecto = async (req, res) => {
         }
 
         // b) Upsert sobre tpry_rel_equipo
-        // Deduplicar equipos por (id_equipo, COALESCE(id_linea_servicio, 0)) para prevenir colisión uq_tpry_rel_equipo_linea_activo
+        // SPEC-134: Deduplicar equipos unificando por id_equipo (salvo relevos formales) y consolidar id_linea_servicio
         const equiposMap = new Map();
         for (const rawEq of equipos) {
             if (!rawEq || !rawEq.id_equipo) continue;
             const lineaEq = (rawEq.id_linea_servicio && lineasValidas.has(Number(rawEq.id_linea_servicio)))
                 ? Number(rawEq.id_linea_servicio)
                 : null;
-            const k = `${rawEq.id_equipo}_${lineaEq || 0}`;
-            equiposMap.set(k, { ...rawEq, _lineaEq: lineaEq });
+            const esRelevo = Boolean(rawEq.json_field?.es_reemplazo || rawEq.observaciones?.includes('Relevo'));
+            const k = esRelevo ? `${rawEq.id_equipo}_RELEVO_${rawEq.fecha_plan_ini}` : `${rawEq.id_equipo}`;
+            if (equiposMap.has(k)) {
+                const prev = equiposMap.get(k);
+                equiposMap.set(k, {
+                    ...prev,
+                    ...rawEq,
+                    _lineaEq: lineaEq || prev._lineaEq || null,
+                    id_linea_servicio: lineaEq || prev._lineaEq || null
+                });
+            } else {
+                equiposMap.set(k, { ...rawEq, _lineaEq: lineaEq, id_linea_servicio: lineaEq });
+            }
         }
         const equiposDeduplicados = Array.from(equiposMap.values());
 
@@ -277,10 +288,10 @@ const sincronizarAsignacionesProyecto = async (req, res) => {
             const eqExistente = await client.query(
                 `SELECT id_rel_equipo FROM tpry_rel_equipo 
                  WHERE id_proyecto = $1 AND id_equipo = $2 
-                   AND COALESCE(id_linea_servicio, 0) = COALESCE($3, 0)
+                   AND (COALESCE(id_linea_servicio, 0) = COALESCE($3, 0) OR id_linea_servicio IS NULL OR $3 IS NULL)
                    AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
                    AND NOT (id_rel_equipo = ANY($4::int[]))
-                 ORDER BY id_rel_equipo ASC LIMIT 1`,
+                 ORDER BY CASE WHEN id_linea_servicio IS NOT NULL THEN 0 ELSE 1 END, id_rel_equipo ASC LIMIT 1`,
                 [id, eq.id_equipo, lineaEq, equiposVigentesIds]
             );
 
@@ -384,8 +395,31 @@ const sincronizarAsignacionesProyecto = async (req, res) => {
         }
 
         // e) Upsert de personas soportando ventanas de relevo (turnos_operadores)
+        // SPEC-134: Deduplicar personas consolidando id_linea_servicio
+        const personasMap = new Map();
+        for (const rawP of personas) {
+            if (!rawP || !rawP.id_user) continue;
+            const lineaP = (rawP.id_linea_servicio && lineasValidas.has(Number(rawP.id_linea_servicio)))
+                ? Number(rawP.id_linea_servicio)
+                : null;
+            const esTurnoRelevo = Boolean(rawP.fecha_plan_ini && rawP.fecha_plan_fin && rawP.rol_asignado?.includes('Relevo'));
+            const kp = esTurnoRelevo ? `${rawP.id_user}_${rawP.fecha_plan_ini}` : `${rawP.id_user}`;
+            if (personasMap.has(kp)) {
+                const prevP = personasMap.get(kp);
+                personasMap.set(kp, {
+                    ...prevP,
+                    ...rawP,
+                    _lineaP: lineaP || prevP._lineaP || null,
+                    id_linea_servicio: lineaP || prevP._lineaP || null
+                });
+            } else {
+                personasMap.set(kp, { ...rawP, _lineaP: lineaP, id_linea_servicio: lineaP });
+            }
+        }
+        const personasDeduplicadas = Array.from(personasMap.values());
+
         const personasVigentesIds = [];
-        for (const p of personas) {
+        for (const p of personasDeduplicadas) {
             if (!p || !p.id_user) continue;
             const lineaP = (p.id_linea_servicio && lineasValidas.has(Number(p.id_linea_servicio)))
                 ? Number(p.id_linea_servicio)

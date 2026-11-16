@@ -7613,24 +7613,33 @@ const guardarCambiosAsignacion = async (silent = false) => {
 
       // 1. Construir personasSync (incluye tripulacion, operadores, riggers, ramas y relevos de turnos)
       const personasSync = []
-      const clavesPersonas = new Set()
+      const personasMap = new Map()
 
       const agregarPersona = (rawUid, rawLineaId, rol, fIni, fFin) => {
         const uid = Number(rawUid)
         if (!uid || isNaN(uid)) return
         const dbLineaId = resolverDbIdLinea(rawLineaId)
-        const clave = `${uid}_${dbLineaId || 'null'}_${fIni || ''}_${fFin || ''}`
-        if (clavesPersonas.has(clave)) return
-        clavesPersonas.add(clave)
+        const esTurnoRelevo = Boolean(fIni && fFin)
+        const clave = esTurnoRelevo ? `${uid}_RELEVO_${fIni}_${fFin}` : `${uid}`
 
-        personasSync.push({
+        if (personasMap.has(clave)) {
+          const existente = personasMap.get(clave)
+          if (!existente.id_linea_servicio && dbLineaId) {
+            existente.id_linea_servicio = dbLineaId
+          }
+          return
+        }
+
+        const item = {
           id_user: uid,
           id_linea_servicio: dbLineaId,
           rol_asignado: rol || 'Personal Asignado',
           fecha_plan_ini: fIni ? new Date(fIni).toISOString() : fechaIniGbl,
           fecha_plan_fin: fFin ? new Date(fFin).toISOString() : fechaFinGbl,
           estado_real: 'PROGRAMADO'
-        })
+        }
+        personasMap.set(clave, item)
+        personasSync.push(item)
       }
 
       ;(tripulacionAsignada.value || []).forEach(p => {
@@ -7686,17 +7695,23 @@ const guardarCambiosAsignacion = async (silent = false) => {
 
       // 2. Construir equiposSync (incluye linesValidas, servicios primarios/ramas, turnos_equipos y equipos_extra)
       const equiposSync = []
-      const clavesEquipos = new Set()
+      const equiposMap = new Map()
 
       const agregarEquipo = (rawEqId, rawLineaId, rol, fIni, fFin, esReemplazo = false, motivoReemplazo = '', eqReemplazadoId = null) => {
         const eqId = Number(rawEqId)
         if (!eqId || isNaN(eqId)) return
         const dbLineaId = resolverDbIdLinea(rawLineaId)
-        const clave = `${eqId}_${dbLineaId || 'null'}_${fIni || ''}_${fFin || ''}_${esReemplazo ? '1' : '0'}`
-        if (clavesEquipos.has(clave)) return
-        clavesEquipos.add(clave)
+        const clave = esReemplazo ? `${eqId}_RELEVO_${fIni || ''}_${fFin || ''}` : `${eqId}`
 
-        equiposSync.push({
+        if (equiposMap.has(clave)) {
+          const existente = equiposMap.get(clave)
+          if (!existente.id_linea_servicio && dbLineaId) {
+            existente.id_linea_servicio = dbLineaId
+          }
+          return
+        }
+
+        const item = {
           id_equipo: eqId,
           id_linea_servicio: dbLineaId,
           rol_equipo: rol || 'Equipo Asignado',
@@ -7708,7 +7723,9 @@ const guardarCambiosAsignacion = async (silent = false) => {
             id_equipo_reemplazado: eqReemplazadoId,
             motivo_reemplazo: motivoReemplazo || 'Relevo de Flota en Faena'
           } : {}
-        })
+        }
+        equiposMap.set(clave, item)
+        equiposSync.push(item)
       }
 
       ;(linesValidas.value || []).forEach(l => {

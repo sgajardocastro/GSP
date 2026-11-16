@@ -1478,6 +1478,14 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **4. Integración en Flujos Móviles PWA (`ReportDiarioIzaje.vue` y `ViajeConductor.vue`):** Despacho de `id_doc_*` en lugar de cadenas Base64 en red para reportes diarios y bitácora de viajes. Desbloqueo de jornadas concluidas con badge informativo interactivo.
   - **5. Gobernanza y Hard Gate:** Elevación SemVer a PWA `v1.0.68`, compilación limpia (`0` errores), despliegue verificado en `/var/www/html/pwa-gsp-dev/` (HTTP 200 OK) y registro en `sch_leangsp.tcfg_releases` (ID 1998) y `RELEASE_LOG.md`.
 
+* [x] **148. `[REQ-1180]` [Portal Web & Backend — SPEC-134] Erradicación Estructural de Duplicados en OT y Blindaje Relacional en 4 Niveles [DEV CERTIFICADO - 16-Nov-2026 / Web v1.0.227 / Backend v1.0.227]:**
+  - **1. Nivel 1 Frontend (`GestorOportunidades.vue`):** Unificación por `id_equipo` / `id_user` en `guardarCambiosAsignacion()`, consolidando `id_linea_servicio` y suprimiendo la emisión de duplicados por línea nula.
+  - **2. Nivel 2 Backend (`asignacionRecursosController.js`):** Upsert defensivo unificado por `id_equipo` y reutilización de registros preexistentes vía `UPDATE`, impidiendo duplicaciones en `tpry_rel_equipo` y `tpry_rel_persona`.
+  - **3. Nivel 3 Engine OT (`proyectoModel.js`):** Conjuntos de control defensivo `patentesProcesadasBD` y `personasVistasTrip`, evitando la impresión de filas repetidas en Tablas 3 y 4 del documento PDF.
+  - **4. Nivel 4 Base de Datos PostgreSQL (`sch_leangsp`):** Saneamiento relacional ejecutado en DEV para cancelar registros duplicados huérfanos con línea nula.
+  - **5. Certificación Empírica E2E:** Generación y auditoría de OT v15 (`OT-GSP-2611-00139V15-274.pdf`) con exactamente 2 vehículos únicos (`PAD-33` y `DRCX-62`).
+  - **6. Gobernanza y Hard Gate:** Elevación a Web `v1.0.227`, compilación limpia (0 errores), sincronización en `/var/www/html/lg-gsp-dev/`, reinicio de PM2 ID 10 y registro en `sch_leangsp.tcfg_releases` (ID 1999) y `RELEASE_LOG.md`.
+
 
 
 
