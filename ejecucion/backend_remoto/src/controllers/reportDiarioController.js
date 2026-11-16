@@ -991,11 +991,7 @@ const reportDiarioController = {
         const totalDiasPermitidos = calcularCupoDiasHabiles(proyCupo.rows[0]);
         const reportesConsumidos = await getReportesConsumidosOT(id_proyecto, db);
         if (reportesConsumidos >= totalDiasPermitidos) {
-          return res.status(403).json({
-            success: false,
-            codigo: 'SERVICIO_CONCLUIDO',
-            error: `Operación bloqueada por término de faena: Esta orden de trabajo ya completó sus ${totalDiasPermitidos} jornada(s) autorizadas (${reportesConsumidos} reportes finalizados). No es posible iniciar nuevas jornadas.`
-          });
+          console.warn(`[FAIL-OPEN SPEC-133] OT ${id_proyecto} sobrepasando días cotizados (${reportesConsumidos}/${totalDiasPermitidos}). Se autoriza emisión de jornada adicional para captura de firma mandante.`);
         }
 
         const token_report = crypto.randomBytes(24).toString('hex');
@@ -1618,10 +1614,11 @@ const reportDiarioController = {
           item.mensaje = `Turno concluido. Relevado en faena (${cantReportes} de ${totalDias} días globales).`;
           concluidos.push(item);
         } else if (cantReportes >= totalDias) {
-          item.puede_reportar = false;
-          item.motivo = 'SERVICIO_CONCLUIDO';
-          item.mensaje = `Faena concluida (${cantReportes} de ${totalDias} días reportados).`;
-          concluidos.push(item);
+          item.puede_reportar = true;
+          item.es_dia_adicional = true;
+          item.motivo = 'PENDIENTE';
+          item.mensaje = `Jornada adicional autorizada en faena (Día ${cantReportes + 1} de ${totalDias} cotizados).`;
+          pendientes.push(item);
         } else if (reportadoHoy) {
           item.puede_reportar = false;
           item.motivo = 'AL_DIA_HOY';
@@ -1779,11 +1776,7 @@ const reportDiarioController = {
           }
 
           if (esNuevoConsumo && totalExistentes >= totalDiasPermitidos) {
-            return res.status(403).json({
-              success: false,
-              codigo: 'SERVICIO_CONCLUIDO',
-              error: `Operación bloqueada por término de faena: Esta orden de trabajo ya completó sus ${totalDiasPermitidos} jornada(s) autorizadas (${totalExistentes} reportes finalizados). No es posible emitir nuevos reportes.`
-            });
+            console.warn(`[FAIL-OPEN SPEC-133] Guardado de reporte adicional autorizado para OT ${id_proyecto} (${totalExistentes + 1} jornadas sobre ${totalDiasPermitidos} cotizadas).`);
           }
         }
       } catch (checkErr) {

@@ -20,14 +20,14 @@
         </v-chip>
       </div>
 
-      <!-- ALERTA DE SERVICIO CONCLUIDO (Spec 57 / REQ-025) -->
-      <div v-if="servicioConcluido" class="bg-red-950/60 border border-red-500/60 rounded-2xl p-4 text-center text-white mb-4">
-        <div class="text-2xl mb-1">🛑</div>
-        <div class="text-sm font-black uppercase text-red-300">Faena Concluida</div>
-        <div class="text-xs text-slate-200 mt-1">{{ mensajeConcluido }}</div>
-        <v-btn color="grey-darken-3" class="mt-3 font-bold text-xs" prepend-icon="mdi-arrow-left" @click="volver">
-          Volver a Mis Faenas
-        </v-btn>
+      <!-- ALERTA INFORMATIVA DE JORNADA ADICIONAL (FAIL-OPEN SPEC-133) -->
+      <div v-if="esDiaAdicional" class="bg-amber-950/60 border border-amber-500/60 rounded-2xl p-3 text-center text-white mb-4">
+        <div class="text-xs font-black uppercase text-amber-300 flex items-center justify-center gap-1">
+          <span>⚠️</span> Jornada Adicional en Faena (Día {{ diaCorrelativo }} de {{ totalDiasContratados }} cotizados)
+        </div>
+        <div class="text-[11px] text-slate-300 mt-1">
+          Continuidad operativa autorizada para captura de firma mandante.
+        </div>
       </div>
     </div>
 
@@ -80,9 +80,21 @@
       </div>
 
       <!-- REQ-1060: OT sin equipo asignado -->
-      <div v-if="!equipoSeleccionado" class="bg-red-950/60 border-2 border-red-500/60 rounded-2xl p-4 text-white text-sm">
+      <div v-if="!equipoSeleccionado && !esLineaProfesional" class="bg-red-950/60 border-2 border-red-500/60 rounded-2xl p-4 text-white text-sm">
         <strong class="text-red-300">Esta OT no tiene una grúa asignada.</strong>
         No es posible registrar la jornada. Contacte a Control de Gestión para asignar el equipo.
+      </div>
+
+      <!-- BLOQUEO RIGGER EN IZAJE (SPEC-129 1.9.M) -->
+      <div v-if="esRiggerExclusivoEnIzaje" class="bg-amber-950/80 border-2 border-amber-500 rounded-2xl p-5 text-center text-white mb-4 shadow-xl">
+        <div class="text-3xl mb-1">🛑</div>
+        <div class="text-base font-black uppercase text-amber-300">Emisión Bloqueada para Rigger</div>
+        <div class="text-sm text-slate-200 mt-1">
+          En servicios de Izaje el Report Diario es único y lo emite el Operador de la grúa.
+        </div>
+        <v-btn color="grey-darken-3" class="mt-3 font-bold text-xs" prepend-icon="mdi-arrow-left" @click="volver">
+          Volver a Mis Faenas
+        </v-btn>
       </div>
       <!-- ========================================================================= -->
       <!-- MOMENTO 1: INICIO DE JORNADA                                              -->
@@ -116,13 +128,23 @@
           <!-- GRÚA ASIGNADA Y TRIPULACIÓN -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="p-3.5 bg-slate-950/90 rounded-2xl border border-amber-400/40">
-              <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">🚜 Grúa Asignada</span>
-              <strong class="text-amber-300 font-mono text-2xl font-black d-block tracking-wider">
-                {{ equipoSeleccionado?.patente || 'SIN GRÚA ASIGNADA' }}
+              <div class="d-flex align-center justify-space-between mb-0.5">
+                <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider">
+                  {{ esLineaProfesional ? '👷 Personal Profesional' : '🚜 Grúa Asignada' }}
+                </span>
+                <v-chip v-if="datosContextoReemplazo?.es_reemplazo" size="x-small" color="info" variant="flat" class="font-bold text-[10px]">
+                  RELEVO
+                </v-chip>
+              </div>
+              <strong class="text-amber-300 font-mono text-xl sm:text-2xl font-black d-block tracking-wider">
+                {{ esLineaProfesional ? 'SOLO PERSONAL STAFF' : (equipoSeleccionado?.patente || 'SIN GRÚA ASIGNADA') }}
               </strong>
               <span class="text-white text-sm font-bold d-block mt-0.5">
-                {{ equipoSeleccionado?.modelo || '-' }}
+                {{ esLineaProfesional ? (proyecto.nombre_servicio || 'Servicio Profesional sin Maquinaria') : (equipoSeleccionado?.modelo || '-') }}
               </span>
+              <div v-if="datosContextoReemplazo?.es_reemplazo" class="text-[11px] text-blue-300 font-bold mt-1">
+                ℹ️ Unidad en reemplazo de {{ datosContextoReemplazo.patente_reemplazada || 'equipo inicial' }}
+              </div>
             </div>
 
             <div class="p-3.5 bg-slate-950/90 rounded-2xl border border-amber-400/40">
@@ -191,8 +213,8 @@
             </div>
           </div>
 
-          <!-- Horómetro Superestructura Inicial (OBLIGATORIO) -->
-          <div class="mb-4">
+          <!-- Horómetro Superestructura Inicial (OBLIGATORIO en Izaje / Omitido en Profesional) -->
+          <div v-if="!esLineaProfesional" class="mb-4">
             <div class="d-flex align-center justify-space-between mb-1.5">
               <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
                 ⚙️ HORÓMETRO SUPERESTRUCTURA (INICIO) *
@@ -208,7 +230,7 @@
           </div>
 
           <!-- FOTOGRAFÍA OBLIGATORIA DEL HORÓMETRO AL INICIO (CÁMARA WEBRTC IN-APP) -->
-          <div class="mb-5">
+          <div v-if="!esLineaProfesional" class="mb-5">
             <input
               ref="inputFotoInicio"
               type="file"
@@ -263,6 +285,10 @@
             </div>
           </div>
 
+          <div v-else class="mb-4 pa-3.5 rounded-2xl bg-slate-950/90 border border-emerald-500/40 text-xs text-emerald-300 font-bold text-center">
+            👷 Servicio Profesional Solo-Staff: Exento de lectura y foto de horómetro de maquinaria.
+          </div>
+
           <!-- BOTÓN DE GUARDAR INICIO REPORT -->
           <v-btn
             block
@@ -306,12 +332,14 @@
           <!-- GRÚA Y TRIPULACIÓN -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div class="p-3 bg-slate-950/90 rounded-2xl border border-amber-400/40">
-              <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">🚜 Grúa Asignada</span>
-              <strong class="text-amber-300 font-mono text-2xl font-black d-block tracking-wider">
-                {{ equipoSeleccionado?.patente || 'SIN GRÚA ASIGNADA' }}
+              <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">
+                {{ esLineaProfesional ? '👷 Personal Profesional' : '🚜 Grúa Asignada' }}
+              </span>
+              <strong class="text-amber-300 font-mono text-xl sm:text-2xl font-black d-block tracking-wider">
+                {{ esLineaProfesional ? 'SOLO PERSONAL STAFF' : (equipoSeleccionado?.patente || 'SIN GRÚA ASIGNADA') }}
               </strong>
               <span class="text-white text-sm font-bold d-block">
-                {{ equipoSeleccionado?.modelo || '-' }}
+                {{ esLineaProfesional ? (proyecto.nombre_servicio || 'Servicio Profesional sin Maquinaria') : (equipoSeleccionado?.modelo || '-') }}
               </span>
             </div>
 
@@ -495,8 +523,8 @@
             </div>
           </div>
 
-          <!-- 1. HORÓMETRO SUPERESTRUCTURA TÉRMINO (OBLIGATORIO) -->
-          <div class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
+          <!-- 1. HORÓMETRO SUPERESTRUCTURA TÉRMINO (OBLIGATORIO en Izaje / Omitido en Profesional) -->
+          <div v-if="!esLineaProfesional" class="mb-4 pa-4 rounded-2xl border-2 border-slate-700 bg-slate-950/80">
             <div class="d-flex align-center justify-space-between mb-1.5">
               <label class="text-sm font-black text-amber-300 text-uppercase tracking-wider">
                 ⚙️ HORÓMETRO SUPERESTRUCTURA (TÉRMINO) *
@@ -583,6 +611,9 @@
               </div>
             </div>
           </div>
+          <div v-else class="mb-4 pa-3.5 rounded-2xl bg-slate-950/90 border border-emerald-500/40 text-xs text-emerald-300 font-bold text-center">
+            👷 Servicio Profesional Solo-Staff: Exento de lectura y foto de horómetro de maquinaria.
+          </div>
 
           <!-- Observaciones / Maniobras -->
           <div class="mb-4">
@@ -638,12 +669,14 @@
           <!-- GRÚA CERTIFICADA Y TRIPULACIÓN EN EL REPORT MANDANTE -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div class="p-3 bg-black/60 rounded-2xl border border-amber-400/40">
-              <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">🚜 Grúa Certificada</span>
-              <strong class="text-amber-300 font-mono text-2xl font-black d-block tracking-wider">
-                {{ equipoSeleccionado?.patente || 'SIN GRÚA ASIGNADA' }}
+              <span class="text-amber-400 font-black d-block text-uppercase text-xs tracking-wider mb-0.5">
+                {{ esLineaProfesional ? '👷 Personal Profesional' : '🚜 Grúa Certificada' }}
+              </span>
+              <strong class="text-amber-300 font-mono text-xl sm:text-2xl font-black d-block tracking-wider">
+                {{ esLineaProfesional ? 'SOLO PERSONAL STAFF' : (equipoSeleccionado?.patente || 'SIN GRÚA ASIGNADA') }}
               </strong>
               <span class="text-slate-200 text-sm font-bold d-block">
-                {{ equipoSeleccionado?.modelo || '-' }}
+                {{ esLineaProfesional ? (proyecto.nombre_servicio || 'Servicio Profesional sin Maquinaria') : (equipoSeleccionado?.modelo || '-') }}
               </span>
             </div>
             <div class="p-3 bg-black/60 rounded-2xl border border-amber-400/40">
@@ -751,12 +784,44 @@
             </div>
           </div>
 
-          <!-- SignatureField (Canvas de Firma Táctil) -->
-          <div class="mb-2.5">
+          <!-- CONTINGENCIA EN TERRENO: CIERRE SIN FIRMA DEL CLIENTE (Acuerdo #7 / REQ-1146) -->
+          <div class="mb-4 pa-3.5 rounded-2xl bg-slate-900 border-2 border-amber-500/40">
+            <label class="d-flex align-center cursor-pointer select-none">
+              <input
+                v-model="contingenciaSinFirma"
+                type="checkbox"
+                class="w-5 h-5 rounded text-amber-500 focus:ring-amber-400 mr-3 cursor-pointer"
+              />
+              <span class="text-sm font-black text-amber-300">
+                Contingencia en terreno: Cliente ausente al cierre (Cerrar sin firma presencial)
+              </span>
+            </label>
+
+            <div v-if="contingenciaSinFirma" class="mt-3 pt-3 border-t border-slate-700">
+              <label class="text-xs font-black text-amber-400 uppercase tracking-wider block mb-1.5">
+                📝 Motivo Cierre sin Firma Presencial del Cliente * (mínimo 5 caracteres)
+              </label>
+              <textarea
+                v-model="motivoSinFirmaCliente"
+                rows="2"
+                placeholder="Ej: Mandante se retiró de faena a las 17:30, validado telefónicamente..."
+                class="w-full bg-slate-950 border-2 border-amber-500/60 rounded-xl p-3 text-white text-sm font-medium focus:border-amber-400 focus:outline-none min-h-[70px]"
+              ></textarea>
+              <span v-if="motivoSinFirmaCliente.trim().length > 0 && motivoSinFirmaCliente.trim().length < 5" class="text-xs text-red-400 font-bold block mt-1">
+                ⚠️ El motivo debe tener al menos 5 caracteres (actual: {{ motivoSinFirmaCliente.trim().length }})
+              </span>
+            </div>
+          </div>
+
+          <!-- SignatureField (Canvas de Firma Táctil) - Oculto si contingenciaSinFirma es true -->
+          <div v-if="!contingenciaSinFirma" class="mb-2.5">
             <SignatureField
               v-model="form.cliente_firma_canvas_base64"
               label="FIRMA MANUSCRITA DEL SUPERVISOR MANDANTE"
             />
+          </div>
+          <div v-else class="mb-2.5 p-3 rounded-xl bg-amber-950/60 border border-amber-500/50 text-center text-xs text-amber-200 font-bold">
+            🔒 Firma presencial eximida por contingencia justificada en terreno.
           </div>
 
           <div class="text-xs text-slate-300 text-center my-3 bg-slate-900/90 py-2.5 px-3 rounded-xl border border-white/10 font-medium">
@@ -844,6 +909,7 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import SignatureField from '@/components/SignatureField.vue'
 import { abrirCamaraWebRTC } from '@/utils/inAppCamera'
+import { procesarYSubirFoto } from '@/utils/pwaStorageHelper'
 
 const route = useRoute()
 const router = useRouter()
@@ -862,6 +928,7 @@ const idReporteAvanceRuta = ref(route.query.id_reporte_avance ? Number(route.que
 const errorContexto = ref(false)
 const jornadaDiaAnterior = ref(false)
 const jornadasAbiertas = ref([])
+const datosContextoReemplazo = ref(null)
 
 // Fecha local operativa (America/Santiago), nunca UTC (INV-7)
 const fechaHoyChile = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' })
@@ -897,6 +964,9 @@ const borrarRespaldoJornada = () => {
 }
 const servicioConcluido = ref(false)
 const mensajeConcluido = ref('')
+const esDiaAdicional = computed(() => {
+  return diaCorrelativo.value > totalDiasContratados.value
+})
 const mostrarModalRetorno = ref(false)
 const modalRetornoToken = ref(null)
 
@@ -916,6 +986,36 @@ const diaCorrelativo = ref(1)
 const totalDiasContratados = ref(1)
 const horasMinimas = ref(8.0)
 const horometroMinimoInicio = ref(0)
+
+const contingenciaSinFirma = ref(false)
+const motivoSinFirmaCliente = ref('')
+
+const esLineaProfesional = computed(() => {
+  const linea = String(proyecto.value?.linea_negocio || proyecto.value?.tipo_ot || '').toUpperCase()
+  return linea === 'PROFESIONAL' || linea === 'OT-STAFF' || Boolean(proyecto.value?.es_solo_staff)
+})
+
+const esRiggerExclusivoEnIzaje = computed(() => {
+  const linea = String(proyecto.value?.linea_negocio || proyecto.value?.tipo_ot || 'IZAJE').toUpperCase()
+  const esIzaje = linea === 'IZAJE' || linea === 'OT-MANIOBRA' || (!linea.includes('PROFESIONAL') && !linea.includes('RENTAL') && !linea.includes('TRANSPORTE') && !linea.includes('INTERNA'))
+  if (!esIzaje) return false
+
+  const uid = idUserSesion()
+  if (!uid) return false
+
+  const miPersona = personas.value.find(p => Number(p.id_user) === uid)
+  if (!miPersona) return false
+
+  const rol = (miPersona.rol_asignado || miPersona.cargo || '').toUpperCase()
+  const esRigger = rol.includes('RIGGER') || rol.includes('SENALERO')
+  const esOperador = rol.includes('OPERADOR') || rol.includes('MAQUINISTA') || rol.includes('CHOFER') || rol.includes('CONDUCTOR')
+
+  const idOpEquipo = Number(equipoSeleccionado.value?.id_user_operador || 0)
+  const idOpProyecto = Number(proyecto.value?.id_user_operador || 0)
+  if (idOpEquipo === uid || idOpProyecto === uid) return false
+
+  return esRigger && !esOperador
+})
 
 const etiquetaDiaFecha = computed(() => {
   const raw = String(form.fecha_reporte || fechaHoyChile())
@@ -1077,6 +1177,8 @@ const guardarBorradorFormulario = () => {
       ts: Date.now(),
       diaCorrelativo: diaCorrelativo.value,
       faseVisual: faseVisual.value,
+      contingenciaSinFirma: contingenciaSinFirma.value,
+      motivoSinFirmaCliente: motivoSinFirmaCliente.value,
       form: { ...form }
     }))
   } catch (e) { /* quota exceeded */ }
@@ -1088,6 +1190,12 @@ const restaurarBorradorFormulario = () => {
     if (!raw) return
     const saved = JSON.parse(raw)
     if (!saved || !saved.form) return
+    if (saved.contingenciaSinFirma !== undefined) {
+      contingenciaSinFirma.value = Boolean(saved.contingenciaSinFirma)
+    }
+    if (saved.motivoSinFirmaCliente) {
+      motivoSinFirmaCliente.value = saved.motivoSinFirmaCliente
+    }
     // Solo restaurar si corresponde al mismo día correlativo
     if (saved.diaCorrelativo && Number(saved.diaCorrelativo) !== Number(diaCorrelativo.value)) return
     const f = saved.form
@@ -1277,24 +1385,40 @@ watch(form, () => {
 
 const puedeGuardarInicio = computed(() => {
   if (servicioConcluido.value) return false
-  if (errorContexto.value || !equipoSeleccionado.value) return false
+  if (esRiggerExclusivoEnIzaje.value) return false
+  if (errorContexto.value) return false
+  if (!esLineaProfesional.value && !equipoSeleccionado.value) return false
   if (!form.fecha_reporte || !form.hora_inicio || enviandoInicio.value) return false
-  if (form.horometro_inicio === null || form.horometro_inicio === '' || Number.isNaN(Number(form.horometro_inicio))) return false
-  if (!form.foto_tablero_inicio) return false
+  if (!esLineaProfesional.value) {
+    if (form.horometro_inicio === null || form.horometro_inicio === '' || Number.isNaN(Number(form.horometro_inicio))) return false
+    if (!form.foto_tablero_inicio) return false
+  }
   return true
 })
 
 const puedeEnviarReport = computed(() => {
   if (servicioConcluido.value) return false
+  if (esRiggerExclusivoEnIzaje.value) return false
+  if (enviando.value) return false
+
+  if (contingenciaSinFirma.value) {
+    return (motivoSinFirmaCliente.value || '').trim().length >= 5
+  }
+
   return (
     form.cliente_nombre.trim().length >= 3 &&
     form.cliente_rut.trim().length >= 8 &&
-    form.cliente_firma_canvas_base64 &&
-    !enviando.value
+    Boolean(form.cliente_firma_canvas_base64)
   )
 })
 
 const irAReportMandante = () => {
+  if (esRiggerExclusivoEnIzaje.value) {
+    snackbar.text = '🛑 En servicios de Izaje el Report Diario es único y lo emite el Operador de la grúa'
+    snackbar.color = 'error'
+    snackbar.show = true
+    return
+  }
   normalizarHora('hora_inicio')
   normalizarHora('hora_termino')
   if (!form.hora_termino) {
@@ -1303,27 +1427,29 @@ const irAReportMandante = () => {
     snackbar.show = true
     return
   }
-  if (form.horometro_termino === null || form.horometro_termino === '' || Number.isNaN(Number(form.horometro_termino))) {
-    snackbar.text = '⚠️ El Horómetro Superestructura (Término) es OBLIGATORIO'
-    snackbar.color = 'warning'
-    snackbar.show = true
-    return
-  }
-  if (!form.foto_tablero_termino) {
-    snackbar.text = '⚠️ La Foto del Horómetro Superestructura es OBLIGATORIA'
-    snackbar.color = 'warning'
-    snackbar.show = true
-    return
-  }
-  if (estadoHorometroTermino.value.tipo === 'ERROR_MENOR') {
-    snackbar.text = estadoHorometroTermino.value.mensaje
-    snackbar.color = 'error'
-    snackbar.show = true
-    return
-  }
-  if (estadoHorometroTermino.value.tipo === 'WARNING_DISPARADO') {
-    const confirma = window.confirm(`⚠️ Advertencia de Horómetro Motor:\n\nEl horómetro final (${form.horometro_termino}) genera un incremento de +${estadoHorometroTermino.value.diff} hrs de motor en una jornada de ${calculoHoras.value.efectivas} hrs.\n\n¿Estás seguro de que este valor es correcto y no corresponde al kilometraje/odómetro?`)
-    if (!confirma) return
+  if (!esLineaProfesional.value) {
+    if (form.horometro_termino === null || form.horometro_termino === '' || Number.isNaN(Number(form.horometro_termino))) {
+      snackbar.text = '⚠️ El Horómetro Superestructura (Término) es OBLIGATORIO'
+      snackbar.color = 'warning'
+      snackbar.show = true
+      return
+    }
+    if (!form.foto_tablero_termino) {
+      snackbar.text = '⚠️ La Foto del Horómetro Superestructura es OBLIGATORIA'
+      snackbar.color = 'warning'
+      snackbar.show = true
+      return
+    }
+    if (estadoHorometroTermino.value.tipo === 'ERROR_MENOR') {
+      snackbar.text = estadoHorometroTermino.value.mensaje
+      snackbar.color = 'error'
+      snackbar.show = true
+      return
+    }
+    if (estadoHorometroTermino.value.tipo === 'WARNING_DISPARADO') {
+      const confirma = window.confirm(`⚠️ Advertencia de Horómetro Motor:\n\nEl horómetro final (${form.horometro_termino}) genera un incremento de +${estadoHorometroTermino.value.diff} hrs de motor en una jornada de ${calculoHoras.value.efectivas} hrs.\n\n¿Estás seguro de que este valor es correcto y no corresponde al kilometraje/odómetro?`)
+      if (!confirma) return
+    }
   }
   faseVisual.value = 3
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1355,6 +1481,7 @@ const cargarContexto = async (idEqParam = null) => {
     if (idJornadaConocida) params.id_reporte_avance = idJornadaConocida
     const uid = idUserSesion()
     if (uid) params.id_user = uid
+    if (form.fecha_reporte) params.fecha_reporte = form.fecha_reporte
 
     const res = await api.get(`/operaciones/report/contexto/${idProyecto.value}`, { params })
     if (!res.data || !res.data.success) {
@@ -1364,6 +1491,11 @@ const cargarContexto = async (idEqParam = null) => {
     if (res.data && res.data.success) {
       const d = res.data.data
       proyecto.value = d.proyecto || {}
+      datosContextoReemplazo.value = {
+        es_reemplazo: Boolean(d.es_reemplazo),
+        patente_reemplazada: d.patente_reemplazada || null,
+        motivo_reemplazo: d.motivo_reemplazo || null
+      }
       
       const mapEq = new Map()
       ;(d.equipos || []).forEach(e => {
@@ -1389,8 +1521,9 @@ const cargarContexto = async (idEqParam = null) => {
       }
 
       if (d.servicio_concluido) {
-        servicioConcluido.value = true
-        mensajeConcluido.value = `Esta orden de trabajo ya completó sus ${d.total_dias || 1} jornada(s) autorizadas (${d.dias_reportados || 1} reportes finalizados). No es posible emitir nuevos reportes.`
+        // SPEC-133 Fail-Open: No bloquear la emisión de jornadas adicionales en faena
+        servicioConcluido.value = false
+        mensajeConcluido.value = `Jornada adicional autorizada en faena.`
       } else {
         servicioConcluido.value = false
         mensajeConcluido.value = ''
@@ -1507,7 +1640,13 @@ const resolverIdOperador = () => {
 // Guardar Momento 1 (Inicio de Jornada)
 const guardarInicioJornada = async () => {
   try {
-    if (!equipoSeleccionado.value?.id_equipo) {
+    if (esRiggerExclusivoEnIzaje.value) {
+      snackbar.text = '🛑 En servicios de Izaje el Report Diario es único y lo emite el Operador de la grúa'
+      snackbar.color = 'error'
+      snackbar.show = true
+      return
+    }
+    if (!esLineaProfesional.value && !equipoSeleccionado.value?.id_equipo) {
       snackbar.text = '⚠️ Esta OT no tiene una grúa asignada. Contacte a Control de Gestión.'
       snackbar.color = 'error'
       snackbar.show = true
@@ -1521,30 +1660,46 @@ const guardarInicioJornada = async () => {
       return
     }
     normalizarHora('hora_inicio')
-    if (form.horometro_inicio === null || form.horometro_inicio === '' || !form.foto_tablero_inicio) {
-      snackbar.text = '⚠️ El Horómetro Superestructura y su Foto son OBLIGATORIOS para iniciar el report.'
-      snackbar.color = 'warning'
-      snackbar.show = true
-      return
-    }
-    if (horometroMinimoInicio.value > 0 && Number(form.horometro_inicio) < horometroMinimoInicio.value) {
-      snackbar.text = `⚠️ El Horómetro de Inicio (${form.horometro_inicio} hrs) no puede ser menor al último horómetro registrado (${horometroMinimoInicio.value} hrs).`
-      snackbar.color = 'error'
-      snackbar.show = true
-      return
+    if (!esLineaProfesional.value) {
+      if (form.horometro_inicio === null || form.horometro_inicio === '' || !form.foto_tablero_inicio) {
+        snackbar.text = '⚠️ El Horómetro Superestructura y su Foto son OBLIGATORIOS para iniciar el report.'
+        snackbar.color = 'warning'
+        snackbar.show = true
+        return
+      }
+      if (horometroMinimoInicio.value > 0 && Number(form.horometro_inicio) < horometroMinimoInicio.value) {
+        console.warn(`[REQ-1143] Horómetro de Inicio (${form.horometro_inicio} hrs) menor al último registrado (${horometroMinimoInicio.value} hrs). Registro permitido temporalmente.`)
+      }
     }
     enviandoInicio.value = true
+
+    // SPEC-133: Subida a Storage API y erradicación de Base64 de la red
+    let idDocFotoInicio = null
+    if (!esLineaProfesional.value && form.foto_tablero_inicio) {
+      try {
+        idDocFotoInicio = await procesarYSubirFoto(form.foto_tablero_inicio, {
+          modulo: 'reports',
+          tipo_doc: 'FOTO_HOROMETRO',
+          name_doc_orig: `horometro_inicio_ot${idProyecto.value}_d${diaCorrelativo.value}.jpg`
+        })
+      } catch (errFoto) {
+        console.warn('[PWA Storage] Fallback foto inicio:', errFoto)
+      }
+    }
+
     const payload = {
       id_proyecto: Number(idProyecto.value),
-      id_equipo: Number(equipoSeleccionado.value.id_equipo),
+      id_equipo: equipoSeleccionado.value?.id_equipo ? Number(equipoSeleccionado.value.id_equipo) : null,
       id_user_operador: idOperador,
       id_user_rigger: personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('RIGGER'))?.id_user || null,
       dia_correlativo: diaCorrelativo.value,
       fecha_reporte: form.fecha_reporte,
       hora_inicio: form.hora_inicio,
-      horometro_inicio: form.horometro_inicio,
+      horometro_inicio: esLineaProfesional.value ? null : form.horometro_inicio,
       odometro_inicio: null,
-      foto_tablero_inicio: form.foto_tablero_inicio || null,
+      id_doc_foto_inicio: idDocFotoInicio,
+      id_doc_foto_odometro_inicio: null,
+      foto_tablero_inicio: idDocFotoInicio ? null : (esLineaProfesional.value ? null : (form.foto_tablero_inicio || null)),
       foto_odometro_inicio: null,
       device_timestamp: new Date().toISOString()
     }
@@ -1560,7 +1715,9 @@ const guardarInicioJornada = async () => {
           id_equipo: payload.id_equipo,
           fecha_reporte: payload.fecha_reporte
         })
-        router.replace({ query: { ...route.query, id_proyecto: String(idProyecto.value), id_equipo: String(payload.id_equipo), id_reporte_avance: String(res.data.data.id_reporte_avance) } }).catch(() => {})
+        const qUpdate = { ...route.query, id_proyecto: String(idProyecto.value), id_reporte_avance: String(res.data.data.id_reporte_avance) }
+        if (payload.id_equipo) qUpdate.id_equipo = String(payload.id_equipo)
+        router.replace({ query: qUpdate }).catch(() => {})
       }
       snackbar.text = '🟢 Inicio de Jornada guardado en Control de Flota exitosamente!'
       snackbar.color = 'success'
@@ -1578,14 +1735,16 @@ const guardarInicioJornada = async () => {
     // REQ-1060: si ya existe una jornada abierta, recargar para presentarla (nunca crear otra)
     if (err.response?.status === 409 && ['JORNADA_ANTERIOR_ABIERTA', 'JORNADA_ABIERTA_OTRO_EQUIPO'].includes(data.codigo) && data.id_reporte_avance) {
       idReporteAvanceRuta.value = Number(data.id_reporte_avance)
-      snackbar.text = data.error
+      snackbar.text = data.message || data.error || 'Ya existe una jornada abierta para este equipo u operador'
       snackbar.color = 'warning'
       snackbar.show = true
       await cargarContexto()
       return
     }
-    snackbar.text = data.error || 'Error al guardar inicio de jornada'
-    snackbar.color = 'error'
+    // Acuerdo #3: manejo limpio de 409 servicio paralelo en curso
+    const mensajeError = data.message || data.error || err.message || 'Error al guardar inicio de jornada'
+    snackbar.text = mensajeError
+    snackbar.color = err.response?.status === 409 ? 'warning' : 'error'
     snackbar.show = true
   } finally {
     enviandoInicio.value = false
@@ -1618,40 +1777,96 @@ const obtenerGeolocalizacion = () => {
 // Guardar Momento 2 + Report Mandante
 const sellarYTransmitirReport = async () => {
   try {
-    normalizarHora('hora_inicio')
-    normalizarHora('hora_termino')
-    if (form.horometro_termino !== null && form.horometro_termino !== '' && form.horometro_inicio !== null && form.horometro_inicio !== '' && Number(form.horometro_termino) < Number(form.horometro_inicio)) {
-      snackbar.text = `⚠️ El Horómetro de Término (${form.horometro_termino} hrs) no puede ser menor al Horómetro de Inicio (${form.horometro_inicio} hrs).`
+    if (esRiggerExclusivoEnIzaje.value) {
+      snackbar.text = '🛑 En servicios de Izaje el Report Diario es único y lo emite el Operador de la grúa'
       snackbar.color = 'error'
       snackbar.show = true
       return
     }
-    if (!form.cliente_nombre || form.cliente_nombre.trim().length < 3) {
-      snackbar.text = '⚠️ Debes ingresar el Nombre del Supervisor Mandante'
-      snackbar.color = 'warning'
-      snackbar.show = true
-      return
+    normalizarHora('hora_inicio')
+    normalizarHora('hora_termino')
+    if (!esLineaProfesional.value) {
+      if (form.horometro_termino !== null && form.horometro_termino !== '' && form.horometro_inicio !== null && form.horometro_inicio !== '' && Number(form.horometro_termino) < Number(form.horometro_inicio)) {
+        console.warn(`[REQ-1143] Horómetro de Término (${form.horometro_termino} hrs) menor al Inicial (${form.horometro_inicio} hrs). Registro permitido temporalmente.`)
+      }
     }
-    if (!form.cliente_rut || form.cliente_rut.trim().length < 8) {
-      snackbar.text = '⚠️ Debes ingresar el RUT del Mandante'
-      snackbar.color = 'warning'
-      snackbar.show = true
-      return
-    }
-    if (!form.cliente_firma_canvas_base64) {
-      snackbar.text = '⚠️ La Firma Manuscrita en pantalla es OBLIGATORIA'
-      snackbar.color = 'warning'
-      snackbar.show = true
-      return
+
+    if (contingenciaSinFirma.value) {
+      if (!motivoSinFirmaCliente.value || motivoSinFirmaCliente.value.trim().length < 5) {
+        snackbar.text = '⚠️ Debe indicar el motivo de cierre sin firma del mandante (mínimo 5 caracteres).'
+        snackbar.color = 'warning'
+        snackbar.show = true
+        return
+      }
+      if (!form.cliente_nombre || form.cliente_nombre.trim().length < 3) {
+        form.cliente_nombre = 'Cliente Ausente (Contingencia)'
+      }
+      if (!form.cliente_rut || form.cliente_rut.trim().length < 8) {
+        form.cliente_rut = 'S/RUT-CONTINGENCIA'
+      }
+    } else {
+      if (!form.cliente_nombre || form.cliente_nombre.trim().length < 3) {
+        snackbar.text = '⚠️ Debes ingresar el Nombre del Supervisor Mandante'
+        snackbar.color = 'warning'
+        snackbar.show = true
+        return
+      }
+      if (!form.cliente_rut || form.cliente_rut.trim().length < 8) {
+        snackbar.text = '⚠️ Debes ingresar el RUT del Mandante'
+        snackbar.color = 'warning'
+        snackbar.show = true
+        return
+      }
+      if (!form.cliente_firma_canvas_base64) {
+        snackbar.text = '⚠️ La Firma Manuscrita en pantalla es OBLIGATORIA'
+        snackbar.color = 'warning'
+        snackbar.show = true
+        return
+      }
     }
 
     enviando.value = true
     const geo = await obtenerGeolocalizacion()
 
+    // SPEC-133: Compresión y subida a Storage API de fotos y firma mandante
+    let idDocFotoInicio = null
+    let idDocFotoTermino = null
+    let idDocFirmaCliente = null
+
+    if (!esLineaProfesional.value && form.foto_tablero_inicio) {
+      try {
+        idDocFotoInicio = await procesarYSubirFoto(form.foto_tablero_inicio, {
+          modulo: 'reports',
+          tipo_doc: 'FOTO_HOROMETRO',
+          name_doc_orig: `horometro_inicio_ot${idProyecto.value}_d${diaCorrelativo.value}.jpg`
+        })
+      } catch (e) { console.warn('[PWA Storage] Fallback foto inicio:', e) }
+    }
+
+    if (!esLineaProfesional.value && form.foto_tablero_termino) {
+      try {
+        idDocFotoTermino = await procesarYSubirFoto(form.foto_tablero_termino, {
+          modulo: 'reports',
+          tipo_doc: 'FOTO_HOROMETRO',
+          name_doc_orig: `horometro_termino_ot${idProyecto.value}_d${diaCorrelativo.value}.jpg`
+        })
+      } catch (e) { console.warn('[PWA Storage] Fallback foto termino:', e) }
+    }
+
+    if (!contingenciaSinFirma.value && form.cliente_firma_canvas_base64) {
+      try {
+        idDocFirmaCliente = await procesarYSubirFoto(form.cliente_firma_canvas_base64, {
+          modulo: 'reports',
+          tipo_doc: 'FIRMA_CLIENTE',
+          name_doc_orig: `firma_mandante_ot${idProyecto.value}_d${diaCorrelativo.value}.jpg`
+        })
+      } catch (e) { console.warn('[PWA Storage] Fallback firma:', e) }
+    }
+
     const payload = {
       id_reporte_avance: idReporteAvanceActivo.value || null,
       id_proyecto: Number(idProyecto.value),
-      id_equipo: equipoSeleccionado.value?.id_equipo || idEquipoSeleccionado.value,
+      id_equipo: equipoSeleccionado.value?.id_equipo ? Number(equipoSeleccionado.value.id_equipo) : (idEquipoSeleccionado.value || null),
       id_user_operador: resolverIdOperador(),
       id_user_rigger: personas.value.find(p => (p.rol_asignado || '').toUpperCase().includes('RIGGER'))?.id_user || null,
       dia_correlativo: diaCorrelativo.value,
@@ -1666,13 +1881,18 @@ const sellarYTransmitirReport = async () => {
       horas_standby_cliente: Number(form.horas_standby_cliente || 0),
       horas_standby_gsp: Number(form.horas_standby_gsp || 0),
       motivo_standby: form.motivo_standby || null,
-      horometro_inicio: form.horometro_inicio,
-      horometro_termino: form.horometro_termino,
+      horometro_inicio: esLineaProfesional.value ? null : form.horometro_inicio,
+      horometro_termino: esLineaProfesional.value ? null : form.horometro_termino,
       horometro_chasis_termino: form.horometro_chasis_termino || null,
       odometro_inicio: null,
       odometro_termino: null,
-      foto_tablero_inicio: form.foto_tablero_inicio,
-      foto_tablero_termino: form.foto_tablero_termino,
+      id_doc_foto_inicio: idDocFotoInicio,
+      id_doc_foto_termino: idDocFotoTermino,
+      id_doc_foto_odometro_inicio: null,
+      id_doc_foto_odometro_termino: null,
+      id_doc_firma_cliente: idDocFirmaCliente,
+      foto_tablero_inicio: idDocFotoInicio ? null : (esLineaProfesional.value ? null : form.foto_tablero_inicio),
+      foto_tablero_termino: idDocFotoTermino ? null : (esLineaProfesional.value ? null : form.foto_tablero_termino),
       foto_odometro_inicio: null,
       foto_odometro_termino: null,
       foto_horometro_chasis_termino: form.foto_horometro_chasis_termino || null,
@@ -1681,7 +1901,9 @@ const sellarYTransmitirReport = async () => {
       cliente_nombre: form.cliente_nombre,
       cliente_rut: form.cliente_rut,
       cliente_cargo: form.cliente_cargo,
-      cliente_firma_canvas_base64: form.cliente_firma_canvas_base64,
+      cliente_firma_canvas_base64: idDocFirmaCliente ? null : (contingenciaSinFirma.value ? null : form.cliente_firma_canvas_base64),
+      contingencia_sin_firma: Boolean(contingenciaSinFirma.value),
+      motivo_sin_firma_cliente: contingenciaSinFirma.value ? motivoSinFirmaCliente.value.trim() : null,
       latitud_inicio_servicio: geo.latitud,
       longitud_inicio_servicio: geo.longitud,
       accuracy_firma: geo.accuracy,

@@ -1887,54 +1887,89 @@ class ProyectoModel {
         `;
       });
 
-      // Dotación Humana / Tripulación
+      // Dotación Humana / Tripulación Oficial
       const tripulacionItems = [];
       const userIdsSeen = new Set();
-
-      lineasServicio.forEach(l => {
-        const turnos = Array.isArray(l.turnos_operadores) && l.turnos_operadores.length > 0
-          ? l.turnos_operadores.filter(t => t && t.operador_id)
-          : [];
-        if (turnos.length > 0) {
-          turnos.forEach(t => {
-            if (t.operador_id && !userIdsSeen.has(t.operador_id)) {
-              userIdsSeen.add(t.operador_id);
-              const u = getUserInfo(t.operador_id);
-              const rng = fmtRangoTurnoOT(t.fecha_ini, t.fecha_fin);
-              if (u) tripulacionItems.push({ rol: rng ? `Operador Grúa / Equipo (${rng})` : 'Operador Grúa / Equipo', ...u });
-            }
-          });
-        } else if (l.operador_asignado_id && !userIdsSeen.has(l.operador_asignado_id)) {
-          userIdsSeen.add(l.operador_asignado_id);
-          const u = getUserInfo(l.operador_asignado_id);
-          if (u) tripulacionItems.push({ rol: 'Operador Grúa / Equipo', ...u });
-        }
-      });
-
-      equiposExtra.forEach(ex => {
-        if (ex.chofer_id && !userIdsSeen.has(ex.chofer_id)) {
-          userIdsSeen.add(ex.chofer_id);
-          const u = getUserInfo(ex.chofer_id);
-          const modTexto = fmtModalidadTrasladoOT(ex.modalidad_traslado);
-          if (u) tripulacionItems.push({ rol: modTexto ? `Chofer Transporte (${modTexto})` : 'Chofer Cama Baja / Transporte', ...u });
-        }
-      });
-
-      if (ejec.operador_id && !userIdsSeen.has(ejec.operador_id)) {
-        userIdsSeen.add(ejec.operador_id);
-        const u = getUserInfo(ejec.operador_id);
-        if (u) tripulacionItems.push({ rol: 'Operador Grúa Titular', ...u });
-      }
       const requiereRigger = Boolean(crm.requiere_rigger || crm.requiereRigger);
-      if (ejec.rigger_id && requiereRigger && !userIdsSeen.has(ejec.rigger_id)) {
-        userIdsSeen.add(ejec.rigger_id);
-        const u = getUserInfo(ejec.rigger_id);
-        if (u) tripulacionItems.push({ rol: 'Rigger / Señalero Certificado', ...u });
+
+      // 1. Prioridad Canónica: Consultar asignaciones reales en tpry_rel_persona
+      let personasAsignadasBD = [];
+      try {
+        const perRes = await client.query(`
+          SELECT rp.id_user, rp.rol_asignado, u.name_frst, u.apellido_pat, u.rut as rut_user, u.email, u.movil as fono
+          FROM tpry_rel_persona rp
+          INNER JOIN tsec_users u ON rp.id_user = u.id_user
+          WHERE rp.id_proyecto = $1 AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+          ORDER BY rp.fecha_plan_ini ASC, rp.id_rel_persona ASC
+        `, [id_proyecto]);
+        personasAsignadasBD = perRes.rows || [];
+      } catch (errRel) {
+        console.warn('[generarOTVersion] Advertencia consultando tpry_rel_persona:', errRel.message);
       }
-      if (ejec.chofer_id && !userIdsSeen.has(ejec.chofer_id)) {
-        userIdsSeen.add(ejec.chofer_id);
-        const u = getUserInfo(ejec.chofer_id);
-        if (u) tripulacionItems.push({ rol: 'Chofer Transporte', ...u });
+
+      if (personasAsignadasBD.length > 0) {
+        personasAsignadasBD.forEach(p => {
+          const rol = String(p.rol_asignado || '').trim();
+          if (!requiereRigger && (rol.toUpperCase().includes('RIGGER') || rol.toUpperCase().includes('SENALERO'))) {
+            return; // Supresión de rigger si no está contratado comercialmente
+          }
+          if (!userIdsSeen.has(p.id_user)) {
+            userIdsSeen.add(p.id_user);
+            tripulacionItems.push({
+              nombre_user: `${p.name_frst || ''} ${p.apellido_pat || ''}`.trim() || `Usuario #${p.id_user}`,
+              rut_user: p.rut_user || 'N/A',
+              rol: rol || 'Tripulación Asignada',
+              email: p.email || '-',
+              fono: p.fono || '-'
+            });
+          }
+        });
+      } else {
+        // Fallback defensivo a memoria JSON si no existen registros relacionales en BD
+        lineasServicio.forEach(l => {
+          const turnos = Array.isArray(l.turnos_operadores) && l.turnos_operadores.length > 0
+            ? l.turnos_operadores.filter(t => t && t.operador_id)
+            : [];
+          if (turnos.length > 0) {
+            turnos.forEach(t => {
+              if (t.operador_id && !userIdsSeen.has(t.operador_id)) {
+                userIdsSeen.add(t.operador_id);
+                const u = getUserInfo(t.operador_id);
+                const rng = fmtRangoTurnoOT(t.fecha_ini, t.fecha_fin);
+                if (u) tripulacionItems.push({ rol: rng ? `Operador Grúa / Equipo (${rng})` : 'Operador Grúa / Equipo', ...u });
+              }
+            });
+          } else if (l.operador_asignado_id && !userIdsSeen.has(l.operador_asignado_id)) {
+            userIdsSeen.add(l.operador_asignado_id);
+            const u = getUserInfo(l.operador_asignado_id);
+            if (u) tripulacionItems.push({ rol: 'Operador Grúa / Equipo', ...u });
+          }
+        });
+
+        equiposExtra.forEach(ex => {
+          if (ex.chofer_id && !userIdsSeen.has(ex.chofer_id)) {
+            userIdsSeen.add(ex.chofer_id);
+            const u = getUserInfo(ex.chofer_id);
+            const modTexto = fmtModalidadTrasladoOT(ex.modalidad_traslado);
+            if (u) tripulacionItems.push({ rol: modTexto ? `Chofer Transporte (${modTexto})` : 'Chofer Cama Baja / Transporte', ...u });
+          }
+        });
+
+        if (ejec.operador_id && !userIdsSeen.has(ejec.operador_id)) {
+          userIdsSeen.add(ejec.operador_id);
+          const u = getUserInfo(ejec.operador_id);
+          if (u) tripulacionItems.push({ rol: 'Operador Grúa Titular', ...u });
+        }
+        if (ejec.rigger_id && requiereRigger && !userIdsSeen.has(ejec.rigger_id)) {
+          userIdsSeen.add(ejec.rigger_id);
+          const u = getUserInfo(ejec.rigger_id);
+          if (u) tripulacionItems.push({ rol: 'Rigger / Señalero Certificado', ...u });
+        }
+        if (ejec.chofer_id && !userIdsSeen.has(ejec.chofer_id)) {
+          userIdsSeen.add(ejec.chofer_id);
+          const u = getUserInfo(ejec.chofer_id);
+          if (u) tripulacionItems.push({ rol: 'Chofer Transporte', ...u });
+        }
       }
 
       let tripulacionHtml = '';
