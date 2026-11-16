@@ -635,6 +635,60 @@
             </div>
           </div>
 
+          <!-- REGISTRAR CARGA DE COMBUSTIBLE EN HITO (ACUERDO #1) -->
+          <div class="bg-black/30 border border-amber-500/30 rounded-xl p-3 space-y-2">
+            <button
+              type="button"
+              @click="mostrarCargaCombustible = !mostrarCargaCombustible"
+              class="w-full flex items-center justify-between text-xs font-bold text-amber-400 uppercase tracking-wider py-1 cursor-pointer"
+            >
+              <span class="flex items-center gap-1.5">
+                <span>⛽</span>
+                <span>Registrar Carga de Combustible</span>
+                <span v-if="Number(formCargaCombustibleHito.litros) > 0" class="text-[10px] text-emerald-400 font-mono font-bold">({{ formCargaCombustibleHito.litros }} L)</span>
+              </span>
+              <span class="text-xs">{{ mostrarCargaCombustible ? '▲ Ocultar' : '▼ Desplegar (Opcional)' }}</span>
+            </button>
+
+            <div v-if="mostrarCargaCombustible" class="space-y-2.5 pt-2 border-t border-white/10">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-300 mb-1">Litros *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    v-model.number="formCargaCombustibleHito.litros"
+                    placeholder="Ej: 150.0"
+                    class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2 text-sm text-white font-mono font-bold outline-none focus:border-amber-400"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-300 mb-1">Hora Carga (HH:MM) *</label>
+                  <input
+                    type="time"
+                    v-model="formCargaCombustibleHito.hora_carga"
+                    class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2 text-sm text-white font-mono font-bold outline-none focus:border-amber-400"
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-300 mb-1">Valor Total ($ CLP)</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  v-model.number="formCargaCombustibleHito.valor_total"
+                  placeholder="Ej: 185000"
+                  class="w-full bg-[#050810] border border-white/20 rounded-xl px-3 py-2 text-sm text-white font-mono font-bold outline-none focus:border-amber-400"
+                />
+              </div>
+              <div v-if="errorValidacionCombustibleHito" class="p-2 bg-red-950/80 border border-red-500/80 rounded-lg text-[11px] text-red-200 font-bold">
+                ⚠️ {{ errorValidacionCombustibleHito }}
+              </div>
+            </div>
+          </div>
+
           <!-- PIN DEL CONDUCTOR -->
           <div class="bg-black/50 border border-white/10 rounded-xl p-3">
             <label class="block text-xs font-bold text-emerald-400 mb-1">PIN del Conductor (4 Dígitos) *</label>
@@ -811,6 +865,7 @@ import {
   detenerWatcherGPS,
   getUltimaPosicionGPS
 } from '@/utils/viajeOfflineSync'
+import { procesarYSubirFoto } from '@/utils/pwaStorageHelper'
 
 const route = useRoute()
 const router = useRouter()
@@ -926,6 +981,51 @@ const modalLlegada = ref({
 
 const mostrarModalDatosSalida = ref(false)
 
+// ACUERDO #1: Carga de Combustible en Hito
+const mostrarCargaCombustible = ref(false)
+const formCargaCombustibleHito = ref({
+  litros: '',
+  hora_carga: '',
+  valor_total: ''
+})
+
+const validarCargaCombustibleHito = () => {
+  const litros = Number(formCargaCombustibleHito.value.litros || 0)
+  if (litros <= 0) return null
+
+  if (!formCargaCombustibleHito.value.hora_carga) {
+    return 'Si ingresa litros de combustible, la hora de carga es obligatoria.'
+  }
+
+  // Coherencia cronológica: no anterior a la hora de salida si ya está registrada
+  if (viaje.value.timestamp_inicio) {
+    try {
+      const dtSalida = new Date(viaje.value.timestamp_inicio)
+      if (!isNaN(dtSalida.getTime())) {
+        const hhSalida = dtSalida.getHours()
+        const mmSalida = dtSalida.getMinutes()
+        const [hhCarga, mmCarga] = formCargaCombustibleHito.value.hora_carga.split(':').map(Number)
+        const minSalida = hhSalida * 60 + mmSalida
+        const minCarga = hhCarga * 60 + mmCarga
+
+        const hoy = new Date()
+        const esMismoDia = dtSalida.toDateString() === hoy.toDateString()
+        if (esMismoDia && minCarga < minSalida) {
+          return `La hora de carga (${formCargaCombustibleHito.value.hora_carga}) no puede ser anterior a la hora de salida (${String(hhSalida).padStart(2, '0')}:${String(mmSalida).padStart(2, '0')}).`
+        }
+      }
+    } catch (e) {
+      console.warn('Error validando cronología de combustible:', e)
+    }
+  }
+
+  return null
+}
+
+const errorValidacionCombustibleHito = computed(() => {
+  return validarCargaCombustibleHito()
+})
+
 // Navegación interna de la APP (Desacoplada de la Web)
 const irAReportDiario = () => {
   const pId = viaje.value?.id_proyecto
@@ -965,7 +1065,8 @@ const isFormSalidaValido = computed(() => {
                      Boolean(formSalida.value.horometro) &&
                      Boolean(formSalida.value.foto_horometro) &&
                      Boolean(formSalida.value.pin) &&
-                     formSalida.value.pin.length === 4
+                     formSalida.value.pin.length === 4 &&
+                     !errorValidacionCombustibleHito.value
 
   if (viaje.value.tipo_trayecto !== 'RETORNO') {
     return baseValida && Boolean(formSalida.value.combustible_salida)
@@ -1060,7 +1161,8 @@ const isFormLlegadaValido = computed(() => {
                      Boolean(formLlegada.value.horometro) &&
                      Boolean(formLlegada.value.foto_horometro_camion) &&
                      Boolean(formLlegada.value.pin) &&
-                     formLlegada.value.pin.length === 4
+                     formLlegada.value.pin.length === 4 &&
+                     !errorValidacionCombustibleHito.value
 
   if (viaje.value.tipo_trayecto === 'RETORNO') {
     return baseValida && Boolean(formLlegada.value.combustible_chasis?.trim())
@@ -1085,6 +1187,8 @@ const persistirBorradorViaje = () => {
       formSalida: { ...formSalida.value },
       formLlegada: { ...formLlegada.value },
       formCombustible: { ...formCombustible.value },
+      mostrarCargaCombustible: Boolean(mostrarCargaCombustible.value),
+      formCargaCombustibleHito: { ...formCargaCombustibleHito.value },
       modalLlegadaVisible: Boolean(modalLlegada.value?.visible),
       modalCombustibleVisible: Boolean(modalCombustible.value?.visible)
     }
@@ -1126,6 +1230,16 @@ const restaurarBorradorViaje = () => {
         }
       })
     }
+    if (parsed.mostrarCargaCombustible !== undefined) {
+      mostrarCargaCombustible.value = Boolean(parsed.mostrarCargaCombustible)
+    }
+    if (parsed.formCargaCombustibleHito && typeof parsed.formCargaCombustibleHito === 'object') {
+      Object.entries(parsed.formCargaCombustibleHito).forEach(([k, v]) => {
+        if (v !== '' && v !== null && v !== undefined) {
+          formCargaCombustibleHito.value[k] = v
+        }
+      })
+    }
     if (parsed.modalLlegadaVisible && viaje.value.estado_viaje === 'EN_RUTA') {
       modalLlegada.value.visible = true
     }
@@ -1136,7 +1250,7 @@ const restaurarBorradorViaje = () => {
   }
 }
 
-watch([formSalida, formLlegada, formCombustible], () => {
+watch([formSalida, formLlegada, formCombustible, formCargaCombustibleHito, mostrarCargaCombustible], () => {
   persistirBorradorViaje()
 }, { deep: true })
 
@@ -1439,12 +1553,17 @@ const ejecutarInicioViaje = async () => {
   const horoSal = Number(formSalida.value.horometro)
   const minOdo = Number(viaje.value.odometro_acumulado || 0)
   const minHoro = Number(viaje.value.horometro_chasis_acumulado || 0)
-  // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de bloqueo de odómetro de salida
+  // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de bloqueo de odómetro y horómetro de salida
   if (minOdo > 0 && odoSal < minOdo) {
     console.warn(`[REQ-1143] Odómetro de Salida (${odoSal} KM) menor al acumulado (${minOdo} KM). Registro permitido temporalmente.`)
   }
   if (minHoro > 0 && horoSal < minHoro) {
-    alert(`🚨 Valor Incremental Inválido:\n\nEl Horómetro de Salida (${horoSal} HRS) no puede ser menor al último registro acumulado del equipo (${minHoro} HRS).`)
+    console.warn(`[REQ-1143] Horómetro de Salida (${horoSal} HRS) menor al acumulado (${minHoro} HRS). Registro permitido temporalmente.`)
+  }
+
+  const errComb = validarCargaCombustibleHito()
+  if (errComb) {
+    alert(`⚠️ Inconsistencia en Carga de Combustible:\n\n${errComb}`)
     return
   }
 
@@ -1465,6 +1584,37 @@ const ejecutarInicioViaje = async () => {
     console.warn('[Salida] Error obteniendo GPS:', e)
   }
 
+  const cargaCombustiblePayload = Number(formCargaCombustibleHito.value.litros) > 0 ? {
+    litros: Number(formCargaCombustibleHito.value.litros),
+    hora_carga: formCargaCombustibleHito.value.hora_carga,
+    valor_total: formCargaCombustibleHito.value.valor_total ? Number(formCargaCombustibleHito.value.valor_total) : null
+  } : null
+
+  // SPEC-133: Subida a Storage API y erradicación de Base64 de la red
+  let idDocFotoOdoSalida = null
+  let idDocFotoHoroSalida = null
+  if (isOnline.value && formSalida.value.foto_odometro) {
+    try {
+      idDocFotoOdoSalida = await procesarYSubirFoto(formSalida.value.foto_odometro, {
+        modulo: 'viajes',
+        tipo_doc: 'FOTO_ODOMETRO',
+        name_doc_orig: `odometro_salida_${tokenViaje.value}.jpg`
+      })
+    } catch (e) { console.warn('[PWA Storage] Fallback odómetro salida:', e) }
+  }
+  if (isOnline.value && formSalida.value.foto_horometro) {
+    try {
+      idDocFotoHoroSalida = await procesarYSubirFoto(formSalida.value.foto_horometro, {
+        modulo: 'viajes',
+        tipo_doc: 'FOTO_HOROMETRO',
+        name_doc_orig: `horometro_salida_${tokenViaje.value}.jpg`
+      })
+    } catch (e) { console.warn('[PWA Storage] Fallback horómetro salida:', e) }
+  }
+
+  const fotoOdoSalidaVal = idDocFotoOdoSalida ? `/api/v1/storage/view/${idDocFotoOdoSalida}` : (formSalida.value.foto_odometro || null)
+  const fotoHoroSalidaVal = idDocFotoHoroSalida ? `/api/v1/storage/view/${idDocFotoHoroSalida}` : (formSalida.value.foto_horometro || null)
+
   const payload = {
     id_proyecto: viaje.value.id_proyecto || null,
     id_equipo: viaje.value.id_equipo || null,
@@ -1472,13 +1622,16 @@ const ejecutarInicioViaje = async () => {
     km_inicial: Number(formSalida.value.odometro),
     horometro_inicial: Number(formSalida.value.horometro),
     combustible_salida: formSalida.value.combustible_salida || null,
-    foto_salida: formSalida.value.foto_odometro || formSalida.value.foto || null,
-    foto_odometro_salida: formSalida.value.foto_odometro || null,
-    foto_horometro_salida: formSalida.value.foto_horometro || null,
+    id_doc_foto_odometro_salida: idDocFotoOdoSalida,
+    id_doc_foto_horometro_salida: idDocFotoHoroSalida,
+    foto_salida: fotoOdoSalidaVal || formSalida.value.foto || null,
+    foto_odometro_salida: fotoOdoSalidaVal,
+    foto_horometro_salida: fotoHoroSalidaVal,
     foto_combustible_salida: formSalida.value.foto_combustible || null,
     pin_hash: pinHashed,
     latitud: gps.latitud,
     longitud: gps.longitud,
+    carga_combustible: cargaCombustiblePayload,
     device_timestamp: new Date().toISOString()
   }
 
@@ -1585,14 +1738,19 @@ const ejecutarLlegadaFaena = async () => {
   const horoLleg = Number(formLlegada.value.horometro)
   const odoSal = Number(viaje.value.odometro_salida || 0)
   const horoSal = Number(viaje.value.horometro_salida || 0)
-  // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de bloqueo de odómetro de llegada
+  // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de bloqueo de odómetro y horómetro de llegada
   if (odoSal > 0 && odoLleg < odoSal) {
     console.warn(`[REQ-1143] Odómetro de Llegada (${odoLleg} KM) menor a Salida (${odoSal} KM). Registro permitido temporalmente.`)
   }
   if (horoSal > 0 && horoLleg < horoSal) {
-    alert(`🚨 Valor Incremental Inválido:\n\nEl Horómetro de Llegada (${horoLleg} HRS) no puede ser menor al Horómetro de Salida (${horoSal} HRS).`)
+    console.warn(`[REQ-1143] Horómetro de Llegada (${horoLleg} HRS) menor al Horómetro de Salida (${horoSal} HRS). Registro permitido temporalmente.`)
+  }
+  const errComb = validarCargaCombustibleHito()
+  if (errComb) {
+    alert(`⚠️ Inconsistencia en Carga de Combustible:\n\n${errComb}`)
     return
   }
+
   guardando.value = true
   detenerMotorEnRuta()
 
@@ -1611,6 +1769,37 @@ const ejecutarLlegadaFaena = async () => {
     console.warn('[Llegada] Error obteniendo GPS:', e)
   }
 
+  const cargaCombustiblePayload = Number(formCargaCombustibleHito.value.litros) > 0 ? {
+    litros: Number(formCargaCombustibleHito.value.litros),
+    hora_carga: formCargaCombustibleHito.value.hora_carga,
+    valor_total: formCargaCombustibleHito.value.valor_total ? Number(formCargaCombustibleHito.value.valor_total) : null
+  } : null
+
+  // SPEC-133: Subida a Storage API y erradicación de Base64 de la red
+  let idDocFotoOdoLlegada = null
+  let idDocFotoHoroLlegada = null
+  if (isOnline.value && formLlegada.value.foto_odometro) {
+    try {
+      idDocFotoOdoLlegada = await procesarYSubirFoto(formLlegada.value.foto_odometro, {
+        modulo: 'viajes',
+        tipo_doc: 'FOTO_ODOMETRO',
+        name_doc_orig: `odometro_llegada_${tokenViaje.value}.jpg`
+      })
+    } catch (e) { console.warn('[PWA Storage] Fallback odómetro llegada:', e) }
+  }
+  if (isOnline.value && formLlegada.value.foto_horometro_camion) {
+    try {
+      idDocFotoHoroLlegada = await procesarYSubirFoto(formLlegada.value.foto_horometro_camion, {
+        modulo: 'viajes',
+        tipo_doc: 'FOTO_HOROMETRO',
+        name_doc_orig: `horometro_llegada_${tokenViaje.value}.jpg`
+      })
+    } catch (e) { console.warn('[PWA Storage] Fallback horómetro llegada:', e) }
+  }
+
+  const fotoOdoLlegadaVal = idDocFotoOdoLlegada ? `/api/v1/storage/view/${idDocFotoOdoLlegada}` : (formLlegada.value.foto_odometro || null)
+  const fotoHoroLlegadaVal = idDocFotoHoroLlegada ? `/api/v1/storage/view/${idDocFotoHoroLlegada}` : (formLlegada.value.foto_horometro_camion || null)
+
   const payload = {
     km_final: Number(formLlegada.value.odometro),
     horometro_final: Number(formLlegada.value.horometro),
@@ -1620,13 +1809,16 @@ const ejecutarLlegadaFaena = async () => {
       chasis: formLlegada.value.combustible_chasis,
       foto: formLlegada.value.foto_combustible
     } : null,
-    foto_llegada: formLlegada.value.foto_odometro || formLlegada.value.foto || null,
-    foto_odometro_llegada: formLlegada.value.foto_odometro || null,
-    foto_horometro_camion_llegada: formLlegada.value.foto_horometro_camion || null,
+    id_doc_foto_odometro_llegada: idDocFotoOdoLlegada,
+    id_doc_foto_horometro_llegada: idDocFotoHoroLlegada,
+    foto_llegada: fotoOdoLlegadaVal || formLlegada.value.foto || null,
+    foto_odometro_llegada: fotoOdoLlegadaVal,
+    foto_horometro_camion_llegada: fotoHoroLlegadaVal,
     foto_horometro_grua_llegada: null,
     pin_hash: pinHashed,
     latitud: gps.latitud,
     longitud: gps.longitud,
+    carga_combustible: cargaCombustiblePayload,
     obs_termino: 'Arribo verificado con éxito',
     device_timestamp: new Date().toISOString()
   }

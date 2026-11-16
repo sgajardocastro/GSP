@@ -868,7 +868,9 @@ const reportDiarioController = {
         horometro_inicio,
         odometro_inicio,
         foto_tablero_inicio,
-        foto_odometro_inicio
+        foto_odometro_inicio,
+        id_doc_foto_inicio,
+        id_doc_foto_odometro_inicio
       } = req.body;
 
       if (!id_proyecto || !fecha_reporte || !id_user_operador) {
@@ -986,14 +988,7 @@ const reportDiarioController = {
       );
 
       if (otroServicioActivoRes.rows.length > 0) {
-        return res.status(409).json({
-          success: false,
-          codigo: 'SERVICIO_ACTIVO_OTRA_OT',
-          id_reporte_avance_activo: otroServicioActivoRes.rows[0].id_reporte_avance,
-          id_proyecto_activo: otroServicioActivoRes.rows[0].id_proyecto,
-          message: 'Ya tienes un servicio en curso sin finalizar en otra OT. Debes cerrar tu jornada activa antes de iniciar un nuevo servicio.',
-          error: 'Ya tienes un servicio en curso sin finalizar en otra OT. Debes cerrar tu jornada activa antes de iniciar un nuevo servicio.'
-        });
+        console.warn(`[FAIL-OPEN SPEC-133] Operador ${id_user_operador} iniciando servicio adicional en OT ${id_proyecto} teniendo activo reporte ${otroServicioActivoRes.rows[0].id_reporte_avance}. Se permite continuidad operativa.`);
       }
 
       const fechaBase = fecha_reporte.split('T')[0];
@@ -1133,11 +1128,7 @@ const reportDiarioController = {
         const totalDiasPermitidos = calcularCupoDiasHabiles(proyCupo.rows[0]);
         const reportesConsumidos = await getReportesConsumidosOT(id_proyecto, db);
         if (reportesConsumidos >= totalDiasPermitidos) {
-          return res.status(403).json({
-            success: false,
-            codigo: 'SERVICIO_CONCLUIDO',
-            error: `Operación bloqueada por término de faena: Esta orden de trabajo ya completó sus ${totalDiasPermitidos} jornada(s) autorizadas (${reportesConsumidos} reportes finalizados). No es posible iniciar nuevas jornadas.`
-          });
+          console.warn(`[FAIL-OPEN SPEC-133] OT ${id_proyecto} sobrepasando días cotizados (${reportesConsumidos}/${totalDiasPermitidos}). Se autoriza emisión de jornada adicional para captura de firma mandante.`);
         }
 
         const token_report = crypto.randomBytes(24).toString('hex');
@@ -1155,6 +1146,8 @@ const reportDiarioController = {
             odometro_inicio,
             foto_tablero_inicio,
             foto_odometro_inicio,
+            id_doc_foto_inicio,
+            id_doc_foto_odometro_inicio,
             token_report,
             horas_minimas,
             device_timestamp,
@@ -1162,7 +1155,7 @@ const reportDiarioController = {
             estado_jornada,
             fecha_registro
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'JORNADA_EN_CURSO', 'JORNADA_EN_CURSO', CURRENT_TIMESTAMP
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'JORNADA_EN_CURSO', 'JORNADA_EN_CURSO', CURRENT_TIMESTAMP
           ) RETURNING *;
         `;
         const inRes = await db.query(insertSql, [
@@ -1178,6 +1171,8 @@ const reportDiarioController = {
           odometro_inicio || null,
           foto_tablero_inicio || null,
           foto_odometro_inicio || null,
+          id_doc_foto_inicio ? Number(id_doc_foto_inicio) : null,
+          id_doc_foto_odometro_inicio ? Number(id_doc_foto_odometro_inicio) : null,
           token_report,
           horasMinimasOT,
           deviceTs
@@ -1799,10 +1794,11 @@ const reportDiarioController = {
           item.mensaje = `Turno concluido. Relevado en faena (${cantReportes} de ${totalDias} días globales).`;
           concluidos.push(item);
         } else if (cantReportes >= totalDias) {
-          item.puede_reportar = false;
-          item.motivo = 'SERVICIO_CONCLUIDO';
-          item.mensaje = `Faena concluida (${cantReportes} de ${totalDias} días reportados).`;
-          concluidos.push(item);
+          item.puede_reportar = true;
+          item.es_dia_adicional = true;
+          item.motivo = 'PENDIENTE';
+          item.mensaje = `Jornada adicional autorizada en faena (Día ${cantReportes + 1} de ${totalDias} cotizados).`;
+          pendientes.push(item);
         } else if (reportadoHoy) {
           item.puede_reportar = false;
           item.motivo = 'AL_DIA_HOY';
@@ -1867,7 +1863,12 @@ const reportDiarioController = {
         accuracy_firma,
         horas_standby_cliente,
         horas_standby_gsp,
-        motivo_standby
+        motivo_standby,
+        id_doc_foto_inicio,
+        id_doc_foto_termino,
+        id_doc_foto_odometro_inicio,
+        id_doc_foto_odometro_termino,
+        id_doc_firma_cliente
       } = req.body;
 
       // Normalización de campos alias desde Hoja de Ruta móvil
@@ -1988,11 +1989,7 @@ const reportDiarioController = {
           }
 
           if (esNuevoConsumo && totalExistentes >= totalDiasPermitidos) {
-            return res.status(403).json({
-              success: false,
-              codigo: 'SERVICIO_CONCLUIDO',
-              error: `Operación bloqueada por término de faena: Esta orden de trabajo ya completó sus ${totalDiasPermitidos} jornada(s) autorizadas (${totalExistentes} reportes finalizados). No es posible emitir nuevos reportes.`
-            });
+            console.warn(`[FAIL-OPEN SPEC-133] Guardado de reporte adicional autorizado para OT ${id_proyecto} (${totalExistentes + 1} jornadas sobre ${totalDiasPermitidos} cotizadas).`);
           }
         }
       } catch (checkErr) {
@@ -2203,6 +2200,11 @@ const reportDiarioController = {
             motivo_standby = $34,
             fecha_transmision_termino = CURRENT_TIMESTAMP,
             device_timestamp = COALESCE($35, device_timestamp),
+            id_doc_foto_inicio = COALESCE($37, id_doc_foto_inicio),
+            id_doc_foto_termino = COALESCE($38, id_doc_foto_termino),
+            id_doc_foto_odometro_inicio = COALESCE($39, id_doc_foto_odometro_inicio),
+            id_doc_foto_odometro_termino = COALESCE($40, id_doc_foto_odometro_termino),
+            id_doc_firma_cliente = COALESCE($41, id_doc_firma_cliente),
             estado_reporte = 'PENDIENTE_VALIDACION',
             estado_jornada = 'FINALIZADA'
           WHERE id_reporte_avance = $36
@@ -2244,7 +2246,12 @@ const reportDiarioController = {
           horas_standby_gsp,
           motivo_standby,
           deviceTs,
-          id_reporte_avance
+          id_reporte_avance,
+          id_doc_foto_inicio ? Number(id_doc_foto_inicio) : null,
+          id_doc_foto_termino ? Number(id_doc_foto_termino) : null,
+          id_doc_foto_odometro_inicio ? Number(id_doc_foto_odometro_inicio) : null,
+          id_doc_foto_odometro_termino ? Number(id_doc_foto_odometro_termino) : null,
+          id_doc_firma_cliente ? Number(id_doc_firma_cliente) : null
         ]);
         reportGuardado = upRes.rows[0];
       } else {
@@ -2278,6 +2285,11 @@ const reportDiarioController = {
             foto_odometro_inicio,
             foto_odometro_termino,
             foto_horometro,
+            id_doc_foto_inicio,
+            id_doc_foto_termino,
+            id_doc_foto_odometro_inicio,
+            id_doc_foto_odometro_termino,
+            id_doc_firma_cliente,
             notas_mecanicas_gsp,
             observacion_trabajo,
             cliente_nombre,
@@ -2295,7 +2307,7 @@ const reportDiarioController = {
             estado_jornada,
             fecha_registro
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, CURRENT_TIMESTAMP, 'PENDIENTE_VALIDACION', 'FINALIZADA', CURRENT_TIMESTAMP
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, CURRENT_TIMESTAMP, 'PENDIENTE_VALIDACION', 'FINALIZADA', CURRENT_TIMESTAMP
           )
           RETURNING *;
         `;
@@ -2327,6 +2339,11 @@ const reportDiarioController = {
           foto_odometro_inicio || null,
           foto_odometro_termino || null,
           fotoHorometroFinal,
+          id_doc_foto_inicio ? Number(id_doc_foto_inicio) : null,
+          id_doc_foto_termino ? Number(id_doc_foto_termino) : null,
+          id_doc_foto_odometro_inicio ? Number(id_doc_foto_odometro_inicio) : null,
+          id_doc_foto_odometro_termino ? Number(id_doc_foto_odometro_termino) : null,
+          id_doc_firma_cliente ? Number(id_doc_firma_cliente) : null,
           notas_mecanicas_gsp || '',
           observacion_trabajo || '',
           cliente_nombre || 'Supervisor Mandante',

@@ -1471,6 +1471,13 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **3. Sincronización de Chofer en Frontend:** Integrado `r.chofer_id` de ramas de traslado en `guardarCambiosAsignacion()` dentro de `GestorOportunidades.vue`, asegurando la persistencia de choferes en `tpry_rel_persona` en estado `PROGRAMADO`.
   - **4. Asignación Canónica en OT PDF:** Corregida la segmentación de flota en `generarOTVersion` (`proyectoModel.js`), eliminando la contaminación de `crm.tipo_ot` en equipos de traslado y suprimiendo el fallback ciego que reasignaba choferes a plataformas de arriendo sin operador. OT v13 certificada con PAD-33 en `Sin Operador (Arriendo Sin Operador)` y DRCX-62 con `MANUEL GUZMAN`.
 
+* [x] **147. `[REQ-1180]` [PWA Móvil & Backend — SPEC-133 Paquetes 1 y 2] Storage Helper, Compresión Fotográfica Canvas 1024px @ 0.70 y Desbloqueo Operativo Fail-Open [DEV CERTIFICADO - 16-Nov-2026 / PWA v1.0.68 / Backend v1.0.226]:**
+  - **1. Migración DDL y Persistencia Relacional:** Agregadas columnas foráneas `id_doc_*` referenciando `sch_leangsp.tfmg_file(id_doc)` en `tedp_reporte_avance` (fotos de inicio, término, odómetros y firma mandante) y en `tequ_log_desplazamiento` (fotos de salida, llegada, odómetros y horómetros).
+  - **2. Backend Fail-Open Operativo (`reportDiarioController.js`):** Desescalamiento de errores bloqueantes HTTP 409 (`SERVICIO_ACTIVO_OTRA_OT`) y HTTP 403 (`SERVICIO_CONCLUIDO`) a advertencias operativas para permitir la captura de firmas mandantes en terreno ante jornadas adicionales no cotizadas.
+  - **3. Compresión en Cliente y Erradicación de Base64 (`pwaStorageHelper.js`):** Módulo de compresión HTML5 Canvas a máx. 1024 px con calidad JPEG 0.70 (pesos de 80 KB a 140 KB) y subida independiente `multipart/form-data` a `/api/v1/storage/upload`.
+  - **4. Integración en Flujos Móviles PWA (`ReportDiarioIzaje.vue` y `ViajeConductor.vue`):** Despacho de `id_doc_*` en lugar de cadenas Base64 en red para reportes diarios y bitácora de viajes. Desbloqueo de jornadas concluidas con badge informativo interactivo.
+  - **5. Gobernanza y Hard Gate:** Elevación SemVer a PWA `v1.0.68`, compilación limpia (`0` errores), despliegue verificado en `/var/www/html/pwa-gsp-dev/` (HTTP 200 OK) y registro en `sch_leangsp.tcfg_releases` (ID 1998) y `RELEASE_LOG.md`.
+
 
 
 

@@ -2,6 +2,17 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [PWA GSP] - Versión 1.0.68
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-11-16 15:45:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1180` (`SPEC-133 Paquetes 1 y 2`)
+- **Especificación Técnica:** PWA Storage Helper, Compresión Fotográfica Canvas 1024px @ 0.70 y Desbloqueo Operativo Fail-Open:
+  - **[PWA Móvil (`pwaStorageHelper.js`)]**: Implementado pipeline industrial de compresión fotográfica en cliente (`comprimirImagenABlob`) que escala imágenes a máx. 1024 px con calidad JPEG 0.70 vía HTML5 Canvas. Despacho independiente `multipart/form-data` mediante `subirFotoAStorage` a `/api/v1/storage/upload` retornando el identificador numérico foráneo `id_doc`.
+  - **[PWA Móvil (`ReportDiarioIzaje.vue`)]**: Erradicación de cadenas Base64 en el payload de red para inicio, término y firma manuscrita mandante. Envío de `id_doc_foto_inicio`, `id_doc_foto_termino` y `id_doc_firma_cliente`. Desarme de candado bloqueante de fin de jornadas autorizadas (Fail-Open), sustituyéndolo por badge informativo de jornada adicional y garantizando la captura de firma en faena.
+  - **[PWA Móvil (`ViajeConductor.vue`)]**: Compresión fotográfica y subida a Storage API en `guardarSalida` y `guardarLlegada`. Reemplazo de Base64 por `id_doc_foto_odometro_salida`, `id_doc_foto_horometro_salida`, `id_doc_foto_odometro_llegada` e `id_doc_foto_horometro_llegada`, aliviando la carga de red en enlaces 3G/4G remotos.
+  - **[Backend DEV (`reportDiarioController.js`)]**: De-escalación de errores HTTP 409 y HTTP 403 a advertencias no bloqueantes. Persistencia de columnas `id_doc_*` en `sch_leangsp.tedp_reporte_avance` y retrocompatibilidad total con Base64 legacy.
+
 ## [Portal Web GSP & Backend] - Versión 1.0.226
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-11-16 14:45:00 (-03:00)
