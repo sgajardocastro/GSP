@@ -3355,14 +3355,22 @@ const diasGantt = computed(() => {
   return dias
 })
 
-// Formato DD/MM/YYYY determinista seguro anti-timezone
+// Formato DD/MM/YYYY determinista seguro anti-timezone y anti-corrupción de año
 const formatIsoToDdMmYyyy = (fStr) => {
   if (!fStr) return '—'
-  const partes = String(fStr).slice(0, 10).split('-')
+  const str = String(fStr).trim()
+  const match = str.match(/^(\d{4,6})-(\d{2})-(\d{2})/)
+  if (match) {
+    const yyyy = match[1].slice(0, 4)
+    const mm = match[2]
+    const dd = match[3]
+    return `${dd}/${mm}/${yyyy}`
+  }
+  const partes = str.slice(0, 10).split('-')
   if (partes.length === 3) {
     return `${partes[2]}/${partes[1]}/${partes[0]}`
   }
-  return String(fStr)
+  return str
 }
 
 // Resolver columna de Último Mantenimiento para cada equipo

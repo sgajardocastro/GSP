@@ -2,6 +2,17 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP & Backend] - Versión 1.0.224
+- **Ambiente:** `prod` & `dev`
+- **Fecha de Despliegue:** 2026-11-16 17:50:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod/src`
+- **Requerimientos Asociados:** `REQ-1182` (`SPEC-135` / `CASO-20261116-05`)
+- **Especificación Técnica:** Hotfix Quirúrgico en Producción para Sanitización de Fechas y Supresión de Riggers Fantasmas en OT:
+  - **[Restricción de Rango en Inputs de Fecha (`GestorOportunidades.vue`)]**: Incorporación de límites `min="2024-01-01"` y `max="2035-12-31"` en inputs `<input type="date">` de planificación operativa, impidiendo la captura de años fuera de rango (como `202616`).
+  - **[Sanitización Determinista Local de Fechas (`GestorOportunidades.vue`)]**: Implementada función `sanitizarFechaLocal` antes de invocar `toISOString()`, evitando excepciones no controladas `RangeError: Invalid time value` que interrumpían la sincronización de asignaciones con PostgreSQL.
+  - **[Formateador Determinista Anti-Corrupción (`Torre.vue`)]**: Regex de extracción canónica de 4 dígitos de año en `formatIsoToDdMmYyyy`, erradicando la deformación visual de fechas `/11/202616 ➔ 16/11/2026`.
+  - **[Supresión de Reinyección Forzosa de Riggers (`proyectoModel.js`)]**: Eliminada la restauración automática de `prevEjec.rigger_id` cuando `crm.requiere_rigger` es falso o no fue asignado rigger, y omisión estricta de riggers en la dotación de la OT PDF (`generarOTVersion`) cuando la cotización no lo exige.
+
 ## [Portal Web GSP & Backend] - Versión 1.0.223
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-11-12 18:38:00 (-03:00)

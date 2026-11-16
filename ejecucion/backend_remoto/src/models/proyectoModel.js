@@ -520,8 +520,9 @@ class ProyectoModel {
           if ((!inEjec.operador_id || inEjec.operador_id === 'OP-101') && prevEjec.operador_id && prevEjec.operador_id !== 'OP-101') {
             mergedEjec.operador_id = prevEjec.operador_id;
           }
-          if ((!inEjec.rigger_id || inEjec.rigger_id === 'RIG-201') && prevEjec.rigger_id && prevEjec.rigger_id !== 'RIG-201') {
-            mergedEjec.rigger_id = prevEjec.rigger_id;
+          const exigeRiggerComercial = Boolean((parsed.crm_v1 || prevJson.crm_v1)?.requiere_rigger);
+          if (!inEjec.rigger_id || inEjec.rigger_id === 'RIG-201') {
+            mergedEjec.rigger_id = (exigeRiggerComercial && prevEjec.rigger_id && prevEjec.rigger_id !== 'RIG-201') ? prevEjec.rigger_id : null;
           }
           for (const arrKey of ['ot_versiones', 'ot_despachos_historicos', 'traza_correos', 'plan_diario', 'tripulacion_asignada', 'especialistas_terreno', 'equipos_extra']) {
             const prevArr = Array.isArray(prevEjec[arrKey]) ? prevEjec[arrKey] : [];
@@ -1924,7 +1925,8 @@ class ProyectoModel {
         const u = getUserInfo(ejec.operador_id);
         if (u) tripulacionItems.push({ rol: 'Operador Grúa Titular', ...u });
       }
-      if (ejec.rigger_id && !userIdsSeen.has(ejec.rigger_id)) {
+      const requiereRigger = Boolean(crm.requiere_rigger || crm.requiereRigger);
+      if (ejec.rigger_id && requiereRigger && !userIdsSeen.has(ejec.rigger_id)) {
         userIdsSeen.add(ejec.rigger_id);
         const u = getUserInfo(ejec.rigger_id);
         if (u) tripulacionItems.push({ rol: 'Rigger / Señalero Certificado', ...u });

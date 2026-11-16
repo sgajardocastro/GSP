@@ -1163,7 +1163,7 @@
             <div class="flex flex-wrap items-center gap-2 text-xs">
               <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2.5 py-1" title="Salida Planificada de Base/Patio">
                 <span class="text-xs text-slate-300 font-semibold">Salida Base:</span>
-                <input type="date" v-model="operacionesAssignment.fecha_salida_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark]" />
+                <input type="date" min="2024-01-01" max="2035-12-31" v-model="operacionesAssignment.fecha_salida_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark]" />
                 <input type="time" v-model="operacionesAssignment.hora_salida_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
               </div>
               <span class="text-slate-500 font-bold text-xs">➔</span>
@@ -1174,7 +1174,7 @@
               <span class="text-slate-500 font-bold text-xs">➔</span>
               <div class="flex items-center gap-1.5 bg-[#050810] border border-white/10 rounded px-2.5 py-1" title="Término Planificado en Faena">
                 <span class="text-xs text-slate-300 font-semibold">Término Faena:</span>
-                <input type="date" v-model="operacionesAssignment.fecha_fin_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark]" />
+                <input type="date" min="2024-01-01" max="2035-12-31" v-model="operacionesAssignment.fecha_fin_plan" @change="propagarFechasPlanificadas" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark]" />
                 <input type="time" v-model="operacionesAssignment.hora_fin_plan" @change="marcarDirtyAsignacion" class="bg-transparent text-white text-xs font-mono font-bold outline-none [color-scheme:dark] border-l border-white/10 pl-1.5" />
               </div>
               <span v-if="planDiarioGenerado.length > 0" class="text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2 py-1 rounded font-mono font-bold" title="Días hábiles planificados calculados para el servicio">
@@ -8126,8 +8126,16 @@ const guardarCambiosAsignacion = async () => {
       headers: { Authorization: `Bearer ${token}` }
     })
 
-    const fechaIniGbl = operacionesAssignment.value.fecha_salida_plan ? new Date(operacionesAssignment.value.fecha_salida_plan + 'T' + (operacionesAssignment.value.hora_salida_plan || '08:00')).toISOString() : new Date().toISOString()
-    const fechaFinGbl = operacionesAssignment.value.fecha_fin_plan ? new Date(operacionesAssignment.value.fecha_fin_plan + 'T' + (operacionesAssignment.value.hora_fin_plan || '18:00')).toISOString() : new Date().toISOString()
+    const sanitizarFechaLocal = (rawFecha, horaDefecto) => {
+      if (!rawFecha) return new Date().toISOString()
+      const str = String(rawFecha).trim()
+      const match = str.match(/^(\d{4,6})-(\d{2})-(\d{2})/)
+      const fechaLimpia = match ? `${match[1].slice(0, 4)}-${match[2]}-${match[3]}` : new Date().toISOString().slice(0, 10)
+      const d = new Date(`${fechaLimpia}T${horaDefecto}`)
+      return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString()
+    }
+    const fechaIniGbl = sanitizarFechaLocal(operacionesAssignment.value.fecha_salida_plan, operacionesAssignment.value.hora_salida_plan || '08:00')
+    const fechaFinGbl = sanitizarFechaLocal(operacionesAssignment.value.fecha_fin_plan, operacionesAssignment.value.hora_fin_plan || '18:00')
 
     // 1. Persistir personas en tpry_rel_persona en PostgreSQL (Spec 22) - Deduplicado en memoria
     try {
