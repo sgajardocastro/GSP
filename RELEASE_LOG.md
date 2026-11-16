@@ -2,6 +2,37 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP, PWA & Backend] - Versión 1.0.225 (Web/Backend) / 1.0.67 (PWA)
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-11-16 11:45:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/var/www/html/pwa-gsp-dev`, `/home/nodeadmin/proyectos/lean-services-gsp/src`
+- **Requerimientos Asociados:** `REQ-1180` (`SPEC-131 Sección 2.3` / `CASO-20261116-02`)
+- **Especificación Técnica:** Purgado Atómico por Supresión de Líneas de Servicio, Sincronización Pre-OT y Clasificación Determinista de Rental:
+  - **[Portal Web (`AsignadorArbolRecursos.vue` & `GestorOportunidades.vue`)]**: Al eliminar un servicio o rama operativa en el asignador de recursos, se purgan de inmediato las líneas y nodos correspondientes del array reactivo `props.lines`. Antes de emitir la OT (`generarPDFOT`), se invoca de forma obligatoria y asíncrona la sincronización relacional de asignaciones (`guardarCambiosAsignacion(true)`), garantizando coherencia absoluta entre la interfaz y la base de datos PostgreSQL.
+  - **[PWA Móvil & Backend (`reportDiarioController.js`)]**: Filtrado estricto de tripulantes y personal operativo cancelados en `getReportContexto` (`estado_real NOT IN ('CANCELADO', 'REEMPLAZADO')`), erradicando la persistencia de operadores y riggers huérfanos de servicios eliminados en la aplicación móvil de faena.
+  - **[Backend Modelo OT (`proyectoModel.js`)]**: Implementado el marcado en cascada relacional a `estado_real = 'CANCELADO'` en `tpry_rel_persona` y `tpry_rel_equipo` al suprimir servicios. Incorporado escudo anti-resurrección para no restaurar operadores ni equipos de izaje cuando no existen líneas activas de grúa. Corregida la detección de servicios Rental considerando `tipo_ot`, `linea_servicio`, `subcategoria` y `descripcion`, asignando de forma determinista `Segmento: Rental / Arriendo` y `Sin Operador (Arriendo Sin Operador)` en OT oficial.
+
+## [PWA GSP & Backend] - Versión 1.0.66
+- **Ambiente:** `prod` (PWA + Backend) & `dev` (Sincronizado)
+- **Fecha de Despliegue:** 2026-11-16 09:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/pwa-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod/src`
+- **Requerimientos Asociados:** `CASO-20261116-01` (`REQ-1143` Extensión / Eliminación Restricción de Horómetro)
+- **Especificación Técnica:** Eliminación definitiva de restricción bloqueante de horómetros en PWA Móvil y Backend:
+  - **[PWA Móvil (`ViajeConductor.vue` y `ReportDiarioIzaje.vue`)]**: Eliminada la condición bloqueante `horoSal < minHoro` y `horometro_inicio < minHoro` que disparaba alertas emergentes e impedía iniciar viajes o crear reportes diarios ante discordancias de horómetros acumulados en BD. Ahora emite advertencia no bloqueante por consola permitiendo la continuidad de la operación en terreno.
+  - **[Backend Quirúrgico (`viajeModel.js` y `reportDiarioController.js`)]**: Reemplazados los `throw new Error(...)` y respuestas `HTTP 422` por `console.warn(...)`, asegurando que la API no rechace viajes ni aperturas de reportes diarios ante horómetros reportados inferiores al acumulado.
+  - **[Saneamiento y Normalización en BD (`sch_leangsp_prod`)]**: Ajuste de horómetro acumulado para equipo Tadano GT 750EL (`id_equipo = 43`) a 2520.00 HRS y normalización de viaje previo.
+
+
+## [Portal Web GSP] - Versión 1.0.224
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-11-15 22:15:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`
+- **Requerimientos Asociados:** `REQ-1176` (`SPEC-16 Sección 27.6`)
+- **Especificación Técnica:** Interfaz Gráfica Nativa de Relevo y Sustitución de Equipos en Web CRM (`AsignadorArbolRecursos.vue` & `GestorOportunidades.vue`) y Sincronización Relacional Atómica:
+  - **[Soporte UI Nativo de Relevos de Flota (`AsignadorArbolRecursos.vue`)]**: Implementado el botón `+ Relevo` en la columna de asignación de equipos, permitiendo registrar titular (`EQ:`) y sustituciones sucesivas (`R1:`, `R2:`) por ventana de fechas (`fecha_ini` a `fecha_fin`) con semáforos de acreditación y badge de `RELEVO`.
+  - **[Sincronización Relacional en CRM (`GestorOportunidades.vue`)]**: Mapeo y transmisión estructurada de `turnos_equipos` hacia `/proyectos/:id/asignaciones/sincronizar` persistiendo `es_reemplazo = TRUE` e `id_equipo_reemplazado` en `tpry_rel_equipo` de forma atómica.
+  - **[Certificación E2E de Ciclo Completo en DEV]**: Conducción 100% natural de DOM en navegador real (Caso Testigo 203 / `GSP-2611-00138`) validando Preventa, Validación, Asignación con Relevo, emisión de report PWA Día 5 por Claudio Gallardo con horómetro propio y carátula EDP con $0 descuadre.
+
 ## [Portal Web GSP & Backend] - Versión 1.0.223
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-11-12 18:38:00 (-03:00)
