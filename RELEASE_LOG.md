@@ -2,6 +2,19 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP & Backend] - Versión 1.0.226
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-11-16 14:45:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/home/nodeadmin/proyectos/lean-services-gsp/src`
+- **Requerimientos Asociados:** `REQ-1180` / `CASO-20261116-04` (`OT GSP-2611-00139` / Alfonso Porperrello)
+- **Especificación Técnica:** Blindaje del Guardado de Asignaciones, Deduplicación de Convoy y Asignación Canónica de Chofer en OT:
+  - **[Portal Web (`GestorOportunidades.vue`)]**: Corrección en `guardarCambiosAsignacion()` para sincronizar bidireccionalmente `r.chofer_id` y `r.equipo_asignado_id` desde las ramas de transporte (`serviciosArbol`) hacia el array relacional `personasSync`, garantizando que choferes de logística ingresen a `tpry_rel_persona` en estado `PROGRAMADO`.
+  - **[Backend Modelo de Proyectos (`proyectoModel.js`)]**: 
+    1. Corrección de excepción fatal `ReferenceError: crmV1 is not defined` en `updateProyecto` (línea 800), declarando formalmente el objeto `crmV1` y neutralizando el error emergente `HTTP 500` al pulsar "Guardar Modificaciones" o "Confirmar Asignación".
+    2. Segmentación estricta de equipos Rental en `generarOTVersion`: se eliminó la contaminación que clasificaba a camiones de apoyo como rental en proyectos `OT-RENTAL`, aislando la tipificación únicamente a plataformas/alza hombres.
+    3. Eliminación del fallback ciego que reasignaba choferes a equipos de arriendo sin operador. Las plataformas alza hombres quedan formalmente como `Sin Operador (Arriendo Sin Operador)` en Tabla 3 de la OT PDF, mientras que el camión de logística (DRCX-62) recibe de forma determinista a su chofer asignado (Manuel Guzmán).
+  - **[Backend Controlador de Asignaciones (`asignacionRecursosController.js`)]**: Deduplicación en memoria por clave compuesta `(id_equipo, COALESCE(id_linea_servicio, 0))` en `sincronizarAsignacionesProyecto` y comparación estricta de `id_linea_servicio` en `eqExistente`, erradicando la colisión por clave duplicada `23505` en el índice único `uq_tpry_rel_equipo_linea_activo`.
+
 ## [Portal Web GSP, PWA & Backend] - Versión 1.0.225 (Web/Backend) / 1.0.67 (PWA)
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-11-16 11:45:00 (-03:00)

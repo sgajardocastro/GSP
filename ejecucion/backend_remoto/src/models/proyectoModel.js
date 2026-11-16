@@ -800,6 +800,7 @@ class ProyectoModel {
           const inEjec = parsed.ejecucion_v1 || {};
           const mergedEjec = { ...prevEjec, ...inEjec };
 
+          const crmV1 = parsed.crm_v1 || prevJson.crm_v1 || {};
           const lineasVerificacion = Array.isArray(crmV1.lineas_servicio) ? crmV1.lineas_servicio : [];
           const tieneLineasGrua = lineasVerificacion.some(l => {
             const t = String(l?.tipo || l?.categoria || '').toUpperCase();
@@ -2174,12 +2175,19 @@ class ProyectoModel {
           const tipoNorm = String(eq.tipo || '').toUpperCase();
           const esPrimario = rolNorm === 'PRIMARIO' || tipoNorm.includes('GRUA') || tipoNorm.includes('TELESCOPICA');
           
+          const esRentalEq = (String(eq.tipo || eq.modelo || eq.observaciones || '').toUpperCase().includes('PLATAFORMA') ||
+                             String(eq.tipo || eq.modelo || '').toUpperCase().includes('ALZA HOMBRES') ||
+                             String(eq.tipo || eq.modelo || '').toUpperCase().includes('RENTAL')) &&
+                             !tipoNorm.includes('CAMION') && !rolNorm.includes('TRASLADO');
+          const segmentoEq = esRentalEq ? 'Rental / Arriendo' : (esPrimario ? 'Izaje Principal' : 'Traslado & Logística');
+          const tipoEq = esRentalEq ? (eq.tipo || 'Plataforma Alza Hombre') : (eq.tipo || (esPrimario ? 'Grúa Móvil' : 'Transporte'));
+          
           // Cruzar operador asignado desde personasAsignadasBD
           let personaAsociada = null;
           if (eq.id_linea_servicio) {
             personaAsociada = personasAsignadasBD.find(p => !personasAsignadasUsadas.has(p.id_rel_persona) && Number(p.id_linea_servicio) === Number(eq.id_linea_servicio));
           }
-          if (!personaAsociada) {
+          if (!personaAsociada && !esRentalEq) {
             if (esPrimario) {
               personaAsociada = personasAsignadasBD.find(p => !personasAsignadasUsadas.has(p.id_rel_persona) && String(p.rol_asignado || '').toUpperCase().includes('OPERADOR'));
             } else {
@@ -2189,9 +2197,6 @@ class ProyectoModel {
                 return r.includes('CHOFER') || r.includes('TRANSPORTE') || r.includes('CONDUCTOR') || r.includes('PLUMA');
               });
             }
-          }
-          if (!personaAsociada) {
-            personaAsociada = personasAsignadasBD.find(p => !personasAsignadasUsadas.has(p.id_rel_persona));
           }
           if (personaAsociada) {
             personasAsignadasUsadas.add(personaAsociada.id_rel_persona);
@@ -2204,12 +2209,6 @@ class ProyectoModel {
             choferLabel = rng ? `<strong>${nom}</strong> <span style="color:#475569;">(${rng})</span>` : `<strong>${nom}</strong>`;
           }
 
-          const esRentalEq = String(eq.tipo || eq.modelo || eq.observaciones || '').toUpperCase().includes('PLATAFORMA') ||
-                             String(eq.tipo || eq.modelo || '').toUpperCase().includes('ALZA HOMBRES') ||
-                             String(eq.tipo || '').toUpperCase().includes('RENTAL') ||
-                             String(crm.tipo_ot || '').toUpperCase().includes('RENTAL');
-          const segmentoEq = esRentalEq ? 'Rental / Arriendo' : (esPrimario ? 'Izaje Principal' : 'Traslado & Logística');
-          const tipoEq = esRentalEq ? (eq.tipo || 'Plataforma Alza Hombre') : (eq.tipo || (esPrimario ? 'Grúa Móvil' : 'Transporte'));
           const choferEq = (esRentalEq && !personaAsociada) ? 'Sin Operador (Arriendo Sin Operador)' : choferLabel;
           flotaItems.push({
             segmento: segmentoEq,
@@ -2299,11 +2298,27 @@ class ProyectoModel {
         });
 
         if (equiposExtra.length === 0) {
-          lineasServicio.filter(esLineaTrasladoOT).forEach((l) => {
+          const ramasTrasladoServicios = [];
+          const serviciosList = crm.servicios || jsonField.servicios || [];
+          serviciosList.forEach(s => {
+            if (Array.isArray(s.ramas)) {
+              s.ramas.forEach(r => {
+                if (isTrasladoOrLogistica(r) || esLineaTrasladoOT(r) || (r.tipo || '').toUpperCase().includes('TRASLADO') || (r.rol || '').toUpperCase().includes('TRASLADO')) {
+                  ramasTrasladoServicios.push(r);
+                }
+              });
+            }
+          });
+          const candidatosTraslado = [
+            ...lineasServicio.filter(esLineaTrasladoOT),
+            ...ramasTrasladoServicios
+          ];
+          candidatosTraslado.forEach((l) => {
             const eqId = l._resolved_eq_id || l.equipo_asignado_id || l.equipo_id;
             if (eqId) {
               const eqObj = getEquipoInfo(eqId) || {}; const patFlota = String(eqObj.patente || eqObj.ppu || eqId || '').toUpperCase().trim(); if (patFlota && patentesFlotaVistas.has(patFlota)) return; if (patFlota) patentesFlotaVistas.add(patFlota);
-              const chObj = getUserInfo(l.operador_asignado_id || ejec.chofer_id) || {};
+              const chId = l.chofer_id || l.operador_asignado_id || ejec.chofer_id;
+              const chObj = getUserInfo(chId) || {};
               flotaItems.push({
                 segmento: 'Traslado & Logística',
                 tipo: l.tipo || eqObj.tipo || 'Transporte',

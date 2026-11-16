@@ -7540,8 +7540,33 @@ const guardarCambiosAsignacion = async (silent = false) => {
       preparacionSalidaState.value.inspecciones_patio = { ...preparacionSalidaState.value.inspecciones_patio }
     }
 
-    // Sincronizar rigger_asignado_id desde serviciosArbol hacia lines y operacionesAssignment
+    // Sincronizar asignaciones desde serviciosArbol hacia lines y operacionesAssignment
     if (Array.isArray(serviciosArbol.value)) {
+      serviciosArbol.value.forEach(s => {
+        if (s.primario?.equipo_asignado_id) {
+          const lPrim = (lines.value || []).find(l => (l.id_linea && l.id_linea === s.primario.id_linea) || (l.id_linea_servicio && l.id_linea_servicio === s.primario.id_linea_servicio))
+          if (lPrim) {
+            lPrim.equipo_asignado_id = s.primario.equipo_asignado_id
+            lPrim.operador_asignado_id = s.primario.operador_asignado_id || s.operador_asignado_id
+            lPrim.rigger_asignado_id = s.primario.rigger_asignado_id || s.rigger_asignado_id
+          }
+        }
+        if (Array.isArray(s.ramas)) {
+          s.ramas.forEach(r => {
+            const lRama = (lines.value || []).find(l => (l.id_linea && l.id_linea === r.id_linea) || (l.id_linea_servicio && l.id_linea_servicio === r.id_linea_servicio))
+            if (lRama) {
+              if (r.equipo_asignado_id) lRama.equipo_asignado_id = r.equipo_asignado_id
+              if (r.chofer_id) {
+                lRama.chofer_id = r.chofer_id
+                lRama.operador_asignado_id = r.chofer_id
+              }
+              if (r.operador_asignado_id) lRama.operador_asignado_id = r.operador_asignado_id
+              if (r.rigger_asignado_id) lRama.rigger_asignado_id = r.rigger_asignado_id
+            }
+          })
+        }
+      })
+
       const srvConRigger = serviciosArbol.value.find(s => s?.rigger_asignado_id || s?.primario?.rigger_asignado_id)
       const rId = srvConRigger ? (srvConRigger.rigger_asignado_id || srvConRigger.primario?.rigger_asignado_id) : null
       if (rId) {
@@ -7641,6 +7666,9 @@ const guardarCambiosAsignacion = async (silent = false) => {
             const cargoRama = (r.linea_servicio || '').toUpperCase().includes('TRANSP') || (r.tipo && r.tipo.includes('CAMION')) ? 'Chofer Transporte' : 'Operador Grúa'
             if (r.operador_asignado_id) {
               agregarPersona(r.operador_asignado_id, r.id_linea_servicio || r.id_linea, cargoRama)
+            }
+            if (r.chofer_id) {
+              agregarPersona(r.chofer_id, r.id_linea_servicio || r.id_linea, 'Chofer Transporte')
             }
             if (r.rigger_asignado_id) {
               agregarPersona(r.rigger_asignado_id, r.id_linea_servicio || r.id_linea, 'Rigger')
