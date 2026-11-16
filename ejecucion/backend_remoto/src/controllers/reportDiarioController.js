@@ -5,6 +5,7 @@ const path = require('path');
 const notificacionService = require('../services/notificacionService');
 const { generarPdfReportDiario } = require('../services/reportDiarioPdfService');
 const { isLineaCobroUnico, calcularSubtotalLinea } = require('../utils/lineaCobroUnico');
+const { normalizarUnidad, calcularSubtotalNodo } = require('../services/motorValorizacionService');
 const { buildStoragePath, STORAGE_ROOT } = require('../config/storageConfig');
 const archivoModel = require('../models/archivoModel');
 const slaAuditorService = require('../services/slaAuditorService');
@@ -498,12 +499,19 @@ const reportDiarioController = {
       }
       const proyecto = proyRes.rows[0];
 
-      // 1.2 Consultar equipos asignados (DEDUPLICADOS por id_equipo) con su micro-estado operacional (Spec 35)
+      // 1.2 Consultar equipos asignados (DEDUPLICADOS por id_equipo) con vigencia temporal y relevos (Spec 16 Sec 27)
+      const fechaConsulta = req.query.fecha_reporte || req.query.fecha || fechaHoyChile();
       const eqSql = `
         SELECT DISTINCT ON (re.id_equipo)
           re.id_rel_equipo,
           re.id_equipo,
           re.rol_equipo,
+          re.fecha_plan_ini,
+          re.fecha_plan_fin,
+          COALESCE((re.json_field->>'es_reemplazo')::boolean, FALSE) AS es_reemplazo,
+          re.json_field->>'id_equipo_reemplazado' AS id_equipo_reemplazado,
+          re.json_field->>'patente_reemplazada' AS patente_reemplazada,
+          re.json_field->>'motivo_reemplazo' AS motivo_reemplazo,
           e.patente,
           e.modelo,
           e.marca,
@@ -526,6 +534,7 @@ const reportDiarioController = {
           LIMIT 1
         ) v ON TRUE
         WHERE re.id_proyecto = $1
+          AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY re.id_equipo, re.id_rel_equipo DESC;
       `;
       const eqRes = await db.query(eqSql, [id_proyecto]);
@@ -579,6 +588,7 @@ const reportDiarioController = {
           FROM tpry_rel_persona rp
           JOIN tsec_users u ON rp.id_user = u.id_user
           WHERE rp.id_proyecto = $1
+            AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
           ORDER BY rp.id_user, rp.id_rel_persona DESC
         ) sub
         ORDER BY sub.id_rel_persona ASC;
@@ -708,6 +718,11 @@ const reportDiarioController = {
       let jornadaActiva = jornadaResuelta;
 
       let targetIdEquipo = null;
+      const toYmd = (v) => {
+        if (!v) return null;
+        if (v instanceof Date) return v.toISOString().substring(0, 10);
+        return String(v).substring(0, 10);
+      };
       if (idEquipoSolicitado && equipos.some(e => Number(e.id_equipo) === idEquipoSolicitado)) {
         targetIdEquipo = idEquipoSolicitado;
         if (jornadaActiva && jornadaActiva.id_equipo && Number(jornadaActiva.id_equipo) !== targetIdEquipo && equipos.length > 1) {
@@ -715,10 +730,17 @@ const reportDiarioController = {
         }
       } else if (jornadaActiva && jornadaActiva.id_equipo) {
         targetIdEquipo = Number(jornadaActiva.id_equipo);
+      } else if (equipos.length > 0) {
+        // SPEC-16 Sec 27: Resolver equipo vigente para la fecha consultada (relevos/sustituciones)
+        const eqVigente = equipos.find(eq => {
+          if (!eq.fecha_plan_ini && !eq.fecha_plan_fin) return true;
+          const ini = toYmd(eq.fecha_plan_ini) || '1900-01-01';
+          const fin = toYmd(eq.fecha_plan_fin) || '2999-12-31';
+          return fechaConsulta >= ini && fechaConsulta <= fin;
+        });
+        targetIdEquipo = eqVigente ? Number(eqVigente.id_equipo) : (idEquipoDeUsuario && equipos.some(e => Number(e.id_equipo) === idEquipoDeUsuario) ? idEquipoDeUsuario : Number(equipos[0].id_equipo));
       } else if (idEquipoDeUsuario && equipos.some(e => Number(e.id_equipo) === idEquipoDeUsuario)) {
         targetIdEquipo = idEquipoDeUsuario;
-      } else if (equipos.length > 0) {
-        targetIdEquipo = Number(equipos[0].id_equipo);
       }
       // Si la jornada abierta usa un equipo fuera de la lista de la OT, se agrega para que la UI lo muestre
       if (targetIdEquipo && !equipos.some(e => Number(e.id_equipo) === targetIdEquipo)) {
@@ -752,6 +774,11 @@ const reportDiarioController = {
       } else if (targetIdEquipo) {
         const eqMatch = equipos.find(e => Number(e.id_equipo) === targetIdEquipo);
         if (eqMatch) {
+          // SPEC-16 Sección 27: En equipo de relevo/reemplazo, la correlación de días continúa la faena
+          if (eqMatch.es_reemplazo && reports.length > 0) {
+            const maxDiaOT = Math.max(...reports.map(r => Number(r.dia_correlativo) || 0), reports.length);
+            diaSugerido = maxDiaOT + 1;
+          }
           if (eqMatch.horometro_grua_llegada) {
             horometroSugerido = Number(eqMatch.horometro_grua_llegada);
           } else if (eqMatch.horometro_viaje_llegada || eqMatch.horometro_viaje_salida) {
@@ -790,9 +817,14 @@ const reportDiarioController = {
         data: {
           proyecto,
           equipos,
+          equipo: equipos.find(e => Number(e.id_equipo) === targetIdEquipo) || null,
           id_equipo_seleccionado: targetIdEquipo,
           id_equipo_solicitado: idEquipoSolicitado,
           equipo_corregido: equipoCorregido,
+          es_reemplazo: Boolean(equipos.find(e => Number(e.id_equipo) === targetIdEquipo)?.es_reemplazo),
+          patente_reemplazada: equipos.find(e => Number(e.id_equipo) === targetIdEquipo)?.patente_reemplazada || null,
+          motivo_reemplazo: equipos.find(e => Number(e.id_equipo) === targetIdEquipo)?.motivo_reemplazo || null,
+          fecha_reemplazo_ini: equipos.find(e => Number(e.id_equipo) === targetIdEquipo)?.fecha_plan_ini || null,
           jornadas_abiertas: (jornadasAbiertas || []).map(a => ({
             id_reporte_avance: a.id_reporte_avance,
             id_equipo: a.id_equipo,
@@ -842,12 +874,125 @@ const reportDiarioController = {
       if (!id_proyecto || !fecha_reporte || !id_user_operador) {
         return res.status(400).json({ error: 'id_proyecto, fecha_reporte y id_user_operador son requeridos' });
       }
-      // REQ-1060 / INV-4: la jornada SIEMPRE se guarda con un equipo explícito (sin equipo nunca sería recuperable)
-      if (!id_equipo) {
+
+      // Consultar proyecto para validar si es OT-STAFF / PROFESIONAL (Plaenge 4.1/4.2/4.4)
+      const pryRowCheck = await db.query('SELECT codi_proyecto, json_field FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
+      const pryData = pryRowCheck.rows[0] || {};
+      const codiPry = String(pryData.codi_proyecto || '').toUpperCase();
+      const jfProy = pryData.json_field || {};
+      const lineasProy = jfProy.crm_v1?.lineas_servicio || jfProy.lineas_servicio || [];
+      const tipoServicioProy = String(jfProy.crm_v1?.tipo_servicio || jfProy.tipo_servicio || '').toUpperCase();
+
+      const lineaNegocioProy = String(jfProy.crm_v1?.linea_negocio || jfProy.linea_negocio || '').toUpperCase();
+      const tieneLineaMaquinaIzaje = lineasProy.some(l => {
+        const ln = String(l.linea_negocio || '').toUpperCase();
+        const t = String(l.tipo || l.tipo_servicio || l.subcategoria || l.descripcion || '').toUpperCase();
+        if (ln === 'PROFESIONAL') return false;
+        return ln === 'IZAJE' || t.includes('GRUA') || t.includes('GRÚA') || t.includes('PLUMA') || t.includes('HORQUILLA') || t.includes('MANIPULADOR');
+      });
+      const tieneLineaStaff = lineasProy.some(l => {
+        const ln = String(l.linea_negocio || '').toUpperCase();
+        const t = String(l.tipo || l.tipo_servicio || l.subcategoria || '').toUpperCase();
+        return ln === 'PROFESIONAL' || t.includes('PROFESIONAL') || t.includes('STAFF');
+      });
+
+      const eqCountRes = await db.query(
+        `SELECT COUNT(*) as total
+         FROM tpry_rel_equipo re
+         INNER JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
+         WHERE re.id_proyecto = $1
+           AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+           AND COALESCE(e.tipo_equipo, '') NOT ILIKE '%LIVIANO%'
+           AND COALESCE(e.codigo_interno, '') NOT ILIKE 'CTA-%'`,
+        [id_proyecto]
+      );
+      const totalEqsAsignados = parseInt(eqCountRes.rows[0]?.total || 0, 10);
+      const jsonEqsAsignados = Array.isArray(jfProy.ejecucion_v1?.equipos_asignados) ? jfProy.ejecucion_v1.equipos_asignados.length : 0;
+
+      const esSoloStaff = (
+        codiPry.includes('STAFF') ||
+        lineaNegocioProy === 'PROFESIONAL' ||
+        tipoServicioProy.includes('PROFESIONAL') ||
+        tipoServicioProy.includes('STAFF') ||
+        (tieneLineaStaff && !tieneLineaMaquinaIzaje && totalEqsAsignados === 0) ||
+        (!tieneLineaMaquinaIzaje && totalEqsAsignados === 0 && jsonEqsAsignados === 0)
+      );
+
+      // REQ-1060 / INV-4: la jornada requiere equipo explícito salvo en proyectos solo-staff sin equipo (4.1/4.2/4.4)
+      if (!id_equipo && !esSoloStaff) {
         return res.status(400).json({
           success: false,
           codigo: 'EQUIPO_REQUERIDO',
           error: 'La OT no tiene una grúa asignada para registrar la jornada. Contacte a Control de Gestión.'
+        });
+      }
+
+      // SPEC-129 1.9.M: Exclusión de Rigger en servicios de IZAJE (OT-MANIOBRA)
+      const esProyectoIzaje = (
+        !esSoloStaff && (
+          lineaNegocioProy === 'IZAJE' ||
+          codiPry.includes('MANIOBRA') ||
+          codiPry.includes('IZAJE') ||
+          tipoServicioProy.includes('IZAJE') ||
+          tipoServicioProy.includes('MANIOBRA') ||
+          tieneLineaMaquinaIzaje ||
+          totalEqsAsignados > 0
+        )
+      );
+
+      if (esProyectoIzaje) {
+        const personalRolesRes = await db.query(
+          `SELECT rol_asignado 
+           FROM tpry_rel_persona 
+           WHERE id_proyecto = $1 AND id_user = $2
+             AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')`,
+          [id_proyecto, id_user_operador]
+        );
+
+        let rolesOperador = personalRolesRes.rows.map(r => `${r.rol_asignado || ''}`.toUpperCase().trim());
+        if (rolesOperador.length === 0 && Array.isArray(jfProy.ejecucion_v1?.tripulacion_asignada)) {
+          const trip = jfProy.ejecucion_v1.tripulacion_asignada.filter(m => Number(m.id_user) === Number(id_user_operador));
+          rolesOperador = trip.map(m => `${m.cargo || ''} ${m.rol || ''} ${m.requerimiento || ''}`.toUpperCase().trim());
+        }
+
+        const tieneRolRigger = rolesOperador.some(r => r.includes('RIGGER') || r.includes('RER'));
+        const tieneRolOperadorOConductor = rolesOperador.some(r => r.includes('OPERADOR') || r.includes('CHOFER') || r.includes('CONDUCTOR'));
+
+        if (tieneRolRigger && !tieneRolOperadorOConductor) {
+          return res.status(403).json({
+            success: false,
+            codigo: 'RIGGER_NO_AUTORIZADO_REPORTE',
+            error: 'En servicios de Izaje el Report Diario es único y lo emite exclusivamente el Operador de la grúa; la asistencia del Rigger se valida dentro del mismo Report.',
+            message: 'En servicios de Izaje el Report Diario es único y lo emite exclusivamente el Operador de la grúa; la asistencia del Rigger se valida dentro del mismo Report.'
+          });
+        }
+      }
+
+      // Acuerdo #3: Bloqueo de 1 Servicio Activo por Operador
+      const fechaBaseStr = String(fecha_reporte).split('T')[0];
+      const otroServicioActivoRes = await db.query(
+        `SELECT id_reporte_avance, id_proyecto, fecha_reporte, estado_reporte, estado_jornada
+         FROM tedp_reporte_avance
+         WHERE id_user_operador = $1
+           AND id_proyecto <> $2
+           AND (
+             estado_reporte = 'JORNADA_EN_CURSO'
+             OR estado_jornada = 'JORNADA_EN_CURSO'
+             OR (fecha_reporte = $3::date AND estado_reporte NOT IN ('VALIDADO_ANALISTA', 'FINALIZADA', 'FINALIZADO', 'CANCELADO', 'CERRADO'))
+           )
+           AND (token_report IS NULL OR token_report NOT LIKE 'FLT-%')
+         LIMIT 1`,
+        [id_user_operador, id_proyecto, fechaBaseStr]
+      );
+
+      if (otroServicioActivoRes.rows.length > 0) {
+        return res.status(409).json({
+          success: false,
+          codigo: 'SERVICIO_ACTIVO_OTRA_OT',
+          id_reporte_avance_activo: otroServicioActivoRes.rows[0].id_reporte_avance,
+          id_proyecto_activo: otroServicioActivoRes.rows[0].id_proyecto,
+          message: 'Ya tienes un servicio en curso sin finalizar en otra OT. Debes cerrar tu jornada activa antes de iniciar un nuevo servicio.',
+          error: 'Ya tienes un servicio en curso sin finalizar en otra OT. Debes cerrar tu jornada activa antes de iniciar un nuevo servicio.'
         });
       }
 
@@ -879,10 +1024,7 @@ const reportDiarioController = {
           const rowAcum = eqAcumRes.rows[0];
           const minHoro = Math.max(Number(rowAcum.h_grua || 0), Number(rowAcum.max_rep_horo || 0));
           if (minHoro > 0 && Number(horometro_inicio) < minHoro) {
-            return res.status(422).json({
-              success: false,
-              error: `El Horómetro de Inicio (${horometro_inicio} hrs) no puede ser menor al último registro acumulado del equipo (${minHoro} hrs).`
-            });
+            console.warn(`[REQ-1143] Horómetro de Inicio (${horometro_inicio} hrs) menor al acumulado (${minHoro} hrs) para equipo ${id_equipo}. Se permite registro temporalmente.`);
           }
           // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de validación incremental de odómetro al inicio
           if (odometro_inicio !== undefined && odometro_inicio !== null && odometro_inicio !== '' && Number(rowAcum.odo) > 0 && Number(odometro_inicio) < Number(rowAcum.odo)) {
@@ -1527,24 +1669,59 @@ const reportDiarioController = {
         }
         const jornadaEnCurso = Boolean(jornadaCanon);
 
-        // REQ-1060 / INV-4: equipo canónico = jornada abierta propia > equipo asignado al usuario > tpry_rel_equipo > línea CRM
+        // SPEC-16 Sec 27 / REQ-1120: Resolución determinista relacional por fecha (CURRENT_DATE)
         let idEquipo = null;
         let patente = null;
+        let datosReemplazo = null;
+
         if (jornadaCanon?.id_equipo) {
           idEquipo = Number(jornadaCanon.id_equipo);
-        } else if (idEquipoUsuario) {
-          idEquipo = idEquipoUsuario;
         } else {
-          const relEqRes = await db.query(
-            `SELECT re.id_equipo FROM tpry_rel_equipo re WHERE re.id_proyecto = $1 ORDER BY re.id_equipo ASC LIMIT 1`,
-            [r.id_proyecto]
-          );
-          if (relEqRes.rows.length > 0) {
-            idEquipo = Number(relEqRes.rows[0].id_equipo);
+          // 1. Prioridad Absoluta: Equipo activo hoy en tpry_rel_equipo (soporta sustituciones/relevos de máquinas)
+          const relVigenteRes = await db.query(`
+            SELECT re.id_equipo, e.patente,
+                   COALESCE((re.json_field->>'es_reemplazo')::boolean, FALSE) AS es_reemplazo,
+                   re.json_field->>'id_equipo_reemplazado' AS id_equipo_reemplazado,
+                   re.json_field->>'patente_reemplazada' AS patente_reemplazada,
+                   re.json_field->>'motivo_reemplazo' AS motivo_reemplazo,
+                   re.fecha_plan_ini, re.fecha_plan_fin
+            FROM tpry_rel_equipo re
+            JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
+            WHERE re.id_proyecto = $1
+              AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+              AND (
+                (re.fecha_plan_ini IS NULL AND re.fecha_plan_fin IS NULL)
+                OR (CURRENT_DATE BETWEEN re.fecha_plan_ini::date AND re.fecha_plan_fin::date)
+              )
+            ORDER BY 
+              COALESCE((re.json_field->>'es_reemplazo')::boolean, FALSE) DESC,
+              re.fecha_plan_ini DESC NULLS LAST,
+              re.id_rel_equipo DESC
+            LIMIT 1
+          `, [r.id_proyecto]);
+
+          if (relVigenteRes.rows.length > 0) {
+            idEquipo = Number(relVigenteRes.rows[0].id_equipo);
+            patente = relVigenteRes.rows[0].patente;
+            datosReemplazo = relVigenteRes.rows[0];
+          } else if (idEquipoUsuario) {
+            // 2. Asignación directa conocida de usuario (si no hay fila fechada en tpry_rel_equipo)
+            idEquipo = idEquipoUsuario;
           } else {
-            const firstCrane = lines.find(l => (l.tipo || '').toUpperCase().includes('GRUA') && l.equipo_asignado_id);
-            if (firstCrane?.equipo_asignado_id) {
-              idEquipo = Number(firstCrane.equipo_asignado_id);
+            // 3. Fallback a primer equipo relacional sin filtro de fecha
+            const relFallback = await db.query(
+              `SELECT re.id_equipo, e.patente FROM tpry_rel_equipo re JOIN tequ_equipo e ON re.id_equipo = e.id_equipo WHERE re.id_proyecto = $1 AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO') ORDER BY re.id_rel_equipo DESC LIMIT 1`,
+              [r.id_proyecto]
+            );
+            if (relFallback.rows.length > 0) {
+              idEquipo = Number(relFallback.rows[0].id_equipo);
+              patente = relFallback.rows[0].patente;
+            } else {
+              // 4. Fallback legacy a cotización CRM
+              const firstCrane = lines.find(l => (l.tipo || '').toUpperCase().includes('GRUA') && l.equipo_asignado_id);
+              if (firstCrane?.equipo_asignado_id) {
+                idEquipo = Number(firstCrane.equipo_asignado_id);
+              }
             }
           }
         }
@@ -1572,6 +1749,10 @@ const reportDiarioController = {
           obra_direccion: r.obra_direccion,
           id_equipo: idEquipo,
           patente: patente || 'S/P',
+          es_reemplazo: Boolean(datosReemplazo?.es_reemplazo),
+          patente_reemplazada: datosReemplazo?.patente_reemplazada || null,
+          motivo_reemplazo: datosReemplazo?.motivo_reemplazo || null,
+          fecha_reemplazo_ini: datosReemplazo?.fecha_plan_ini || null,
           total_dias: totalDias,
           dias_reportados: cantReportes,
           dia_a_reportar: cantReportes + 1,
@@ -1737,6 +1918,34 @@ const reportDiarioController = {
         });
       }
 
+      // SPEC-129 1.9.M: Bloquear también en guardarReportDiario si Rigger exclusivo intenta emitir report en Izaje
+      try {
+        const pryCheckIz = await db.query('SELECT codi_proyecto, json_field FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
+        const jfIz = pryCheckIz.rows[0]?.json_field || {};
+        const linNegIz = String(jfIz.crm_v1?.linea_negocio || jfIz.linea_negocio || '').toUpperCase();
+        const linsIz = jfIz.crm_v1?.lineas_servicio || [];
+        const tieneGruaIz = linsIz.some(l => {
+          const t = String(l.tipo || l.subcategoria || l.descripcion || '').toUpperCase();
+          return String(l.linea_negocio || '').toUpperCase() === 'IZAJE' || t.includes('GRUA') || t.includes('GRÚA') || t.includes('PLUMA');
+        });
+        if (linNegIz !== 'PROFESIONAL' && (linNegIz === 'IZAJE' || tieneGruaIz || id_equipo)) {
+          const rpRes = await db.query(
+            `SELECT rol_asignado FROM tpry_rel_persona WHERE id_proyecto = $1 AND id_user = $2 AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')`,
+            [id_proyecto, id_user_operador]
+          );
+          const rolesOp = rpRes.rows.map(r => String(r.rol_asignado || '').toUpperCase());
+          const esRig = rolesOp.some(r => r.includes('RIGGER') || r.includes('RER'));
+          const esOp = rolesOp.some(r => r.includes('OPERADOR') || r.includes('CHOFER') || r.includes('CONDUCTOR'));
+          if (esRig && !esOp) {
+            return res.status(403).json({
+              success: false,
+              codigo: 'RIGGER_NO_AUTORIZADO_REPORTE',
+              error: 'En servicios de Izaje el Report Diario es único y lo emite exclusivamente el Operador de la grúa; la asistencia del Rigger se valida dentro del mismo Report.'
+            });
+          }
+        }
+      } catch (_) {}
+
       // REQ-1060 / INV-5: si no viene id_reporte_avance, ADOPTAR la jornada abierta de la OT/equipo (nunca duplicar)
       if (!id_reporte_avance) {
         try {
@@ -1794,8 +2003,29 @@ const reportDiarioController = {
         });
       }
 
-      if (!cliente_firma_canvas_base64) {
-        return res.status(400).json({ error: 'La firma manual del mandante es obligatoria para emitir el report' });
+      // Acuerdo #7 / REQ-1146: Cierre en contingencia sin firma presencial del mandante
+      const contingenciaSinFirma = req.body.contingencia_sin_firma === true || req.body.contingencia_sin_firma === 'true';
+      const motivoSinFirma = (req.body.motivo_sin_firma_cliente || '').trim();
+
+      if (contingenciaSinFirma) {
+        if (motivoSinFirma.length < 5) {
+          return res.status(400).json({
+            success: false,
+            error: 'Debe indicar el motivo obligatorio de cierre sin firma presencial del cliente.',
+            message: 'Debe indicar el motivo obligatorio de cierre sin firma presencial del cliente.'
+          });
+        }
+        if (!cliente_firma_canvas_base64) {
+          cliente_firma_canvas_base64 = `[CIERRE EN CONTINGENCIA SIN FIRMA CLIENTE: ${motivoSinFirma}]`;
+        }
+        const tagContingencia = `[CIERRE EN CONTINGENCIA SIN FIRMA CLIENTE: ${motivoSinFirma}]`;
+        if (!observacion_trabajo.includes(tagContingencia)) {
+          observacion_trabajo = observacion_trabajo ? `${observacion_trabajo}\n${tagContingencia}` : tagContingencia;
+        }
+      } else {
+        if (!cliente_firma_canvas_base64) {
+          return res.status(400).json({ error: 'La firma manual del mandante es obligatoria para emitir el report' });
+        }
       }
 
       const fotoHorometroFinal = foto_tablero_termino || foto_tablero_inicio || foto_horometro || null;
@@ -1923,10 +2153,7 @@ const reportDiarioController = {
       // REQ-1476 / SPEC-006 v1.5: Validación incremental estricta en cierre de Report Diario
       if (horometro_inicio !== undefined && horometro_inicio !== null && horometro_termino !== undefined && horometro_termino !== null) {
         if (Number(horometro_termino) < Number(horometro_inicio)) {
-          return res.status(422).json({
-            success: false,
-            error: `El Horómetro Final (${horometro_termino} hrs) no puede ser menor al Horómetro Inicial (${horometro_inicio} hrs).`
-          });
+          console.warn(`[REQ-1143] Horómetro Final (${horometro_termino} hrs) menor al Inicial (${horometro_inicio} hrs). Se permite registro temporalmente.`);
         }
       }
       // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de validación incremental de odómetro al cierre
@@ -1994,7 +2221,7 @@ const reportDiarioController = {
           accuracy_firma || null,
           horas_operadas || 0,
           (horas_colacion !== undefined && horas_colacion !== null && !isNaN(Number(horas_colacion))) ? Number(horas_colacion) : 0,
-          horas_minimas || 8.0,
+          (horas_minimas !== undefined && horas_minimas !== null && !Number.isNaN(Number(horas_minimas))) ? Number(horas_minimas) : 8.0,
           horas_facturables || 0,
           horas_sobretiempo || 0,
           horometro_inicio || null,
@@ -2088,7 +2315,7 @@ const reportDiarioController = {
           accuracy_firma || null,
           horas_operadas || 0,
           (horas_colacion !== undefined && horas_colacion !== null && !isNaN(Number(horas_colacion))) ? Number(horas_colacion) : 0,
-          horas_minimas || 8.0,
+          (horas_minimas !== undefined && horas_minimas !== null && !Number.isNaN(Number(horas_minimas))) ? Number(horas_minimas) : 8.0,
           horas_facturables || 0,
           horas_sobretiempo || 0,
           horometro_inicio || null,
@@ -2114,6 +2341,30 @@ const reportDiarioController = {
           deviceTs
         ]);
         reportGuardado = inRes.rows[0];
+      }
+
+      // Acuerdo #7 / REQ-1146: Persistir metadatos de contingencia sin firma cliente
+      if (contingenciaSinFirma && reportGuardado?.id_reporte_avance) {
+        try {
+          await db.query(`
+            UPDATE tedp_reporte_avance
+            SET ajustes_analista = jsonb_set(
+              COALESCE(ajustes_analista, '{}'::jsonb),
+              '{contingencia_sin_firma}',
+              'true'::jsonb,
+              true
+            ),
+            ajustes_analista = jsonb_set(
+              COALESCE(ajustes_analista, '{}'::jsonb),
+              '{motivo_sin_firma_cliente}',
+              to_jsonb($1::text),
+              true
+            )
+            WHERE id_reporte_avance = $2
+          `, [motivoSinFirma, reportGuardado.id_reporte_avance]);
+        } catch (eCont) {
+          console.warn('[Contingencia] Advertencia guardando ajustes_analista:', eCont.message);
+        }
       }
 
       // Opcional: Actualizar el horómetro en json_data y columnas acumuladas del equipo si se ingresó
@@ -2978,38 +3229,76 @@ const reportDiarioController = {
       // Clasificación de parámetros comerciales pactados
       let valorHoraPactado = 0;
       let valorFijoPactado = 0;
+      let valorAdicionalesFijos = 0;
+      let valorDiarioPactado = 0;
+      let esValorFijoDiarioComercial = false;
       let valorFletePactado = 0;
       let horasMinimasPactadas = 8.0;
       let esValorFijoComercial = Boolean(crmV1.es_valor_fijo);
+      let tieneLineaPorHora = false;
       const esMensualOT = lineas.some(l => String(l?.unidad || l?.unidad_cobro || '').toUpperCase().includes('MES'));
 
       lineas.forEach(l => {
         const tipo = (l.tipo || l.categoria || '').toUpperCase().trim();
         const desc = (l.descripcion || l.concepto || '').toUpperCase();
         const unid = (l.unidad || l.unidad_cobro || '').toUpperCase().trim();
+        const unidCanon = normalizarUnidad(l.unidad || l.unidad_cobro || '');
         const subcat = (l.subcategoria || '').toUpperCase();
         const precio = parseFloat(l.valorUnitario || l.precio_unitario || l.valor_unitario || l.tarifa || 0);
         const sub = parseFloat(l.subtotal || 0);
+        const subMotor = calcularSubtotalNodo(l);
 
         const esLineaTraslado = tipo === 'TRASLADOS' || tipo.includes('TRASLADO') || tipo.includes('FLETE') || unid.includes('FLETE') || unid.includes('TRASLADO') || desc.includes('FLETE') || desc.includes('TRASLADO') || subcat.includes('FLETE');
 
         if (esLineaTraslado) {
           // SPEC-128: El traslado es cobro único (1 × precio), nunca multiplicado por cantidad
-          valorFletePactado += (sub > 0 ? sub : precio);
-        } else {
-          const esFijo = unid.includes('FIJO') || unid.includes('SUMA ALZADA') || tipo.includes('FIJO') || desc.includes('VALOR FIJO');
-          if (esFijo) {
+          valorFletePactado += (precio > 0 ? precio : sub);
+        } else if (isLineaCobroUnico(l)) {
+          const rolUpper = String(l.rol_nodo || '').toUpperCase();
+          const esSecundaria = Boolean(
+            l.id_linea_servicio_padre ||
+            l.parentId ||
+            ['OTROS', 'ACCESORIO', 'HIJO_COMERCIAL', 'PERSONAL'].includes(rolUpper) ||
+            tipo.includes('OTRO') ||
+            tipo.includes('ACCESORIO')
+          );
+          if (esSecundaria) {
+            valorAdicionalesFijos += (precio > 0 ? precio : sub);
+          } else {
             esValorFijoComercial = true;
-            valorFijoPactado += (sub > 0 ? sub : precio);
-          } else if (precio > 0 && (unid.includes('HORA') || unid.includes('MES'))) {
-            if (valorHoraPactado === 0) valorHoraPactado = precio;
-            const pm = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas);
-            if (pm > 0) horasMinimasPactadas = pm;
-          } else if (precio > 0 && valorHoraPactado === 0 && !esValorFijoComercial) {
-            valorHoraPactado = precio;
+            valorFijoPactado += (precio > 0 ? precio : sub);
           }
+        } else if (unidCanon === 'Valor Fijo Diario') {
+          tieneLineaPorHora = true;
+          esValorFijoDiarioComercial = true;
+          valorDiarioPactado += precio;
+          horasMinimasPactadas = 0;
+        } else if (unidCanon === 'Valor Fijo Mensual' || unidCanon === 'Valor Fijo Semanal') {
+          esValorFijoComercial = true;
+          valorFijoPactado += (subMotor > 0 ? subMotor : precio);
+          horasMinimasPactadas = 0;
+        } else if (precio > 0 && (unid.includes('HORA') || unid.includes('MES'))) {
+          tieneLineaPorHora = true;
+          if (valorHoraPactado === 0) valorHoraPactado = precio;
+          const pm = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas);
+          if (pm > 0) horasMinimasPactadas = pm;
+          else if (unidCanon === 'Hora Efectiva') horasMinimasPactadas = 0;
+        } else if (precio > 0 && valorHoraPactado === 0 && !esValorFijoComercial) {
+          tieneLineaPorHora = true;
+          valorHoraPactado = precio;
         }
       });
+
+      if (tieneLineaPorHora) {
+        esValorFijoComercial = false;
+        if (valorFijoPactado > 0) {
+          valorAdicionalesFijos += valorFijoPactado;
+          valorFijoPactado = 0;
+        }
+      } else if (esValorFijoComercial && valorAdicionalesFijos > 0) {
+        valorFijoPactado += valorAdicionalesFijos;
+        valorAdicionalesFijos = 0;
+      }
 
       if (esMensualOT) {
         horasMinimasPactadas = 0; // Sin piso diario en contratos mensuales
@@ -3058,21 +3347,28 @@ const reportDiarioController = {
               WHERE id_its = $1 AND COALESCE(es_oculta, false) = false
               ORDER BY orden ASC, fecha ASC;
             `, [itsRow.id_its]);
-            reports = jRes.rows.map((j, idx) => ({
-              id_reporte_avance: j.id_jornada || (idx + 1),
-              dia_correlativo: j.orden || (idx + 1),
-              fecha_reporte: j.fecha,
-              horas_operadas: Number(j.horas_report || 0),
-              horas_facturables: Number(j.horas_report || 0),
-              horas_sobretiempo: 0,
-              horometro_inicio: j.horometro_inicio || 0,
-              horometro_termino: j.horometro_termino || 0,
-              cliente_nombre: j.cliente_nombre || 'Supervisor Mandante',
-              cliente_cargo: j.cliente_cargo || 'ITO',
-              estado_reporte: 'VALIDADO_ANALISTA',
-              equipo_patente: j.patente || 'GRÚA',
-              equipo_modelo: j.tipo_servicio || 'Grúa'
-            }));
+            reports = jRes.rows
+              .filter(j => {
+                const ts = String(j.tipo_servicio || '').toUpperCase();
+                const nr = String(j.numero_report || '').toUpperCase();
+                return ts !== 'REGISTRO DE VIAJE' && !ts.includes('FLETE') && !ts.includes('TRASLADO') && nr !== 'TRASLADO' && nr !== 'ADICIONAL-FIJO';
+              })
+              .map((j, idx) => ({
+                id_reporte_avance: j.id_jornada || (idx + 1),
+                id_equipo: j.id_equipo || null,
+                dia_correlativo: j.orden || (idx + 1),
+                fecha_reporte: j.fecha,
+                horas_operadas: Number(j.horas_report || 0),
+                horas_facturables: Number(j.horas_report || 0),
+                horas_sobretiempo: 0,
+                horometro_inicio: j.horometro_inicio || 0,
+                horometro_termino: j.horometro_termino || 0,
+                cliente_nombre: j.cliente_nombre || 'Supervisor Mandante',
+                cliente_cargo: j.cliente_cargo || 'ITO',
+                estado_reporte: 'VALIDADO_ANALISTA',
+                equipo_patente: j.patente || 'GRÚA',
+                equipo_modelo: j.tipo_servicio || 'Grúa'
+              }));
           }
         }
       } catch (_) {}
@@ -3095,6 +3391,8 @@ const reportDiarioController = {
         let subtotalFila = 0;
         if (esValorFijoComercial) {
           subtotalFila = idx === 0 ? valorFijoPactado : 0;
+        } else if (esValorFijoDiarioComercial && valorDiarioPactado > 0) {
+          subtotalFila = Math.round(valorDiarioPactado);
         } else {
           subtotalFila = Math.round(fact * valorHoraPactado);
         }
@@ -3108,36 +3406,59 @@ const reportDiarioController = {
           horas_minimas: esMensualOT ? 0 : horasMinimasPactadas,
           horas_sobretiempo: st,
           horas_facturables: fact,
-          tarifa_hora: valorHoraPactado,
+          tarifa_hora: esValorFijoDiarioComercial ? valorDiarioPactado : valorHoraPactado,
           subtotal_neto: subtotalFila
         };
       });
 
-      // Fletes devengados: SPEC-128 traslados son cobro único plano
-      let montoNetoFlete = valorFletePactado;
-
-      const totalNeto = montoNetoEquipos + montoNetoFlete;
-      const iva19 = Math.round(totalNeto * 0.19);
-      const totalBruto = totalNeto + iva19;
-
+      const diasFaenaResumen = Math.max(1, reports.length);
       let lineasCalculadas = lineas.map(l => {
         const valUnit = Number(l.valorUnitario || l.precio_unitario || 0) || 0;
         const tipo = (l.tipo || l.categoria || '').toUpperCase().trim();
         const desc = (l.descripcion || l.concepto || '').toUpperCase();
         const subcat = (l.subcategoria || '').toUpperCase();
+        const unidCanon = normalizarUnidad(l.unidad || l.unidad_cobro || '');
         const esLineaTraslado = tipo === 'TRASLADOS' || tipo.includes('TRASLADO') || tipo.includes('FLETE') || desc.includes('FLETE') || desc.includes('TRASLADO') || subcat.includes('FLETE');
+
+        const eqId = Number(l.equipo_asignado_id || l.id_equipo_sugerido || 0);
+        const lineaId = Number(l.id_linea_servicio || l.id_linea || 0);
+        const lineasGrua = lineas.filter(x => (x.tipo || '').toUpperCase().includes('GRUA'));
+        const esUnicaGrua = lineasGrua.length <= 1 && tipo.includes('GRUA');
+
+        const tieneMatchLinea = lineaId > 0 && reports.some(r => Number(r.id_linea_servicio) === lineaId);
+        const tieneMatchEq = eqId > 0 && reports.some(r => Number(r.id_equipo) === eqId);
+
+        let repsEq;
+        if (tieneMatchLinea) {
+          repsEq = reports.filter(r => Number(r.id_linea_servicio) === lineaId);
+        } else if (esUnicaGrua) {
+          repsEq = reports;
+        } else if (tieneMatchEq) {
+          repsEq = reports.filter(r => Number(r.id_equipo) === eqId);
+        } else {
+          repsEq = reports;
+        }
+        const hrsEq = repsEq.reduce((acc, r) => acc + Number(r.horas_facturables || r.horas_operadas || 0), 0) || totalHorasFacturables;
+        const diasEq = Math.max(1, (tieneMatchLinea || tieneMatchEq || esUnicaGrua) ? repsEq.length : (Number(l.cantidad_dias || l.cantidad) || reports.length || 1));
 
         let subtotal = 0;
         let horasCalculo = 0;
-        if (esLineaTraslado) {
+        if (esLineaTraslado || isLineaCobroUnico(l)) {
           subtotal = valUnit;
-        } else if (isLineaCobroUnico(l)) {
-          subtotal = valUnit;
-        } else if (esValorFijoComercial) {
-          subtotal = valorFijoPactado;
+        } else if (unidCanon === 'Valor Fijo Diario') {
+          subtotal = Math.round(valUnit * diasEq);
+        } else if (unidCanon === 'Valor Fijo Mensual') {
+          const meses = Math.max(1, Number(l.cantidad_meses || l.cantidad || 1));
+          subtotal = Math.round(valUnit * meses);
+        } else if (unidCanon === 'Horas Mes Minimas') {
+          const bolsa = Math.max(1, Number(l.piso_minimo_horas || l.pisoMinimo || l.cantidad_horas || 180));
+          horasCalculo = Math.max(bolsa, hrsEq);
+          subtotal = Math.round(valUnit * horasCalculo);
+        } else if (unidCanon === 'Horas Diarias Minimas' || unidCanon === 'Hora Efectiva') {
+          horasCalculo = hrsEq > 0 ? hrsEq : Math.max(0, Number(l.cantidad_horas || l.pisoMinimo || 0));
+          subtotal = Math.round(valUnit * horasCalculo);
         } else {
-          subtotal = montoNetoEquipos;
-          horasCalculo = totalHorasFacturables;
+          subtotal = calcularSubtotalLinea({ ...l, valorUnitario: valUnit }, { diasFaena: diasFaenaResumen, totalHorasFacturables: hrsEq });
         }
 
         return {
@@ -3148,9 +3469,148 @@ const reportDiarioController = {
         };
       });
 
-      const liquidacionGuardada = proyecto.json_field?.liquidacion_v1 || null;
       const jfProy = proyecto.json_field || {};
       const crmV1Proy = jfProy.crm_v1 || {};
+      const ajustesEdp = jfProy.edp_ajustes_v1 || null;
+
+      // SPEC-129 / Acuerdo #6: Aplicar overrides de tarifas, cantidades y totales editados por Control de Gestión / Tesorería
+      if (ajustesEdp) {
+        const pickEd = (dict, l, idx) => {
+          if (!dict || typeof dict !== 'object') return undefined;
+          if (l.id_linea && dict[l.id_linea] !== undefined) return dict[l.id_linea];
+          if (l.id_linea_servicio && dict[l.id_linea_servicio] !== undefined) return dict[l.id_linea_servicio];
+          if (dict[`idx_${idx}`] !== undefined) return dict[`idx_${idx}`];
+          if (dict[idx] !== undefined) return dict[idx];
+          return undefined;
+        };
+        lineasCalculadas = lineasCalculadas.map((lc, idx) => {
+          const tarEd = pickEd(ajustesEdp.tarifas_editadas, lc, idx);
+          const cantEd = pickEd(ajustesEdp.cantidades_editadas, lc, idx);
+          const totEd = pickEd(ajustesEdp.totales_editados, lc, idx);
+          const glosaEd = pickEd(ajustesEdp.glosas_editadas, lc, idx);
+          let vUnit = tarEd !== undefined ? Number(tarEd) : Number(lc.valorUnitario || lc.precio_unitario || 0);
+          let subCalc = Number(lc.subtotal_calculado || 0);
+          if (totEd !== undefined && totEd !== null && totEd !== '') {
+            subCalc = Math.round(Number(totEd));
+          } else if (cantEd !== undefined && cantEd !== null && cantEd !== '') {
+            subCalc = isLineaCobroUnico(lc) ? Math.round(vUnit) : Math.round(vUnit * Number(cantEd));
+          } else if (tarEd !== undefined) {
+            subCalc = isLineaCobroUnico(lc)
+              ? Math.round(vUnit)
+              : Math.round(vUnit * Number(lc.horas_aplicadas || lc.cantidad || 1));
+          }
+          return {
+            ...lc,
+            valorUnitario: vUnit,
+            cantidad: (cantEd !== undefined && !isLineaCobroUnico(lc)) ? Number(cantEd) : lc.cantidad,
+            descripcion: glosaEd || lc.descripcion,
+            subtotal_calculado: subCalc
+          };
+        });
+      }
+
+      // Fletes devengados: SPEC-128 traslados son cobro único plano
+      let montoNetoFlete = lineasCalculadas
+        .filter(lc => {
+          const t = String(lc.tipo || lc.categoria || '').toUpperCase();
+          const d = String(lc.descripcion || lc.concepto || '').toUpperCase();
+          const u = normalizarUnidad(lc.unidad || lc.unidad_cobro || '');
+          return t === 'TRASLADOS' || t.includes('TRASLADO') || t.includes('FLETE') || d.includes('FLETE') || d.includes('TRASLADO') || u.startsWith('Traslado');
+        })
+        .reduce((acc, lc) => acc + Number(lc.subtotal_calculado || 0), 0);
+      if (montoNetoFlete === 0 && valorFletePactado > 0 && !ajustesEdp) {
+        montoNetoFlete = valorFletePactado;
+      }
+
+      if (lineasCalculadas.length > 0) {
+        const sumaNoFlete = lineasCalculadas
+          .filter(lc => {
+            const t = String(lc.tipo || lc.categoria || '').toUpperCase();
+            const d = String(lc.descripcion || lc.concepto || '').toUpperCase();
+            const u = normalizarUnidad(lc.unidad || lc.unidad_cobro || '');
+            const esTr = t === 'TRASLADOS' || t.includes('TRASLADO') || t.includes('FLETE') || d.includes('FLETE') || d.includes('TRASLADO') || u.startsWith('Traslado');
+            return !esTr;
+          })
+          .reduce((acc, lc) => acc + Number(lc.subtotal_calculado || 0), 0);
+        montoNetoEquipos = sumaNoFlete;
+        valorAdicionalesFijos = 0;
+      }
+
+      // SPEC-129 2.2 / 2.7.M: Sumar liquidación Rental 360° (Diésel faltante + Daños con evidencia fotográfica)
+      let montoOtrosNeto = 0;
+      const rc360 = jfProy.rental_cierre_360_v1 || null;
+      if (rc360) {
+        const ltsFalt = Number(rc360.litros_combustible_faltante || 0);
+        const tarLt = Number(rc360.tarifa_litro_combustible || 1350);
+        if (ltsFalt > 0) {
+          const cobroDiesel = Math.round(ltsFalt * tarLt);
+          montoOtrosNeto += cobroDiesel;
+          lineasCalculadas.push({
+            tipo: 'OTROS',
+            descripcion: `Reposición Diésel Acta Devolución Rental (${ltsFalt} Lts)`,
+            unidad: 'Valor Fijo',
+            cantidad: 1,
+            valorUnitario: cobroDiesel,
+            subtotal_calculado: cobroDiesel
+          });
+        }
+        const fotosDanos = Array.isArray(rc360.fotos_danos) ? rc360.fotos_danos : [];
+        if (rc360.cobro_danos_cliente && Number(rc360.monto_danos) > 0 && fotosDanos.length > 0) {
+          const cobroDanos = Math.round(Number(rc360.monto_danos));
+          montoOtrosNeto += cobroDanos;
+          lineasCalculadas.push({
+            tipo: 'OTROS',
+            descripcion: 'Cobro por Daños / Siniestro Equipo Rental',
+            unidad: 'Valor Fijo',
+            cantidad: 1,
+            valorUnitario: cobroDanos,
+            subtotal_calculado: cobroDanos
+          });
+        }
+      }
+
+      // Acuerdo #6: Ítems manuales 'Otros' y sobretiempo/descuento en ajustes EDP
+      let montoSobretiempoNeto = Number(ajustesEdp?.sobretiempo_override || 0) > 0 ? Math.round(Number(ajustesEdp.sobretiempo_override)) : 0;
+      if (Array.isArray(ajustesEdp?.otros_items)) {
+        ajustesEdp.otros_items.forEach(io => {
+          const mIo = Math.round(Number(
+            io.monto_subtotal ??
+            (io.subtotal_override !== '' && io.subtotal_override !== null && io.subtotal_override !== undefined ? io.subtotal_override : undefined) ??
+            io.valorUnitario ??
+            io.valor_unitario ??
+            io.monto ??
+            0
+          ));
+          if (mIo !== 0) {
+            montoOtrosNeto += mIo;
+            lineasCalculadas.push({
+              tipo: 'OTROS',
+              descripcion: io.glosa || io.concepto || io.descripcion || 'Cargo Manual EDP',
+              unidad: 'Valor Fijo',
+              cantidad: 1,
+              valorUnitario: mIo,
+              subtotal_calculado: mIo
+            });
+          }
+        });
+      }
+      const descuentoTesoreriaResumen = Math.round(Number(ajustesEdp?.descuento_tesoreria ?? ajustesEdp?.descuento_global ?? 0));
+
+      const esProyectoInternoResumen = Boolean(
+        proyecto.es_interno ||
+        crmV1Proy.es_interno ||
+        crmV1Proy.es_requerimiento_interno ||
+        crmV1Proy.tipo_ot === 'OT-INTERNA' ||
+        String(crmV1Proy.linea_negocio || '').toUpperCase() === 'INTERNAS'
+      );
+
+      const totalNeto = esProyectoInternoResumen
+        ? 0
+        : Math.max(0, Math.round(montoNetoEquipos + montoNetoFlete + valorAdicionalesFijos + montoOtrosNeto + montoSobretiempoNeto - descuentoTesoreriaResumen));
+      const iva19 = Math.round(totalNeto * 0.19);
+      const totalBruto = totalNeto + iva19;
+
+      const liquidacionGuardada = proyecto.json_field?.liquidacion_v1 || null;
       const requiereOc = Boolean(crmV1Proy.requiere_oc_hes ?? jfProy.datos_generales?.requiere_oc_hes ?? false);
       const ocsProy = Array.isArray(jfProy.ordenes_compra)
         ? jfProy.ordenes_compra
@@ -3176,6 +3636,7 @@ const reportDiarioController = {
             json_field: proyecto.json_field || {}
           },
           edp_flujo_v1: edpFlujo,
+          edp_ajustes_v1: ajustesEdp,
           requiere_oc_hes: requiereOc,
           tiene_oc: tieneOc,
           ordenes_compra: ocsProy,
@@ -3187,10 +3648,11 @@ const reportDiarioController = {
             dias_totales: reports.length,
             horas_facturables_totales: totalHorasFacturables.toFixed(1),
             horas_sobretiempo_totales: totalHorasSobretiempo.toFixed(1),
-            monto_equipos_neto: montoNetoEquipos,
-            monto_flete_neto: montoNetoFlete,
-            monto_otros_neto: 0,
-            monto_sobretiempo_neto: 0,
+            monto_equipos_neto: esProyectoInternoResumen ? 0 : montoNetoEquipos,
+            monto_flete_neto: esProyectoInternoResumen ? 0 : montoNetoFlete,
+            monto_otros_neto: esProyectoInternoResumen ? 0 : montoOtrosNeto,
+            monto_sobretiempo_neto: esProyectoInternoResumen ? 0 : montoSobretiempoNeto,
+            descuento_tesoreria: esProyectoInternoResumen ? 0 : descuentoTesoreriaResumen,
             total_neto: totalNeto,
             iva_19: iva19,
             total_bruto: totalBruto

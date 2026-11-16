@@ -946,9 +946,9 @@
 
       <!-- SUB-TAB 2: PESTAÑA C - ASIGNACIÓN DE RECURSOS (OT) (HABILITADA CONDICIONALMENTE TRAS APROBACIÓN) -->
       <div v-if="operacionesSubTab === 'asignacion'" class="space-y-3">
-        <div v-if="isAsignacionConfirmada" class="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-2.5 flex flex-wrap justify-between items-center gap-2 text-xs text-emerald-300 font-bold mb-2">
+        <div v-if="isAsignacionConfirmada || estadoDbActual === ESTADOS_DB.ASIGNACION_RECURSOS" class="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-2.5 flex flex-wrap justify-between items-center gap-2 text-xs text-emerald-300 font-bold mb-2">
           <span class="flex items-center gap-2">
-            <span>✅ Asignación Confirmada (Editable)</span>
+            <span>{{ isAsignacionConfirmada ? '✅ Asignación Confirmada (Editable)' : '📋 Asignación de Recursos OT (Borrador Activo)' }}</span>
             <span class="text-slate-400 font-normal">— La reasignación de equipos o tripulación se gestiona directamente aquí. Guarda los cambios para actualizar la OT y acreditaciones.</span>
           </span>
           <div class="flex items-center gap-2">
@@ -1074,7 +1074,7 @@
             :db-categories="dbCategories"
             :lista-equipos-master="listaEquiposMaster"
             :usuarios="usuarios"
-            :disabled="isAsignacionConfirmada"
+            :disabled="isAsignacionBloqueada"
             :format-currency="formatCurrency"
             :get-semaforo-equipo="getSemaforoEquipo"
             :get-semaforo-tripulante="getSemaforoTripulante"
@@ -7240,8 +7240,9 @@ const opportunity = ref({
 
 const lines = ref([])
 const serviciosArbol = ref([])
+const servicios = serviciosArbol
 const estructuradorArbolRef = ref(null)
-const modoEstructurador = ref(localStorage.getItem('gsp_cotizador_modo') || 'clasico')
+const modoEstructurador = ref('arbol')
 const usuarios = ref([])
 
 const nombreEjecutivoComercial = computed(() => {
@@ -7496,6 +7497,10 @@ const isAsignacionConfirmada = computed(() => {
   return Number(estadoDbActual.value) >= 5;
 })
 
+const isAsignacionBloqueada = computed(() => {
+  return Number(estadoDbActual.value) >= 8;
+})
+
 const faseActual = computed(() => {
   return resolveFaseDeDominio(opportunity.value?.id_proyecto_estado);
 })
@@ -7507,7 +7512,7 @@ const isRequerimientoAprobado = computed(() => {
 const isDirtyAsignacion = ref(false)
 const marcarDirtyAsignacion = () => { isDirtyAsignacion.value = true }
 
-const guardarCambiosAsignacion = async () => {
+const guardarCambiosAsignacion = async (silent = false) => {
   try {
     const token = localStorage.getItem('token') || ''
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
@@ -7535,125 +7540,207 @@ const guardarCambiosAsignacion = async () => {
       preparacionSalidaState.value.inspecciones_patio = { ...preparacionSalidaState.value.inspecciones_patio }
     }
 
+    // Sincronizar rigger_asignado_id desde serviciosArbol hacia lines y operacionesAssignment
+    if (Array.isArray(serviciosArbol.value)) {
+      const srvConRigger = serviciosArbol.value.find(s => s?.rigger_asignado_id || s?.primario?.rigger_asignado_id)
+      const rId = srvConRigger ? (srvConRigger.rigger_asignado_id || srvConRigger.primario?.rigger_asignado_id) : null
+      if (rId) {
+        operacionesAssignment.value.rigger_id = rId
+        if (Array.isArray(lines.value) && lines.value.length > 0) {
+          lines.value.forEach(l => {
+            if (!l.rigger_asignado_id) l.rigger_asignado_id = rId
+          })
+        }
+      }
+    }
+
     const payload = buildPayload()
     const projectId = props.proyectoId || currentProyectoId.value
-    await apiAxios.put(`/proyectos/${projectId}`, payload, {
+    const putResp = await apiAxios.put(`/proyectos/${projectId}`, payload, {
       headers: { Authorization: `Bearer ${token}` }
     })
 
     const fechaIniGbl = operacionesAssignment.value.fecha_salida_plan ? new Date(operacionesAssignment.value.fecha_salida_plan + 'T' + (operacionesAssignment.value.hora_salida_plan || '08:00')).toISOString() : new Date().toISOString()
     const fechaFinGbl = operacionesAssignment.value.fecha_fin_plan ? new Date(operacionesAssignment.value.fecha_fin_plan + 'T' + (operacionesAssignment.value.hora_fin_plan || '18:00')).toISOString() : new Date().toISOString()
 
-    // 1. Persistir personas en tpry_rel_persona en PostgreSQL (Spec 22) - Deduplicado en memoria
+    // Sincronización Atómica de Recursos en PostgreSQL (REQ-1160 / REQ-1172 / SPEC-22)
     try {
-      const mapPersonas = new Map()
-      ;(tripulacionAsignada.value || []).forEach(p => {
-        if (p.id_user && !isNaN(parseInt(p.id_user))) {
-          mapPersonas.set(parseInt(p.id_user), p)
+      const persistedLines = putResp?.data?.data?.json_field?.crm_v1?.lineas_servicio || putResp?.data?.json_field?.crm_v1?.lineas_servicio || []
+      const idLineaToDbId = new Map()
+      persistedLines.forEach(l => {
+        if (l && l.id_linea && l.id_linea_servicio) {
+          idLineaToDbId.set(String(l.id_linea), Number(l.id_linea_servicio))
+        }
+        if (l && l.id_linea_servicio) {
+          idLineaToDbId.set(String(l.id_linea_servicio), Number(l.id_linea_servicio))
         }
       })
 
-      // REQ-1105 / SPEC-22: Extraer operadores asignados directamente en el árbol de servicios
+      const resolverDbIdLinea = (rawId) => {
+        if (!rawId) return null
+        if (typeof rawId === 'number') return rawId
+        const strId = String(rawId)
+        if (idLineaToDbId.has(strId)) return idLineaToDbId.get(strId)
+        if (strId.startsWith('lin_root_') || strId.startsWith('lin_')) return null
+        const parsed = parseInt(strId, 10)
+        return isNaN(parsed) ? null : parsed
+      }
+
+      // 1. Construir personasSync (incluye tripulacion, operadores, riggers, ramas y relevos de turnos)
+      const personasSync = []
+      const clavesPersonas = new Set()
+
+      const agregarPersona = (rawUid, rawLineaId, rol, fIni, fFin) => {
+        const uid = Number(rawUid)
+        if (!uid || isNaN(uid)) return
+        const dbLineaId = resolverDbIdLinea(rawLineaId)
+        const clave = `${uid}_${dbLineaId || 'null'}_${fIni || ''}_${fFin || ''}`
+        if (clavesPersonas.has(clave)) return
+        clavesPersonas.add(clave)
+
+        personasSync.push({
+          id_user: uid,
+          id_linea_servicio: dbLineaId,
+          rol_asignado: rol || 'Personal Asignado',
+          fecha_plan_ini: fIni ? new Date(fIni).toISOString() : fechaIniGbl,
+          fecha_plan_fin: fFin ? new Date(fFin).toISOString() : fechaFinGbl,
+          estado_real: 'PROGRAMADO'
+        })
+      }
+
+      ;(tripulacionAsignada.value || []).forEach(p => {
+        if (p?.id_user) {
+          agregarPersona(p.id_user, p.id_linea_servicio || p.id_linea, p.cargo || p.rol_asignado, p.fecha_plan_ini, p.fecha_plan_fin)
+        }
+      })
+
       ;(servicios.value || []).forEach(s => {
         const esTransporte = (s.linea_servicio || '').toUpperCase().includes('TRANSP') || (s.tipo && s.tipo.includes('CAMION'))
         const cargoSrv = esTransporte ? 'Chofer Transporte' : 'Operador Grúa'
-        if (s.operador_asignado_id && !isNaN(parseInt(s.operador_asignado_id))) {
-          const uid = parseInt(s.operador_asignado_id)
-          if (!mapPersonas.has(uid)) {
-            mapPersonas.set(uid, { id_user: uid, cargo: cargoSrv, id_linea_servicio: s.id_linea })
-          }
+        if (s.operador_asignado_id) {
+          agregarPersona(s.operador_asignado_id, s.id_linea_servicio || s.id_linea, cargoSrv)
         }
-        if (s.primario?.operador_asignado_id && !isNaN(parseInt(s.primario.operador_asignado_id))) {
-          const uid = parseInt(s.primario.operador_asignado_id)
-          if (!mapPersonas.has(uid)) {
-            mapPersonas.set(uid, { id_user: uid, cargo: cargoSrv, id_linea_servicio: s.primario.id_linea })
-          }
+        if (s.rigger_asignado_id) {
+          agregarPersona(s.rigger_asignado_id, s.id_linea_servicio || s.id_linea, 'Rigger')
+        }
+        if (s.primario?.operador_asignado_id) {
+          agregarPersona(s.primario.operador_asignado_id, s.primario.id_linea_servicio || s.primario.id_linea, cargoSrv)
+        }
+        if (s.primario?.rigger_asignado_id) {
+          agregarPersona(s.primario.rigger_asignado_id, s.primario.id_linea_servicio || s.primario.id_linea, 'Rigger')
         }
         if (Array.isArray(s.turnos_operadores)) {
           s.turnos_operadores.forEach(t => {
-            if (t.operador_id && !isNaN(parseInt(t.operador_id))) {
-              const uid = parseInt(t.operador_id)
-              if (!mapPersonas.has(uid)) {
-                mapPersonas.set(uid, { id_user: uid, cargo: cargoSrv, fecha_plan_ini: t.fecha_ini, fecha_plan_fin: t.fecha_fin, id_linea_servicio: s.id_linea })
-              }
+            if (t.operador_id) {
+              agregarPersona(t.operador_id, s.id_linea_servicio || s.id_linea, cargoSrv, t.fecha_ini, t.fecha_fin)
             }
           })
         }
         if (Array.isArray(s.ramas)) {
           s.ramas.forEach(r => {
-            if (r.operador_asignado_id && !isNaN(parseInt(r.operador_asignado_id))) {
-              const uid = parseInt(r.operador_asignado_id)
-              if (!mapPersonas.has(uid)) {
-                mapPersonas.set(uid, { id_user: uid, cargo: cargoSrv, id_linea_servicio: r.id_linea })
-              }
+            const cargoRama = (r.linea_servicio || '').toUpperCase().includes('TRANSP') || (r.tipo && r.tipo.includes('CAMION')) ? 'Chofer Transporte' : 'Operador Grúa'
+            if (r.operador_asignado_id) {
+              agregarPersona(r.operador_asignado_id, r.id_linea_servicio || r.id_linea, cargoRama)
+            }
+            if (r.rigger_asignado_id) {
+              agregarPersona(r.rigger_asignado_id, r.id_linea_servicio || r.id_linea, 'Rigger')
+            }
+            if (Array.isArray(r.turnos_operadores)) {
+              r.turnos_operadores.forEach(t => {
+                if (t.operador_id) {
+                  agregarPersona(t.operador_id, r.id_linea_servicio || r.id_linea, cargoRama, t.fecha_ini, t.fecha_fin)
+                }
+              })
             }
           })
         }
       })
 
-      for (const p of mapPersonas.values()) {
-        const fIni = p.fecha_plan_ini ? new Date(p.fecha_plan_ini + 'T08:00').toISOString() : fechaIniGbl
-        const fFin = p.fecha_plan_fin ? new Date(p.fecha_plan_fin + 'T18:00').toISOString() : fechaFinGbl
-        await apiAxios.post(`/proyectos/${projectId}/asignaciones/personas`, {
-          id_proyecto: parseInt(projectId),
-          id_user: parseInt(p.id_user),
-          id_linea_servicio: p.id_linea_servicio ? parseInt(p.id_linea_servicio) : null,
-          rol_asignado: p.cargo || 'Personal Asignado',
-          fecha_plan_ini: fIni,
-          fecha_plan_fin: fFin,
-          estado_real: 'PROGRAMADO',
-          id_user_creacion: currentUser.id_user || 1
-        }, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
-      }
-    } catch (relErr) {
-      console.warn('Advertencia en sincronización relacional de personas:', relErr)
-    }
+      // 2. Construir equiposSync (incluye linesValidas, servicios primarios/ramas, turnos_equipos y equipos_extra)
+      const equiposSync = []
+      const clavesEquipos = new Set()
 
-    // 2. Persistir equipos en tpry_rel_equipo en PostgreSQL (Spec 22) - Deduplicado en memoria
-    try {
-      const mapEquipos = new Map()
+      const agregarEquipo = (rawEqId, rawLineaId, rol, fIni, fFin, esReemplazo = false, motivoReemplazo = '', eqReemplazadoId = null) => {
+        const eqId = Number(rawEqId)
+        if (!eqId || isNaN(eqId)) return
+        const dbLineaId = resolverDbIdLinea(rawLineaId)
+        const clave = `${eqId}_${dbLineaId || 'null'}_${fIni || ''}_${fFin || ''}_${esReemplazo ? '1' : '0'}`
+        if (clavesEquipos.has(clave)) return
+        clavesEquipos.add(clave)
+
+        equiposSync.push({
+          id_equipo: eqId,
+          id_linea_servicio: dbLineaId,
+          rol_equipo: rol || 'Equipo Asignado',
+          fecha_plan_ini: fIni ? new Date(fIni).toISOString() : fechaIniGbl,
+          fecha_plan_fin: fFin ? new Date(fFin).toISOString() : fechaFinGbl,
+          estado_real: 'PROGRAMADO',
+          json_field: esReemplazo ? {
+            es_reemplazo: true,
+            id_equipo_reemplazado: eqReemplazadoId,
+            motivo_reemplazo: motivoReemplazo || 'Relevo de Flota en Faena'
+          } : {}
+        })
+      }
+
       ;(linesValidas.value || []).forEach(l => {
-        if (l.equipo_asignado_id && !isNaN(parseInt(l.equipo_asignado_id))) {
-          mapEquipos.set(parseInt(l.equipo_asignado_id), {
-            id_equipo: l.equipo_asignado_id,
-            id_linea_servicio: l.id_linea_servicio ? parseInt(l.id_linea_servicio) : null,
-            rol: l.tipo || 'Equipo Principal',
-            f_ini: l.fecha_plan_ini,
-            f_fin: l.fecha_plan_fin
+        if (l.equipo_asignado_id) {
+          agregarEquipo(l.equipo_asignado_id, l.id_linea_servicio || l.id_linea, l.tipo || 'Equipo Principal', l.fecha_plan_ini, l.fecha_plan_fin)
+        }
+      })
+
+      ;(servicios.value || []).forEach(s => {
+        if (Array.isArray(s.turnos_equipos) && s.turnos_equipos.length > 0) {
+          const eqTitular = s.turnos_equipos[0]?.equipo_id || s.equipo_asignado_id
+          s.turnos_equipos.forEach((t, tIdx) => {
+            if (t.equipo_id) {
+              const esReemp = tIdx > 0 || t.es_reemplazo === true
+              agregarEquipo(
+                t.equipo_id,
+                s.id_linea_servicio || s.id_linea,
+                s.tipo || 'Equipo Principal',
+                t.fecha_ini,
+                t.fecha_fin,
+                esReemp,
+                t.motivo_reemplazo || (esReemp ? 'Relevo de Flota en Faena' : ''),
+                esReemp ? eqTitular : null
+              )
+            }
+          })
+        } else {
+          if (s.equipo_asignado_id) {
+            agregarEquipo(s.equipo_asignado_id, s.id_linea_servicio || s.id_linea, s.tipo || 'Equipo Principal')
+          }
+        }
+        if (s.primario?.equipo_asignado_id && (!Array.isArray(s.turnos_equipos) || s.turnos_equipos.length <= 1)) {
+          agregarEquipo(s.primario.equipo_asignado_id, s.primario.id_linea_servicio || s.primario.id_linea, s.primario.tipo || 'Equipo Principal')
+        }
+        if (Array.isArray(s.ramas)) {
+          s.ramas.forEach(r => {
+            if (r.equipo_asignado_id) {
+              agregarEquipo(r.equipo_asignado_id, r.id_linea_servicio || r.id_linea, r.tipo || 'Equipo Secundario')
+            }
           })
         }
       })
-      
+
       if (Array.isArray(operacionesAssignment.value.equipos_extra)) {
         operacionesAssignment.value.equipos_extra.forEach(ex => {
-          if (ex.id_equipo && !isNaN(parseInt(ex.id_equipo)) && !mapEquipos.has(parseInt(ex.id_equipo))) {
-            mapEquipos.set(parseInt(ex.id_equipo), {
-              id_equipo: ex.id_equipo,
-              id_linea_servicio: ex.id_linea_servicio ? parseInt(ex.id_linea_servicio) : null,
-              rol: ex.rol || 'Equipo Traslado',
-              f_ini: ex.fecha_plan_ini,
-              f_fin: ex.fecha_plan_fin
-            })
+          if (ex.id_equipo) {
+            agregarEquipo(ex.id_equipo, ex.id_linea_servicio || ex.id_linea, ex.rol || 'Equipo Traslado', ex.fecha_plan_ini, ex.fecha_plan_fin)
           }
         })
       }
 
-      for (const eq of mapEquipos.values()) {
-        const fIni = eq.f_ini ? new Date(eq.f_ini + 'T08:00').toISOString() : fechaIniGbl
-        const fFin = eq.f_fin ? new Date(eq.f_fin + 'T18:00').toISOString() : fechaFinGbl
-        await apiAxios.post(`/proyectos/${projectId}/asignaciones/equipos`, {
-          id_proyecto: parseInt(projectId),
-          id_equipo: parseInt(eq.id_equipo),
-          id_linea_servicio: eq.id_linea_servicio ? parseInt(eq.id_linea_servicio) : null,
-          rol_equipo: eq.rol || 'Equipo Asignado',
-          fecha_plan_ini: fIni,
-          fecha_plan_fin: fFin,
-          estado_real: 'PROGRAMADO',
-          id_user_creacion: currentUser.id_user || 1
-        }, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
-      }
-    } catch (relEqErr) {
-      console.warn('Advertencia en sincronización relacional de equipos:', relEqErr)
+      // 3. Sincronización atómica sin zombis (REQ-1160 / REQ-1172)
+      await apiAxios.post(`/proyectos/${projectId}/asignaciones/sincronizar`, {
+        id_user_creacion: currentUser.id_user || 1,
+        personas: personasSync,
+        equipos: equiposSync
+      }, { headers: { Authorization: `Bearer ${token}` } })
+
+    } catch (syncErr) {
+      console.warn('Advertencia en sincronización atómica de recursos:', syncErr)
     }
 
     // 3. Propagación retroactiva de Operador y Rigger a Reportes Diarios y Despachos (SPEC-077 / REQ-1043)
@@ -7681,7 +7768,9 @@ const guardarCambiosAsignacion = async () => {
     }
 
     isDirtyAsignacion.value = false
-    alert('💾 Cambios de Asignación guardados exitosamente en Base de Datos PostgreSQL.')
+    if (!silent) {
+      alert('💾 Cambios de Asignación guardados exitosamente en Base de Datos PostgreSQL.')
+    }
   } catch (err) {
     console.error('Error al guardar cambios de asignación:', err)
     alert('⚠️ Error al guardar cambios de asignación.')
@@ -12649,6 +12738,7 @@ const cargarDatosCotizacion = async () => {
     targetId = currentProyectoId.value
   }
   if (targetId) {
+    let ejecucion = null
     try {
       const { data } = await apiAxios.get(`/proyectos/${targetId}`)
       const p = data.proyecto
@@ -12859,11 +12949,10 @@ const cargarDatosCotizacion = async () => {
 
           if (Array.isArray(crm.servicios) && crm.servicios.length > 0) {
             serviciosArbol.value = JSON.parse(JSON.stringify(crm.servicios))
-            modoEstructurador.value = 'arbol'
           } else {
             serviciosArbol.value = []
-            modoEstructurador.value = 'clasico'
           }
+          modoEstructurador.value = 'arbol'
           
           if (crm.cotizaciones_historicas) cotizaciones_historicas.value = [...crm.cotizaciones_historicas].sort((a, b) => b.version - a.version)
           ordenesCompra.value = Array.isArray(crm.ordenes_compra) ? [...crm.ordenes_compra] : []
@@ -13015,7 +13104,7 @@ const cargarDatosCotizacion = async () => {
         }
 
         // Mapear json_field.ejecucion_v1 si existe
-        const ejecucion = jsonField?.ejecucion_v1
+        ejecucion = jsonField?.ejecucion_v1
         if (ejecucion) {
           rawEjecucionJson.value = { ...ejecucion }
           
@@ -13035,11 +13124,19 @@ const cargarDatosCotizacion = async () => {
             } else if (estadoDb >= ESTADOS_DB.PREPARACION_PATIO) {
               requerimientoAprobado.value = true
               asignacionConfirmada.value = true
-              operacionesSubTab.value = route?.query?.subtab || props.initialSubTab || (estadoDb >= 5 ? (ejecucion.subtab_actual_view || 'reports') : 'preparacion_salida')
+              const esFinalizado = [6, 7, 8].includes(estadoDb)
+              let subTabDefecto = 'preparacion_salida'
+              if (esFinalizado) {
+                subTabDefecto = ejecucion.subtab_actual_view || 'liquidacion'
+              } else if (estadoDb >= 5) {
+                // Estado 5: En Ejecución / Terreno (ej. RENTAL con Acta de Entrega sin retiro) sigue en ejecución activa (SPEC-130 / BUG-02)
+                subTabDefecto = (ejecucion.subtab_actual_view && ejecucion.subtab_actual_view !== 'liquidacion') ? ejecucion.subtab_actual_view : 'reports'
+              }
+              operacionesSubTab.value = route?.query?.subtab || props.initialSubTab || subTabDefecto
               if (operacionesSubTab.value === 'reports' || estadoDb >= 5) {
                 cargarReportsProyecto(targetId)
               }
-              if (operacionesSubTab.value === 'liquidacion' || estadoDb >= 5) {
+              if (operacionesSubTab.value === 'liquidacion' || esFinalizado) {
                 cargarResumenEDP(targetId)
               }
             }
@@ -13354,6 +13451,53 @@ const cargarDatosCotizacion = async () => {
                 if (eqRel.fecha_plan_fin) linesEquiposPrincipales.value[idx].fecha_plan_fin = eqRel.fecha_plan_fin.split('T')[0]
               }
             })
+
+            // Sincronizar hacia serviciosArbol (Árbol Operativo y Relevos REQ-1120 / REQ-1176)
+            if (Array.isArray(serviciosArbol.value) && serviciosArbol.value.length > 0) {
+              serviciosArbol.value.forEach(srv => {
+                // Si el servicio ya cuenta con relevos guardados en crm.servicios, preservarlos
+                if (Array.isArray(srv.turnos_equipos) && srv.turnos_equipos.length > 1) {
+                  return;
+                }
+                // Si no tiene relevos en JSON pero sí existen en tpry_rel_equipo, reconstruirlos
+                const relevosDb = eqRows.filter(r => {
+                  const jf = (typeof r.json_field === 'object' && r.json_field !== null) ? r.json_field : {}
+                  return jf.es_reemplazo || r.estado_real === 'REEMPLAZADO'
+                })
+                if (relevosDb.length > 0) {
+                  const titularDb = eqRows.find(r => {
+                    const jf = (typeof r.json_field === 'object' && r.json_field !== null) ? r.json_field : {}
+                    return !jf.es_reemplazo && r.estado_real !== 'REEMPLAZADO'
+                  }) || eqRows[0]
+
+                  const turnos = []
+                  if (titularDb) {
+                    turnos.push({
+                      equipo_id: String(titularDb.id_equipo || titularDb.id),
+                      fecha_ini: titularDb.fecha_plan_ini ? titularDb.fecha_plan_ini.split('T')[0] : (srv.fecha_plan_ini || ''),
+                      fecha_fin: titularDb.fecha_plan_fin ? titularDb.fecha_plan_fin.split('T')[0] : (srv.fecha_plan_fin || ''),
+                      es_reemplazo: false,
+                      motivo_reemplazo: ''
+                    })
+                  }
+                  relevosDb.forEach(r => {
+                    const jf = (typeof r.json_field === 'object' && r.json_field !== null) ? r.json_field : {}
+                    turnos.push({
+                      equipo_id: String(r.id_equipo || r.id),
+                      fecha_ini: r.fecha_plan_ini ? r.fecha_plan_ini.split('T')[0] : (srv.fecha_plan_ini || ''),
+                      fecha_fin: r.fecha_plan_fin ? r.fecha_plan_fin.split('T')[0] : (srv.fecha_plan_fin || ''),
+                      es_reemplazo: true,
+                      motivo_reemplazo: jf.motivo_reemplazo || 'Relevo de Flota en Faena'
+                    })
+                  })
+                  srv.turnos_equipos = turnos
+                  if (srv.turnos_equipos[0]?.equipo_id) {
+                    srv.equipo_asignado_id = srv.turnos_equipos[0].equipo_id
+                    if (srv.primario) srv.primario.equipo_asignado_id = srv.turnos_equipos[0].equipo_id
+                  }
+                }
+              })
+            }
           }
 
           if (Array.isArray(perRows) && perRows.length > 0) {
@@ -14225,6 +14369,37 @@ const abrirModalExcepcionEquipo = (eqId) => {
 
 const statusSegmento1 = computed(() => preparacionSalidaState.value?.cc_notificado ? 'GREEN' : 'RED')
 
+// Regla 1.11.M / 3.1.M / 4.7.M: Exención de viajes y bitácora obligatoria para equipos sin motor y camionetas urbanas
+const esEquipoExentoBitacoraViaje = (eqId) => {
+  if (!eqId) return false
+  const eq = (equiposAsignadosTotales.value || []).find(e => (e.id_equipo == eqId || e.id == eqId)) || getEquipoObj(eqId) || {}
+  const ins = getInspeccionEquipo(eqId)
+  if (ins?.exento_bitacora_viaje || eq.exento_bitacora_viaje || eq.exento_viaje) return true
+
+  const texto = `${eq.tipo || ''} ${eq.subcategoria || ''} ${eq.categoria || ''} ${eq.descripcion || ''} ${eq.modelo || ''} ${eq.nombre_equipo || ''}`.toUpperCase()
+  
+  // Equipos sin motor: RAMPLA, CAMA BAJA, SEMIRREMOLQUE
+  if (
+    texto.includes('RAMPLA') ||
+    texto.includes('CAMA BAJA') ||
+    texto.includes('CAMABAJA') ||
+    texto.includes('SEMIRREMOLQUE') ||
+    texto.includes('SEMIREMOLQUE')
+  ) {
+    return true
+  }
+
+  // Camionetas cuando la distancia comercial sea urbana (<= 30 km) o marcada exenta
+  const esCamioneta = texto.includes('CAMIONETA') || texto.includes('VEHICULO LIVIANO') || texto.includes('VEHÍCULO LIVIANO') || texto.includes('ESCOLTA')
+  if (esCamioneta) {
+    const dist = Number(opportunity.value?.distancia_km || antecedentes.value?.distancia_km || siteVisit.value?.distancia_km || 0)
+    const esUrbano = dist <= 30 || operacionesAssignment.value?.regimen_operacional === 'URBANO'
+    if (esUrbano || eq.exento_bitacora_viaje) return true
+  }
+
+  return false
+}
+
 const statusSegmento2 = computed(() => {
   try {
     const eqList = equiposAsignadosLista.value || []
@@ -14232,9 +14407,13 @@ const statusSegmento2 = computed(() => {
       return (tripulacionAsignada.value || []).some(t => t.id_user) ? 'GREEN' : 'RED'
     }
     const states = eqList.map(eqId => getInspeccionEquipo(eqId))
-    const allCompletado = states.every(s => s?.patio_checklist_completado || s?.estado_srv === 'APROBADO' || s?.estado_srv === 'COMPLETADO')
+    const allCompletado = eqList.every((eqId, idx) => {
+      if (esEquipoExentoBitacoraViaje(eqId)) return true
+      const s = states[idx]
+      return s?.patio_checklist_completado || s?.estado_srv === 'APROBADO' || s?.estado_srv === 'COMPLETADO'
+    })
     if (allCompletado) {
-      if (states.some(s => s?.patio_requiere_taller || s?.estado_srv === 'RECHAZADO')) return 'RED'
+      if (states.some((s, idx) => !esEquipoExentoBitacoraViaje(eqList[idx]) && (s?.patio_requiere_taller || s?.estado_srv === 'RECHAZADO'))) return 'RED'
       return 'GREEN'
     }
     const someProgramado = states.some(s => s?.id_survey || s?.patio_programado)
@@ -15020,6 +15199,7 @@ const viajesConvoyLista = computed(() => {
   
   eqTotales.forEach((eq, idx) => {
     const eqId = eq.id_equipo || eq.id
+    if (esEquipoExentoBitacoraViaje(eqId)) return
     const vjReal = getViajeDeEquipo(eqId)
     
     const chofer = (tripulacionAsignada.value || []).find(t => 
@@ -15194,9 +15374,14 @@ const aprobarSolicitudCopec = (sol) => {
 const confirmarAsignacionOT = async () => {
   // VALIDACIÓN STRICTA DE RIGGER
   if (opportunity.value.requiere_rigger) {
+    const rIdFromSrv = (serviciosArbol.value || []).find(s => s?.rigger_asignado_id || s?.primario?.rigger_asignado_id)
+    if (rIdFromSrv && !operacionesAssignment.value.rigger_id) {
+      operacionesAssignment.value.rigger_id = rIdFromSrv.rigger_asignado_id || rIdFromSrv.primario?.rigger_asignado_id
+    }
     const tieneRigger = tripulacionAsignada.value.some(t => t.id_user && t.cargo === 'Rigger') || 
                         linesEquiposPrincipales.value.some(l => l.rigger_asignado_id) || 
-                        operacionesAssignment.value.rigger_id
+                        operacionesAssignment.value.rigger_id ||
+                        Boolean(rIdFromSrv)
     if (!tieneRigger) {
       alert('⚠️ Requerimiento Obligatorio: La Oportunidad exige un Rigger certificado. Debes Asignar un Rigger en la Tripulación.')
       return
@@ -15821,7 +16006,7 @@ const confirmarInspeccionSalidaPatioEquipo = async (eqId) => {
   const ins = getInspeccionEquipo(eqId)
   ins.patio_checklist_completado = true
   
-  const allCompletado = equiposAsignadosLista.value.every(e => getInspeccionEquipo(e).patio_checklist_completado)
+  const allCompletado = equiposAsignadosLista.value.every(e => esEquipoExentoBitacoraViaje(e) || getInspeccionEquipo(e).patio_checklist_completado)
   if (allCompletado) {
     preparacionSalidaState.value.patio_checklist_completado = true
     preparacionSalidaState.value.patio_contrapesos_cargados = true
@@ -15843,6 +16028,7 @@ const confirmarInspeccionSalidaPatioEquipo = async (eqId) => {
 const autorizandoSalidaId = ref(null)
 
 const getLinkViajeOperador = (eqId) => {
+  if (esEquipoExentoBitacoraViaje(eqId)) return '#'
   const ins = getInspeccionEquipo(eqId)
   const token = ins?.token_viaje || ('vj-' + (antecedentes.value.identificador_formal || 'gsp').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + eqId)
   const isProd = typeof window !== 'undefined' && window.location.pathname.startsWith('/lg-gsp-prod')
@@ -15852,6 +16038,28 @@ const getLinkViajeOperador = (eqId) => {
 
 const autorizarSalidaEquipo = async (eqId, isReenvio = false) => {
   const ins = getInspeccionEquipo(eqId)
+
+  // Regla 1.11.M / 3.1.M / 4.7.M: Eximir del bloqueo de viaje a equipos sin motor y camioneta urbana
+  if (esEquipoExentoBitacoraViaje(eqId)) {
+    ins.salida_autorizada = true
+    ins.patio_checklist_completado = true
+    ins.exento_bitacora_viaje = true
+    ins.fecha_autorizacion_salida = new Date().toISOString()
+    ins.autorizado_por = 'Exención Operacional (1.11.M / 3.1.M / 4.7.M)'
+    
+    const projectId = props.proyectoId || currentProyectoId.value
+    if (projectId) {
+      const token = localStorage.getItem('token') || ''
+      const payload = buildPayload()
+      await apiAxios.put(`/proyectos/${projectId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    }
+    const eqNombreExento = getNombreEquipoAsignado(eqId)
+    alert(`ℹ️ El equipo ${eqNombreExento} se encuentra exento de bitácora de viaje obligatoria (1.11.M / 3.1.M / 4.7.M: Rampla / Cama Baja sin motor o Camioneta Urbana <= 30 km). Salida autorizada automáticamente.`)
+    return
+  }
+
   const opTrip = getOperadorAsignadoAEquipo(eqId)
   
   // 1. Obtener ID del operador asignado (priorizando asignación de OT de la máquina)
@@ -16284,12 +16492,9 @@ const generarPDFOT = async () => {
   generandoPDFOT.value = true
   try {
     const token = localStorage.getItem('token') || ''
-    const payload = buildPayload()
     
-    // Asegurar guardado previo de los cambios de asignación
-    await apiAxios.put(`/proyectos/${projectId}`, payload, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    // Sincronización atómica previa obligatoria en BD relacional (REQ-1180 / SPEC-131 §2.3)
+    await guardarCambiosAsignacion(true)
 
     const { data } = await apiAxios.post(`/proyectos/${projectId}/generar-ot`, {}, {
       headers: { Authorization: `Bearer ${token}` }

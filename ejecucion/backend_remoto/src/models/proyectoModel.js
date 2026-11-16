@@ -5,6 +5,11 @@ const { exec } = require("child_process");
 const archivoModel = require("./archivoModel");
 const { buildStoragePath, STORAGE_ROOT } = require("../config/storageConfig");
 const { normalizarLineaCobroUnico, isLineaCobroUnico } = require("../utils/lineaCobroUnico");
+const {
+  normalizarUnidad,
+  clasificarLineaNegocio,
+  calcularSubtotalNodo
+} = require("../services/motorValorizacionService");
 
 function esLineaRiggerFantasma(l) {
   if (!l || typeof l !== 'object') return false;
@@ -308,6 +313,286 @@ class ProyectoModel {
     }
   }
 
+  // SPEC-130 / SPEC-132: Sincronización relacional padre-hijo en tpry_linea_servicio preservando FKs activas
+  async _sincronizarLineasServicioRelacional(proyRow, idUser = null) {
+    if (!proyRow || !proyRow.id_proyecto) return proyRow;
+    try {
+      const jf = typeof proyRow.json_field === "string"
+        ? JSON.parse(proyRow.json_field || "{}")
+        : (proyRow.json_field || {});
+      const crmV1 = jf.crm_v1 || {};
+      const lineasBase = Array.isArray(crmV1.lineas_operativas_vigentes) && crmV1.lineas_operativas_vigentes.length > 0
+        ? crmV1.lineas_operativas_vigentes
+        : (Array.isArray(crmV1.lineas_servicio) ? crmV1.lineas_servicio : []);
+      if (!Array.isArray(lineasBase) || lineasBase.length === 0) return proyRow;
+
+      if (!this._tablaLineaServicioReady) {
+        await this.pool.query(`
+          CREATE TABLE IF NOT EXISTS tpry_linea_servicio (
+            id_linea_servicio BIGSERIAL PRIMARY KEY,
+            id_proyecto INT NOT NULL REFERENCES tpry_proyecto(id_proyecto) ON DELETE CASCADE,
+            id_linea_servicio_padre BIGINT REFERENCES tpry_linea_servicio(id_linea_servicio) ON DELETE SET NULL,
+            linea_negocio VARCHAR(30) NOT NULL DEFAULT 'IZAJE',
+            tipo_ot VARCHAR(30) NOT NULL DEFAULT 'OT-MANIOBRA',
+            rol_nodo VARCHAR(30) NOT NULL DEFAULT 'RAIZ',
+            descripcion TEXT NOT NULL DEFAULT 'Servicio',
+            subcategoria VARCHAR(100),
+            id_equipo_sugerido INT,
+            unidad VARCHAR(50) NOT NULL DEFAULT 'Valor Fijo',
+            cantidad NUMERIC(10, 2) NOT NULL DEFAULT 1.00,
+            cantidad_dias NUMERIC(10, 2),
+            cantidad_horas NUMERIC(10, 2),
+            cantidad_meses NUMERIC(10, 2),
+            piso_minimo_horas NUMERIC(10, 2) DEFAULT 0.00,
+            valor_unitario NUMERIC(14, 2) NOT NULL DEFAULT 0.00,
+            subtotal NUMERIC(14, 2) NOT NULL DEFAULT 0.00,
+            incluido_en_tarifa BOOLEAN NOT NULL DEFAULT FALSE,
+            es_apoyo_operativo BOOLEAN NOT NULL DEFAULT FALSE,
+            metadata_json JSONB DEFAULT '{}'::jsonb,
+            id_user_creacion INT,
+            fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            fecha_actualizacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        try {
+          await this.pool.query(`
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS subcategoria VARCHAR(100);
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS id_equipo_sugerido INT;
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS cantidad_dias NUMERIC(10, 2);
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS cantidad_horas NUMERIC(10, 2);
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS cantidad_meses NUMERIC(10, 2);
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS piso_minimo_horas NUMERIC(10, 2) DEFAULT 0.00;
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS incluido_en_tarifa BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS es_apoyo_operativo BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS metadata_json JSONB DEFAULT '{}'::jsonb;
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS id_user_creacion INT;
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+            ALTER TABLE tpry_linea_servicio ADD COLUMN IF NOT EXISTS fecha_actualizacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+          `);
+        } catch (_) {}
+        this._tablaLineaServicioReady = true;
+      }
+
+      const prevRes = await this.pool.query(
+        `SELECT id_linea_servicio FROM tpry_linea_servicio WHERE id_proyecto = $1 ORDER BY id_linea_servicio ASC`,
+        [proyRow.id_proyecto]
+      );
+      const existingIds = new Set(prevRes.rows.map(r => Number(r.id_linea_servicio)));
+      const keptIds = [];
+      const uidToDbId = new Map();
+
+      const inferRolNodo = (l, hasParent) => {
+        if (l.rol_nodo) return String(l.rol_nodo).toUpperCase();
+        if (l.es_apoyo_operativo) return "APOYO_OPERATIVO";
+        const t = String(l.tipo || l.categoria || "").toUpperCase();
+        const s = String(l.subcategoria || l.descripcion || "").toUpperCase();
+        if (t.includes("TRASLADO") || t.includes("FLETE") || s.includes("FLETE")) return "TRASLADO";
+        if (t.includes("PERSONAL") || s.includes("RIGGER") || s.includes("OPERADOR")) return "PERSONAL";
+        if (t.includes("ACCESORIO") || s.includes("BALANCIN") || s.includes("CANASTILLO") || s.includes("JIB")) return "ACCESORIO";
+        if (t.includes("OTRO")) return "OTROS";
+        return hasParent ? "HIJO_COMERCIAL" : "RAIZ";
+      };
+
+      const upsertNodo = async (l, parentDbId = null) => {
+        const cls = clasificarLineaNegocio({
+          ...l,
+          linea_negocio: l.linea_negocio || crmV1.linea_negocio,
+          tipo_ot: l.tipo_ot || crmV1.tipo_ot
+        });
+        const unidadCanon = normalizarUnidad(l.unidad || l.unidad_cobro || "Valor Fijo");
+        const esUnico = isLineaCobroUnico({ ...l, unidad: unidadCanon });
+        const cantidadNum = esUnico ? 1 : Math.max(0, Number(l.cantidad ?? 1) || 1);
+        const pisoNum = esUnico ? 0 : Math.max(0, Number(l.piso_minimo_horas ?? l.pisoMinimo ?? l.horas_minimas ?? 0) || 0);
+        const valUnit = Math.max(0, Number(l.valorUnitario ?? l.valor_unitario ?? l.precio_unitario ?? 0) || 0);
+        const subCalc = Math.max(0, Number(calcularSubtotalNodo({ ...l, unidad: unidadCanon, valor_unitario: valUnit })) || 0);
+        const descTxt = String(l.descripcion || l.subcategoria || l.tipo || "Servicio").trim() || "Servicio";
+        const subcatTxt = l.subcategoria ? String(l.subcategoria).slice(0, 100) : null;
+        const eqSug = Number(l.equipo_asignado_id || l.id_equipo_sugerido || l.id_equipo || 0) || null;
+        const rolNodo = inferRolNodo(l, Boolean(parentDbId || l.parentId || l.id_linea_servicio_padre));
+        const metaJson = {
+          uid_nodo: l.uid_nodo || l.id_nodo || l.id || null,
+          tipo_comercial: l.tipo || null,
+          equipo_patente: l.equipo_asignado_patente || null
+        };
+
+        let dbId = Number(l.id_linea_servicio || 0);
+        if (dbId > 0 && existingIds.has(dbId)) {
+          await this.pool.query(
+            `UPDATE tpry_linea_servicio
+             SET id_linea_servicio_padre = $3,
+                 linea_negocio = $4,
+                 tipo_ot = $5,
+                 rol_nodo = $6,
+                 descripcion = $7,
+                 subcategoria = $8,
+                 id_equipo_sugerido = $9,
+                 unidad = $10,
+                 cantidad = $11,
+                 cantidad_dias = $12,
+                 cantidad_horas = $13,
+                 cantidad_meses = $14,
+                 piso_minimo_horas = $15,
+                 valor_unitario = $16,
+                 subtotal = $17,
+                 incluido_en_tarifa = $18,
+                 es_apoyo_operativo = $19,
+                 metadata_json = $20,
+                 fecha_actualizacion = NOW()
+             WHERE id_linea_servicio = $1 AND id_proyecto = $2`,
+            [
+              dbId,
+              proyRow.id_proyecto,
+              parentDbId,
+              cls.linea_negocio,
+              cls.tipo_ot,
+              rolNodo,
+              descTxt,
+              subcatTxt,
+              eqSug,
+              unidadCanon,
+              cantidadNum,
+              l.cantidad_dias != null ? Number(l.cantidad_dias) : null,
+              l.cantidad_horas != null ? Number(l.cantidad_horas) : null,
+              l.cantidad_meses != null ? Number(l.cantidad_meses) : null,
+              pisoNum,
+              valUnit,
+              subCalc,
+              Boolean(l.incluido_en_tarifa || valUnit === 0),
+              Boolean(l.es_apoyo_operativo),
+              JSON.stringify(metaJson)
+            ]
+          );
+        } else {
+          const ins = await this.pool.query(
+            `INSERT INTO tpry_linea_servicio (
+               id_proyecto, id_linea_servicio_padre, linea_negocio, tipo_ot, rol_nodo,
+               descripcion, subcategoria, id_equipo_sugerido, unidad,
+               cantidad, cantidad_dias, cantidad_horas, cantidad_meses, piso_minimo_horas,
+               valor_unitario, subtotal, incluido_en_tarifa, es_apoyo_operativo, metadata_json, id_user_creacion
+             ) VALUES (
+               $1, $2, $3, $4, $5,
+               $6, $7, $8, $9,
+               $10, $11, $12, $13, $14,
+               $15, $16, $17, $18, $19, $20
+             ) RETURNING id_linea_servicio`,
+            [
+              proyRow.id_proyecto,
+              parentDbId,
+              cls.linea_negocio,
+              cls.tipo_ot,
+              rolNodo,
+              descTxt,
+              subcatTxt,
+              eqSug,
+              unidadCanon,
+              cantidadNum,
+              l.cantidad_dias != null ? Number(l.cantidad_dias) : null,
+              l.cantidad_horas != null ? Number(l.cantidad_horas) : null,
+              l.cantidad_meses != null ? Number(l.cantidad_meses) : null,
+              pisoNum,
+              valUnit,
+              subCalc,
+              Boolean(l.incluido_en_tarifa || valUnit === 0),
+              Boolean(l.es_apoyo_operativo),
+              JSON.stringify(metaJson),
+              idUser || null
+            ]
+          );
+          dbId = Number(ins.rows[0].id_linea_servicio);
+        }
+
+        keptIds.push(dbId);
+        const keyUid = l.uid_nodo || l.id_nodo || l.id || null;
+        if (keyUid !== null && keyUid !== undefined) {
+          uidToDbId.set(String(keyUid), dbId);
+        }
+        l.id_linea_servicio = dbId;
+        l.id_linea_servicio_padre = parentDbId || null;
+
+        if (Array.isArray(l.hijos) && l.hijos.length > 0) {
+          for (const hijo of l.hijos) {
+            await upsertNodo(hijo, dbId);
+          }
+        }
+        return dbId;
+      };
+
+      // Pasada 1: raíces
+      for (const l of lineasBase) {
+        if (!l || typeof l !== "object") continue;
+        const hasParentRef = Boolean(l.parentId || l.id_linea_servicio_padre);
+        if (!hasParentRef) {
+          await upsertNodo(l, null);
+        }
+      }
+      // Pasada 2: hijos en arreglo plano con parentId / id_linea_servicio_padre
+      for (const l of lineasBase) {
+        if (!l || typeof l !== "object") continue;
+        const parentRef = l.parentId || l.id_linea_servicio_padre;
+        if (parentRef) {
+          const resolvedParent = uidToDbId.get(String(parentRef))
+            || (existingIds.has(Number(parentRef)) ? Number(parentRef) : null);
+          await upsertNodo(l, resolvedParent);
+        }
+      }
+
+      if (keptIds.length > 0) {
+        const deletedIds = Array.from(existingIds).filter(id => !keptIds.includes(id));
+        if (deletedIds.length > 0) {
+          await this.pool.query(
+            `UPDATE tpry_rel_equipo 
+             SET estado_real = 'CANCELADO',
+                 observaciones = COALESCE(observaciones || ' | ', '') || 'Cancelado por supresión de línea de servicio en Operaciones'
+             WHERE id_proyecto = $1 AND id_linea_servicio = ANY($2::bigint[])`,
+            [proyRow.id_proyecto, deletedIds]
+          );
+          await this.pool.query(
+            `UPDATE tpry_rel_persona 
+             SET estado_real = 'CANCELADO',
+                 observaciones = COALESCE(observaciones || ' | ', '') || 'Cancelado por supresión de línea de servicio en Operaciones'
+             WHERE id_proyecto = $1 AND id_linea_servicio = ANY($2::bigint[])`,
+            [proyRow.id_proyecto, deletedIds]
+          );
+        }
+        await this.pool.query(
+          `DELETE FROM tpry_linea_servicio WHERE id_proyecto = $1 AND NOT (id_linea_servicio = ANY($2::bigint[]))`,
+          [proyRow.id_proyecto, keptIds]
+        );
+      }
+
+      const syncIdsIntoArray = (arr) => {
+        if (!Array.isArray(arr)) return arr;
+        return arr.map((item, idx) => {
+          if (!item || typeof item !== "object") return item;
+          const refBase = lineasBase[idx];
+          const keyUid = item.uid_nodo || item.id_nodo || item.id;
+          const mappedId = item.id_linea_servicio
+            || (keyUid != null ? uidToDbId.get(String(keyUid)) : null)
+            || (refBase && refBase.id_linea_servicio ? refBase.id_linea_servicio : null);
+          return mappedId ? { ...item, id_linea_servicio: mappedId } : item;
+        });
+      };
+
+      if (jf.crm_v1) {
+        if (Array.isArray(jf.crm_v1.lineas_servicio)) {
+          jf.crm_v1.lineas_servicio = syncIdsIntoArray(jf.crm_v1.lineas_servicio);
+        }
+        if (Array.isArray(jf.crm_v1.lineas_operativas_vigentes)) {
+          jf.crm_v1.lineas_operativas_vigentes = syncIdsIntoArray(jf.crm_v1.lineas_operativas_vigentes);
+        }
+        const updJf = await this.pool.query(
+          `UPDATE tpry_proyecto SET json_field = $2 WHERE id_proyecto = $1 RETURNING *`,
+          [proyRow.id_proyecto, jf]
+        );
+        if (updJf.rowCount > 0) return updJf.rows[0];
+      }
+      return proyRow;
+    } catch (eSync) {
+      console.warn("[SPEC-132] Advertencia sincronizando tpry_linea_servicio:", eSync.message);
+      return proyRow;
+    }
+  }
+
   // Crear proyecto
   async createProyecto(data) {
     const {
@@ -403,7 +688,8 @@ class ProyectoModel {
     try {
       const { rows, rowCount } = await this.pool.query(query, values);
       if (!rowCount) throw new Error("No se pudo crear el proyecto");
-      return rows[0];
+      const synced = await this._sincronizarLineasServicioRelacional(rows[0], final_user_creacion);
+      return synced || rows[0];
     } catch (error) {
       throw new Error(`Error al crear proyecto: ${error.message}`);
     }
@@ -514,14 +800,21 @@ class ProyectoModel {
           const inEjec = parsed.ejecucion_v1 || {};
           const mergedEjec = { ...prevEjec, ...inEjec };
 
+          const lineasVerificacion = Array.isArray(crmV1.lineas_servicio) ? crmV1.lineas_servicio : [];
+          const tieneLineasGrua = lineasVerificacion.some(l => {
+            const t = String(l?.tipo || l?.categoria || '').toUpperCase();
+            const s = String(l?.subcategoria || l?.descripcion || '').toUpperCase();
+            return t.includes('GRUA') || s.includes('GRUA') || t.includes('PLUMA') || s.includes('PLUMA') || t.includes('IZAJE');
+          });
+
           if ((!inEjec.equipo_id || inEjec.equipo_id === 'CRN-DEFAULT') && prevEjec.equipo_id && prevEjec.equipo_id !== 'CRN-DEFAULT') {
-            mergedEjec.equipo_id = prevEjec.equipo_id;
+            mergedEjec.equipo_id = tieneLineasGrua ? prevEjec.equipo_id : (inEjec.equipo_id || null);
           }
           if ((!inEjec.operador_id || inEjec.operador_id === 'OP-101') && prevEjec.operador_id && prevEjec.operador_id !== 'OP-101') {
-            mergedEjec.operador_id = prevEjec.operador_id;
+            mergedEjec.operador_id = tieneLineasGrua ? prevEjec.operador_id : (inEjec.operador_id || null);
           }
           if ((!inEjec.rigger_id || inEjec.rigger_id === 'RIG-201') && prevEjec.rigger_id && prevEjec.rigger_id !== 'RIG-201') {
-            mergedEjec.rigger_id = prevEjec.rigger_id;
+            mergedEjec.rigger_id = tieneLineasGrua ? prevEjec.rigger_id : (inEjec.rigger_id || null);
           }
           for (const arrKey of ['ot_versiones', 'ot_despachos_historicos', 'traza_correos', 'plan_diario', 'tripulacion_asignada', 'especialistas_terreno', 'equipos_extra']) {
             const prevArr = Array.isArray(prevEjec[arrKey]) ? prevEjec[arrKey] : [];
@@ -645,18 +938,19 @@ class ProyectoModel {
 
           const esLineaEquipoGrua = (l) => {
             if (!l || typeof l !== 'object') return false;
+            if (l.id_linea_servicio_padre || l.parentId || l.es_apoyo_operativo) return false;
+            const rol = String(l.rol_nodo || '').toUpperCase();
+            if (['TRASLADO', 'PERSONAL', 'ACCESORIO', 'OTROS', 'APOYO_OPERATIVO'].includes(rol)) return false;
             const cat = String(l.tipo || l.categoria || '').toUpperCase();
             const sub = String(l.subcategoria || l.descripcion || '').toUpperCase();
-            if (cat.includes('PERSONAL') || sub.includes('RIGGER')) return false;
+            if (cat.includes('PERSONAL') || cat.includes('OTRO') || cat.includes('ACCESORIO') || sub.includes('RIGGER')) return false;
             if (cat.includes('TRASLADO') || cat.includes('FLETE') || sub.includes('TRASLADO') || sub.includes('FLETE')) return false;
             return true;
           };
 
           const esFijoGrua = (l) => {
             if (!l) return false;
-            const unid = String(l.unidad || l.tipo_unidad || '').toUpperCase();
-            const desc = String(l.descripcion || l.concepto || '').toUpperCase();
-            return unid.includes('FIJO') || unid.includes('SUMA ALZADA') || unid.includes('GLOBAL') || desc.includes('VALOR FIJO') || desc.includes('SUMA ALZADA');
+            return isLineaCobroUnico(l);
           };
 
           if (fueRecienEnviada && ultimaEnviada) {
@@ -679,13 +973,16 @@ class ProyectoModel {
             delete parsed.crm_v1._modo_borrador_comercial_operaciones;
 
             if (estadoActual >= 3) {
-              const lineaGruaPrincipal = lineasPromovidas.find(esLineaEquipoGrua);
-              if (lineaGruaPrincipal && esFijoGrua(lineaGruaPrincipal)) {
+              const equiposRaiz = lineasPromovidas.filter(esLineaEquipoGrua);
+              const tieneEquipoPeriodicoOHorario = equiposRaiz.some(l => !esFijoGrua(l));
+              const lineaGruaPrincipal = equiposRaiz[0] || null;
+              if (lineaGruaPrincipal && esFijoGrua(lineaGruaPrincipal) && !tieneEquipoPeriodicoOHorario) {
                 nuevoPisoMinimoParaReports = 0;
                 parsed.crm_v1.pisoMinimo = 0;
                 parsed.crm_v1.es_valor_fijo = true;
               } else {
-                const lineaGrua = lineasPromovidas.filter(esLineaEquipoGrua).find(l => Number(l.pisoMinimo || l.cantidad_horas || 0) > 0);
+                parsed.crm_v1.es_valor_fijo = false;
+                const lineaGrua = equiposRaiz.find(l => Number(l.pisoMinimo || l.cantidad_horas || 0) > 0);
                 if (lineaGrua) {
                   const pm = Number(lineaGrua.pisoMinimo || lineaGrua.cantidad_horas || 0);
                   if (pm > 0 && pm <= 24) nuevoPisoMinimoParaReports = pm;
@@ -732,14 +1029,18 @@ class ProyectoModel {
             parsed.crm_v1.lineas_operativas_vigentes = parsed.crm_v1.lineas_operativas_vigentes.map(normalizarLineaCobroUnico);
           }
 
-          // Validación transversal: si la grúa principal es Valor Fijo, asegurar pisoMinimo = 0 y es_valor_fijo = true
+          // Validación transversal SPEC-129: solo activar es_valor_fijo si el nodo raíz principal es cobro único real y no coexiste línea horaria/periódica
           const lineasFinales = parsed.crm_v1.lineas_operativas_vigentes || parsed.crm_v1.lineas_servicio || [];
           if (Array.isArray(lineasFinales)) {
-            const gruaP = lineasFinales.find(esLineaEquipoGrua);
-            if (gruaP && esFijoGrua(gruaP)) {
+            const equiposRaizFinales = lineasFinales.filter(esLineaEquipoGrua);
+            const tienePeriodicaOHoraria = equiposRaizFinales.some(l => !esFijoGrua(l));
+            const gruaP = equiposRaizFinales[0] || null;
+            if (gruaP && esFijoGrua(gruaP) && !tienePeriodicaOHoraria) {
               parsed.crm_v1.pisoMinimo = 0;
               parsed.crm_v1.es_valor_fijo = true;
               nuevoPisoMinimoParaReports = 0;
+            } else if (tienePeriodicaOHoraria) {
+              parsed.crm_v1.es_valor_fijo = false;
             }
           }
         }
@@ -805,7 +1106,8 @@ class ProyectoModel {
           console.warn('[REQ-1100] Advertencia sincronizando horas_minimas en tedp_reporte_avance:', eRep.message);
         }
       }
-      return rows[0];
+      const synced = await this._sincronizarLineasServicioRelacional(rows[0], id_user_modificacion || final_user_creacion);
+      return synced || rows[0];
     } catch (error) {
       throw new Error(`Error al actualizar proyecto: ${error.message}`);
     }
@@ -1691,7 +1993,7 @@ class ProyectoModel {
           e.capacidad_maxima as capacidad_ton
         FROM tpry_rel_equipo re
         INNER JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
-        WHERE re.id_proyecto = $1 AND re.estado_real != 'CANCELADO'
+        WHERE re.id_proyecto = $1 AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY re.fecha_plan_ini ASC, re.id_rel_equipo ASC
       `, [id_proyecto]);
 
@@ -1699,7 +2001,7 @@ class ProyectoModel {
       const { rows: testPersCount } = await client.query('SELECT COUNT(*)::int as total FROM tpry_rel_persona WHERE id_proyecto = $1', [id_proyecto]);
       if (testPersCount[0]?.total === 0) {
         const poolSync = [];
-        const serviciosList = crm.servicios || jf.crm_v1?.servicios || [];
+        const serviciosList = crm.servicios || jsonField.servicios || [];
         serviciosList.forEach(s => {
           const esTrans = (s.linea_servicio || '').toUpperCase().includes('TRANSP') || (s.tipo || '').toUpperCase().includes('CAMION');
           const rol = esTrans ? 'Chofer Transporte' : 'Operador Grúa';
@@ -1747,7 +2049,7 @@ class ProyectoModel {
           rp.rol_asignado as cargo
         FROM tpry_rel_persona rp
         INNER JOIN tsec_users u ON rp.id_user = u.id_user
-        WHERE rp.id_proyecto = $1 AND rp.estado_real != 'CANCELADO'
+        WHERE rp.id_proyecto = $1 AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY rp.fecha_plan_ini ASC, rp.id_rel_persona ASC
       `, [id_proyecto]);
 
@@ -1861,11 +2163,11 @@ class ProyectoModel {
         return f1 || f2 || '';
       };
 
+      const personasAsignadasUsadas = new Set();
       if (equiposAsignadosBD.length > 0) {
         // =========================================================================
         // GENERACIÓN DE FLOTA 100% RELACIONAL DESDE BASE DE DATOS
         // =========================================================================
-        const personasAsignadasUsadas = new Set();
         equiposAsignadosBD.forEach((eq) => {
           const pat = (eq.patente || eq.ppu || eq.codigo_interno || '').toUpperCase();
           const rolNorm = String(eq.rol_equipo || '').toUpperCase();
@@ -1902,12 +2204,19 @@ class ProyectoModel {
             choferLabel = rng ? `<strong>${nom}</strong> <span style="color:#475569;">(${rng})</span>` : `<strong>${nom}</strong>`;
           }
 
+          const esRentalEq = String(eq.tipo || eq.modelo || eq.observaciones || '').toUpperCase().includes('PLATAFORMA') ||
+                             String(eq.tipo || eq.modelo || '').toUpperCase().includes('ALZA HOMBRES') ||
+                             String(eq.tipo || '').toUpperCase().includes('RENTAL') ||
+                             String(crm.tipo_ot || '').toUpperCase().includes('RENTAL');
+          const segmentoEq = esRentalEq ? 'Rental / Arriendo' : (esPrimario ? 'Izaje Principal' : 'Traslado & Logística');
+          const tipoEq = esRentalEq ? (eq.tipo || 'Plataforma Alza Hombre') : (eq.tipo || (esPrimario ? 'Grúa Móvil' : 'Transporte'));
+          const choferEq = (esRentalEq && !personaAsociada) ? 'Sin Operador (Arriendo Sin Operador)' : choferLabel;
           flotaItems.push({
-            segmento: esPrimario ? 'Izaje Principal' : 'Traslado & Logística',
-            tipo: eq.tipo || (esPrimario ? 'Grúa Móvil' : 'Transporte'),
+            segmento: segmentoEq,
+            tipo: tipoEq,
             modelo: eq.modelo || eq.codigo_interno || eq.marca || 'Equipo de Flota',
             patente: pat,
-            chofer: choferLabel
+            chofer: choferEq
           });
         });
       } else {
@@ -1938,12 +2247,26 @@ class ProyectoModel {
                   : `${opObj.nombre_user || opObj.name_frst} (Operador)`;
               }
             }
+            const esRental = String(l.tipo_ot || '').toUpperCase().includes('RENTAL') ||
+                             String(l.linea_servicio || '').toUpperCase().includes('RENTAL') ||
+                             String(l.linea_negocio || '').toUpperCase().includes('RENTAL') ||
+                             String(crm.tipo_ot || '').toUpperCase().includes('RENTAL') ||
+                             String(l.tipo || '').toUpperCase().includes('ALZA HOMBRES') ||
+                             String(l.tipo || '').toUpperCase().includes('PLATAFORMA') ||
+                             String(l.subcategoria || '').toUpperCase().includes('PLATAFORMA') ||
+                             String(l.subcategoria || '').toUpperCase().includes('ALZA HOMBRES') ||
+                             String(l.tipo || '').toUpperCase().includes('RENTAL') ||
+                             String(l.descripcion || '').toUpperCase().includes('PLATAFORMA') ||
+                             String(l.descripcion || '').toUpperCase().includes('RENTAL');
+            const segmentoTexto = esRental ? 'Rental / Arriendo' : 'Izaje Principal';
+            const tipoTexto = esRental ? (l.tipo || eqObj.tipo || 'Plataforma Alza Hombre') : (l.tipo || eqObj.tipo || 'Grúa Móvil');
+            const choferFinal = (esRental && !l.operador_asignado_id) ? 'Sin Operador (Arriendo Sin Operador)' : choferLabel;
             flotaItems.push({
-              segmento: 'Izaje Principal',
-              tipo: l.tipo || eqObj.tipo || 'Grúa Móvil',
+              segmento: segmentoTexto,
+              tipo: tipoTexto,
               modelo: l.subcategoria || eqObj.nombre_equipo || eqObj.modelo || 'General',
               patente: (eqObj.patente || eqObj.ppu || eqId || '').toUpperCase(),
-              chofer: choferLabel
+              chofer: choferFinal
             });
           }
         });
@@ -2025,6 +2348,13 @@ class ProyectoModel {
         // GENERACIÓN DE TRIPULACIÓN 100% RELACIONAL DESDE BASE DE DATOS
         // =========================================================================
         personasAsignadasBD.forEach((p) => {
+          const rolUpper = String(p.rol_asignado || p.cargo || '').toUpperCase();
+          const esChoferTransporte = rolUpper.includes('CHOFER') || rolUpper.includes('CONDUCTOR');
+          if (esChoferTransporte && personasAsignadasUsadas.has(p.id_rel_persona)) {
+            // REQ-1172: Chofer asociado en Tabla 3 Flota/Transporte; omitir de Tabla 4 Dotación de Obra
+            return;
+          }
+
           const nombreCompleto = `${p.name_frst || ''} ${p.apellido_pat || ''} ${p.apellido_mat || ''}`.replace(/\s+/g, ' ').trim();
           const rng = fmtRangoTurnoOT(p.fecha_plan_ini, p.fecha_plan_fin);
           const rolTexto = rng ? `${p.rol_asignado || p.cargo || 'Especialista'} (${rng})` : (p.rol_asignado || p.cargo || 'Especialista');
@@ -2305,6 +2635,12 @@ class ProyectoModel {
         <div class="section-title">5. Elementos de Izaje, Logística & Suministros</div>
         <table class="info-grid">
           <tr>
+            <td class="info-lbl" style="width: 25%;">Parámetros Técnicos de Maniobra:</td>
+            <td class="info-val" colspan="3" style="width: 75%; font-size: 13.5px; line-height: 1.55;">
+              • <strong>Tipo de Carga:</strong> ${crm.tipo_carga || crm.snapshot_comercial?.tipo_carga || 'Por confirmar'}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Peso:</strong> ${crm.peso_carga || crm.snapshot_comercial?.peso_carga || 'N/A'}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Radio:</strong> ${crm.radios_trabajo || crm.snapshot_comercial?.radios_trabajo || 'N/A'}<br>• <strong>Altura:</strong> ${crm.alturas_trabajo || crm.snapshot_comercial?.alturas_trabajo || 'N/A'}&nbsp;&nbsp;&nbsp;&nbsp;• <strong>Volumen:</strong> ${crm.volumen_carga || crm.snapshot_comercial?.volumen_carga || 'N/A'}
+            </td>
+          </tr>
+          <tr>
             <td class="info-lbl" style="width: 25%;">Aparejos & Estrobos Autorizados:</td>
             <td class="info-val" style="width: 75%;" colspan="3">${aparejosHtml}</td>
           </tr>
@@ -2555,11 +2891,30 @@ class ProyectoModel {
       const eqPrincipal = lineas[0] || {};
       const formatCLP = (v) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(v || 0);
 
-      const maquiSerie = datosExtra.serie || eqPrincipal.serie || 'XUG0147ACSRL0132';
-      const maquiMotor = datosExtra.motor || eqPrincipal.motor || '7RE8931';
-      const maquiModelo = datosExtra.modelo || eqPrincipal.subcategoria || eqPrincipal.descripcion || 'XGA16E';
-      const maquiMarca = datosExtra.marca || eqPrincipal.marca || 'XCMG';
-      const maquiAnio = datosExtra.anio || '2026';
+      const eqAsignadoRes = await this.pool.query(
+        `SELECT e.* FROM tpry_rel_equipo re
+         INNER JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
+         WHERE re.id_proyecto = $1 AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+         ORDER BY re.id_rel_equipo ASC LIMIT 1`,
+        [id_proyecto]
+      );
+      let eqFisico = eqAsignadoRes.rows[0] || null;
+      if (!eqFisico && eqPrincipal.equipo_asignado_id && !isNaN(Number(eqPrincipal.equipo_asignado_id))) {
+        const eqFb = await this.pool.query('SELECT * FROM tequ_equipo WHERE id_equipo = $1', [Number(eqPrincipal.equipo_asignado_id)]);
+        eqFisico = eqFb.rows[0] || null;
+      }
+      if (!eqFisico && !datosExtra.serie) {
+        const errSinEq = new Error('Para emitir el Contrato de Arriendo debe asignarse primero el equipo físico (serie/patente) en Operaciones.');
+        errSinEq.status = 400;
+        errSinEq.code = 'SIN_EQUIPO_ASIGNADO';
+        throw errSinEq;
+      }
+
+      const maquiSerie = datosExtra.serie || eqFisico?.numero_serie || eqFisico?.serie || eqFisico?.chasis || eqFisico?.patente || eqPrincipal.serie || 'S/N';
+      const maquiMotor = datosExtra.motor || eqFisico?.numero_motor || eqFisico?.motor || eqPrincipal.motor || 'S/M';
+      const maquiModelo = datosExtra.modelo || eqFisico?.modelo || eqPrincipal.subcategoria || eqPrincipal.descripcion || '';
+      const maquiMarca = datosExtra.marca || eqFisico?.marca || eqPrincipal.marca || '';
+      const maquiAnio = datosExtra.anio || eqFisico?.anio || '2026';
 
       // REQ-1038: Fecha de Inicio y Fecha de Término Explícita (Erradicación absoluta de 'A CONVENIR')
       const normalizarIsoDate = (val) => {
@@ -2606,7 +2961,7 @@ class ProyectoModel {
       const fechaHeader = formatearFechaContrato(fechaEmision);
       const tipoArriendo = datosExtra.tipo_arriendo || (eqPrincipal.unidad?.includes('Mes') ? 'MENSUAL' : 'SEMANAL / MENSUAL');
       const tarifaTexto = formatCLP(Number(eqPrincipal.valor_unitario || eqPrincipal.valorUnitario || 0));
-      const maximoHoras = datosExtra.maximo_horas || contratoPrevio.maximo_horas || '';
+      const maximoHoras = datosExtra.maximo_horas || contratoPrevio.maximo_horas || 'Horas libres de uso';
       const lugarFaena = datosExtra.lugar_uso || crm.obra_nombre || crm.obra_ciudad || '';
       const mantencionArrendador = datosExtra.mantenimiento_arrendador || contratoPrevio.mantenimiento_arrendador || '';
       const observacionesAnexo = datosExtra.observaciones || contratoPrevio.observaciones || '';
