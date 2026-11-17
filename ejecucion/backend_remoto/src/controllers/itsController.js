@@ -17,6 +17,16 @@ const messageModel = new MessageModel();
 /**
  * Detecta si una línea comercial corresponde a un Rigger/Personal fantasma con tarifa <= 0
  */
+
+function esJornadaTraslado(j) {
+  if (!j || typeof j !== 'object') return false;
+  const ts = String(j.tipo_servicio || '').trim();
+  if (ts === 'Registro de Viaje') return false;
+  const tsLow = ts.toLowerCase();
+  const nr = String(j.numero_report || '').trim().toUpperCase();
+  return tsLow.includes('flete') || tsLow.includes('traslado') || nr === 'TRASLADO' || nr.startsWith('FLE-');
+}
+
 function esLineaRiggerFantasma(l) {
   if (!l || typeof l !== 'object') return false;
   const tipo = String(l.tipo || l.categoria || '').toUpperCase();
@@ -355,6 +365,7 @@ const itsController = {
       const lineas = (lineasRaw || []).filter(l => !esLineaRiggerFantasma(l));
       let valorHoraPactado = 0;
       let valorFijoPactado = 0;
+      let valorAdicionalesFijosPactados = 0;
       let valorFletePactado = 0;
       let unidadFletePactado = '';
       let horasMinimas = 8.0;
@@ -395,8 +406,20 @@ const itsController = {
         } else {
           const esFijo = unid.includes('FIJO') || unid.includes('SUMA ALZADA') || tipo.includes('FIJO') || desc.includes('VALOR FIJO');
           if (esFijo) {
-            esValorFijoComercial = true;
-            valorFijoPactado += (sub > 0 ? sub : precio);
+            const rolUpper = String(l.rol_nodo || '').toUpperCase();
+            const esSecundaria = Boolean(
+              l.id_linea_servicio_padre ||
+              ['OTROS', 'ACCESORIO', 'HIJO_COMERCIAL', 'PERSONAL'].includes(rolUpper) ||
+              tipo.includes('PERSONAL') ||
+              desc.includes('RIGGER') ||
+              subcat.includes('RIGGER')
+            );
+            if (esSecundaria) {
+              valorAdicionalesFijosPactados += (precio > 0 ? precio : sub);
+            } else {
+              esValorFijoComercial = true;
+              valorFijoPactado += (precio > 0 ? precio : sub);
+            }
           } else if (precio > 0 && unid.includes('HORA')) {
             tieneLineaPorHora = true;
             if (valorHoraPactado === 0) valorHoraPactado = precio;
@@ -412,7 +435,18 @@ const itsController = {
         }
       });
 
-      const esSoloTraslado = tieneLineaTraslado && !tieneLineaPorHora && !esValorFijoComercial && valorFijoPactado === 0;
+      if (tieneLineaPorHora) {
+        esValorFijoComercial = false;
+        if (valorFijoPactado > 0) {
+          valorAdicionalesFijosPactados += valorFijoPactado;
+          valorFijoPactado = 0;
+        }
+      } else if (esValorFijoComercial && valorAdicionalesFijosPactados > 0) {
+        valorFijoPactado += valorAdicionalesFijosPactados;
+        valorAdicionalesFijosPactados = 0;
+      }
+
+      const esSoloTraslado = tieneLineaTraslado && !tieneLineaPorHora && !esValorFijoComercial && valorFijoPactado === 0 && valorAdicionalesFijosPactados === 0;
 
       if ((esValorFijoComercial && !tieneLineaPorHora) || esSoloTraslado) {
         valorHoraPactado = 0;
@@ -529,8 +563,7 @@ const itsController = {
           re.rol_equipo
         FROM tpry_rel_equipo re
         JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
-        WHERE re.id_proyecto = $1
-          AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO');
+        WHERE re.id_proyecto = $1;
       `, [id_proyecto]);
 
       const perAsigRes = await pool.query(`
@@ -543,14 +576,18 @@ const itsController = {
         FROM tpry_rel_persona rp
         JOIN tsec_users u ON rp.id_user = u.id_user
         WHERE rp.id_proyecto = $1
-          AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY rp.id_user, rp.id_rel_persona DESC;
       `, [id_proyecto]);
 
-      // SPEC-136: Personal activo proviene de la tabla relacional, de viajes reales y de reportes.
-      // Erradicación de ejTrip desde json_field (tripulacion_asignada) para evitar resurrección de dotaciones obsoletas.
+      const ejTrip = Array.isArray(proyecto.json_field?.ejecucion_v1?.tripulacion_asignada)
+        ? proyecto.json_field.ejecucion_v1.tripulacion_asignada
+        : [];
       const allPersonalIds = new Set();
       (perAsigRes.rows || []).forEach(p => allPersonalIds.add(Number(p.id_user)));
+      ejTrip.forEach(t => {
+        const uid = Number(t.id_user || t.id_usuario);
+        if (uid) allPersonalIds.add(uid);
+      });
       (viajesRows || []).forEach(v => {
         if (v.id_user_chofer) allPersonalIds.add(Number(v.id_user_chofer));
       });
@@ -1189,7 +1226,7 @@ const itsController = {
             }
           });
 
-          if (esValorFijoComercial || its.es_valor_fijo || valorFijoPactado > 0) {
+          if (tieneLineaPorHora) { its.es_valor_fijo = false; } else if (esValorFijoComercial || its.es_valor_fijo || valorFijoPactado > 0) {
             its.es_valor_fijo = true;
             its.valor_fijo_pactado = valorFijoPactado > 0 ? valorFijoPactado : parseFloat(its.valor_fijo_pactado || its.valor_fijo || 0);
             if (parseFloat(its.horas_minimas_pactadas || 0) === 1 && Math.abs(parseFloat(its.valor_hora_pactado || 0) - its.valor_fijo_pactado) < 1) {
@@ -1388,18 +1425,28 @@ const itsController = {
 
           // 5. Recalcular totales reactivos en cabecera
           const sumHrsGrua = jornadas
-            .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')) && j.tipo_servicio !== 'Registro de Viaje')
+            .filter(j => !j.es_oculta && !esJornadaTraslado(j) && j.tipo_servicio !== 'Registro de Viaje')
             .reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
 
           const sumIngresosHoras = its.es_valor_fijo
             ? (parseFloat(its.valor_fijo_pactado || valorFijoPactado || 0))
             : jornadas
-                .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')))
-                .reduce((acc, j) => acc + (parseFloat(j.subtotal) || ((parseFloat(j.horas_report) || 0) * (parseFloat(j.tarifa_hora) || parseFloat(its.valor_hora_pactado) || 0))), 0);
+                .filter(j => !j.es_oculta && !esJornadaTraslado(j) && j.tipo_servicio !== 'Registro de Viaje')
+                .reduce((acc, j) => {
+                  const s = (j.subtotal !== undefined && j.subtotal !== null && !isNaN(Number(j.subtotal)))
+                    ? Number(j.subtotal)
+                    : ((Number(j.horas_report) || 0) * (Number(j.tarifa_hora) || Number(its.valor_hora_pactado) || 0));
+                  return acc + s;
+                }, 0);
 
           const sumIngresosFletes = jornadas
-            .filter(j => !j.es_oculta && j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('flete'))
-            .reduce((acc, j) => acc + (parseFloat(j.subtotal) || parseFloat(j.tarifa_hora) || 0), 0);
+            .filter(j => !j.es_oculta && esJornadaTraslado(j))
+            .reduce((acc, j) => {
+              const s = (j.subtotal !== undefined && j.subtotal !== null && !isNaN(Number(j.subtotal)))
+                ? Number(j.subtotal)
+                : (Number(j.tarifa_hora) || 0);
+              return acc + s;
+            }, 0);
 
           its.total_horas_report = sumHrsGrua;
           its.total_ingresos_horas = sumIngresosHoras;
@@ -1793,6 +1840,19 @@ const itsController = {
           const idEq = e.id_equipo || e.patente;
           equiposMap.set(String(idEq), { ...e });
         });
+      }
+
+      const opV1 = proyecto.json_field?.operaciones_v1;
+      if (equiposMap.size === 0 && opV1) {
+        if (opV1.equipo_id && opV1.equipo_id !== 'CRN-DEFAULT') {
+          equiposMap.set(String(opV1.equipo_id), {
+            id_equipo: null,
+            patente: opV1.equipo_id,
+            modelo: 'Grúa Principal',
+            tipo_equipo: 'Grúa Telescópica',
+            rol_equipo: 'Principal'
+          });
+        }
       }
 
       equiposAsignados = Array.from(equiposMap.values()).map(eq => {

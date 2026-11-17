@@ -3132,7 +3132,6 @@ ProyectoModel.prototype.solicitarVbGerencia = async function(id_proyecto, data =
         FROM tpry_rel_equipo re
         LEFT JOIN tequ_equipo eq ON re.id_equipo = eq.id_equipo
         WHERE re.id_proyecto = $1
-          AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY re.id_rel_equipo ASC
       `, [id_proyecto]);
       if (eqRes.rows.length > 0) {
@@ -3149,7 +3148,6 @@ ProyectoModel.prototype.solicitarVbGerencia = async function(id_proyecto, data =
         FROM tpry_rel_persona rp
         LEFT JOIN tsec_users u ON rp.id_user = u.id_user
         WHERE rp.id_proyecto = $1
-          AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY rp.id_rel_persona ASC
       `, [id_proyecto]);
       if (perRes.rows.length > 0) {

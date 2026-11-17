@@ -20,7 +20,6 @@ const getAsignacionesPersona = async (req, res) => {
             INNER JOIN tsec_users u ON rp.id_user = u.id_user
             WHERE 
                 rp.id_proyecto = $1
-                AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
             ORDER BY 
                 rp.fecha_plan_ini ASC`,
             [id]
@@ -122,7 +121,6 @@ const getAsignacionesEquipo = async (req, res) => {
             INNER JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
             WHERE 
                 re.id_proyecto = $1
-                AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
             ORDER BY 
                 re.fecha_plan_ini ASC`,
             [id]
@@ -199,11 +197,11 @@ const getResumenAsignacionesProyecto = async (req, res) => {
         const { id } = req.params;
         
         const pRes = await pool.query(
-            `SELECT COUNT(*) as total_personas FROM tpry_rel_persona WHERE id_proyecto = $1 AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')`, [id]
+            `SELECT COUNT(*) as total_personas FROM tpry_rel_persona WHERE id_proyecto = $1`, [id]
         );
         
         const eRes = await pool.query(
-            `SELECT COUNT(*) as total_equipos FROM tpry_rel_equipo WHERE id_proyecto = $1 AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')`, [id]
+            `SELECT COUNT(*) as total_equipos FROM tpry_rel_equipo WHERE id_proyecto = $1`, [id]
         );
         
         res.status(200).json({
