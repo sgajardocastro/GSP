@@ -227,11 +227,24 @@ exports.generarPdfEdp = async (req, res) => {
     const descuentoMonto = Number(ajustesTesoreria?.descuento_tesoreria || 0);
     const descuentoMotivo = ajustesTesoreria?.motivo_descuento || '';
 
+    // SPEC-136: Agrupación estricta de horas por id_equipo desde tedp_reporte_avance
     let totalHorasFact = 0;
     let totalST = 0;
+    const horasPorEquipoMap = new Map();
     reports.forEach(r => {
-      totalHorasFact += Number(r.horas_facturables || 0);
-      totalST += Number(r.horas_sobretiempo || 0);
+      const hFact = Number(r.horas_facturables || 0);
+      const hST = Number(r.horas_sobretiempo || 0);
+      totalHorasFact += hFact;
+      totalST += hST;
+
+      const eqId = Number(r.id_equipo || 0);
+      if (eqId > 0) {
+        const prev = horasPorEquipoMap.get(eqId) || { horas_fact: 0, st: 0, dias: 0 };
+        prev.horas_fact += hFact;
+        prev.st += hST;
+        prev.dias += 1;
+        horasPorEquipoMap.set(eqId, prev);
+      }
     });
     if (totalHorasFact === 0 && Number(itsRow?.total_horas_report) > 0) {
       totalHorasFact = Number(itsRow.total_horas_report);
@@ -265,11 +278,17 @@ exports.generarPdfEdp = async (req, res) => {
           cantMostrar = 1;
           unidadMostrar = l.unidad || (esLineaTraslado ? 'TRASLADO IDA/VUELTA' : 'Valor Fijo');
         } else if (esLineaEquipo) {
+          const eqIdLinea = Number(l.equipo_asignado_id || l.id_equipo || 0);
+          const datosEq = eqIdLinea > 0 ? horasPorEquipoMap.get(eqIdLinea) : null;
+
           if (l.unidad === 'Diario') {
-            sub = valUnit * diasFaena * cant;
-            cantMostrar = `${diasFaena} d`;
+            const diasAplicar = datosEq?.dias || diasFaena;
+            sub = valUnit * diasAplicar * cant;
+            cantMostrar = `${diasAplicar} d`;
           } else {
-            const hrsAplicar = totalHorasFact > 0 ? totalHorasFact : (cant * 8);
+            const hrsAplicar = datosEq?.horas_fact !== undefined
+              ? datosEq.horas_fact
+              : (totalHorasFact > 0 ? totalHorasFact : (cant * 8));
             sub = valUnit * hrsAplicar;
             cantMostrar = `${hrsAplicar.toFixed(1)} hrs`;
             unidadMostrar = 'Horas';

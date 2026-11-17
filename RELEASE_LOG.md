@@ -2,6 +2,20 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP & Backend] - Versión 1.0.228
+- **Ambiente:** `prod` (Hotfix / Blindaje Canónico)
+- **Fecha de Despliegue:** 2026-11-17 11:15:00 (-03:00)
+- **Ruta de Despliegue:** `/home/nodeadmin/proyectos/lean-services-gsp-prod/src`
+- **Requerimientos Asociados:** `REQ-1184` (`SPEC-136`)
+- **Especificación Técnica:** Blindaje Canónico Anti-Resurrección y Erradicación Integral de Dependencias Operativas de JSON en la Cadena Completa (OT, Reportes Diarios, EDP e ITS):
+  - **[Corrección y Blindaje de Asignaciones (`asignacionRecursosController.js`)]**: Subsanada la consulta SQL en `getAsignacionesEquipo`, `getAsignacionesPersona` y `getResumenAsignacionesProyecto` filtrando inequívocamente `estado_real NOT IN ('CANCELADO', 'REEMPLAZADO')` con parámetros `$1` limpios.
+  - **[Resolución Temporal e Idempotencia en Reportes Diarios (`reportDiarioController.js`)]**: 
+    1. En `regularizarReporteManual`, resolución temporal de máquinas consultando `tpry_rel_equipo` según la fecha de la jornada, erradicando el fallback ciego a la máquina de la preventa.
+    2. Incorporada compuerta de unicidad e idempotencia: si el reporte para el día y equipo ya existe en estado no anulado, actualiza y consolida la evidencia física en lugar de insertar filas duplicadas.
+    3. En `getReportContexto`, filtrados los equipos `REEMPLAZADO` y erradicada la vinculación artificial de choferes desde `json_field`.
+  - **[Desacople de Flota y Costos en ITS (`itsController.js`)]**: Flota auditada y dotación humana consultadas directamente de `tpry_rel_equipo`, `tpry_rel_persona`, `tequ_log_desplazamiento` y `tedp_reporte_avance`, eliminando fallbacks obsoletos a `ejecucion_v1.tripulacion_asignada` y `operaciones_v1`.
+  - **[Conciliación Relacional de Horas en EDP (`estadoPagoController.js`)]**: Horas facturables agregadas por `id_equipo` real persistido en los reportes, asociándolas a las tarifas respectivas de cada máquina y evitando la duplicación ciega de horas en servicios con sustitución de maquinaria.
+
 ## [Portal Web GSP & Backend] - Versión 1.0.224
 - **Ambiente:** `prod` & `dev`
 - **Fecha de Despliegue:** 2026-11-16 17:50:00 (-03:00)

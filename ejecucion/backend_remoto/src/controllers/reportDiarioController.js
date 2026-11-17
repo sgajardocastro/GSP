@@ -526,43 +526,14 @@ const reportDiarioController = {
           LIMIT 1
         ) v ON TRUE
         WHERE re.id_proyecto = $1
+          AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY re.id_equipo, re.id_rel_equipo DESC;
       `;
       const eqRes = await db.query(eqSql, [id_proyecto]);
       let equipos = eqRes.rows;
 
-      // Fallback si no hay equipos en tpry_rel_equipo (Spec 39)
-      if (equipos.length === 0 && proyecto.json_field?.ejecucion_v1?.equipos_asignados) {
-        const jsonEqs = proyecto.json_field.ejecucion_v1.equipos_asignados;
-        for (const eqItem of jsonEqs) {
-          const idEq = eqItem.id_equipo || eqItem.id;
-          if (idEq) {
-            const fallbackEqRes = await db.query(
-              `SELECT id_equipo, patente, modelo, marca, COALESCE(tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo, COALESCE((json_data->>'horometro')::numeric, 0) AS horometro_base, 'ARRIBADO' AS estado_operativo FROM tequ_equipo WHERE id_equipo = $1`,
-              [idEq]
-            );
-            if (fallbackEqRes.rows.length > 0) {
-              equipos.push(fallbackEqRes.rows[0]);
-            }
-          }
-        }
-      }
-
-      // REQ-1060 / INV-4: Fallback CRM (línea de grúa con equipo asignado). Se ELIMINA el fallback
-      // "primer equipo de toda la flota" que asignaba una máquina arbitraria a la OT.
-      if (equipos.length === 0) {
-        const lineasCrm = proyecto.json_field?.crm_v1?.lineas_servicio || proyecto.json_field?.lineas_servicio || [];
-        const idsCrm = [...new Set(lineasCrm
-          .filter(l => (l.tipo || '').toUpperCase().includes('GRUA') && l.equipo_asignado_id)
-          .map(l => Number(l.equipo_asignado_id)))];
-        for (const idEq of idsCrm) {
-          const crmEqRes = await db.query(
-            `SELECT id_equipo, patente, modelo, marca, COALESCE(tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo, COALESCE((json_data->>'horometro')::numeric, 0) AS horometro_base, 'ARRIBADO' AS estado_operativo FROM tequ_equipo WHERE id_equipo = $1`,
-            [idEq]
-          );
-          if (crmEqRes.rows.length > 0) equipos.push(crmEqRes.rows[0]);
-        }
-      }
+      // SPEC-136: Erradicación total de fallbacks a json_field (crm_v1 / ejecucion_v1).
+      // La flota operativa se rige única y exclusivamente por tpry_rel_equipo relacional.
 
       // 1.3 Consultar personal / tripulación asignada (DEDUPLICADA por id_user, preservando orden de asignación)
       const perSql = `
@@ -579,6 +550,7 @@ const reportDiarioController = {
           FROM tpry_rel_persona rp
           JOIN tsec_users u ON rp.id_user = u.id_user
           WHERE rp.id_proyecto = $1
+            AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
           ORDER BY rp.id_user, rp.id_rel_persona DESC
         ) sub
         ORDER BY sub.id_rel_persona ASC;
@@ -608,30 +580,7 @@ const reportDiarioController = {
         }
       }
 
-      // Fallback 2: Si aun esta vacio, buscar en json_field.ejecucion_v1.tripulacion
-      if (personas.length === 0 && proyecto.json_field?.ejecucion_v1?.tripulacion) {
-        const trip = proyecto.json_field.ejecucion_v1.tripulacion;
-        for (const t of trip) {
-          const uid = t.id_user || t.id;
-          if (uid) {
-            const uRes = await db.query(
-              `SELECT 1 AS id_rel_persona, id_user, $2 AS rol_asignado, name_frst, apellido_pat, apellido_mat, email, rut FROM tsec_users WHERE id_user = $1`,
-              [uid, t.rol || 'OPERADOR']
-            );
-            if (uRes.rows.length > 0) personas.push(uRes.rows[0]);
-          }
-        }
-      }
-
-      // 1.3.B Enriquecer vinculación determinista Equipo <-> Operador desde json_field y viajes
-      const jfCtx = proyecto.json_field || {};
-      const crmCtx = jfCtx.crm_v1 || {};
-      const ejecCtx = jfCtx.ejecucion_v1 || {};
-      const lineasCtx = Array.isArray(crmCtx.lineas_servicio) ? crmCtx.lineas_servicio : (Array.isArray(jfCtx.lineas_servicio) ? jfCtx.lineas_servicio : []);
-      const tripCtx = Array.isArray(ejecCtx.tripulacion_asignada) ? ejecCtx.tripulacion_asignada : [];
-      const extrasCtx = Array.isArray(ejecCtx.equipos_extra) ? ejecCtx.equipos_extra : [];
-      const inspPatioCtx = ejecCtx.preparacion_salida?.inspecciones_patio || {};
-
+      // 1.3.B SPEC-136: Vinculación determinista Equipo <-> Operador desde tequ_log_desplazamiento (Cero JSON)
       const eqToUserMap = new Map();
       const userToEqMap = new Map();
       const registrarVinculoEqUser = (idEqRaw, idUserRaw) => {
@@ -642,12 +591,16 @@ const reportDiarioController = {
         if (!userToEqMap.has(usN)) userToEqMap.set(usN, eqN);
       };
 
-      lineasCtx.forEach(l => registrarVinculoEqUser(l.equipo_asignado_id || l.id_equipo, l.operador_asignado_id || l.chofer_asignado_id));
-      tripCtx.forEach(t => registrarVinculoEqUser(t.equipo_asignado_id || t.id_equipo, t.id_user));
-      extrasCtx.forEach(ex => registrarVinculoEqUser(ex.id_equipo || ex.equipo_asignado_id, ex.chofer_id || ex.operador_id || ex.id_user));
-      Object.entries(inspPatioCtx).forEach(([kEq, valObj]) => registrarVinculoEqUser(kEq, valObj?.operador_id));
-      if (ejecCtx.equipo_id && ejecCtx.operador_id) {
-        registrarVinculoEqUser(ejecCtx.equipo_id, ejecCtx.operador_id);
+      try {
+        const despRes = await db.query(`
+          SELECT id_equipo, id_user_chofer 
+          FROM tequ_log_desplazamiento 
+          WHERE id_proyecto = $1 AND id_equipo IS NOT NULL AND id_user_chofer IS NOT NULL
+          ORDER BY id_log_desplazamiento DESC
+        `, [id_proyecto]);
+        despRes.rows.forEach(d => registrarVinculoEqUser(d.id_equipo, d.id_user_chofer));
+      } catch (errDesp) {
+        console.warn('[getReportContexto] Error consultando tequ_log_desplazamiento:', errDesp.message);
       }
 
       personas = personas.map(p => {
@@ -3518,18 +3471,39 @@ const reportDiarioController = {
       // Determinar equipo, operador y rigger (REQ-1090: soporte nativo para servicios Solo Personal / Rigger sin maquinaria)
       let finalEqId = parseInt(id_equipo, 10) || null;
       if (!finalEqId) {
-        const eqRes = await db.query('SELECT id_equipo FROM tpry_rel_equipo WHERE id_proyecto = $1 LIMIT 1', [id_proyecto]);
+        // SPEC-136: Resolución temporal según fecha_reporte excluyendo máquinas dadas de baja / reemplazadas
+        const eqRes = await db.query(`
+          SELECT re.id_equipo 
+          FROM tpry_rel_equipo re
+          WHERE re.id_proyecto = $1 
+            AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+            AND (
+              $2::date BETWEEN re.fecha_plan_ini::date AND re.fecha_plan_fin::date
+              OR re.fecha_plan_ini IS NULL
+            )
+          ORDER BY re.fecha_plan_ini DESC, re.id_rel_equipo DESC 
+          LIMIT 1
+        `, [id_proyecto, fecha_reporte]);
         finalEqId = eqRes.rows[0]?.id_equipo || null;
+        if (!finalEqId) {
+          const fallbackEq = await db.query(`
+            SELECT id_equipo FROM tpry_rel_equipo 
+            WHERE id_proyecto = $1 AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+            ORDER BY id_rel_equipo DESC LIMIT 1
+          `, [id_proyecto]);
+          finalEqId = fallbackEq.rows[0]?.id_equipo || null;
+        }
       }
 
       const rigRes = await db.query(`
         SELECT u.id_user FROM tpry_rel_persona rp
         JOIN tsec_users u ON rp.id_user = u.id_user
         WHERE rp.id_proyecto = $1 AND UPPER(rp.rol_asignado) LIKE '%RIGGER%'
+          AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY rp.id_rel_persona DESC
         LIMIT 1
       `, [id_proyecto]);
-      const finalRiggerId = rigRes.rows[0]?.id_user || parseInt(proyecto.json_field?.ejecucion_v1?.rigger_id, 10) || null;
+      const finalRiggerId = rigRes.rows[0]?.id_user || null;
 
       let finalOpId = parseInt(id_user_operador, 10) || null;
       if (!finalOpId) {
@@ -3537,6 +3511,7 @@ const reportDiarioController = {
           SELECT u.id_user FROM tpry_rel_persona rp 
           JOIN tsec_users u ON rp.id_user = u.id_user 
           WHERE rp.id_proyecto = $1 AND (UPPER(rp.rol_asignado) LIKE '%OPERADOR%' OR UPPER(rp.rol_asignado) LIKE '%CHOFER%')
+            AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
           ORDER BY rp.id_rel_persona DESC
           LIMIT 1
         `, [id_proyecto]);
@@ -3625,6 +3600,88 @@ const reportDiarioController = {
         fecha_regularizacion: new Date().toISOString(),
         motivo: motivo || (!tieneTerminoReal ? 'Apertura manual de inicio de jornada' : 'Carga manual directa de reporte físico')
       };
+
+      // SPEC-136: COMPUERTA DE UNICIDAD E IDEMPOTENCIA (ANTI-DUPLICADOS):
+      const existingRepRes = await db.query(`
+        SELECT id_reporte_avance, ajustes_analista 
+        FROM tedp_reporte_avance 
+        WHERE id_proyecto = $1 AND dia_correlativo = $2 
+          AND ($3::int IS NULL OR id_equipo = $3::int)
+          AND estado_reporte != 'ANULADO'
+        ORDER BY id_reporte_avance ASC
+        LIMIT 1
+      `, [id_proyecto, diaCorr, finalEqId]);
+
+      if (existingRepRes.rows.length > 0) {
+        const repExistente = existingRepRes.rows[0];
+        const ajExistente = typeof repExistente.ajustes_analista === 'string'
+          ? JSON.parse(repExistente.ajustes_analista || '{}')
+          : (repExistente.ajustes_analista || {});
+        const ajConsolidado = {
+          ...ajExistente,
+          ...ajustesAnalista,
+          origen_anterior: ajExistente.origen || 'TERRENO',
+          regularizado_manual: true,
+          evidencia_fisica_adjunta: tieneDoc || ajExistente.evidencia_fisica_adjunta || false,
+          id_doc_evidencia: idDocFinal || ajExistente.id_doc_evidencia || null,
+          documentos_dia: [
+            ...(Array.isArray(ajExistente.documentos_dia) ? ajExistente.documentos_dia : []),
+            ...(idDocFinal ? [{ id_doc: idDocFinal, fecha: new Date().toISOString(), tipo: 'RESPALDO_FISICO' }] : [])
+          ]
+        };
+
+        const updSql = `
+          UPDATE tedp_reporte_avance SET
+            id_equipo = COALESCE($1, id_equipo),
+            id_user_operador = COALESCE($2, id_user_operador),
+            id_user_rigger = COALESCE($3, id_user_rigger),
+            horas_operadas = CASE WHEN $4 > 0 THEN $4 ELSE horas_operadas END,
+            horas_facturables = CASE WHEN $5 > 0 THEN $5 ELSE horas_facturables END,
+            horas_sobretiempo = CASE WHEN $6 >= 0 THEN $6 ELSE horas_sobretiempo END,
+            horas_colacion = COALESCE($7, horas_colacion),
+            horometro_inicio = COALESCE($8, horometro_inicio),
+            horometro_termino = COALESCE($9, horometro_termino),
+            odometro_inicio = COALESCE($10, odometro_inicio),
+            odometro_termino = COALESCE($11, odometro_termino),
+            cliente_nombre = COALESCE($12, cliente_nombre),
+            cliente_cargo = COALESCE($13, cliente_cargo),
+            observacion_trabajo = COALESCE($14, observacion_trabajo),
+            estado_reporte = CASE WHEN estado_reporte = 'VALIDADO_ANALISTA' THEN 'VALIDADO_ANALISTA' ELSE $15 END,
+            estado_jornada = COALESCE($16, estado_jornada),
+            ajustes_analista = $17,
+            fecha_validacion = COALESCE(fecha_validacion, $18)
+          WHERE id_reporte_avance = $19
+          RETURNING *;
+        `;
+        const updRes = await db.query(updSql, [
+          finalEqId,
+          finalOpId,
+          finalRiggerId,
+          operadas,
+          facturables,
+          sobretiempo,
+          colac,
+          horometro_inicio || null,
+          tieneTerminoReal ? (horometro_termino || null) : null,
+          odometro_inicio || null,
+          tieneTerminoReal ? (odometro_termino || null) : null,
+          cliente_nombre || null,
+          cliente_cargo || null,
+          observacion_trabajo || null,
+          estadoReporte,
+          estadoJornada,
+          JSON.stringify(ajConsolidado),
+          tieneDoc ? new Date().toISOString() : null,
+          repExistente.id_reporte_avance
+        ]);
+
+        return res.status(200).json({
+          success: true,
+          action: 'UPDATED',
+          message: `Día ${diaCorr} regularizado exitosamente sobre reporte existente #${repExistente.id_reporte_avance}`,
+          data: updRes.rows[0]
+        });
+      }
 
       const insSql = `
         INSERT INTO tedp_reporte_avance (

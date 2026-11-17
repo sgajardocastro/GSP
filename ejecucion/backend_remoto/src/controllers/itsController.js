@@ -529,7 +529,8 @@ const itsController = {
           re.rol_equipo
         FROM tpry_rel_equipo re
         JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
-        WHERE re.id_proyecto = $1;
+        WHERE re.id_proyecto = $1
+          AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO');
       `, [id_proyecto]);
 
       const perAsigRes = await pool.query(`
@@ -542,18 +543,14 @@ const itsController = {
         FROM tpry_rel_persona rp
         JOIN tsec_users u ON rp.id_user = u.id_user
         WHERE rp.id_proyecto = $1
+          AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY rp.id_user, rp.id_rel_persona DESC;
       `, [id_proyecto]);
 
-      const ejTrip = Array.isArray(proyecto.json_field?.ejecucion_v1?.tripulacion_asignada)
-        ? proyecto.json_field.ejecucion_v1.tripulacion_asignada
-        : [];
+      // SPEC-136: Personal activo proviene de la tabla relacional, de viajes reales y de reportes.
+      // Erradicación de ejTrip desde json_field (tripulacion_asignada) para evitar resurrección de dotaciones obsoletas.
       const allPersonalIds = new Set();
       (perAsigRes.rows || []).forEach(p => allPersonalIds.add(Number(p.id_user)));
-      ejTrip.forEach(t => {
-        const uid = Number(t.id_user || t.id_usuario);
-        if (uid) allPersonalIds.add(uid);
-      });
       (viajesRows || []).forEach(v => {
         if (v.id_user_chofer) allPersonalIds.add(Number(v.id_user_chofer));
       });
@@ -1796,19 +1793,6 @@ const itsController = {
           const idEq = e.id_equipo || e.patente;
           equiposMap.set(String(idEq), { ...e });
         });
-      }
-
-      const opV1 = proyecto.json_field?.operaciones_v1;
-      if (equiposMap.size === 0 && opV1) {
-        if (opV1.equipo_id && opV1.equipo_id !== 'CRN-DEFAULT') {
-          equiposMap.set(String(opV1.equipo_id), {
-            id_equipo: null,
-            patente: opV1.equipo_id,
-            modelo: 'Grúa Principal',
-            tipo_equipo: 'Grúa Telescópica',
-            rol_equipo: 'Principal'
-          });
-        }
       }
 
       equiposAsignados = Array.from(equiposMap.values()).map(eq => {
