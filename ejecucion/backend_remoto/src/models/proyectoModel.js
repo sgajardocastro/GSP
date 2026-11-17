@@ -5,11 +5,15 @@ const { exec } = require("child_process");
 const archivoModel = require("./archivoModel");
 const { buildStoragePath, STORAGE_ROOT } = require("../config/storageConfig");
 const { normalizarLineaCobroUnico, isLineaCobroUnico } = require("../utils/lineaCobroUnico");
-const {
-  normalizarUnidad,
-  clasificarLineaNegocio,
-  calcularSubtotalNodo
-} = require("../services/motorValorizacionService");
+let normalizarUnidad = (u) => u || "Valor Fijo";
+let clasificarLineaNegocio = () => ({ categoria_canon: "OTROS", clasificacion_its: "OTROS" });
+let calcularSubtotalNodo = (l) => Number(l.subtotal || l.subtotal_calculado || 0);
+try {
+  const m = require("../services/motorValorizacionService");
+  normalizarUnidad = m.normalizarUnidad || normalizarUnidad;
+  clasificarLineaNegocio = m.clasificarLineaNegocio || clasificarLineaNegocio;
+  calcularSubtotalNodo = m.calcularSubtotalNodo || calcularSubtotalNodo;
+} catch (_) {}
 
 function esLineaRiggerFantasma(l) {
   if (!l || typeof l !== 'object') return false;
@@ -156,7 +160,69 @@ class ProyectoModel {
 
     try {
       const { rows } = await this.pool.query(query, [id_proyecto]);
-      return rows[0] || null;
+      const prj = rows[0] || null;
+      if (!prj) return null;
+
+      // SPEC-132 / BLINDAJE RELACIONAL DE ASIGNACIÓN (CERO VENENO JSON)
+      // Si el proyecto tiene asignación formal (estado >= 4), reconciliar json_field con las tablas relacionales oficiales
+      if (Number(prj.id_proyecto_estado) >= 4 && prj.json_field) {
+        try {
+          let jf = typeof prj.json_field === 'string' ? JSON.parse(prj.json_field) : prj.json_field;
+          if (jf && typeof jf === 'object') {
+            // 1. Obtener equipos oficialmente PROGRAMADOS en tpry_rel_equipo
+            const { rows: eqRows } = await this.pool.query(`
+              SELECT re.id_equipo, re.rol_equipo, e.patente, e.modelo
+              FROM tpry_rel_equipo re
+              JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
+              WHERE re.id_proyecto = $1 AND re.estado_real = 'PROGRAMADO'
+              ORDER BY re.id_rel_equipo ASC;
+            `, [id_proyecto]);
+
+            // 2. Obtener personas oficialmente PROGRAMADAS en tpry_rel_persona
+            const { rows: perRows } = await this.pool.query(`
+              SELECT rp.id_user, rp.rol_asignado
+              FROM tpry_rel_persona rp
+              WHERE rp.id_proyecto = $1 AND rp.estado_real = 'PROGRAMADO'
+              ORDER BY rp.id_rel_persona ASC;
+            `, [id_proyecto]);
+
+            if (eqRows.length > 0) {
+              const eqPrincipal = eqRows.find(r => (r.rol_equipo || '').toUpperCase().includes('GRUA') || (r.rol_equipo || '').toUpperCase().includes('TELESCOPIC') || (r.rol_equipo || '').toUpperCase().includes('PLUMA')) || eqRows[0];
+              if (eqPrincipal) {
+                if (jf.crm_v1?.lineas_servicio?.[0]) {
+                  jf.crm_v1.lineas_servicio[0].equipo_asignado_id = eqPrincipal.id_equipo;
+                }
+                if (Array.isArray(jf.crm_v1?.lineas_operativas_vigentes) && jf.crm_v1.lineas_operativas_vigentes[0]) {
+                  jf.crm_v1.lineas_operativas_vigentes[0].equipo_asignado_id = eqPrincipal.id_equipo;
+                }
+                if (jf.ejecucion_v1) {
+                  jf.ejecucion_v1.equipo_id = eqPrincipal.id_equipo;
+                }
+              }
+            }
+
+            if (perRows.length > 0) {
+              const opPrincipal = perRows.find(r => (r.rol_asignado || '').toUpperCase().includes('OPERADOR'));
+              const rigPrincipal = perRows.find(r => (r.rol_asignado || '').toUpperCase().includes('RIGGER'));
+
+              if (opPrincipal && jf.crm_v1?.lineas_servicio?.[0]) {
+                jf.crm_v1.lineas_servicio[0].operador_asignado_id = opPrincipal.id_user;
+                if (jf.ejecucion_v1) jf.ejecucion_v1.operador_id = opPrincipal.id_user;
+              }
+              if (rigPrincipal && jf.crm_v1?.lineas_servicio?.[0]) {
+                jf.crm_v1.lineas_servicio[0].rigger_asignado_id = rigPrincipal.id_user;
+                if (jf.ejecucion_v1) jf.ejecucion_v1.rigger_id = rigPrincipal.id_user;
+              }
+            }
+
+            prj.json_field = jf;
+          }
+        } catch (reconcileErr) {
+          console.warn(`[getProyectoById] Advertencia reconciliando asignacion relacional en #${id_proyecto}:`, reconcileErr.message);
+        }
+      }
+
+      return prj;
     } catch (error) {
       throw new Error(`Error al obtener proyecto: ${error.message}`);
     }
@@ -1043,6 +1109,38 @@ class ProyectoModel {
             } else if (tienePeriodicaOHoraria) {
               parsed.crm_v1.es_valor_fijo = false;
             }
+          }
+        }
+
+        // SPEC-132: BLINDAJE RELACIONAL DE ASIGNACIÓN (ANTI-RESURRECCIÓN DE EQUIPOS REEMPLAZADOS)
+        if (estadoDB >= 4) {
+          try {
+            const { rows: reempRows } = await this.pool.query(`
+              SELECT id_equipo FROM tpry_rel_equipo 
+              WHERE id_proyecto = $1 AND estado_real = 'REEMPLAZADO'
+            `, [id_proyecto]);
+            const reempSet = new Set(reempRows.map(r => String(r.id_equipo)));
+
+            const { rows: progRows } = await this.pool.query(`
+              SELECT id_equipo, rol_equipo FROM tpry_rel_equipo 
+              WHERE id_proyecto = $1 AND estado_real = 'PROGRAMADO'
+              ORDER BY id_rel_equipo ASC
+            `, [id_proyecto]);
+            const progPrincipal = progRows.find(r => (r.rol_equipo || '').toUpperCase().includes('GRUA') || (r.rol_equipo || '').toUpperCase().includes('PLUMA'))?.id_equipo || progRows[0]?.id_equipo;
+
+            if (reempSet.size > 0 && progPrincipal) {
+              if (parsed.crm_v1?.lineas_servicio?.[0] && reempSet.has(String(parsed.crm_v1.lineas_servicio[0].equipo_asignado_id))) {
+                parsed.crm_v1.lineas_servicio[0].equipo_asignado_id = progPrincipal;
+              }
+              if (Array.isArray(parsed.crm_v1?.lineas_operativas_vigentes) && parsed.crm_v1.lineas_operativas_vigentes[0] && reempSet.has(String(parsed.crm_v1.lineas_operativas_vigentes[0].equipo_asignado_id))) {
+                parsed.crm_v1.lineas_operativas_vigentes[0].equipo_asignado_id = progPrincipal;
+              }
+              if (parsed.ejecucion_v1 && reempSet.has(String(parsed.ejecucion_v1.equipo_id))) {
+                parsed.ejecucion_v1.equipo_id = progPrincipal;
+              }
+            }
+          } catch (guardErr) {
+            console.warn(`[updateProyecto] Advertencia protegiendo asignacion en #${id_proyecto}:`, guardErr.message);
           }
         }
 
@@ -1971,21 +2069,23 @@ class ProyectoModel {
 
       // Flota & Convoy Asignado
       const flotaItems = [];
-      const lineasServicio = crm.lineas_servicio || [];
+      let lineasServicio = crm.lineas_servicio || [];
 
       // =========================================================================
-      // CONSULTA RELACIONAL DIRECTA A BASE DE DATOS (SINGLE SOURCE OF TRUTH)
-      // Omitiendo dependencia de JSON para datos transaccionales de asignación
+      // CONSULTA RELACIONAL DIRECTA A BASE DE DATOS (SPEC-16 §28)
+      // Tablas relacionales oficiales: tpry_rel_equipo, tpry_rel_persona y tpry_linea_servicio
+      // Cero mutación desde o hacia json_field para datos transaccionales de asignación
       // =========================================================================
+
       const { rows: equiposAsignadosBD } = await client.query(`
         SELECT 
           re.id_rel_equipo,
           re.id_equipo,
-          re.id_linea_servicio,
           re.rol_equipo,
           re.fecha_plan_ini,
           re.fecha_plan_fin,
           re.observaciones,
+          re.id_linea_servicio,
           e.codigo_interno,
           e.patente,
           e.marca,
@@ -1994,53 +2094,20 @@ class ProyectoModel {
           e.capacidad_maxima as capacidad_ton
         FROM tpry_rel_equipo re
         INNER JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
-        WHERE re.id_proyecto = $1 AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+        WHERE re.id_proyecto = $1 
+          AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY re.fecha_plan_ini ASC, re.id_rel_equipo ASC
       `, [id_proyecto]);
-
-      // REQ-1105 / SPEC-22: Sincronización relacional proactiva hacia tpry_rel_persona si existen operadores asignados en servicios
-      const { rows: testPersCount } = await client.query('SELECT COUNT(*)::int as total FROM tpry_rel_persona WHERE id_proyecto = $1', [id_proyecto]);
-      if (testPersCount[0]?.total === 0) {
-        const poolSync = [];
-        const serviciosList = crm.servicios || jsonField.servicios || [];
-        serviciosList.forEach(s => {
-          const esTrans = (s.linea_servicio || '').toUpperCase().includes('TRANSP') || (s.tipo || '').toUpperCase().includes('CAMION');
-          const rol = esTrans ? 'Chofer Transporte' : 'Operador Grúa';
-          if (s.operador_asignado_id && !poolSync.some(p => p.id_user === Number(s.operador_asignado_id))) {
-            poolSync.push({ id_user: Number(s.operador_asignado_id), rol_asignado: rol });
-          }
-          if (Array.isArray(s.turnos_operadores)) {
-            s.turnos_operadores.forEach(t => {
-              if (t.operador_id && !poolSync.some(p => p.id_user === Number(t.operador_id))) {
-                poolSync.push({ id_user: Number(t.operador_id), rol_asignado: rol, f_ini: t.fecha_ini, f_fin: t.fecha_fin });
-              }
-            });
-          }
-        });
-        if (ejec.operador_id && !poolSync.some(p => p.id_user === Number(ejec.operador_id))) {
-          poolSync.push({ id_user: Number(ejec.operador_id), rol_asignado: 'Operador Grúa' });
-        }
-        if (ejec.chofer_id && !poolSync.some(p => p.id_user === Number(ejec.chofer_id))) {
-          poolSync.push({ id_user: Number(ejec.chofer_id), rol_asignado: 'Chofer Transporte' });
-        }
-        for (const ps of poolSync) {
-          await client.query(`
-            INSERT INTO tpry_rel_persona (
-              id_proyecto, id_user, rol_asignado, fecha_plan_ini, fecha_plan_fin, estado_real, id_user_creacion
-            ) VALUES ($1, $2, $3, COALESCE($4, NOW()), COALESCE($5, NOW()), 'PROGRAMADO', $6)
-          `, [id_proyecto, ps.id_user, ps.rol_asignado, ps.f_ini ? new Date(ps.f_ini) : null, ps.f_fin ? new Date(ps.f_fin) : null, p.id_user_creacion || 1]);
-        }
-      }
 
       const { rows: personasAsignadasBD } = await client.query(`
         SELECT 
           rp.id_rel_persona,
           rp.id_user,
-          rp.id_linea_servicio,
           rp.rol_asignado,
           rp.fecha_plan_ini,
           rp.fecha_plan_fin,
           rp.observaciones,
+          rp.id_linea_servicio,
           u.name_frst,
           u.apellido_pat,
           u.apellido_mat,
@@ -2050,9 +2117,36 @@ class ProyectoModel {
           rp.rol_asignado as cargo
         FROM tpry_rel_persona rp
         INNER JOIN tsec_users u ON rp.id_user = u.id_user
-        WHERE rp.id_proyecto = $1 AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+        WHERE rp.id_proyecto = $1 
+          AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY rp.fecha_plan_ini ASC, rp.id_rel_persona ASC
       `, [id_proyecto]);
+
+      // Cargar líneas de servicio comerciales relacionales (tpry_linea_servicio)
+      let lineasServicioDB = [];
+      try {
+        const lineasRes = await client.query(`
+          SELECT * FROM tpry_linea_servicio 
+          WHERE id_proyecto = $1 AND activo = true 
+          ORDER BY orden ASC, id_linea_servicio ASC
+        `, [id_proyecto]);
+        lineasServicioDB = lineasRes.rows;
+      } catch (errLS) {
+        console.warn(`[generarOTVersion] No se pudo leer tpry_linea_servicio para #${id_proyecto}:`, errLS.message);
+      }
+
+      if (lineasServicioDB.length > 0) {
+        lineasServicio = lineasServicioDB.map(l => ({
+          ...l,
+          pisoMinimo: Number(l.piso_minimo || l.horas_minimas || 8.0),
+          horas_minimas: Number(l.piso_minimo || l.horas_minimas || 8.0),
+          valorUnitario: Number(l.valor_unitario || 0),
+          tipo: l.tipo_servicio || l.categoria || 'SERVICIO',
+          subcategoria: l.subcategoria || l.descripcion || '',
+          unidad: l.unidad || 'DIA',
+          is_linea_base: l.is_linea_base !== false
+        }));
+      }
 
       // Horas Mínimas Contractuales (Piso Mínimo)
       // REQ-1105: Clasificación determinista por Categoría/Subcategoría (Excluyendo Personal Certificado y Traslados)

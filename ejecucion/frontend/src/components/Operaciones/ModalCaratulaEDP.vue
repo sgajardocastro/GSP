@@ -468,13 +468,22 @@
 
         <!-- TABLA DE DESGLOSE DE LÍNEAS COTIZADAS Y CONCILIADAS -->
         <div class="bg-[#050810] border border-white/15 rounded-xl overflow-hidden shadow-md">
-          <div class="px-4 py-3 bg-[#080d1a] border-b border-white/10 flex justify-between items-center">
+          <div class="px-4 py-3 bg-[#080d1a] border-b border-white/10 flex flex-wrap justify-between items-center gap-2">
             <h5 class="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
               <span>📋 Detalle de Servicios & Tarifas Conciliadas</span>
             </h5>
-            <span v-if="modoAjusteTesoreria" class="text-[11px] font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded">
-              MODO EDICIÓN TESORERÍA ACTIVO
-            </span>
+            <div v-if="modoAjusteTesoreria" class="flex items-center gap-2">
+              <button
+                type="button"
+                @click="agregarItemOtrosEdp"
+                class="text-[11px] font-mono font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 rounded cursor-pointer transition-colors"
+              >
+                + Agregar Ítem Otros
+              </button>
+              <span class="text-[11px] font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded">
+                MODO EDICIÓN EDP ACTIVO
+              </span>
+            </div>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse font-sans">
@@ -483,7 +492,7 @@
                   <th class="py-2.5 px-3.5">Línea / Concepto</th>
                   <th class="py-2.5 px-3.5">Categoría</th>
                   <th class="py-2.5 px-3 text-center">Unidad</th>
-                  <th class="py-2.5 px-3 text-center">Cant.</th>
+                  <th class="py-2.5 px-3 text-center">Cant. / Hrs</th>
                   <th class="py-2.5 px-3.5 text-right">Tarifa Pactada</th>
                   <th class="py-2.5 px-3.5 text-right text-amber-400">Subtotal Neto</th>
                 </tr>
@@ -491,16 +500,42 @@
               <tbody class="divide-y divide-white/10 text-slate-200">
                 <tr v-for="(l, idx) in lineasEditables" :key="idx" class="hover:bg-white/[0.02]">
                   <td class="py-3 px-3.5 font-bold text-white">
-                    {{ l.descripcion || l.subcategoria || l.tipo }}
+                    <div v-if="modoAjusteTesoreria" class="flex items-center gap-1.5">
+                      <input
+                        v-model="l.descripcion"
+                        type="text"
+                        placeholder="Glosa / concepto de cobro..."
+                        class="w-full bg-[#080d1a] border border-amber-500/40 rounded px-2 py-1 text-white text-xs outline-none focus:border-amber-400"
+                      />
+                      <button
+                        v-if="l.es_otro_manual"
+                        type="button"
+                        @click="eliminarItemOtrosEdp(idx)"
+                        class="text-red-400 hover:text-red-300 px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/30 text-xs cursor-pointer"
+                        title="Eliminar ítem manual"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <span v-else>{{ l.descripcion || l.subcategoria || l.tipo }}</span>
                   </td>
                   <td class="py-3 px-3.5 text-slate-400 font-mono">
                     {{ l.tipo }}
                   </td>
                   <td class="py-3 px-3 text-center font-mono text-slate-300">
-                    {{ (l.tipo === 'TRASLADOS' || String(l.unidad || '').startsWith('TRASLADO')) ? (l.unidad || 'TRASLADO IDA/VUELTA') : (String(l.unidad || '').toUpperCase().includes('FIJO') ? 'Valor Fijo' : l.unidad) }}
+                    {{ obtenerUnidadMostrarUI(l) }}
                   </td>
                   <td class="py-3 px-3 text-center font-mono font-bold text-white">
-                    {{ (l.tipo === 'TRASLADOS' || String(l.unidad || '').toUpperCase().includes('FIJO') || String(l.unidad || '').startsWith('TRASLADO')) ? 1 : l.cantidad }}
+                    <input
+                      v-if="modoAjusteTesoreria && !esCobroUnicoUI(l)"
+                      v-model.number="l.cantidad_editada"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      :placeholder="String(obtenerCantidadNumericaBaseUI(l))"
+                      class="w-20 bg-[#080d1a] border border-amber-500/50 rounded px-2 py-1 text-center text-white font-mono outline-none focus:border-amber-400"
+                    />
+                    <span v-else>{{ obtenerCantidadMostrarUI(l) }}</span>
                   </td>
                   <td class="py-3 px-3.5 text-right font-mono text-slate-300">
                     <input 
@@ -512,7 +547,17 @@
                     <span v-else>{{ formatMoneda(l.valorUnitario) }}</span>
                   </td>
                   <td class="py-3 px-3.5 text-right font-mono font-bold text-amber-300">
-                    {{ formatMoneda(calcularSubtotalLinea(l)) }}
+                    <div v-if="modoAjusteTesoreria" class="flex flex-col items-end gap-0.5">
+                      <input
+                        v-model="l.subtotal_override"
+                        type="number"
+                        :placeholder="String(calcularSubtotalSinOverride(l))"
+                        title="Dejar vacío para cálculo automático o ingresar total neto directo"
+                        class="w-28 bg-[#080d1a] border border-amber-500/40 rounded px-2 py-1 text-right text-amber-300 font-mono outline-none focus:border-amber-400"
+                      />
+                      <span class="text-[10px] text-slate-400">{{ formatMoneda(calcularSubtotalLinea(l)) }}</span>
+                    </div>
+                    <span v-else>{{ formatMoneda(calcularSubtotalLinea(l)) }}</span>
                   </td>
                 </tr>
 
@@ -1269,7 +1314,7 @@ const esAdminGlobal = computed(() => {
   return email.includes('sgajardo') || email.includes('admin') || idRol === 1 || rol.includes('admin') || Boolean(u.es_admin) || Boolean(u.isAdmin)
 })
 
-// Validación de rol Pamela / Tesorería (Spec 57 / REQ-028)
+// Validación de rol Pamela / Tesorería o Control de Gestión (Yiara) (Spec 57 / SPEC-129 Acuerdo #6)
 const esPamelaTesoreria = computed(() => {
   const u = currentUser.value
   const nombre = `${u.name_frst || ''} ${u.apellido_pat || ''}`.toLowerCase()
@@ -1279,20 +1324,30 @@ const esPamelaTesoreria = computed(() => {
   return nombre.includes('pamela') || email.includes('pamela') || idRol === 33 || rol.includes('conta') || rol.includes('tesor')
 })
 
-// Permiso integral de edición (Admin o Tesorería)
+const esControlGestion = computed(() => {
+  const u = currentUser.value
+  const nombre = `${u.name_frst || ''} ${u.apellido_pat || ''}`.toLowerCase()
+  const email = (u.email || '').toLowerCase()
+  const rol = (u.name_rol || u.rol || '').toLowerCase()
+  const idRol = Number(u.id_rol)
+  return nombre.includes('yiara') || email.includes('yiara') || idRol === 35 || rol.includes('control') || rol.includes('analista')
+})
+
+// Permiso integral de edición (Admin, Tesorería o Control de Gestión — Acuerdo #6)
 const esHabilitadoEdicion = computed(() => {
-  return esAdminGlobal.value || esPamelaTesoreria.value
+  return esAdminGlobal.value || esPamelaTesoreria.value || esControlGestion.value
 })
 
 const tituloRolHabilitado = computed(() => {
   if (esAdminGlobal.value) return 'Perfil Administrador del Sistema (Sergio Gajardo)'
   if (esPamelaTesoreria.value) return 'Perfil Gerencia de Tesorería (Pamela Seguel)'
+  if (esControlGestion.value) return 'Perfil Control de Gestión (Yiara Mendoza)'
   return 'Usuario Autorizado'
 })
 
 const descripcionRolHabilitado = computed(() => {
-  if (esAdminGlobal.value) return 'Tienes acceso global de auditoría y edición para corregir tarifas, sobretiempos y aplicar notas de ajuste sobre este EDP.'
-  if (esPamelaTesoreria.value) return 'Tienes autorización exclusiva para editar tarifas pactadas, corregir sobretiempos y aplicar notas de ajuste sobre este EDP.'
+  if (esAdminGlobal.value) return 'Tienes acceso global de auditoría y edición para corregir horas, cantidades, tarifas, glosas y aplicar ítems Otros sobre este EDP.'
+  if (esPamelaTesoreria.value || esControlGestion.value) return 'Tienes autorización para ajustar horas/cantidades, tarifas, glosas, totales e ítems Otros sobre este EDP (Acuerdo #6).'
   return 'Autorizado para modificar tarifas y notas de ajuste.'
 })
 
@@ -1378,55 +1433,118 @@ const tituloPasoFirmaActual = computed(() => {
   return 'Hito 2: Contabilidad (Maritza Seguel) — Certificar Carga de Factura Laudus'
 })
 
+// Métodos y utilidades de Tarificación y Líneas EDP (SPEC-129 / SPEC-130 / Acuerdo #6 / BUG-02)
+const esCobroUnicoUI = (linea) => {
+  if (!linea) return false
+  const unidad = String(linea.unidad || '').toUpperCase()
+  const tipo = String(linea.tipo || linea.categoria || '').toUpperCase()
+  if (unidad.includes('DIARIO') || unidad.includes('SEMANAL') || unidad.includes('MENSUAL') || unidad.includes('MES') || unidad.includes('HORA') || unidad.includes('KM')) {
+    return false
+  }
+  if (unidad.includes('FIJO') || unidad.includes('ALZADA') || tipo.includes('FIJO') || tipo === 'TRASLADOS' || unidad.startsWith('TRASLADO')) {
+    return true
+  }
+  return false
+}
+
+const obtenerUnidadMostrarUI = (linea) => {
+  if (!linea) return 'Un'
+  const unidad = String(linea.unidad || '').toUpperCase()
+  const tipo = String(linea.tipo || linea.categoria || '').toUpperCase()
+  if (esCobroUnicoUI(linea)) return 'Fijo'
+  if (unidad.includes('DIARIO') || unidad.includes('DIA') || unidad.includes('JORNADA')) return 'd'
+  if (unidad.includes('MES') || unidad.includes('MENSUAL')) return 'mes'
+  if (unidad.includes('HORA') || tipo.includes('GRUA')) return 'h'
+  if (unidad.includes('KM')) return 'km'
+  return linea.unidad || 'Un'
+}
+
+const obtenerCantidadNumericaBaseUI = (linea) => {
+  if (!linea) return 1
+  if (esCobroUnicoUI(linea)) return 1
+  const unidad = String(linea.unidad || '').toUpperCase()
+  const tipo = String(linea.tipo || linea.categoria || '').toUpperCase()
+  if (unidad.includes('DIARIO') || unidad.includes('DIA') || unidad.includes('JORNADA')) {
+    return Math.max(1, props.edpData?.reports_validados?.length || Number(linea.cantidad) || 1)
+  }
+  if (unidad.includes('MES') || unidad.includes('MENSUAL')) {
+    return Number(linea.cantidad ?? 1)
+  }
+  if (unidad.includes('HORA') || tipo.includes('GRUA')) {
+    return Number(props.edpData?.resumen_financiero?.horas_facturables_totales) || (Number(linea.cantidad ?? 1) * 8)
+  }
+  if (unidad.includes('KM')) {
+    return Number(linea.cantidad ?? 1)
+  }
+  return Number(linea.cantidad ?? 1)
+}
+
+const obtenerCantidadMostrarUI = (linea) => {
+  if (!linea) return '1'
+  if (esCobroUnicoUI(linea)) return '1'
+  const cant = (linea.cantidad_editada !== undefined && linea.cantidad_editada !== null && linea.cantidad_editada !== '')
+    ? Number(linea.cantidad_editada)
+    : obtenerCantidadNumericaBaseUI(linea)
+  const u = obtenerUnidadMostrarUI(linea)
+  return `${cant} ${u}`
+}
+
 const esValorFijo = computed(() => {
   const lineas = props.edpData?.lineas_cotizadas || []
   if (lineas.length === 0) return false
-  return lineas.some(l => {
-    const u = String(l.unidad || '').toUpperCase()
+  const lineasPrimarias = lineas.filter(l => {
     const t = String(l.tipo || l.categoria || '').toUpperCase()
-    return u.includes('FIJO') || u.includes('ALZADA') || t.includes('FIJO')
+    const u = String(l.unidad || '').toUpperCase()
+    return t !== 'TRASLADOS' && !u.startsWith('TRASLADO')
   })
+  if (lineasPrimarias.length === 0) return false
+  return lineasPrimarias.some(l => esCobroUnicoUI(l))
 })
 
-const periodoArriendoTexto = computed(() => {
-  const reps = props.edpData?.reports_validados || []
-  if (reps.length > 0) {
-    const sorted = [...reps].sort((a, b) => new Date(a.fecha_reporte) - new Date(b.fecha_reporte))
-    const fMin = formatearFecha(sorted[0]?.fecha_reporte)
-    const fMax = formatearFecha(sorted[sorted.length - 1]?.fecha_reporte)
-    return fMin === fMax ? fMin : `${fMin} al ${fMax}`
+const calcularSubtotalSinOverride = (linea) => {
+  if (!linea) return 0
+  const valUnit = Number(linea.valorUnitario ?? linea.precio_unitario ?? linea.tarifa ?? 0)
+  if (esCobroUnicoUI(linea)) {
+    return Math.round(valUnit)
   }
-  const fIni = props.edpData?.proyecto?.fecha_inicio || props.edpData?.proyecto?.fecha_creacion
-  const fFin = props.edpData?.proyecto?.fecha_termino || fIni
-  return fIni ? (formatearFecha(fIni) === formatearFecha(fFin) ? formatearFecha(fIni) : `${formatearFecha(fIni)} al ${formatearFecha(fFin)}`) : '---'
-})
+  if (linea.cantidad_editada !== undefined && linea.cantidad_editada !== null && linea.cantidad_editada !== '') {
+    return Math.round(valUnit * Number(linea.cantidad_editada))
+  }
+  if (!modoAjusteTesoreria.value && linea.subtotal_calculado !== undefined && linea.subtotal_calculado !== null) {
+    return Math.round(Number(linea.subtotal_calculado))
+  }
+  const cantBase = obtenerCantidadNumericaBaseUI(linea)
+  return Math.round(valUnit * cantBase)
+}
 
 const calcularSubtotalLinea = (linea) => {
   if (!linea) return 0
-  const unidad = String(linea.unidad || '').toUpperCase()
-  const tipo = String(linea.tipo || '').toUpperCase()
-  const valUnit = Number(linea.valorUnitario ?? linea.precio_unitario ?? linea.tarifa ?? 0)
+  if (linea.subtotal_override !== undefined && linea.subtotal_override !== null && String(linea.subtotal_override).trim() !== '') {
+    return Math.round(Number(linea.subtotal_override))
+  }
+  return calcularSubtotalSinOverride(linea)
+}
 
-  // SPEC-128: Cobro único (Valor Fijo / TRASLADOS) -> 1 × valUnit
-  if (unidad.includes('FIJO') || unidad.includes('ALZADA') || tipo.includes('FIJO') || tipo === 'TRASLADOS' || unidad.startsWith('TRASLADO')) {
-    return valUnit
+const agregarItemOtrosEdp = () => {
+  if (!Array.isArray(lineasEditables.value)) {
+    lineasEditables.value = []
   }
+  lineasEditables.value.push({
+    es_otro_manual: true,
+    tipo: 'OTROS',
+    subcategoria: 'OTROS',
+    descripcion: 'Otros — Ítem Adicional',
+    unidad: 'Valor Fijo',
+    cantidad: 1,
+    valorUnitario: 0,
+    subtotal_override: ''
+  })
+}
 
-  // Si el backend ya calculó el subtotal canónico y no hay ajuste manual de tesorería, respetarlo
-  if (!modoAjusteTesoreria.value && linea.subtotal_calculado !== undefined && linea.subtotal_calculado !== null) {
-    return Number(linea.subtotal_calculado)
+const eliminarItemOtrosEdp = (idx) => {
+  if (lineasEditables.value && lineasEditables.value[idx]) {
+    lineasEditables.value.splice(idx, 1)
   }
-  const cant = Number(linea.cantidad ?? 1)
-  if (unidad.includes('DIARIO') || unidad.includes('DIA') || unidad.includes('JORNADA')) {
-    const diasFaena = Math.max(1, props.edpData?.reports_validados?.length || 1)
-    return valUnit * diasFaena * cant
-  } else if (unidad.includes('MES') || unidad.includes('MENSUAL')) {
-    return valUnit * cant
-  } else if (unidad.includes('HORA') || tipo.includes('GRUA')) {
-    const hrs = Number(props.edpData?.resumen_financiero?.horas_facturables_totales) || (cant * 8)
-    return valUnit * hrs
-  }
-  return valUnit * cant
 }
 
 const totalNetoCalculado = computed(() => {
@@ -1450,8 +1568,8 @@ watch(() => props.edpData, (nuevo) => {
   }
   const ajustesPrevios = nuevo?.proyecto?.json_field?.edp_ajustes_v1
   if (ajustesPrevios) {
-    descuentoTesoreria.value = Number(ajustesPrevios.descuento_global) || 0
-    motivoDescuentoTesoreria.value = ajustesPrevios.motivo_ajuste || ''
+    descuentoTesoreria.value = Number(ajustesPrevios.descuento_global ?? ajustesPrevios.descuento_tesoreria) || 0
+    motivoDescuentoTesoreria.value = ajustesPrevios.motivo_ajuste || ajustesPrevios.motivo_descuento || ''
     if (Array.isArray(ajustesPrevios.lineas_ajustadas) && ajustesPrevios.lineas_ajustadas.length > 0) {
       lineasEditables.value = JSON.parse(JSON.stringify(ajustesPrevios.lineas_ajustadas))
     }
@@ -1516,19 +1634,59 @@ const toggleModoAjusteTesoreria = () => {
   modoAjusteTesoreria.value = !modoAjusteTesoreria.value
 }
 
-// Guardar ajustes de Tesorería o Administrador (Spec 57 / Spec 59)
+// Guardar ajustes de Tesorería o Administrador (Spec 57 / Spec 59 / SPEC-129 Acuerdo #6)
 const guardarAjustesTesoreria = async () => {
   const idProyecto = props.edpData?.proyecto?.id_proyecto || props.edpData?.id_proyecto
   if (!idProyecto) return
 
   guardandoAjustes.value = true
   try {
+    const tarifasEditadas = {}
+    const cantidadesEditadas = {}
+    const totalesEditados = {}
+    const glosasEditadas = {}
+    const otrosItems = []
+
+    for (let idx = 0; idx < (lineasEditables.value || []).length; idx++) {
+      const l = lineasEditables.value[idx]
+      if (l.es_otro_manual) {
+        otrosItems.push({
+          ...l,
+          monto_subtotal: calcularSubtotalLinea(l)
+        })
+        continue
+      }
+      const k = l.id_linea || l.id_linea_servicio || `idx_${idx}`
+      const tarVal = Number(l.valorUnitario ?? l.precio_unitario ?? 0)
+      tarifasEditadas[k] = tarVal
+      tarifasEditadas[idx] = tarVal
+      if (l.cantidad_editada !== undefined && l.cantidad_editada !== null && l.cantidad_editada !== '') {
+        cantidadesEditadas[k] = Number(l.cantidad_editada)
+        cantidadesEditadas[idx] = Number(l.cantidad_editada)
+      }
+      if (l.subtotal_override !== undefined && l.subtotal_override !== null && String(l.subtotal_override).trim() !== '') {
+        totalesEditados[k] = Number(l.subtotal_override)
+        totalesEditados[idx] = Number(l.subtotal_override)
+      }
+      if (l.descripcion) {
+        glosasEditadas[k] = l.descripcion
+        glosasEditadas[idx] = l.descripcion
+      }
+    }
+
     const { data } = await apiAxios.post('/operaciones/edp/ajustes-tesoreria', {
       id_proyecto: idProyecto,
       id_user: currentUser.value.id_user || 1,
       lineas_ajustadas: lineasEditables.value,
-      descuento_global: descuentoTesoreria.value,
-      motivo_ajuste: motivoDescuentoTesoreria.value
+      tarifas_editadas: tarifasEditadas,
+      cantidades_editadas: cantidadesEditadas,
+      totales_editados: totalesEditados,
+      glosas_editadas: glosasEditadas,
+      otros_items: otrosItems,
+      descuento_global: Number(descuentoTesoreria.value) || 0,
+      descuento_tesoreria: Number(descuentoTesoreria.value) || 0,
+      motivo_ajuste: motivoDescuentoTesoreria.value || '',
+      motivo_descuento: motivoDescuentoTesoreria.value || ''
     })
     if (data?.success) {
       alert(`✅ ${data.message || 'Ajustes de tarifas y descuentos guardados exitosamente.'}`)

@@ -1,5 +1,6 @@
 const surveyModel = require("../models/surveyModel");
 const survey = new surveyModel();
+const pool = require("../config/postgresPool");
 const { crearConsentimientoEnrolamiento } = require("../services/enrolamientoService");
 
 module.exports = {
@@ -31,6 +32,27 @@ module.exports = {
       } = req.body;
       const id_personalizado = req.body.id_personalizado ?? null;
 
+      // SPEC-129 Acuerdo #2: Validación y persistencia de costo de visita técnica ($0 exige autorizador)
+      let finalHeaderExec = header_exec;
+      if (req.body.costo_visita !== undefined) {
+        const costoVisita = Number(req.body.costo_visita || 0);
+        const idAutorizador = req.body.id_user_autorizador ? Number(req.body.id_user_autorizador) : null;
+        const nomAutorizador = req.body.nombre_autorizador ? String(req.body.nombre_autorizador).trim() : null;
+        if (costoVisita === 0 && !idAutorizador && !nomAutorizador) {
+          return res.status(400).json({
+            success: false,
+            error: "Toda visita técnica con costo $0 requiere indicar quién autoriza la exención de cobro (ej. Omar Ghisellini)."
+          });
+        }
+        const baseHeader = (typeof header_exec === "object" && header_exec !== null) ? header_exec : {};
+        finalHeaderExec = {
+          ...baseHeader,
+          costo_visita: costoVisita,
+          id_user_autorizador: idAutorizador,
+          nombre_autorizador: nomAutorizador
+        };
+      }
+
       const idSurvey = await survey.postSurvey({
         id_tipo_srv,
         id_template,
@@ -41,7 +63,7 @@ module.exports = {
         header_seed,
         body_seed,
         approval_seed,
-        header_exec,
+        header_exec: finalHeaderExec,
         body_exec,
         approval_exec,
         fecha_plan_ini,
@@ -56,6 +78,26 @@ module.exports = {
         id_personalizado,
         id_survey_padre: id_survey_padre ?? null,
       });
+
+      if (id_proyecto && req.body.costo_visita !== undefined) {
+        try {
+          const vtObj = {
+            id_survey: idSurvey,
+            costo_visita: Number(req.body.costo_visita || 0),
+            id_user_autorizador: req.body.id_user_autorizador ? Number(req.body.id_user_autorizador) : null,
+            nombre_autorizador: req.body.nombre_autorizador || null,
+            fecha_registro: new Date().toISOString()
+          };
+          await pool.query(
+            `UPDATE tpry_proyecto
+             SET json_field = jsonb_set(COALESCE(json_field, '{}'::jsonb), '{visita_tecnica_v1}', $1::jsonb, true)
+             WHERE id_proyecto = $2`,
+            [JSON.stringify(vtObj), Number(id_proyecto)]
+          );
+        } catch (vtErr) {
+          console.warn("[postSurvey] No se pudo sincronizar visita_tecnica_v1:", vtErr.message);
+        }
+      }
 
       res.status(201).json({ message: "Survey creado correctamente", idSurvey });
     } catch (err) {

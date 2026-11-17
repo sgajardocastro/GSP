@@ -65,6 +65,18 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-slate-300"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span>+ Profesional</span>
           </button>
+
+          <!-- 5. INTERNAS (SPEC-129 5.0: $0 Comercial / Solo Control de Costos) -->
+          <button
+            type="button"
+            @click="agregarServicio('INTERNAS')"
+            :disabled="disabled"
+            class="field-input px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-slate-800/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all border-slate-600/80 text-slate-300"
+            title="Añadir OT Interna GSP ($0 Comercial / Solo Control de Costos)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="text-cyan-400"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            <span>+ Internas</span>
+          </button>
         </div>
       </div>
 
@@ -406,7 +418,10 @@
 
                 <!-- Tarifa Unitario Primario (Oculto en Operaciones) -->
                 <td v-if="!ocultarPrecios" class="py-2 px-2.5">
-                  <div class="relative">
+                  <div v-if="srv.linea_servicio === 'INTERNAS'" class="px-2.5 py-1.5 rounded text-xs text-right font-mono font-semibold select-none bg-cyan-950/30 text-cyan-300 border border-cyan-700/40" title="OT Interna GSP: $0 Comercial / Solo Control de Costos">
+                    $0 (Interna)
+                  </div>
+                  <div v-else class="relative">
                     <span class="absolute left-2 top-1.5 text-xs pointer-events-none text-slate-400">$</span>
                     <input
                       type="text"
@@ -446,8 +461,43 @@
                     <span class="text-xs font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                       Traslado
                     </span>
+                    <span v-if="Number(rama.valor_unitario || 0) === 0" class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                      Incluido ($0)
+                    </span>
                     <span v-if="esRamaAgregada(srv, rama)" class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
                       + Agregado en Operaciones
+                    </span>
+                  </div>
+
+                  <!-- Rama Accesorio (SPEC-129 1.10.M: Balancín / Canastillo / Jib / Estrobos) -->
+                  <div v-else-if="rama.rol === 'Accesorio'" class="flex items-center gap-2">
+                    <span class="text-xs font-medium px-2 py-0.5 rounded flex-shrink-0 bg-indigo-950/60 text-indigo-300 border border-indigo-700/60">
+                      Accesorio
+                    </span>
+                    <select
+                      v-model="rama.recurso"
+                      @change="onAccesorioRamaChange(rama)"
+                      :disabled="disabled"
+                      class="field-input flex-1 min-w-0 px-2 py-1.5 text-xs font-medium cursor-pointer"
+                    >
+                      <option value="BALANCIN / SPREADER">BALANCIN / SPREADER</option>
+                      <option value="CANASTILLO CERTIFICADO">CANASTILLO CERTIFICADO</option>
+                      <option value="JIB / PLUMIN">JIB / PLUMIN</option>
+                      <option value="APAREJOS ESPECIALES">APAREJOS ESPECIALES</option>
+                      <option value="OTRO ACCESORIO">OTRO ACCESORIO</option>
+                    </select>
+                    <span v-if="Number(rama.valor_unitario || 0) === 0" class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex-shrink-0">
+                      Incluido ($0)
+                    </span>
+                  </div>
+
+                  <!-- Rama Otros (SPEC-129 4.8.M) -->
+                  <div v-else-if="rama.rol === 'Otros'" class="flex items-center gap-2 py-1">
+                    <span class="text-xs font-medium px-2 py-0.5 rounded bg-amber-950/50 text-amber-300 border border-amber-700/50">
+                      Otros
+                    </span>
+                    <span v-if="esRamaAgregada(srv, rama)" class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                      + Agregado
                     </span>
                   </div>
 
@@ -473,6 +523,9 @@
                         {{ cargo.nombre_subcategoria }}
                       </option>
                     </select>
+                    <span v-if="Number(rama.valor_unitario || 0) === 0" class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex-shrink-0" title="Incluido en Tarifa ($0)">
+                      Incluido ($0)
+                    </span>
                   </div>
                 </td>
 
@@ -801,15 +854,10 @@ const UNIDADES_POR_CONTEXTO = {
     'Horas Diarias Minimas',
     'Valor Fijo',
     'Valor Fijo Diario',
-    'Valor Fijo Semanal',
-    'Horas Mes Minimas',
-    'Valor Fijo Mensual',
-    'Hora Efectiva'
+    'Horas Mes Minimas'
   ],
   RENTAL_PRIMARIO: [
     'Valor Fijo Mensual',
-    'Horas Mes Minimas',
-    'Valor Fijo Semanal',
     'Valor Fijo Diario'
   ],
   TRANSPORTE_PRIMARIO: [
@@ -823,10 +871,11 @@ const UNIDADES_POR_CONTEXTO = {
   PROFESIONAL_PRIMARIO: [
     'Valor Fijo',
     'Valor Fijo Diario',
-    'Horas Diarias Minimas',
     'Hora Efectiva',
-    'Valor Fijo Semanal',
     'Valor Fijo Mensual'
+  ],
+  INTERNAS_PRIMARIO: [
+    'Valor Fijo'
   ],
   RAMA_TRASLADO: [
     'Traslado Ida/Vuelta',
@@ -838,9 +887,16 @@ const UNIDADES_POR_CONTEXTO = {
     'Valor Fijo',
     'Valor Fijo Diario',
     'Horas Diarias Minimas',
-    'Hora Efectiva',
-    'Valor Fijo Semanal',
     'Valor Fijo Mensual'
+  ],
+  RAMA_ACCESORIO: [
+    'Valor Fijo',
+    'Valor Fijo Diario',
+    'Hora Efectiva'
+  ],
+  RAMA_OTROS: [
+    'Valor Fijo',
+    'Valor Fijo Diario'
   ]
 }
 
@@ -848,7 +904,8 @@ const LINEA_LABELS = {
   IZAJE: 'Izaje',
   RENTAL: 'Rental',
   TRANSPORTE: 'Transporte',
-  PROFESIONAL: 'Profesional'
+  PROFESIONAL: 'Profesional',
+  INTERNAS: 'Internas'
 }
 
 // Opciones de Personal Certificado (Cat 151) derivadas directamente de BD
@@ -872,12 +929,12 @@ const listaPersonalOpciones = computed(() => {
   ]
 })
 
-// Catálogo Relacional Dinámico 100% derivado de props.dbCategories y BD real (SPEC-130)
+// Catálogo Relacional Dinámico 100% derivado de props.dbCategories y BD real (SPEC-130 / SPEC-129)
 const catalogoEquiposPorLinea = computed(() => {
   const cats = Array.isArray(props.dbCategories) ? props.dbCategories : []
   const getCat = (id) => cats.find(c => Number(c.id_categoria) === Number(id))
 
-  // 1. RENTAL: id_categoria = 102 ('PLATAFORMAS') -> subcats reales (111, 126, 130, 131, 134, 150)
+  // 1. RENTAL: id_categoria = 102 ('PLATAFORMAS') + Horquillas (65) y Manipuladores (70) en Dry-Lease sin operador (SPEC-129 2.1.M)
   const catRental = getCat(102)
   const rentalItems = (catRental?.subcategories || []).map(s => ({
     id_categoria: 102,
@@ -895,6 +952,54 @@ const catalogoEquiposPorLinea = computed(() => {
   const catCamiones = getCat(62)
   const catHorquilla = getCat(65)
   const catManipulador = getCat(70)
+
+  const rentalGrupos = []
+  if (rentalItems.length > 0) {
+    rentalGrupos.push({
+      grupo: catRental?.nombre_categoria || 'Plataformas de Trabajo en Altura',
+      items: rentalItems
+    })
+  } else {
+    rentalGrupos.push({
+      grupo: 'Plataformas de Trabajo en Altura',
+      items: [
+        { id_categoria: 102, nombre_categoria: 'PLATAFORMAS', id_subcategoria: 134, nombre_subcategoria: 'PLATAFORMA TIJERA ELECTRICA' },
+        { id_categoria: 102, nombre_categoria: 'PLATAFORMAS', id_subcategoria: 130, nombre_subcategoria: 'BRAZO ARTICULADO DIESEL' }
+      ]
+    })
+  }
+  if (catHorquilla && Array.isArray(catHorquilla.subcategories) && catHorquilla.subcategories.length > 0) {
+    rentalGrupos.push({
+      grupo: 'Grúas Horquilla (Dry-Lease Sin Operador)',
+      items: catHorquilla.subcategories.map(s => ({
+        id_categoria: 65,
+        nombre_categoria: catHorquilla.nombre_categoria,
+        id_subcategoria: Number(s.id_subcategoria),
+        nombre_subcategoria: s.nombre_subcategoria
+      }))
+    })
+  } else {
+    rentalGrupos.push({
+      grupo: 'Grúas Horquilla (Dry-Lease Sin Operador)',
+      items: [{ id_categoria: 65, nombre_categoria: 'GRUA HORQUILLA', id_subcategoria: 74, nombre_subcategoria: 'GRUA HORQUILLA' }]
+    })
+  }
+  if (catManipulador && Array.isArray(catManipulador.subcategories) && catManipulador.subcategories.length > 0) {
+    rentalGrupos.push({
+      grupo: 'Manipuladores Telescópicos (Dry-Lease Sin Operador)',
+      items: catManipulador.subcategories.map(s => ({
+        id_categoria: 70,
+        nombre_categoria: catManipulador.nombre_categoria,
+        id_subcategoria: Number(s.id_subcategoria),
+        nombre_subcategoria: s.nombre_subcategoria
+      }))
+    })
+  } else {
+    rentalGrupos.push({
+      grupo: 'Manipuladores Telescópicos (Dry-Lease Sin Operador)',
+      items: [{ id_categoria: 70, nombre_categoria: 'MANIPULADOR TELESCOPICO', id_subcategoria: 79, nombre_subcategoria: 'MANIPULADOR TELESCOPICO' }]
+    })
+  }
 
   const izajeGrupos = []
   if (catGruas && Array.isArray(catGruas.subcategories) && catGruas.subcategories.length > 0) {
@@ -984,9 +1089,10 @@ const catalogoEquiposPorLinea = computed(() => {
 
   return {
     IZAJE: izajeGrupos,
-    RENTAL: rentalItems.length > 0 ? [{ grupo: catRental?.nombre_categoria || 'Plataformas de Trabajo en Altura', items: rentalItems }] : [],
+    RENTAL: rentalGrupos,
     TRANSPORTE: transporteGrupos,
-    PROFESIONAL: profesionalGrupos
+    PROFESIONAL: profesionalGrupos,
+    INTERNAS: [...izajeGrupos, ...transporteGrupos]
   }
 })
 
@@ -1043,7 +1149,8 @@ const getSufijoUnidad = (u) => {
     'Hora Efectiva': 'hrs',
     'Valor Fijo Diario': 'días',
     'Valor Fijo Semanal': 'sem',
-    'Valor Fijo Mensual': 'mes'
+    'Valor Fijo Mensual': 'mes',
+    'Tarifa por Km': 'km'
   }
   return map[u] || 'unid'
 }
@@ -1103,6 +1210,12 @@ const getUnidadesDisponibles = (srv, rama = null) => {
   }
   if (rama.rol === 'Traslado') {
     return UNIDADES_POR_CONTEXTO.RAMA_TRASLADO
+  }
+  if (rama.rol === 'Accesorio') {
+    return UNIDADES_POR_CONTEXTO.RAMA_ACCESORIO
+  }
+  if (rama.rol === 'Otros') {
+    return UNIDADES_POR_CONTEXTO.RAMA_OTROS
   }
   return UNIDADES_POR_CONTEXTO.RAMA_PERSONAL
 }
@@ -1171,7 +1284,9 @@ const seleccionarEquipoPrimario = (it) => {
     srv.primario.subcategoria = it.nombre_subcategoria
     srv.primario.recurso = it.nombre_subcategoria
     if (!srv.primario.descripcion || srv.primario.descripcion.startsWith('Servicio de ')) {
-      srv.primario.descripcion = `Servicio de ${it.nombre_subcategoria}`
+      srv.primario.descripcion = srv.linea_servicio === 'INTERNAS'
+        ? `OT Interna — ${it.nombre_subcategoria}`
+        : `Servicio de ${it.nombre_subcategoria}`
     }
   }
   cerrarTodosPopovers()
@@ -1186,7 +1301,8 @@ const getAddMenuItems = (srv) => {
   const botonesPorLinea = {
     IZAJE: [
       { key: 'TRASLADO_IDA_VUELTA', label: 'Traslado' },
-      { key: 'PERSONAL_RIGGER', label: 'Personal (Rigger / Operador)' }
+      { key: 'PERSONAL_RIGGER', label: 'Personal (Rigger / Operador)' },
+      { key: 'ACCESORIO_IZAJE', label: 'Accesorio (Balancín / Canastillo / Jib)' }
     ],
     RENTAL: [
       { key: 'FLETE_IDA', label: 'Flete Entrega (Ida)' },
@@ -1198,7 +1314,12 @@ const getAddMenuItems = (srv) => {
     ],
     PROFESIONAL: [
       { key: 'TRASLADO_PERSONAL', label: 'Traslado' },
-      { key: 'PERSONAL_EXTRA', label: 'Personal Adicional' }
+      { key: 'PERSONAL_EXTRA', label: 'Personal Adicional' },
+      { key: 'OTROS_ITEM', label: 'Otros (Insumos / Acreditación)' }
+    ],
+    INTERNAS: [
+      { key: 'TRASLADO_IDA_VUELTA', label: 'Traslado Interno ($0)' },
+      { key: 'PERSONAL_RIGGER', label: 'Personal Apoyo Interno ($0)' }
     ]
   }
   return botonesPorLinea[srv.linea_servicio] || botonesPorLinea.IZAJE
@@ -1356,6 +1477,20 @@ const agregarServicio = (linea) => {
         dias: 1, horas_min: 8, meses: 1, cantidad: 1,
         valor_unitario: 18000
       }
+    },
+    INTERNAS: {
+      titulo: 'OT Interna GSP (Control Operacional)',
+      primario: {
+        id_categoria: idCat,
+        id_subcategoria: idSubcat,
+        tipo: nomTipo,
+        subcategoria: nomRecurso,
+        recurso: nomRecurso,
+        descripcion: `OT Interna — ${nomRecurso} (Sin cobro comercial)`,
+        unidad: 'Valor Fijo',
+        dias: 1, horas_min: 0, meses: 1, cantidad: 1,
+        valor_unitario: 0
+      }
     }
   }
 
@@ -1427,12 +1562,28 @@ const agregarRama = (srvIdx, recetaKey) => {
       subcategoria: 'RIGGER',
       recurso: 'RIGGER',
       descripcion: 'Servicio de Rigger en obra',
-      unidad: 'Horas Diarias Minimas',
+      unidad: srv.linea_servicio === 'INTERNAS' ? 'Valor Fijo' : 'Horas Diarias Minimas',
       cantidad: 1,
       dias: srv.primario?.dias || srv.primario?.cantidad_dias || 1,
       horas_min: srv.primario?.horas_min || srv.primario?.cantidad_horas || 8,
       meses: 1,
-      valor_unitario: 18000
+      valor_unitario: srv.linea_servicio === 'INTERNAS' ? 0 : 18000
+    },
+    ACCESORIO_IZAJE: {
+      rol: 'Accesorio',
+      rol_arbol: 'ACCESORIO',
+      id_categoria: 40,
+      id_subcategoria: 999,
+      tipo: 'ACCESORIO',
+      subcategoria: 'BALANCIN / SPREADER',
+      recurso: 'BALANCIN / SPREADER',
+      descripcion: 'Accesorio de izaje (Balancín / Spreader)',
+      unidad: 'Valor Fijo',
+      cantidad: 1,
+      dias: srv.primario?.dias || srv.primario?.cantidad_dias || 1,
+      horas_min: 0,
+      meses: 1,
+      valor_unitario: 0
     },
     FLETE_IDA: {
       rol: 'Traslado',
@@ -1445,7 +1596,7 @@ const agregarRama = (srvIdx, recetaKey) => {
       descripcion: 'Flete de entrega inicial en obra',
       unidad: 'Traslado Ida',
       cantidad: 1, dias: 1, horas_min: 0, meses: 1,
-      valor_unitario: 95000
+      valor_unitario: 0
     },
     FLETE_VUELTA: {
       rol: 'Traslado',
@@ -1458,7 +1609,7 @@ const agregarRama = (srvIdx, recetaKey) => {
       descripcion: 'Flete de retiro desde obra',
       unidad: 'Traslado Vuelta',
       cantidad: 1, dias: 1, horas_min: 0, meses: 1,
-      valor_unitario: 95000
+      valor_unitario: 0
     },
     TRASLADO_VUELTA: {
       rol: 'Traslado',
@@ -1509,6 +1660,19 @@ const agregarRama = (srvIdx, recetaKey) => {
       recurso: 'OPERADOR',
       descripcion: 'Servicio de Operador en obra',
       unidad: 'Valor Fijo Diario',
+      cantidad: 1, dias: 1, horas_min: 0, meses: 1,
+      valor_unitario: 0
+    },
+    OTROS_ITEM: {
+      rol: 'Otros',
+      rol_arbol: 'OTROS',
+      id_categoria: 151,
+      id_subcategoria: 163,
+      tipo: 'OTROS',
+      subcategoria: 'OTROS',
+      recurso: 'OTROS',
+      descripcion: 'Ítem adicional complementario',
+      unidad: 'Valor Fijo',
       cantidad: 1, dias: 1, horas_min: 0, meses: 1,
       valor_unitario: 0
     }
@@ -1580,6 +1744,15 @@ const onCargoRamaSubcatChange = (rama) => {
     if (!rama.descripcion || rama.descripcion.startsWith('Servicio de ')) {
       rama.descripcion = `Servicio de ${sub.nombre_subcategoria} en obra`
     }
+  }
+  sincronizarYProyectar()
+}
+
+const onAccesorioRamaChange = (rama) => {
+  rama.subcategoria = rama.recurso
+  rama.tipo = 'ACCESORIO'
+  if (!rama.descripcion || rama.descripcion.startsWith('Accesorio de izaje')) {
+    rama.descripcion = `Accesorio de izaje (${rama.recurso})`
   }
   sincronizarYProyectar()
 }
@@ -1667,12 +1840,21 @@ const onTarifaInput = (ev, nodo) => {
 // =========================================================================
 // 8. DUAL-WRITE: PROYECCIÓN APLANADA HACIA lines Y ÁRBOL HACIA servicios
 // =========================================================================
+const resolverTipoOtLinea = (linea) => {
+  if (linea === 'TRANSPORTE') return 'OT-FLETE'
+  if (linea === 'RENTAL') return 'OT-RENTAL'
+  if (linea === 'PROFESIONAL') return 'OT-STAFF'
+  if (linea === 'INTERNAS') return 'OT-INTERNA'
+  return 'OT-MANIOBRA'
+}
+
 const sincronizarYProyectar = () => {
   isInternalSyncing.value = true
   const flatLines = []
 
   localServicios.value.forEach(srv => {
     let subtotalSrv = 0
+    const esInterna = srv.linea_servicio === 'INTERNAS'
 
     // 1. Proyectar Nodo Primario
     if (srv.primario) {
@@ -1682,7 +1864,7 @@ const sincronizarYProyectar = () => {
       p.id_padre = null
       p.rol_arbol = 'PRIMARIO'
       p.linea_servicio = srv.linea_servicio
-      p.tipo_ot = srv.linea_servicio === 'TRANSPORTE' ? 'OT-FLETE' : srv.linea_servicio === 'RENTAL' ? 'OT-RENTAL' : srv.linea_servicio === 'PROFESIONAL' ? 'OT-STAFF' : 'OT-MANIOBRA'
+      p.tipo_ot = resolverTipoOtLinea(srv.linea_servicio)
 
       // Clasificación canónica de categoría/tipo para BD
       if (srv.linea_servicio === 'PROFESIONAL') {
@@ -1692,24 +1874,30 @@ const sincronizarYProyectar = () => {
         p.tipo = 'CAMIONES'
         p.subcategoria = p.recurso
       } else if (srv.linea_servicio === 'RENTAL') {
-        p.tipo = String(p.recurso).includes('Tijera') ? 'PLATAFORMAS TIJERA' : 'ALZA HOMBRES'
+        const recUp = String(p.recurso || '').toUpperCase()
+        if (recUp.includes('HORQUILLA')) p.tipo = 'GRUA HORQUILLA'
+        else if (recUp.includes('MANIPULADOR')) p.tipo = 'MANIPULADORES'
+        else if (String(p.recurso).includes('Tijera')) p.tipo = 'PLATAFORMAS TIJERA'
+        else p.tipo = 'ALZA HOMBRES'
         p.subcategoria = p.recurso
       } else {
-        // IZAJE
-        if (String(p.recurso).includes('Horquilla')) p.tipo = 'GRUA HORQUILLA'
-        else if (String(p.recurso).includes('Manipulador')) p.tipo = 'MANIPULADORES'
-        else if (String(p.recurso).includes('Camión Pluma')) p.tipo = 'CAMIONES'
+        // IZAJE o INTERNAS
+        if (String(p.recurso).includes('Horquilla') || String(p.recurso).toUpperCase().includes('HORQUILLA')) p.tipo = 'GRUA HORQUILLA'
+        else if (String(p.recurso).includes('Manipulador') || String(p.recurso).toUpperCase().includes('MANIPULADOR')) p.tipo = 'MANIPULADORES'
+        else if (String(p.recurso).includes('Camión Pluma') || String(p.recurso).toUpperCase().includes('PLUMA')) p.tipo = 'CAMIONES'
+        else if (Number(p.id_categoria) === 62) p.tipo = 'CAMIONES'
         else p.tipo = 'GRUAS TELESCOPICAS'
         p.subcategoria = p.recurso
       }
 
-      p.valor_unitario = Number(p.valor_unitario !== undefined ? p.valor_unitario : p.valorUnitario) || 0
+      p.valor_unitario = esInterna ? 0 : (Number(p.valor_unitario !== undefined ? p.valor_unitario : p.valorUnitario) || 0)
       p.valorUnitario = p.valor_unitario
-      p.subtotal = calcularSubtotalNodo(p)
+      p.subtotal = esInterna ? 0 : calcularSubtotalNodo(p)
       subtotalSrv += p.subtotal
 
       flatLines.push({
         id_linea: p.id_linea,
+        id_linea_servicio: p.id_linea_servicio ? Number(p.id_linea_servicio) : (srv.id_linea_servicio ? Number(srv.id_linea_servicio) : null),
         id_servicio: srv.id_servicio,
         id_padre: null,
         rol_arbol: 'PRIMARIO',
@@ -1730,6 +1918,12 @@ const sincronizarYProyectar = () => {
         valor_unitario: p.valor_unitario,
         valorUnitario: p.valor_unitario,
         subtotal: p.subtotal,
+        equipo_asignado_id: p.equipo_asignado_id || srv.equipo_asignado_id || null,
+        operador_asignado_id: p.operador_asignado_id || srv.operador_asignado_id || null,
+        rigger_asignado_id: p.rigger_asignado_id || srv.rigger_asignado_id || null,
+        turnos_operadores: Array.isArray(p.turnos_operadores) ? p.turnos_operadores : (Array.isArray(srv.turnos_operadores) ? srv.turnos_operadores : undefined),
+        fecha_plan_ini: p.fecha_plan_ini || srv.fecha_plan_ini || null,
+        fecha_plan_fin: p.fecha_plan_fin || srv.fecha_plan_fin || null,
         is_linea_base: true
       })
     }
@@ -1741,7 +1935,7 @@ const sincronizarYProyectar = () => {
         rama.id_servicio = srv.id_servicio
         rama.id_padre = srv.primario?.id_linea || null
         rama.linea_servicio = srv.linea_servicio
-        rama.tipo_ot = srv.linea_servicio === 'TRANSPORTE' ? 'OT-FLETE' : srv.linea_servicio === 'RENTAL' ? 'OT-RENTAL' : srv.linea_servicio === 'PROFESIONAL' ? 'OT-STAFF' : 'OT-MANIOBRA'
+        rama.tipo_ot = resolverTipoOtLinea(srv.linea_servicio)
 
         if (rama.rol === 'Traslado') {
           rama.rol_arbol = 'TRASLADO'
@@ -1749,6 +1943,18 @@ const sincronizarYProyectar = () => {
           rama.subcategoria = rama.subcategoria || 'MOVILIZACIÓN GRÚA'
           rama.id_categoria = rama.id_categoria || 99
           rama.id_subcategoria = rama.id_subcategoria || 901
+        } else if (rama.rol === 'Accesorio') {
+          rama.rol_arbol = 'ACCESORIO'
+          rama.tipo = 'ACCESORIO'
+          rama.subcategoria = rama.recurso || rama.subcategoria || 'BALANCIN / SPREADER'
+          rama.id_categoria = rama.id_categoria || 40
+          rama.id_subcategoria = rama.id_subcategoria || 999
+        } else if (rama.rol === 'Otros') {
+          rama.rol_arbol = 'OTROS'
+          rama.tipo = 'OTROS'
+          rama.subcategoria = rama.recurso || 'OTROS'
+          rama.id_categoria = rama.id_categoria || 151
+          rama.id_subcategoria = rama.id_subcategoria || 163
         } else {
           rama.rol_arbol = 'PERSONAL'
           rama.tipo = 'PERSONAL CERTIFICADO'
@@ -1760,13 +1966,14 @@ const sincronizarYProyectar = () => {
           rama.subcategoria = rama.recurso
         }
 
-        rama.valor_unitario = Number(rama.valor_unitario !== undefined ? rama.valor_unitario : rama.valorUnitario) || 0
+        rama.valor_unitario = esInterna ? 0 : (Number(rama.valor_unitario !== undefined ? rama.valor_unitario : rama.valorUnitario) || 0)
         rama.valorUnitario = rama.valor_unitario
-        rama.subtotal = calcularSubtotalNodo(rama)
+        rama.subtotal = esInterna ? 0 : calcularSubtotalNodo(rama)
         subtotalSrv += rama.subtotal
 
         flatLines.push({
           id_linea: rama.id_linea,
+          id_linea_servicio: rama.id_linea_servicio ? Number(rama.id_linea_servicio) : null,
           id_servicio: srv.id_servicio,
           id_padre: srv.primario?.id_linea || null,
           rol_arbol: rama.rol_arbol,
@@ -1787,6 +1994,10 @@ const sincronizarYProyectar = () => {
           valor_unitario: rama.valor_unitario,
           valorUnitario: rama.valor_unitario,
           subtotal: rama.subtotal,
+          equipo_asignado_id: rama.equipo_asignado_id || null,
+          operador_asignado_id: rama.operador_asignado_id || null,
+          fecha_plan_ini: rama.fecha_plan_ini || null,
+          fecha_plan_fin: rama.fecha_plan_fin || null,
           is_linea_base: true
         })
       })
@@ -1849,7 +2060,7 @@ const hidratarArbolDesdeLineasPlanas = (lineasPlanas) => {
   lineasPlanas.forEach(l => {
     const idSrv = l.id_servicio || `srv_${l.id_linea || Math.random().toString(36).substring(2, 7)}`
     if (!serviciosMap.has(idSrv)) {
-      const lineaSrv = l.linea_servicio || (String(l.unidad).includes('MES') ? 'RENTAL' : String(l.tipo).includes('CAMION') ? 'TRANSPORTE' : 'IZAJE')
+      const lineaSrv = l.linea_servicio || (l.tipo_ot === 'OT-INTERNA' ? 'INTERNAS' : String(l.unidad).includes('MES') ? 'RENTAL' : String(l.tipo).includes('CAMION') ? 'TRANSPORTE' : 'IZAJE')
       serviciosMap.set(idSrv, {
         id_servicio: idSrv,
         linea_servicio: lineaSrv,
@@ -1864,13 +2075,22 @@ const hidratarArbolDesdeLineasPlanas = (lineasPlanas) => {
     const srv = serviciosMap.get(idSrv)
     const esPrimario = l.rol_arbol === 'PRIMARIO' || (!l.id_padre && !srv.primario)
     const { id_categoria, id_subcategoria } = resolverIdsRelacionales(l)
+    const rolArbolInf = esPrimario ? 'PRIMARIO' : (l.rol_arbol || 'TRASLADO')
+    const rolUI = (rolArbolInf === 'ACCESORIO' || String(l.tipo).toUpperCase() === 'ACCESORIO')
+      ? 'Accesorio'
+      : (rolArbolInf === 'OTROS' || String(l.tipo).toUpperCase() === 'OTROS')
+        ? 'Otros'
+        : (rolArbolInf === 'PERSONAL' || String(l.tipo).includes('PERSONAL'))
+          ? 'Personal'
+          : 'Traslado'
 
     const nodoNormalizado = {
       id_linea: l.id_linea || genId('lin'),
+      id_linea_servicio: l.id_linea_servicio ? Number(l.id_linea_servicio) : null,
       id_servicio: idSrv,
       id_padre: l.id_padre || null,
-      rol_arbol: esPrimario ? 'PRIMARIO' : (l.rol_arbol || 'TRASLADO'),
-      rol: (l.rol_arbol === 'PERSONAL' || String(l.tipo).includes('PERSONAL')) ? 'Personal' : 'Traslado',
+      rol_arbol: rolArbolInf,
+      rol: rolUI,
       id_categoria: id_categoria,
       id_subcategoria: id_subcategoria,
       tipo: l.tipo || '',
@@ -1888,6 +2108,12 @@ const hidratarArbolDesdeLineasPlanas = (lineasPlanas) => {
       cantidad: Number(l.cantidad) || 1,
       valor_unitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0,
       valorUnitario: Number(l.valor_unitario !== undefined ? l.valor_unitario : l.valorUnitario) || 0,
+      equipo_asignado_id: l.equipo_asignado_id || null,
+      operador_asignado_id: l.operador_asignado_id || null,
+      rigger_asignado_id: l.rigger_asignado_id || null,
+      turnos_operadores: Array.isArray(l.turnos_operadores) ? l.turnos_operadores : undefined,
+      fecha_plan_ini: l.fecha_plan_ini || null,
+      fecha_plan_fin: l.fecha_plan_fin || null,
       subtotal: 0
     }
 
@@ -1895,6 +2121,7 @@ const hidratarArbolDesdeLineasPlanas = (lineasPlanas) => {
 
     if (esPrimario) {
       srv.primario = nodoNormalizado
+      if (nodoNormalizado.id_linea_servicio) srv.id_linea_servicio = nodoNormalizado.id_linea_servicio
     } else {
       srv.ramas.push(nodoNormalizado)
     }
@@ -1926,6 +2153,7 @@ const cargarArbol = () => {
     })
   } else if (Array.isArray(props.lines) && props.lines.length > 0) {
     localServicios.value = hidratarArbolDesdeLineasPlanas(props.lines)
+    emit('update:servicios', JSON.parse(JSON.stringify(localServicios.value)))
   } else {
     localServicios.value = []
   }
@@ -1942,6 +2170,7 @@ watch(() => props.lines, (newLines) => {
   if (isInternalSyncing.value) return
   if ((!localServicios.value || localServicios.value.length === 0) && Array.isArray(newLines) && newLines.length > 0) {
     localServicios.value = hidratarArbolDesdeLineasPlanas(newLines)
+    emit('update:servicios', JSON.parse(JSON.stringify(localServicios.value)))
   }
 }, { deep: true })
 

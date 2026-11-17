@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-11-16T00:50:37.774Z",
+  "id_proyecto": 203,
+  "codi_proyecto": "GSP-2611-00138",
+  "mandante": "BESALCO SA",
+  "contacto_mandante": "Alfonso Porperrello",
+  "grua_titular": "STDD.68-4 (Liebherr LTM-1070, ID 38)",
+  "grua_relevo": "CCCB.38-1 (Liebherr LTM-1055, ID 36)",
+  "operador": "Claudio Gallardo (ID 62)",
+  "rigger": "Andres Urra (ID 22)",
+  "reportes_registrados": [
+    {
+      "dia_correlativo": 1,
+      "id_equipo": 38,
+      "horometro_inicio": "1250.00",
+      "horometro_termino": "1258.00",
+      "horas_facturables": "8.00",
+      "estado_reporte": "VALIDADO_ANALISTA"
+    },
+    {
+      "dia_correlativo": 2,
+      "id_equipo": 38,
+      "horometro_inicio": "1258.00",
+      "horometro_termino": "1266.00",
+      "horas_facturables": "8.00",
+      "estado_reporte": "VALIDADO_ANALISTA"
+    },
+    {
+      "dia_correlativo": 3,
+      "id_equipo": 38,
+      "horometro_inicio": "1266.00",
+      "horometro_termino": "1274.00",
+      "horas_facturables": "8.00",
+      "estado_reporte": "VALIDADO_ANALISTA"
+    },
+    {
+      "dia_correlativo": 4,
+      "id_equipo": 38,
+      "horometro_inicio": "1274.00",
+      "horometro_termino": "1282.00",
+      "horas_facturables": "8.00",
+      "estado_reporte": "VALIDADO_ANALISTA"
+    },
+    {
+      "dia_correlativo": 5,
+      "id_equipo": 38,
+      "horometro_inicio": "2450.00",
+      "horometro_termino": "2458.00",
+      "horas_facturables": "8.00",
+      "estado_reporte": "PENDIENTE_VALIDACION"
+    }
+  ],
+  "conciliacion": {
+    "jornadas": 5,
+    "horas_totales": 40,
+    "subtotal_neto": 2000000,
+    "iva": 380000,
+    "total_bruto": 2380000,
+    "descuadre": 0
+  },
+  "evidencias": {
+    "fase1_preventa": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1120_Relevo_Equipos_PWA_DEV\\evidencia\\01_web_crm_creacion_caso_relevo.png",
+    "fase2_asignacion_inicial": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1120_Relevo_Equipos_PWA_DEV\\evidencia\\02_web_operaciones_asignacion_inicial.png",
+    "fase2_relevo_asignado": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1120_Relevo_Equipos_PWA_DEV\\evidencia\\03_web_operaciones_relevo_asignado.png",
+    "fase3_despacho_flota": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1120_Relevo_Equipos_PWA_DEV\\evidencia\\03b_web_crm_control_flota_despacho.png",
+    "fase4_pwa_surveys": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1120_Relevo_Equipos_PWA_DEV\\evidencia\\04_pwa_surveys_tarjeta_con_banner_relevo.png",
+    "fase4_pwa_cabecera": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1120_Relevo_Equipos_PWA_DEV\\evidencia\\05_pwa_report_diario_cabecera_relevo.png",
+    "fase4_pwa_transmitido": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1120_Relevo_Equipos_PWA_DEV\\evidencia\\06_pwa_report_diario_transmitido_con_firma.png",
+    "fase5_caratula_edp": "D:\\SGajardo\\Google Drive\\Antigravity\\Grúas San Pablo\\Propuesta Gestión Operación Grúas\\QA\\REQ-1120_Relevo_Equipos_PWA_DEV\\evidencia\\07_web_crm_caratula_edp_consolidada_relevo.png"
+  },
+  "dictamen": "APROBADO (100% PASS — CERO ATAJOS SQL)"
+}

@@ -18,9 +18,9 @@
 // CONSTANTES Y DOMINIOS CANÓNICOS
 // -----------------------------------------------------------------------------
 
-const LINEAS_NEGOCIO = Object.freeze(['IZAJE', 'RENTAL', 'TRANSPORTE', 'PROFESIONAL']);
-const TIPOS_OT = Object.freeze(['OT-MANIOBRA', 'OT-RENTAL', 'OT-FLETE', 'OT-STAFF']);
-const ROLES_NODO = Object.freeze(['RAIZ', 'HIJO_COMERCIAL', 'APOYO_OPERATIVO', 'ACCESORIO', 'PERSONAL', 'TRASLADO']);
+const LINEAS_NEGOCIO = Object.freeze(['IZAJE', 'RENTAL', 'TRANSPORTE', 'PROFESIONAL', 'INTERNAS']);
+const TIPOS_OT = Object.freeze(['OT-MANIOBRA', 'OT-RENTAL', 'OT-FLETE', 'OT-STAFF', 'OT-INTERNA']);
+const ROLES_NODO = Object.freeze(['RAIZ', 'HIJO_COMERCIAL', 'APOYO_OPERATIVO', 'ACCESORIO', 'PERSONAL', 'TRASLADO', 'OTROS', 'LIQUIDACION_ACTA']);
 
 // Las 10 Unidades Canónicas Limpias (SPEC-130)
 const GRUPO_A_COBRO_UNICO = Object.freeze([
@@ -72,11 +72,16 @@ function normalizarUnidad(u) {
     'HORAS_MES_MINIMAS': 'Horas Mes Minimas',
     'VALOR FIJO DIARIO': 'Valor Fijo Diario',
     'VALOR FIJO SEMANAL': 'Valor Fijo Semanal',
-    'VALOR FIJO MENSUAL': 'Valor Fijo Mensual'
+    'VALOR FIJO MENSUAL': 'Valor Fijo Mensual',
+    'TARIFA POR KM': 'Tarifa por Km'
   };
 
   if (mapaExacto[raw]) {
     return mapaExacto[raw];
+  }
+
+  if (raw.includes('TARIFA POR KM') || raw.includes('POR KM') || raw === 'KM' || raw.includes('$/KM')) {
+    return 'Tarifa por Km';
   }
 
   // Paso 1: Grupo A - Traslados (Ida, Vuelta, Ida/Vuelta)
@@ -148,22 +153,104 @@ function normalizarUnidad(u) {
  * @returns {{ lineaNegocio: string, tipoOt: string }}
  */
 function clasificarLineaNegocio(item = {}) {
+  const mk = (lineaNegocio, tipoOt) => ({
+    lineaNegocio,
+    tipoOt,
+    linea_negocio: lineaNegocio,
+    tipo_ot: tipoOt
+  });
+  const linExplicita = String(item.linea_negocio || item.linea_servicio || '').trim().toUpperCase();
+  if (linExplicita === 'INTERNAS' || String(item.tipo_ot || '').trim().toUpperCase() === 'OT-INTERNA') {
+    return mk('INTERNAS', 'OT-INTERNA');
+  }
+  if (linExplicita === 'RENTAL' || item.sin_operador === true) {
+    return mk('RENTAL', 'OT-RENTAL');
+  }
+  if (linExplicita === 'TRANSPORTE') {
+    return mk('TRANSPORTE', 'OT-FLETE');
+  }
+  if (linExplicita === 'PROFESIONAL') {
+    return mk('PROFESIONAL', 'OT-STAFF');
+  }
+  if (linExplicita === 'IZAJE') {
+    return mk('IZAJE', 'OT-MANIOBRA');
+  }
+
   const desc = String(item.descripcion || item.concepto || item.tipo || '').toUpperCase();
   const subcat = String(item.subcategoria || '').toUpperCase();
   const raw = `${desc} ${subcat}`;
 
+  if (raw.includes('MOVIMIENTO INTERNO') || raw.includes('OT-INTERNA') || raw.includes('TRASLADO INTERNO')) {
+    return mk('INTERNAS', 'OT-INTERNA');
+  }
   if (raw.includes('TIJERA') || raw.includes('PLATAFORMA') || raw.includes('BRAZO ARTIC') || raw.includes('ALZA HOMBRE') || raw.includes('RENTAL') || raw.includes('DRY LEASE')) {
-    return { lineaNegocio: 'RENTAL', tipoOt: 'OT-RENTAL' };
+    return mk('RENTAL', 'OT-RENTAL');
   }
   if (raw.includes('CAMA BAJA') || raw.includes('RAMPLA') || raw.includes('FLETE PURO') || raw.includes('TRANSPORTE') || raw.includes('LOGISTICA DEL SUR')) {
-    return { lineaNegocio: 'TRANSPORTE', tipoOt: 'OT-FLETE' };
+    return mk('TRANSPORTE', 'OT-FLETE');
   }
   if (raw.includes('RIGGER') || raw.includes('SUPERVISOR') || raw.includes('APR') || raw.includes('PREVENCION') || raw.includes('PLAN DE IZAJE') || raw.includes('ESTUDIO RIGGING') || raw.includes('MEMORIA')) {
-    return { lineaNegocio: 'PROFESIONAL', tipoOt: 'OT-STAFF' };
+    return mk('PROFESIONAL', 'OT-STAFF');
   }
 
   // Default constitucional: IZAJE (Grúas telescópicas, camiones pluma, horquillas y manipuladores)
-  return { lineaNegocio: 'IZAJE', tipoOt: 'OT-MANIOBRA' };
+  return mk('IZAJE', 'OT-MANIOBRA');
+}
+
+/**
+ * Valida deterministamente si un nodo cumple la Matriz Maestra SPEC-129 y bloquea las 9 combinaciones descartadas.
+ * @param {object} nodo - Configuración de la línea de servicio.
+ * @returns {{ valido: boolean, codigo?: string, motivo?: string }}
+ */
+function validarReglaMatrizSpec129(nodo = {}) {
+  if (!nodo || typeof nodo !== 'object') {
+    return { valido: false, codigo: 'NODO_INVALIDO', motivo: 'Nodo de servicio vacío o inválido.' };
+  }
+
+  const { lineaNegocio } = clasificarLineaNegocio(nodo);
+  const unidad = normalizarUnidad(nodo.unidad || nodo.unidad_cobro);
+  const rol = String(nodo.rol_nodo || (nodo.id_linea_servicio_padre ? 'HIJO_COMERCIAL' : 'RAIZ')).trim().toUpperCase();
+  const texto = `${nodo.subcategoria || ''} ${nodo.descripcion || ''} ${nodo.concepto || ''}`
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+
+  // 1.4 / 2.2 / 4.5: Valor Fijo Semanal descartado transversalmente
+  if (unidad === 'Valor Fijo Semanal') {
+    return { valido: false, codigo: 'DESCARTADO_SEMANAL', motivo: 'Modalidad Valor Fijo Semanal descartada en SPEC-129 (1.4 / 2.2 / 4.5).' };
+  }
+
+  // 3.2: Tarifa por Km descartada
+  if (unidad === 'Tarifa por Km') {
+    return { valido: false, codigo: 'DESCARTADO_3_2_KM', motivo: 'Modalidad Tarifa por Km descartada en SPEC-129 (3.2).' };
+  }
+
+  // 1.6: Izaje Raíz a Valor Fijo Mensual descartado (debe usar Bolsa Mensual Flexible 1.5.M)
+  if (lineaNegocio === 'IZAJE' && rol === 'RAIZ' && unidad === 'Valor Fijo Mensual') {
+    return { valido: false, codigo: 'DESCARTADO_1_6', motivo: 'Valor Fijo Mensual descartado en raíz de Izaje (SPEC-129 1.6); utilice Horas Mes Mínimas (1.5.M).' };
+  }
+
+  // 2.4: Rental Raíz por Bolsa de Horas Mes descartado (debe usar Valor Fijo Mensual Horas Libres 2.3.M)
+  if (lineaNegocio === 'RENTAL' && rol === 'RAIZ' && unidad === 'Horas Mes Minimas') {
+    return { valido: false, codigo: 'DESCARTADO_2_4', motivo: 'Horas Mes Mínimas descartado en Rental sin operador (SPEC-129 2.4); utilice Valor Fijo Mensual (2.3.M).' };
+  }
+
+  // 3.5: Sobreestadía en Transporte por Hora Efectiva descartada
+  if (lineaNegocio === 'TRANSPORTE' && rol !== 'RAIZ' && unidad === 'Hora Efectiva') {
+    return { valido: false, codigo: 'DESCARTADO_3_5', motivo: 'Sobreestadía en planta por Hora Efectiva descartada en Transporte (SPEC-129 3.5).' };
+  }
+
+  // 4.3: Profesional Raíz por Horas Diarias Mínimas descartado
+  if (lineaNegocio === 'PROFESIONAL' && rol === 'RAIZ' && unidad === 'Horas Diarias Minimas') {
+    return { valido: false, codigo: 'DESCARTADO_4_3', motivo: 'Horas Diarias Mínimas descartado en Servicios Profesionales (SPEC-129 4.3).' };
+  }
+
+  // 4.7: Estudio de Rigging / Memoria de Cálculo como servicio raíz independiente descartado
+  if (lineaNegocio === 'PROFESIONAL' && rol === 'RAIZ' && (texto.includes('ESTUDIO DE RIGGING') || texto.includes('ESTUDIO RIGGING') || texto.includes('MEMORIA DE CALCULO'))) {
+    return { valido: false, codigo: 'DESCARTADO_4_7', motivo: 'Estudio de Rigging independiente descartado como raíz (SPEC-129 4.7); utilice Accesorio 1.10.M o pestaña Otros 4.8.M.' };
+  }
+
+  return { valido: true };
 }
 
 // -----------------------------------------------------------------------------
@@ -177,6 +264,12 @@ function clasificarLineaNegocio(item = {}) {
  */
 function calcularSubtotalNodo(nodo = {}) {
   if (!nodo || typeof nodo !== 'object') {
+    return 0;
+  }
+
+  // Regla SPEC-129 (5.0): Movimientos internos de flota tienen valor comercial estrictamente $0.
+  if (String(nodo.linea_negocio || nodo.linea_servicio || '').toUpperCase() === 'INTERNAS' ||
+      String(nodo.tipo_ot || '').toUpperCase() === 'OT-INTERNA') {
     return 0;
   }
 
@@ -255,7 +348,7 @@ function valorizarArbolCotizacion(servicios = []) {
     return {
       totalNeto: 0,
       subtotalServicios: 0,
-      resumenPorLinea: { IZAJE: 0, RENTAL: 0, TRANSPORTE: 0, PROFESIONAL: 0 },
+      resumenPorLinea: { IZAJE: 0, RENTAL: 0, TRANSPORTE: 0, PROFESIONAL: 0, INTERNAS: 0 },
       nodosNormalizados: [],
       esValido: false,
       errores: ['El parámetro servicios debe ser un arreglo.']
@@ -265,7 +358,7 @@ function valorizarArbolCotizacion(servicios = []) {
   const errores = [];
   const nodosNormalizados = [];
   const idsVistos = new Set();
-  const resumenPorLinea = { IZAJE: 0, RENTAL: 0, TRANSPORTE: 0, PROFESIONAL: 0 };
+  const resumenPorLinea = { IZAJE: 0, RENTAL: 0, TRANSPORTE: 0, PROFESIONAL: 0, INTERNAS: 0 };
   let totalNeto = 0;
 
   for (let idx = 0; idx < servicios.length; idx++) {
@@ -282,7 +375,7 @@ function valorizarArbolCotizacion(servicios = []) {
 
     const unidad = normalizarUnidad(raw.unidad || raw.unidad_cobro);
     const { lineaNegocio, tipoOt } = clasificarLineaNegocio(raw);
-    const subtotal = calcularSubtotalNodo({ ...raw, unidad });
+    const subtotal = calcularSubtotalNodo({ ...raw, linea_negocio: raw.linea_negocio || lineaNegocio, tipo_ot: raw.tipo_ot || tipoOt, unidad });
 
     const esGrupoA = GRUPO_A_COBRO_UNICO.includes(unidad);
     const nodoNormalizado = {
@@ -340,6 +433,15 @@ function valorizarArbolCotizacion(servicios = []) {
 // 4. CONCILIACIÓN DEVENGADO PROYECTO E2E (ITS / TERRENO)
 // -----------------------------------------------------------------------------
 
+function calcularDiasInclusiveActa(fechaEntrega, fechaRetiro) {
+  if (!fechaEntrega || !fechaRetiro) return 0;
+  const d1 = new Date(fechaEntrega);
+  const d2 = new Date(fechaRetiro);
+  if (Number.isNaN(d1.getTime()) || Number.isNaN(d2.getTime())) return 0;
+  const diffMs = d2.getTime() - d1.getTime();
+  return Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1);
+}
+
 /**
  * Concilia de manera pura el presupuesto comercial vs. la ejecución física en terreno (Reports, Viajes, Actas).
  * @param {number|string} idProyecto - Identificador del proyecto/OT.
@@ -351,17 +453,23 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
   const reportesAvance = Array.isArray(params.reportesAvance) ? params.reportesAvance : [];
   const registrosViaje = Array.isArray(params.registrosViaje) ? params.registrosViaje : [];
   const actasRental = Array.isArray(params.actasRental) ? params.actasRental : [];
+  const costosSubcontratoIts = Array.isArray(params.costosSubcontratoIts) ? params.costosSubcontratoIts : [];
 
   let totalPresupuestadoNeto = 0;
   let totalDevengadoNeto = 0;
   const lineasConciliadas = [];
+  const hayEjecucionGlobalProyecto = reportesAvance.length > 0 || actasRental.length > 0 || registrosViaje.length > 0;
 
   for (const linea of lineasServicio) {
     const unidad = normalizarUnidad(linea.unidad || linea.unidad_cobro);
-    const presupuestado = calcularSubtotalNodo({ ...linea, unidad });
+    const { lineaNegocio, tipoOt } = clasificarLineaNegocio(linea);
+    const lineaNegUpper = String(linea.linea_negocio || lineaNegocio).toUpperCase();
+    const rolUpper = String(linea.rol_nodo || (linea.id_linea_servicio_padre ? 'HIJO_COMERCIAL' : 'RAIZ')).toUpperCase();
+    const presupuestado = calcularSubtotalNodo({ ...linea, linea_negocio: lineaNegUpper, unidad });
     totalPresupuestadoNeto += presupuestado;
 
     const idLinea = linea.id_linea_servicio !== undefined ? linea.id_linea_servicio : (linea.id || linea.id_linea || null);
+    const idPadre = linea.id_linea_servicio_padre || linea.parentId || null;
     const idSrv = linea.id_servicio || null;
 
     // Filtrado estricto por clave foránea (SPEC-130)
@@ -371,6 +479,10 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
       : (reportesAvance.some(r => r.id_servicio !== undefined && r.id_servicio !== null)
           ? reportesAvance.filter(r => String(r.id_servicio) === String(idSrv))
           : reportesAvance);
+
+    const reportesPadre = (idPadre !== null && reportesTienenFk)
+      ? reportesAvance.filter(r => String(r.id_linea_servicio) === String(idPadre))
+      : [];
 
     const viajesTienenFk = registrosViaje.some(v => v.id_linea_servicio !== undefined && v.id_linea_servicio !== null);
     const viajesParaLinea = viajesTienenFk
@@ -390,18 +502,19 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
     let devengado = 0;
     const evidencias = [];
 
-    // Si está incluido en tarifa comercial, su devengo comercial es $0
-    if (linea.incluido_en_tarifa === true || linea.incluido === true || linea.es_apoyo_operativo === true) {
+    if (lineaNegUpper === 'INTERNAS' || String(linea.tipo_ot || tipoOt).toUpperCase() === 'OT-INTERNA') {
+      devengado = 0;
+      evidencias.push('Movimiento interno de flota (SPEC-129 5.0: $0 comercial / $0 EDP)');
+    } else if (linea.incluido_en_tarifa === true || linea.incluido === true || linea.es_apoyo_operativo === true) {
       devengado = 0;
       evidencias.push('Línea incluida o de apoyo operativo interno ($0 comercial)');
     } else if (unidad === 'Valor Fijo') {
-      // Invariante SPEC-128 / Caso Plaenge / Caso Barthou:
-      // Si hay al menos un reporte (incluso con 0h) o acta, se devenga el 100% del valor unitario fijo.
-      const hayEjecucion = reportesParaLinea.length > 0 || actasParaLinea.length > 0 || viajesParaLinea.length > 0;
+      // Invariante SPEC-128 / Caso Plaenge / Caso Barthou / Caso Pocuro (hijos 'OTROS'/'ACCESORIO'):
+      const esRamaSecundaria = Boolean(idPadre !== null || ['OTROS', 'ACCESORIO', 'HIJO_COMERCIAL'].includes(rolUpper));
+      const hayEjecucion = reportesParaLinea.length > 0 || actasParaLinea.length > 0 || viajesParaLinea.length > 0 || (esRamaSecundaria && hayEjecucionGlobalProyecto);
       devengado = hayEjecucion ? valorUnitario : 0;
       evidencias.push(hayEjecucion ? 'Valor Fijo devengado 100% por ejecución registrada' : 'Pendiente de inicio en terreno');
     } else if (unidad === 'Traslado Ida' || unidad === 'Traslado Vuelta' || unidad === 'Traslado Ida/Vuelta') {
-      // Fletes y traslados: devengan el 100% al completarse el tramo de viaje
       const viajesCompletados = viajesParaLinea.filter(v => v.estado_trayecto === 'LLEGADO' || v.fecha_llegada_faena || v.fecha_llegada_patio);
       if (viajesCompletados.length > 0 || reportesParaLinea.length > 0) {
         devengado = valorUnitario;
@@ -411,7 +524,6 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
         evidencias.push('Traslado pendiente de ejecución');
       }
     } else if (unidad === 'Horas Diarias Minimas') {
-      // Por cada reporte diario: max(horas_reales_facturables, piso_minimo) * valorUnitario
       const pisoDiario = Math.max(1, Number(linea.piso_minimo_horas || linea.pisoMinimo || 8));
       let totalHorasDevengadas = 0;
 
@@ -428,15 +540,15 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
         evidencias.push('Sin reportes diarios registrados');
       }
     } else if (unidad === 'Hora Efectiva') {
+      const fuenteReportes = (reportesParaLinea.length === 0 && reportesPadre.length > 0) ? reportesPadre : reportesParaLinea;
       let totalHorasEfectivas = 0;
-      for (const rep of reportesParaLinea) {
+      for (const rep of fuenteReportes) {
         const hrs = Number(rep.total_horas_facturables !== undefined ? rep.total_horas_facturables : (rep.horas_reales || 0));
         totalHorasEfectivas += hrs;
       }
       devengado = Math.round(totalHorasEfectivas * valorUnitario);
       evidencias.push(`Total horas efectivas registradas: ${totalHorasEfectivas}h`);
     } else if (unidad === 'Horas Mes Minimas') {
-      // Bolsa mensual (ej. 180h): max(bolsa, suma_horas_reales) * valorUnitario
       const bolsa = Math.max(1, Number(linea.piso_minimo_horas || linea.pisoMinimo || 180));
       let totalHorasMes = 0;
       for (const rep of reportesParaLinea) {
@@ -446,17 +558,29 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
       devengado = Math.round(horasFacturables * valorUnitario);
       evidencias.push(`Corte bolsa mes: ${totalHorasMes}h acumuladas vs ${bolsa}h mínimas -> ${horasFacturables}h facturables`);
     } else if (unidad === 'Valor Fijo Diario') {
-      // Días efectivos respaldados con reportes diarios
-      const diasReportados = Math.max(0, reportesParaLinea.length);
-      devengado = Math.round(diasReportados * valorUnitario);
-      evidencias.push(`${diasReportados} jornada(s) diaria(s) respaldada(s) con reportes`);
+      // Regla SPEC-129 (2.1.M Rental Diario por Acta 360° vs 1.3 / 4.2 / 1.10.M Accesorio heredando jornadas del padre)
+      if (lineaNegUpper === 'RENTAL' || actasParaLinea.length > 0) {
+        if (actasParaLinea.length > 0) {
+          const acta = actasParaLinea[0];
+          const diasActa = Math.max(0, Number(acta.dias_arriendo_reales || acta.dias_totales || calcularDiasInclusiveActa(acta.fecha_entrega, acta.fecha_retiro) || 0));
+          devengado = Math.round(diasActa * valorUnitario);
+          evidencias.push(`Acta Rental 360°: ${diasActa} día(s) efectivos de arriendo`);
+        } else {
+          devengado = 0;
+          evidencias.push('Rental pendiente de Acta 360°');
+        }
+      } else {
+        const fuenteDias = (reportesParaLinea.length === 0 && reportesPadre.length > 0) ? reportesPadre : reportesParaLinea;
+        const diasReportados = Math.max(0, fuenteDias.length);
+        devengado = Math.round(diasReportados * valorUnitario);
+        evidencias.push(`${diasReportados} jornada(s) diaria(s) respaldada(s)`);
+      }
     } else if (unidad === 'Valor Fijo Semanal') {
       const diasReportados = Math.max(0, reportesParaLinea.length);
       const semanas = Math.ceil(diasReportados / 7) || (diasReportados > 0 ? 1 : 0);
       devengado = Math.round(semanas * valorUnitario);
       evidencias.push(`${diasReportados} día(s) -> ${semanas} semana(s) devengada(s)`);
     } else if (unidad === 'Valor Fijo Mensual') {
-      // Rental mensual con pro-rata días (ej. 15 días = 15/30 de la tarifa mensual)
       if (actasParaLinea.length > 0) {
         const acta = actasParaLinea[0];
         const diasFaena = Number(acta.dias_arriendo_reales || acta.dias_totales || 30);
@@ -476,28 +600,85 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
 
     lineasConciliadas.push({
       id_linea_servicio: idLinea,
+      id_linea_servicio_padre: idPadre,
       id_servicio: idSrv,
       id_categoria: linea.id_categoria ? Number(linea.id_categoria) : null,
       id_subcategoria: linea.id_subcategoria ? Number(linea.id_subcategoria) : null,
       id_equipo_sugerido: linea.id_equipo_sugerido ? Number(linea.id_equipo_sugerido) : null,
       descripcion: linea.descripcion,
-      linea_negocio: linea.linea_negocio,
-      tipo_ot: linea.tipo_ot,
-      rol_nodo: linea.rol_nodo,
+      linea_negocio: lineaNegUpper,
+      tipo_ot: linea.tipo_ot || tipoOt,
+      rol_nodo: rolUpper,
       unidad: unidad,
+      valor_unitario: valorUnitario,
       presupuestadoNeto: presupuestado,
       devengadoNeto: devengado,
       desviacion: devengado - presupuestado,
       evidenciasVinculadas: evidencias,
       estadoConciliacion: devengado > 0 ? 'DEVENGADO' : 'PENDIENTE'
     });
+
+    // Regla SPEC-129 (2.7.M): Liquidación de Diésel Faltante ($/L editable) y Daños con Evidencia Fotográfica al Retiro Rental
+    if (lineaNegUpper === 'RENTAL' && rolUpper === 'RAIZ' && actasParaLinea.length > 0) {
+      for (const acta of actasParaLinea) {
+        const litrosFaltantes = Math.max(0, Number(acta.litros_diesel_faltantes || 0));
+        const valorLitro = Math.max(0, Number(acta.valor_litro_diesel || 0));
+        if (litrosFaltantes > 0 && valorLitro > 0) {
+          const montoDiesel = Math.round(litrosFaltantes * valorLitro);
+          totalDevengadoNeto += montoDiesel;
+          lineasConciliadas.push({
+            id_linea_servicio: `acta_diesel_${acta.id_acta || idLinea}`,
+            id_linea_servicio_padre: idLinea,
+            descripcion: `Reposición Combustible Diésel (${litrosFaltantes} L × $${valorLitro}/L)`,
+            linea_negocio: 'RENTAL',
+            tipo_ot: 'OT-RENTAL',
+            rol_nodo: 'LIQUIDACION_ACTA',
+            unidad: 'Valor Fijo',
+            valor_unitario: montoDiesel,
+            presupuestadoNeto: 0,
+            devengadoNeto: montoDiesel,
+            desviacion: montoDiesel,
+            evidenciasVinculadas: ['Acta 360° Retiro — Diferencia de combustible'],
+            estadoConciliacion: 'DEVENGADO'
+          });
+        }
+
+        const danos = Array.isArray(acta.cargos_danos) ? acta.cargos_danos : [];
+        for (let dIdx = 0; dIdx < danos.length; dIdx++) {
+          const dano = danos[dIdx] || {};
+          const montoDano = Math.max(0, Math.round(Number(dano.monto || 0)));
+          if (montoDano > 0 && dano.tiene_evidencia_fotografica === true) {
+            totalDevengadoNeto += montoDano;
+            lineasConciliadas.push({
+              id_linea_servicio: `acta_dano_${acta.id_acta || idLinea}_${dIdx + 1}`,
+              id_linea_servicio_padre: idLinea,
+              descripcion: dano.descripcion || `Cargo por Daño en Acta Retiro #${dIdx + 1}`,
+              linea_negocio: 'RENTAL',
+              tipo_ot: 'OT-RENTAL',
+              rol_nodo: 'LIQUIDACION_ACTA',
+              unidad: 'Valor Fijo',
+              valor_unitario: montoDano,
+              presupuestadoNeto: 0,
+              devengadoNeto: montoDano,
+              desviacion: montoDano,
+              evidenciasVinculadas: ['Acta 360° Retiro — Respaldo fotográfico verificado'],
+              estadoConciliacion: 'DEVENGADO'
+            });
+          }
+        }
+      }
+    }
   }
+
+  // Regla SPEC-129 (1.8.M / 1.11.M / 2.5.M / 2.6.M): Los fletes o camiones subcontratados (OC) figuran en ITS como costo, JAMÁS en EDP.
+  const totalCostosSubcontratoIts = costosSubcontratoIts.reduce((acc, c) => acc + Math.max(0, Math.round(Number(c?.monto_costo || 0))), 0);
 
   return {
     idProyecto: Number(idProyecto),
     totalPresupuestadoNeto: Math.round(totalPresupuestadoNeto),
     totalDevengadoNeto: Math.round(totalDevengadoNeto),
     desviacionNeto: Math.round(totalDevengadoNeto - totalPresupuestadoNeto),
+    totalCostosSubcontratoIts,
     lineasConciliadas
   };
 }
@@ -507,20 +688,21 @@ function conciliarDevengadoProyectoE2E(idProyecto, params = {}) {
 // -----------------------------------------------------------------------------
 
 /**
- * Liquida formalmente un Estado de Pago respetando el circuito de 2 hitos inmutables.
- * Hito 1: Aprobación Técnica Operativa (Yiara - Operaciones)
- * Hito 2: Aprobación Financiera y Emisión DTE (Maritza - Contabilidad Laudus)
- * @param {object} params - Parámetros de liquidación.
- * @returns {object} Montos netos, IVA, retenciones y estado de hitos.
+ * Liquida formalmente un Estado de Pago respetando el circuito de 2 hitos inmutables,
+ * consolidación de traslado único en Rental (2.5.M/2.6.M) y overrides manuales de Control de Gestión (Acuerdo #6).
  */
 function liquidarEstadoPago2Hitos(params = {}) {
   const lineasConciliadas = Array.isArray(params.lineasConciliadas) ? params.lineasConciliadas : [];
+  const ajustesManualesEdp = (params.ajustesManualesEdp && typeof params.ajustesManualesEdp === 'object') ? params.ajustesManualesEdp : {};
+  const otrosItemsManuales = Array.isArray(params.otrosItemsManuales) ? params.otrosItemsManuales : [];
+  const consolidarTrasladosRental = params.consolidarTrasladosRental !== undefined
+    ? Boolean(params.consolidarTrasladosRental)
+    : lineasConciliadas.some(l => String(l?.linea_negocio || '').toUpperCase() === 'RENTAL');
   const hito1Operaciones = Boolean(params.hito1OperacionesAprobado);
   const hito2Contabilidad = Boolean(params.hito2ContabilidadAprobado);
   const tasaIva = Number(params.tasaIva !== undefined ? params.tasaIva : 0.19);
   const retencionPorcentaje = Number(params.retencionGarantiaPorcentaje || 0);
 
-  // Candado Duro: Si Hito 1 (Operaciones) no está aprobado, no se factura
   if (!hito1Operaciones) {
     return {
       montoNetoValidado: 0,
@@ -537,17 +719,85 @@ function liquidarEstadoPago2Hitos(params = {}) {
     };
   }
 
-  // Sumar devengados netos de líneas conciliadas
   let montoNetoValidado = 0;
   const lineasFacturables = [];
+  let acumuladoTrasladoRental = 0;
+  let plantillaTrasladoRental = null;
 
   for (const lin of lineasConciliadas) {
-    const neto = Math.round(Number(lin.devengadoNeto || 0));
+    if (String(lin.linea_negocio || '').toUpperCase() === 'INTERNAS') {
+      continue;
+    }
+
+    const key = lin.id_linea_servicio !== undefined && lin.id_linea_servicio !== null ? String(lin.id_linea_servicio) : null;
+    const ajuste = key && ajustesManualesEdp[key] ? ajustesManualesEdp[key] : null;
+    let neto = Math.round(Number(lin.devengadoNeto || 0));
+    let descripcionFinal = lin.descripcion;
+
+    if (ajuste) {
+      if (ajuste.glosa) descripcionFinal = String(ajuste.glosa).trim();
+      const vu = ajuste.valor_unitario !== undefined ? Number(ajuste.valor_unitario) : Number(lin.valor_unitario || 0);
+      if (ajuste.monto_neto !== undefined) {
+        neto = Math.round(Number(ajuste.monto_neto));
+      } else if (ajuste.cantidad_horas !== undefined) {
+        neto = Math.round(Number(ajuste.cantidad_horas) * vu);
+      } else if (ajuste.cantidad !== undefined) {
+        neto = Math.round(Number(ajuste.cantidad) * vu);
+      }
+    }
+
+    const esTrasladoRental = consolidarTrasladosRental &&
+      String(lin.linea_negocio || '').toUpperCase() === 'RENTAL' &&
+      String(lin.rol_nodo || '').toUpperCase() === 'TRASLADO';
+
+    if (esTrasladoRental) {
+      acumuladoTrasladoRental += Math.max(0, neto);
+      if (!plantillaTrasladoRental) plantillaTrasladoRental = lin;
+      continue;
+    }
+
     if (neto > 0) {
       montoNetoValidado += neto;
       lineasFacturables.push({
         ...lin,
+        descripcion: descripcionFinal,
         montoNetoFacturable: neto
+      });
+    }
+  }
+
+  if (plantillaTrasladoRental && acumuladoTrasladoRental > 0) {
+    const montoTrasladoFinal = ajustesManualesEdp.TRASLADO_RENTAL_CONSOLIDADO?.monto_neto !== undefined
+      ? Math.round(Number(ajustesManualesEdp.TRASLADO_RENTAL_CONSOLIDADO.monto_neto))
+      : acumuladoTrasladoRental;
+    if (montoTrasladoFinal > 0) {
+      montoNetoValidado += montoTrasladoFinal;
+      lineasFacturables.push({
+        ...plantillaTrasladoRental,
+        id_linea_servicio: 'TRASLADO_RENTAL_CONSOLIDADO',
+        descripcion: ajustesManualesEdp.TRASLADO_RENTAL_CONSOLIDADO?.glosa || 'Flete / Traslado',
+        rol_nodo: 'TRASLADO',
+        unidad: 'Traslado Ida/Vuelta',
+        cantidad: 1,
+        devengadoNeto: montoTrasladoFinal,
+        montoNetoFacturable: montoTrasladoFinal
+      });
+    }
+  }
+
+  for (let oIdx = 0; oIdx < otrosItemsManuales.length; oIdx++) {
+    const otro = otrosItemsManuales[oIdx] || {};
+    const netoOtro = Math.max(0, Math.round(Number(otro.monto_neto || otro.valor || 0)));
+    if (netoOtro > 0) {
+      montoNetoValidado += netoOtro;
+      lineasFacturables.push({
+        id_linea_servicio: `otros_manual_${oIdx + 1}`,
+        descripcion: String(otro.descripcion || otro.glosa || `Adicional #${oIdx + 1}`).trim(),
+        rol_nodo: 'OTROS',
+        unidad: 'Valor Fijo',
+        cantidad: 1,
+        devengadoNeto: netoOtro,
+        montoNetoFacturable: netoOtro
       });
     }
   }
@@ -592,6 +842,7 @@ module.exports = {
   // Funciones Puras del Motor
   normalizarUnidad,
   clasificarLineaNegocio,
+  validarReglaMatrizSpec129,
   calcularSubtotalNodo,
   valorizarArbolCotizacion,
   conciliarDevengadoProyectoE2E,

@@ -1,18 +1,43 @@
 const pool = require('../config/postgresPool');
 const itsPdfService = require('../services/itsPdfService');
-const { isLineaCobroUnico, normalizarLineaCobroUnico } = require('../utils/lineaCobroUnico');
+const { isLineaCobroUnico, normalizarLineaCobroUnico, calcularSubtotalLinea } = require('../utils/lineaCobroUnico');
 const {
   resolverTarifaOperador,
   resolverTarifaTraslado,
   obtenerTarifasDesdeBD,
   resolverTarifaPorCotizacion,
   calcularLiquidacionHorasDia,
-  calcularViaticoAlimentacionDia
+  calcularViaticoAlimentacionDia,
+  esVehiculoTransporteOSoporteSinBono
 } = require('../services/tarifasOperadorService');
+const {
+  calcularSubtotalNodo,
+  normalizarUnidad
+} = require('../services/motorValorizacionService');
 const MessageModel = require('../models/messageModel');
 const notificacionService = require('../services/notificacionService');
 const crypto = require('crypto');
 const messageModel = new MessageModel();
+
+/**
+ * SPEC-129 / SPEC-132: Detecta de forma determinista si una fila de jornada ITS corresponde a Traslado / Flete
+ * (erradica asimetría entre 'TRASLADO IDA/VUELTA' e .includes('flete') que provocaba $0 en borrador y 2x al recargar).
+ */
+function esJornadaTraslado(j) {
+  if (!j || typeof j !== 'object') return false;
+  const ts = String(j.tipo_servicio || '').trim();
+  if (ts === 'Registro de Viaje') return false;
+  const tsLow = ts.toLowerCase();
+  const nr = String(j.numero_report || '').trim().toUpperCase();
+  return tsLow.includes('flete') || tsLow.includes('traslado') || nr === 'TRASLADO' || nr.startsWith('FLE-');
+}
+
+function esJornadaAdicionalFijo(j) {
+  if (!j || typeof j !== 'object') return false;
+  const ts = String(j.tipo_servicio || '').toUpperCase();
+  const nr = String(j.numero_report || '').toUpperCase();
+  return nr === 'ADICIONAL-FIJO' || ts.includes('ADICIONAL FIJO');
+}
 
 /**
  * Detecta si una línea comercial corresponde a un Rigger/Personal fantasma con tarifa <= 0
@@ -114,8 +139,15 @@ function construirPropuestaPersonalDiaria({
       if (yaRegistradoDia) return;
 
       const esRigger = pers.rol_personal === 'RIGGER';
+      const rolPersUpper = String(pers.rol_personal || '').toUpperCase();
+      const esChoferSinBono = !esRigger && (
+        mov.tipo_respaldo === 'REGISTRO_VIAJE' ||
+        rolPersUpper.includes('CONDUCTOR') ||
+        rolPersUpper.includes('CHOFER') ||
+        esVehiculoTransporteOSoporteSinBono(`${mov.tipo_equipo || ''} ${mov.equipo_modelo || ''} ${mov.patente || ''}`)
+      );
       const liqRep = mov.liquidacion_report || null;
-      const tarifaSug = esRigger ? 0 : (liqRep?.tarifa_sugerida || tarifaComercialOperador);
+      const tarifaSug = (esRigger || esChoferSinBono) ? 0 : (liqRep?.tarifa_sugerida || tarifaComercialOperador);
 
       // Buscar si ya existía fila guardada para esta fecha + persona + rol
       const matchPrevHora = prevHoraValidos.find(p =>
@@ -128,13 +160,15 @@ function construirPropuestaPersonalDiaria({
       // SPEC-106 / REQ-1117: Priorizar ediciones explícitas en ITS (fueModificadaHoraIts), luego valores verificados en Report Diario (liqRep)
       const tieneLiqRep = Boolean(liqRep);
       const fueModificadaHoraIts = Boolean(matchPrevHora && matchPrevHora.tarifa_modificada === true);
-      const fueModificadaHora = Boolean(fueModificadaHoraIts || (!esRigger && liqRep?.tarifa_modificada === true));
+      const fueModificadaHora = Boolean(fueModificadaHoraIts || (!esRigger && !esChoferSinBono && liqRep?.tarifa_modificada === true));
 
       const precioAplicado = esRigger
         ? 0
         : (fueModificadaHoraIts && matchPrevHora.precio_unitario !== undefined && matchPrevHora.precio_unitario !== null
             ? parseFloat(matchPrevHora.precio_unitario)
-            : (tieneLiqRep && Number(liqRep.precio_unitario) > 0 ? Number(liqRep.precio_unitario) : tarifaSug));
+            : (esChoferSinBono
+                ? 0
+                : (tieneLiqRep && Number(liqRep.precio_unitario) > 0 ? Number(liqRep.precio_unitario) : tarifaSug)));
 
       const hrsFaenaDia = fueModificadaHoraIts && matchPrevHora.horas_faena_pagar !== undefined
         ? Number(matchPrevHora.horas_faena_pagar)
@@ -215,12 +249,14 @@ function construirPropuestaPersonalDiaria({
       const viatRepMod = esRigger ? Boolean(liqRep?.viatico_rigger_modificado) : Boolean(liqRep?.viatico_modificado);
       const fueModificadoViat = Boolean(fueModificadoViatIts || viatRepMod);
 
-      // RESOLUCIÓN DE FONDO (REQ-1128 / SPEC-117): Si es Rigger y el monto en liqRep venía en 0 sin modificar, recomputar con escala tabular viat.monto_viatico
+      // RESOLUCIÓN DE FONDO (REQ-1128 / SPEC-117 / SPEC-129 Ac.8): Choferes de traslado/soporte -> $0 viático salvo excepción explícita; Rigger recomputa escala tabular si venía en 0 sin modificar
       const montoViatAplicado = fueModificadoViatIts
         ? parseFloat(matchPrevAlim.monto_total || 0)
-        : (tieneLiqRep && viatRepMonto !== undefined && viatRepMonto !== null && (esRigger ? (viatRepMod || Number(viatRepMonto) > 0) : true)
-            ? Number(viatRepMonto)
-            : viat.monto_viatico);
+        : (esChoferSinBono
+            ? (viatRepMod ? Number(viatRepMonto || 0) : 0)
+            : (tieneLiqRep && viatRepMonto !== undefined && viatRepMonto !== null && (esRigger ? (viatRepMod || Number(viatRepMonto) > 0) : true)
+                ? Number(viatRepMonto)
+                : viat.monto_viatico));
 
       const etiquetasCondicion = {
         IDA_Y_REGRESO: 'Ida y Regreso en el Día',
@@ -324,6 +360,7 @@ const itsController = {
           p.nombre_proyecto,
           p.id_proyecto_estado,
           p.id_empresa,
+          p.es_interno,
           p.json_field,
           COALESCE(clt.razon_social, clt.name_empresa, p.json_field->'crm_v1'->>'cliente_nombre', p.json_field->'crm_v1'->>'contacto_nombre', p.json_field->>'cliente_nombre', 'Cliente') AS cliente_nombre,
           COALESCE(clt.rut_empresa, p.json_field->'crm_v1'->>'cliente_rut', p.json_field->>'cliente_rut', '') AS cliente_rut,
@@ -349,12 +386,38 @@ const itsController = {
       }
       const proyecto = proyRes.rows[0];
 
-      // 1.2 Parámetros comerciales de CRM
+      // 1.2 SPEC-16 §28: Cargar estructura comercial relacional desde tpry_linea_servicio
+      let lineasRaw = [];
+      const lsRes = await pool.query(
+        `SELECT * FROM tpry_linea_servicio WHERE id_proyecto = $1 AND activo = true ORDER BY orden ASC, id_linea_servicio ASC`,
+        [id_proyecto]
+      );
+      if (lsRes.rows.length > 0) {
+        lineasRaw = lsRes.rows.map(l => ({
+          ...l,
+          tipo: l.tipo_servicio || l.categoria || 'SERVICIO',
+          subcategoria: l.subcategoria || l.descripcion || '',
+          valorUnitario: Number(l.valor_unitario || 0),
+          valor_unitario: Number(l.valor_unitario || 0),
+          subtotal: Number(l.subtotal || 0),
+          unidad: l.unidad || 'DIA',
+          pisoMinimo: Number(l.piso_minimo_horas || l.horas_minimas || 8.0),
+          horas_minimas: Number(l.piso_minimo_horas || l.horas_minimas || 8.0),
+          es_cobro_unico: Boolean(l.es_apoyo_operativo || String(l.unidad || '').toUpperCase() === 'GL' || String(l.unidad || '').toUpperCase() === 'GLOBAL')
+        }));
+      } else {
+        const crmV1 = proyecto.json_field?.crm_v1 || {};
+        lineasRaw = crmV1.lineas_operativas_vigentes || crmV1.lineas_servicio || crmV1.snapshot_comercial?.lines || proyecto.json_field?.comercial_v1?.servicios || proyecto.json_field?.cotizacion_v1?.servicios || [];
+      }
       const crmV1 = proyecto.json_field?.crm_v1 || {};
-      const lineasRaw = crmV1.lineas_operativas_vigentes || crmV1.lineas_servicio || crmV1.snapshot_comercial?.lines || proyecto.json_field?.comercial_v1?.servicios || proyecto.json_field?.cotizacion_v1?.servicios || [];
       const lineas = (lineasRaw || []).filter(l => !esLineaRiggerFantasma(l));
       let valorHoraPactado = 0;
       let valorFijoPactado = 0;
+      let valorAdicionalesFijosPactados = 0;
+      let valorDiarioPactado = 0;
+      let diasPactadosDiario = 0;
+      let bolsaMensualHorasPactada = 0;
+      let esValorFijoDiarioComercial = false;
       let valorFletePactado = 0;
       let unidadFletePactado = '';
       let horasMinimas = 8.0;
@@ -367,54 +430,93 @@ const itsController = {
         const tipo = (l.tipo || l.categoria || '').toUpperCase().trim();
         const desc = (l.descripcion || l.concepto || '').toUpperCase();
         const unid = (l.unidad || l.unidad_cobro || '').toUpperCase().trim();
+        const unidCanon = normalizarUnidad(l.unidad || l.unidad_cobro || '');
         const subcat = (l.subcategoria || '').toUpperCase();
         const precio = parseFloat(l.valorUnitario || l.precio_unitario || l.valor_unitario || l.tarifa || 0);
         const sub = parseFloat(l.subtotal || 0);
 
-        if (sub > 0) {
-          ventaNetaProyectadaComercial += sub;
-        } else if (unid.includes('MES')) {
-          const meses = parseFloat(l.cantidad_meses || l.cantidad || 1) || 1;
-          const hrsMes = parseFloat(l.cantidad_horas || l.pisoMinimo || l.piso_minimo || l.horas_minimas || 180) || 180;
-          ventaNetaProyectadaComercial += Math.round(meses * hrsMes * precio);
-        } else if (unid.includes('DIA') || unid.includes('JORNADA')) {
-          const dias = parseFloat(l.cantidad_dias || l.cantidad || 1) || 1;
-          const hrsDia = parseFloat(l.cantidad_horas || l.pisoMinimo || l.piso_minimo || l.horas_minimas || 8) || 8;
-          ventaNetaProyectadaComercial += Math.round(dias * hrsDia * precio);
-        } else {
-          ventaNetaProyectadaComercial += Math.round((parseFloat(l.cantidad || 1) || 1) * precio);
+        const subMotor = calcularSubtotalNodo(l);
+        if (isLineaCobroUnico(l)) {
+          ventaNetaProyectadaComercial += Math.round(precio);
+        } else if (subMotor > 0) {
+          ventaNetaProyectadaComercial += Math.round(subMotor);
+        } else if (sub > 0) {
+          ventaNetaProyectadaComercial += Math.round(sub);
         }
 
-        const esLineaTraslado = tipo === 'TRASLADOS' || tipo.includes('TRASLADO') || tipo.includes('FLETE') || unid.includes('FLETE') || unid.includes('TRASLADO') || (tipo === '' && (desc.includes('FLETE') || desc.includes('TRASLADO') || subcat.includes('FLETE') || subcat.includes('CAMA BAJA')));
+        const esLineaTraslado = unidCanon !== 'Tarifa por Km' && (
+          tipo === 'TRASLADOS' || tipo.includes('TRASLADO') || tipo.includes('FLETE') || unid.includes('FLETE') || unid.includes('TRASLADO') || (tipo === '' && (desc.includes('FLETE') || desc.includes('TRASLADO') || subcat.includes('FLETE') || subcat.includes('CAMA BAJA')))
+        );
 
         if (esLineaTraslado) {
           tieneLineaTraslado = true;
           // SPEC-128: Traslado es cobro único plano (1 × precio), nunca multiplicado por cantidad
-          valorFletePactado += (sub > 0 ? sub : precio);
+          valorFletePactado += precio > 0 ? precio : sub;
           if (!unidadFletePactado && unid) unidadFletePactado = unid;
-        } else {
-          const esFijo = unid.includes('FIJO') || unid.includes('SUMA ALZADA') || tipo.includes('FIJO') || desc.includes('VALOR FIJO');
-          if (esFijo) {
+        } else if (unidCanon === 'Tarifa por Km') {
+          esValorFijoComercial = true;
+          valorFijoPactado += (subMotor > 0 ? subMotor : (sub > 0 ? sub : precio));
+          horasMinimas = 0;
+        } else if (isLineaCobroUnico(l)) {
+          const rolUpper = String(l.rol_nodo || '').toUpperCase();
+          const esSecundaria = Boolean(
+            l.id_linea_servicio_padre ||
+            l.parentId ||
+            ['OTROS', 'ACCESORIO', 'HIJO_COMERCIAL', 'PERSONAL'].includes(rolUpper) ||
+            tipo.includes('OTRO') ||
+            tipo.includes('ACCESORIO')
+          );
+          if (esSecundaria) {
+            valorAdicionalesFijosPactados += (precio > 0 ? precio : sub);
+          } else {
             esValorFijoComercial = true;
-            valorFijoPactado += (sub > 0 ? sub : precio);
-          } else if (precio > 0 && unid.includes('HORA')) {
-            tieneLineaPorHora = true;
-            if (valorHoraPactado === 0) valorHoraPactado = precio;
-            if (parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas) > 0) {
-              horasMinimas = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas);
-            }
-          } else if (precio > 0 && valorHoraPactado === 0 && !esValorFijoComercial) {
-            valorHoraPactado = precio;
-            if (parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas) > 0) {
-              horasMinimas = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas);
-            }
+            valorFijoPactado += (precio > 0 ? precio : sub);
+          }
+        } else if (unidCanon === 'Valor Fijo Diario') {
+          tieneLineaPorHora = true;
+          esValorFijoDiarioComercial = true;
+          valorDiarioPactado += precio;
+          diasPactadosDiario = Math.max(diasPactadosDiario, Number(l.cantidad_dias || l.cantidad || 1));
+          horasMinimas = 0;
+        } else if (unidCanon === 'Valor Fijo Mensual' || unidCanon === 'Valor Fijo Semanal') {
+          esValorFijoComercial = true;
+          valorFijoPactado += (subMotor > 0 ? subMotor : precio);
+          horasMinimas = 0;
+        } else if (precio > 0 && (unid.includes('HORA') || unidCanon === 'Horas Mes Minimas')) {
+          tieneLineaPorHora = true;
+          if (valorHoraPactado === 0) valorHoraPactado = precio;
+          if (unidCanon === 'Horas Mes Minimas') {
+            const bolsaLinea = Number(l.piso_minimo_horas || l.pisoMinimo || l.horas_minimas || l.cantidad_horas || 180) * Math.max(1, Number(l.cantidad_meses || l.cantidad || 1));
+            bolsaMensualHorasPactada = Math.max(bolsaMensualHorasPactada, bolsaLinea);
+          }
+          if (parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas) > 0) {
+            horasMinimas = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas);
+          } else if (unidCanon === 'Hora Efectiva') {
+            horasMinimas = 0;
+          }
+        } else if (precio > 0 && valorHoraPactado === 0 && !esValorFijoComercial) {
+          tieneLineaPorHora = true;
+          valorHoraPactado = precio;
+          if (parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas) > 0) {
+            horasMinimas = parseFloat(l.pisoMinimo || l.piso_minimo || l.horas_minimas || l.cantidad_horas);
           }
         }
       });
 
-      const esSoloTraslado = tieneLineaTraslado && !tieneLineaPorHora && !esValorFijoComercial && valorFijoPactado === 0;
+      if (tieneLineaPorHora) {
+        esValorFijoComercial = false;
+        if (valorFijoPactado > 0) {
+          valorAdicionalesFijosPactados += valorFijoPactado;
+          valorFijoPactado = 0;
+        }
+      } else if (esValorFijoComercial && valorAdicionalesFijosPactados > 0) {
+        valorFijoPactado += valorAdicionalesFijosPactados;
+        valorAdicionalesFijosPactados = 0;
+      }
 
-      if ((esValorFijoComercial && !tieneLineaPorHora) || esSoloTraslado) {
+      const esSoloTraslado = tieneLineaTraslado && !tieneLineaPorHora && !esValorFijoComercial && valorFijoPactado === 0 && valorAdicionalesFijosPactados === 0;
+
+      if ((esValorFijoComercial && !tieneLineaPorHora) || esSoloTraslado || esValorFijoDiarioComercial) {
         valorHoraPactado = 0;
         horasMinimas = 0;
       }
@@ -529,7 +631,8 @@ const itsController = {
           re.rol_equipo
         FROM tpry_rel_equipo re
         JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
-        WHERE re.id_proyecto = $1;
+        WHERE re.id_proyecto = $1
+          AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO');
       `, [id_proyecto]);
 
       const perAsigRes = await pool.query(`
@@ -542,6 +645,7 @@ const itsController = {
         FROM tpry_rel_persona rp
         JOIN tsec_users u ON rp.id_user = u.id_user
         WHERE rp.id_proyecto = $1
+          AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
         ORDER BY rp.id_user, rp.id_rel_persona DESC;
       `, [id_proyecto]);
 
@@ -796,6 +900,7 @@ const itsController = {
 
           movimientosDiarios.push({
             id_reporte_avance: null,
+            tipo_respaldo: 'REGISTRO_VIAJE',
             fecha: v.fecha_viaje_fmt,
             id_equipo: v.id_equipo,
             patente: v.patente || '',
@@ -1067,8 +1172,8 @@ const itsController = {
           // 2. Conciliar reportes diarios de terreno con tiempos reales de viaje y report
           jornadas = jornadas.filter(j => {
             if (j.id_reporte_avance && idsReportsIncompletos.has(Number(j.id_reporte_avance))) return false;
-            const esFlete = j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('flete');
-            if (!esFlete && !j.hora_termino && parseFloat(j.horas_reales || 0) <= 0 && parseFloat(j.horas_report || 0) <= 0) return false;
+            const esEspecial = esJornadaTraslado(j) || esJornadaAdicionalFijo(j);
+            if (!esEspecial && !j.hora_termino && parseFloat(j.horas_reales || 0) <= 0 && parseFloat(j.horas_report || 0) <= 0) return false;
             return true;
           });
 
@@ -1110,8 +1215,14 @@ const itsController = {
                 existing.horas_standby_gsp = movMatch.horas_standby_gsp;
                 existing.horas_standby_cliente = movMatch.horas_standby_cliente;
               }
-              if (!existing.tarifa_hora) existing.tarifa_hora = parseFloat(its.valor_hora_pactado || valorHoraPactado || 0);
-              existing.subtotal = parseFloat(existing.horas_report || 0) * parseFloat(existing.tarifa_hora || 0);
+              if (esValorFijoDiarioComercial && valorDiarioPactado > 0) {
+                existing.tipo_servicio = 'Valor Fijo Diario';
+                existing.tarifa_hora = valorDiarioPactado;
+                existing.subtotal = valorDiarioPactado;
+              } else {
+                if (!existing.tarifa_hora) existing.tarifa_hora = parseFloat(its.valor_hora_pactado || valorHoraPactado || 0);
+                existing.subtotal = parseFloat(existing.horas_report || 0) * parseFloat(existing.tarifa_hora || 0);
+              }
               if (!existing.cliente_firma_canvas_base64 && r.cliente_firma_canvas_base64) existing.cliente_firma_canvas_base64 = r.cliente_firma_canvas_base64;
               if (r.codigo_validacion_fes) existing.codigo_validacion_fes = r.codigo_validacion_fes;
               if (r.cliente_nombre) existing.cliente_nombre = r.cliente_nombre;
@@ -1144,6 +1255,10 @@ const itsController = {
                 tarifa = 0;
                 subtotalJornada = (jornadas.length === 0 ? valorFijoPactado : 0);
                 hrsFact = (parseFloat(r.horas_operadas || 0) > 0 ? parseFloat(r.horas_operadas) : 1.0);
+              } else if (esValorFijoDiarioComercial && valorDiarioPactado > 0) {
+                tipoServicioFila = 'Valor Fijo Diario';
+                tarifa = valorDiarioPactado;
+                subtotalJornada = valorDiarioPactado;
               } else if (esMensualOT) {
                 hrsFact = parseFloat(r.horas_operadas || 0);
                 subtotalJornada = hrsFact * tarifa;
@@ -1192,7 +1307,9 @@ const itsController = {
             }
           });
 
-          if (esValorFijoComercial || its.es_valor_fijo || valorFijoPactado > 0) {
+          if (tieneLineaPorHora) {
+            its.es_valor_fijo = false;
+          } else if (esValorFijoComercial || its.es_valor_fijo || valorFijoPactado > 0) {
             its.es_valor_fijo = true;
             its.valor_fijo_pactado = valorFijoPactado > 0 ? valorFijoPactado : parseFloat(its.valor_fijo_pactado || its.valor_fijo || 0);
             if (parseFloat(its.horas_minimas_pactadas || 0) === 1 && Math.abs(parseFloat(its.valor_hora_pactado || 0) - its.valor_fijo_pactado) < 1) {
@@ -1201,7 +1318,7 @@ const itsController = {
             }
             let fijadoPrimero = false;
             jornadas.forEach(j => {
-              const esFlete = j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('flete');
+              const esFlete = esJornadaTraslado(j) || esJornadaAdicionalFijo(j);
               const esViaje = j.tipo_servicio === 'Registro de Viaje';
               if (!esFlete && !esViaje) {
                 j.tipo_servicio = 'Valor Fijo';
@@ -1331,8 +1448,8 @@ const itsController = {
               }
             });
           }
-          // SPEC-128: El traslado comercial no se divide en mitades sintéticas. Se presenta como fila única de traslado pactado
-          const tieneFleteIda = jornadas.some(j => j.tipo_servicio && (j.tipo_servicio.toLowerCase().includes('traslado') || j.tipo_servicio.toLowerCase().includes('flete')));
+          // SPEC-128 / SPEC-129: El traslado comercial no se divide en mitades sintéticas. Se presenta como fila única de traslado pactado
+          const tieneFleteIda = jornadas.some(esJornadaTraslado);
 
           if (!tieneFleteIda && valorFletePactado > 0 && tieneViajeIdaReal) {
             const montoTraslado = Math.round(valorFletePactado);
@@ -1364,6 +1481,34 @@ const itsController = {
             });
           }
 
+          if (valorAdicionalesFijosPactados > 0 && !its.es_valor_fijo && !jornadas.some(esJornadaAdicionalFijo)) {
+            const movRef = movimientosDiarios[0];
+            jornadas.push({
+              id_jornada: null,
+              id_its: its.id_its,
+              id_reporte_avance: null,
+              fecha: movRef?.fecha || repRes.rows[0]?.fecha_reporte_fmt || new Date().toISOString().slice(0, 10),
+              numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
+              id_equipo: null,
+              patente: 'ADICIONAL',
+              equipo_modelo: 'Ítem Adicional / Accesorio Valor Fijo',
+              tipo_servicio: 'Adicional Fijo',
+              hora_salida: null,
+              hora_llegada: null,
+              hora_termino: null,
+              hora_retorno: null,
+              colacion_minutos: 0,
+              horas_reales: 0,
+              horas_report: 0,
+              tarifa_hora: Math.round(valorAdicionalesFijosPactados),
+              subtotal: Math.round(valorAdicionalesFijosPactados),
+              numero_report: 'ADICIONAL-FIJO',
+              es_oculta: false,
+              vb_conciliado: true,
+              orden: jornadas.length + 1
+            });
+          }
+
           // 4. Consolidar día a día Hora Operador (Operador + Rigger) y Viático Alimentación según SPEC-078
           if (movimientosDiarios.length > 0) {
             const yaGuardoCostosUsuario = Boolean(
@@ -1391,17 +1536,17 @@ const itsController = {
 
           // 5. Recalcular totales reactivos en cabecera
           const sumHrsGrua = jornadas
-            .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')) && j.tipo_servicio !== 'Registro de Viaje')
+            .filter(j => !j.es_oculta && !esJornadaTraslado(j) && !esJornadaAdicionalFijo(j) && j.tipo_servicio !== 'Registro de Viaje')
             .reduce((acc, j) => acc + (parseFloat(j.horas_report) || 0), 0);
 
           const sumIngresosHoras = its.es_valor_fijo
             ? (parseFloat(its.valor_fijo_pactado || valorFijoPactado || 0))
             : jornadas
-                .filter(j => !j.es_oculta && (!j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete')))
+                .filter(j => !j.es_oculta && !esJornadaTraslado(j) && j.tipo_servicio !== 'Registro de Viaje')
                 .reduce((acc, j) => acc + (parseFloat(j.subtotal) || ((parseFloat(j.horas_report) || 0) * (parseFloat(j.tarifa_hora) || parseFloat(its.valor_hora_pactado) || 0))), 0);
 
           const sumIngresosFletes = jornadas
-            .filter(j => !j.es_oculta && j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('flete'))
+            .filter(j => !j.es_oculta && esJornadaTraslado(j))
             .reduce((acc, j) => acc + (parseFloat(j.subtotal) || parseFloat(j.tarifa_hora) || 0), 0);
 
           its.total_horas_report = sumHrsGrua;
@@ -1428,6 +1573,7 @@ const itsController = {
       } else {
         // AUTO-INICIALIZAR ITS CANDIDATO (Borrador inicial relacional)
         const folioSugerido = `ITS-${proyecto.codi_proyecto || proyecto.id_proyecto}-001`;
+        const ingresoBaseInicial = (esValorFijoComercial ? valorFijoPactado : 0) + (!esValorFijoComercial ? valorAdicionalesFijosPactados : 0);
 
         its = {
           id_its: null,
@@ -1435,20 +1581,20 @@ const itsController = {
           folio_its: folioSugerido,
           version: 1,
           tipo_contexto: tipoContexto,
-          horas_minimas_pactadas: (esValorFijoComercial || esSoloTraslado) ? 0 : horasMinimas,
-          valor_hora_pactado: (esValorFijoComercial || esSoloTraslado) ? 0 : valorHoraPactado,
+          horas_minimas_pactadas: (esValorFijoComercial || esSoloTraslado || esValorFijoDiarioComercial) ? 0 : horasMinimas,
+          valor_hora_pactado: (esValorFijoComercial || esSoloTraslado || esValorFijoDiarioComercial) ? 0 : valorHoraPactado,
           valor_fijo_pactado: valorFijoPactado,
           es_valor_fijo: esValorFijoComercial,
           valor_flete_pactado: valorFletePactado,
           unidad_flete_pactado: unidadFletePactado,
           venta_neta_proyectada_comercial: ventaNetaProyectadaComercial,
           total_horas_report: 0,
-          total_ingresos_horas: esValorFijoComercial ? valorFijoPactado : 0,
+          total_ingresos_horas: ingresoBaseInicial,
           total_ingresos_fletes: valorFletePactado,
-          total_ingresos_facturables: (esValorFijoComercial ? valorFijoPactado : 0) + valorFletePactado,
+          total_ingresos_facturables: ingresoBaseInicial + valorFletePactado,
           total_costos_operacionales: 0,
-          utilidad_bruta: (esValorFijoComercial ? valorFijoPactado : 0) + valorFletePactado,
-          margen_porcentaje: ((esValorFijoComercial ? valorFijoPactado : 0) + valorFletePactado) > 0 ? 100 : 0,
+          utilidad_bruta: ingresoBaseInicial + valorFletePactado,
+          margen_porcentaje: (ingresoBaseInicial + valorFletePactado) > 0 ? 100 : 0,
           plantilla_tipo: tipoContexto,
           observaciones: '',
           categorias_sin_costo: {},
@@ -1457,7 +1603,7 @@ const itsController = {
 
         let ordenIdx = 1;
         let sumHrs = 0;
-        let sumIngresos = 0;
+        let sumIngresos = esValorFijoComercial ? Math.round(valorFijoPactado) : 0;
         reportsRows.forEach((r, idx) => {
           const movMatch = movimientosDiarios.find(m => m.id_reporte_avance && Number(m.id_reporte_avance) === Number(r.id_reporte_avance)) || movimientosDiarios[idx];
           const hReal = movMatch && movMatch.horas_reales_report > 0 ? movMatch.horas_reales_report : parseFloat(r.horas_operadas || 0);
@@ -1477,6 +1623,10 @@ const itsController = {
             tarifaJor = 0;
             subtotalFila = (idx === 0 ? valorFijoPactado : 0);
             hrsFact = (hReal > 0 ? hReal : 1.0);
+          } else if (esValorFijoDiarioComercial && valorDiarioPactado > 0) {
+            tipoServicioJor = 'Valor Fijo Diario';
+            tarifaJor = valorDiarioPactado;
+            subtotalFila = valorDiarioPactado;
           } else {
             tarifaJor = valorHoraPactado;
             subtotalFila = hrsFact * valorHoraPactado;
@@ -1628,7 +1778,7 @@ const itsController = {
           const movIda = movimientosDiarios[0];
           const primerRep = repRes.rows[0];
 
-          const tieneFleteYa = jornadas.some(j => j.tipo_servicio && (j.tipo_servicio.toLowerCase().includes('traslado') || j.tipo_servicio.toLowerCase().includes('flete')));
+          const tieneFleteYa = jornadas.some(esJornadaTraslado);
           if (tieneViajeIdaReal && !tieneFleteYa) {
             jornadas.unshift({
               id_jornada: null,
@@ -1657,6 +1807,36 @@ const itsController = {
           }
         }
 
+        if (valorAdicionalesFijosPactados > 0 && !esValorFijoComercial && !jornadas.some(esJornadaAdicionalFijo)) {
+          const movRef = movimientosDiarios[0];
+          const primerRep = repRes.rows[0];
+          jornadas.push({
+            id_jornada: null,
+            id_its: null,
+            id_reporte_avance: null,
+            fecha: movRef?.fecha || primerRep?.fecha_reporte_fmt || new Date().toISOString().slice(0, 10),
+            numero_ot: proyecto.codi_proyecto || `OT-${proyecto.id_proyecto}`,
+            id_equipo: null,
+            patente: 'ADICIONAL',
+            equipo_modelo: 'Ítem Adicional / Accesorio Valor Fijo',
+            tipo_servicio: 'Adicional Fijo',
+            hora_salida: null,
+            hora_llegada: null,
+            hora_termino: null,
+            hora_retorno: null,
+            colacion_minutos: 0,
+            horas_reales: 0,
+            horas_report: 0,
+            tarifa_hora: Math.round(valorAdicionalesFijosPactados),
+            subtotal: Math.round(valorAdicionalesFijosPactados),
+            numero_report: 'ADICIONAL-FIJO',
+            es_oculta: false,
+            vb_conciliado: true,
+            orden: ordenIdx++
+          });
+          sumIngresos += Math.round(valorAdicionalesFijosPactados);
+        }
+
         // Precalcular día a día Hora Operador (Operador + Rigger) y Viático Alimentación según SPEC-078
         if (movimientosDiarios.length > 0) {
           const propPersonal = construirPropuestaPersonalDiaria({
@@ -1677,7 +1857,7 @@ const itsController = {
         const sumCostoOp = costos.costo_hora_operador.reduce((acc, c) => acc + (parseFloat(c.monto_total) || 0), 0);
         const sumCostoAlim = costos.alimentacion.reduce((acc, c) => acc + (parseFloat(c.monto_total) || 0), 0);
         const sumFletesJor = jornadas
-          .filter(j => !j.es_oculta && j.tipo_servicio && j.tipo_servicio.toLowerCase().includes('flete'))
+          .filter(j => !j.es_oculta && esJornadaTraslado(j))
           .reduce((acc, j) => acc + (parseFloat(j.subtotal) || 0), 0);
         its.total_horas_report = sumHrs;
         its.total_ingresos_horas = sumIngresos;
@@ -1880,9 +2060,10 @@ const itsController = {
         if (j.hora_retorno) j.hora_retorno = String(j.hora_retorno).slice(0, 5);
         const colMin = j.colacion_minutos !== null && j.colacion_minutos !== undefined ? Number(j.colacion_minutos) : 0;
         j.colacion_minutos = colMin;
-        const esFlete = j.tipo_servicio && String(j.tipo_servicio).toLowerCase().includes('flete');
+        const esFlete = esJornadaTraslado(j) || esJornadaAdicionalFijo(j);
         if (!esFlete) {
-          const hIniServ = (regimenContextoFinal === 'URBANO') ? (j.hora_salida || j.hora_llegada) : (j.hora_llegada || j.hora_salida);
+          // SPEC-129 1.7.M: En URBANO (<=30km) NO se paga traslado (llegada a faena -> término); en RURAL (>30km) SÍ (salida base -> término)
+          const hIniServ = (regimenContextoFinal === 'RURAL') ? (j.hora_salida || j.hora_llegada) : (j.hora_llegada || j.hora_salida);
           if (hIniServ && j.hora_termino && /^\d{2}:\d{2}$/.test(hIniServ) && /^\d{2}:\d{2}$/.test(j.hora_termino)) {
             const [hI, mI] = hIniServ.split(':').map(Number);
             const [hF, mF] = j.hora_termino.split(':').map(Number);
@@ -1908,6 +2089,189 @@ const itsController = {
         }
       });
 
+      // Acuerdo #2: Arrastre y trazabilidad de costo de visita técnica en el ITS
+      let visitaTecnicaData = {
+        costo_visita: 0,
+        id_user_autorizador: null,
+        nombre_autorizador: null
+      };
+
+      try {
+        const vtJf = proyecto.json_field?.visita_tecnica_v1 || proyecto.json_field?.crm_v1?.visita_tecnica_v1 || {};
+        visitaTecnicaData.costo_visita = Number(vtJf.costo_visita || 0);
+        visitaTecnicaData.id_user_autorizador = vtJf.id_user_autorizador ? Number(vtJf.id_user_autorizador) : null;
+        visitaTecnicaData.nombre_autorizador = vtJf.nombre_autorizador || null;
+
+        // Fallback resiliente: consultar tsrv_survey (template 80) si no venía en json_field
+        if (!visitaTecnicaData.costo_visita && !visitaTecnicaData.id_user_autorizador && !visitaTecnicaData.nombre_autorizador) {
+          const srvVtRes = await pool.query(
+            `SELECT header_exec FROM tsrv_survey WHERE id_proyecto = $1 AND id_template = 80 ORDER BY id_survey DESC LIMIT 1`,
+            [id_proyecto]
+          );
+          if (srvVtRes.rows.length > 0) {
+            let hExec = srvVtRes.rows[0].header_exec;
+            if (typeof hExec === 'string') {
+              try { hExec = JSON.parse(hExec); } catch (_) { hExec = {}; }
+            }
+            if (hExec && typeof hExec === 'object') {
+              if (hExec.costo_visita !== undefined) visitaTecnicaData.costo_visita = Number(hExec.costo_visita || 0);
+              if (hExec.id_user_autorizador) visitaTecnicaData.id_user_autorizador = Number(hExec.id_user_autorizador);
+              if (hExec.nombre_autorizador) visitaTecnicaData.nombre_autorizador = hExec.nombre_autorizador;
+            }
+          }
+        }
+      } catch (errVt) {
+        console.warn('[ITS] Advertencia leyendo visita_tecnica para ITS:', errVt.message);
+      }
+
+      if (its && typeof its === 'object') {
+        its.visita_tecnica = visitaTecnicaData;
+
+        // SPEC-129 / SPEC-132: Convergencia determinista de Ingresos Facturables y Costos Operacionales (Tolerancia $0 CLP con EDP)
+        const esProyectoInternoIts = Boolean(
+          proyecto.es_interno ||
+          crmV1.es_interno ||
+          crmV1.es_requerimiento_interno ||
+          crmV1.tipo_ot === 'OT-INTERNA' ||
+          String(crmV1.linea_negocio || '').toUpperCase() === 'INTERNAS'
+        );
+
+        // 1. Recalcular costos operacionales incluyendo combustible sincronizado de viajes PWA
+        let sumCostosConvergencia = 0;
+        Object.keys(costos || {}).forEach(cat => {
+          (costos[cat] || []).forEach(item => {
+            sumCostosConvergencia += parseFloat(item.monto_total || 0);
+          });
+        });
+        its.total_costos_operacionales = Math.round(sumCostosConvergencia);
+
+        if (esProyectoInternoIts) {
+          its.venta_neta_proyectada_comercial = 0;
+          its.total_ingresos_horas = 0;
+          its.total_ingresos_fletes = 0;
+          its.total_ingresos_facturables = 0;
+        } else {
+          // 2. Valor Fijo Diario Dry-Lease sin reports diarios de grúa (ej. Rental Horquilla 2.1.M)
+          if (esValorFijoDiarioComercial && reportsRows.length === 0 && valorDiarioPactado > 0) {
+            its.total_ingresos_horas = Math.round(valorDiarioPactado * Math.max(1, diasPactadosDiario)) + Math.round(valorAdicionalesFijosPactados || 0);
+          }
+
+          // 3. Piso garantizado de Bolsa Mensual Flexible (1.5.M: Horas Mes Minimas)
+          if (bolsaMensualHorasPactada > 0 && valorHoraPactado > 0) {
+            const pisoBolsaNeto = Math.round(bolsaMensualHorasPactada * valorHoraPactado) + Math.round(valorAdicionalesFijosPactados || 0);
+            if (Number(its.total_ingresos_horas || 0) < pisoBolsaNeto) {
+              its.total_ingresos_horas = pisoBolsaNeto;
+            }
+          }
+
+          // 4. Asegurar flete pactado cuando existe línea de traslado comercial
+          if (valorFletePactado > 0 && Number(its.total_ingresos_fletes || 0) === 0) {
+            its.total_ingresos_fletes = Math.round(valorFletePactado);
+          }
+
+          // 5. Cierre Rental 360° (2.2 / 2.7.M: Diésel faltante + Daños con evidencia fotográfica)
+          const rc360Its = proyecto.json_field?.rental_cierre_360_v1 || null;
+          if (rc360Its) {
+            let extraRental360 = 0;
+            const litrosFalt = Number(rc360Its.litros_combustible_faltante || 0);
+            const tarifaLt = Number(rc360Its.tarifa_litro_combustible || 1350);
+            if (litrosFalt > 0) extraRental360 += Math.round(litrosFalt * tarifaLt);
+            const fotosDanosArr = Array.isArray(rc360Its.fotos_danos) ? rc360Its.fotos_danos : [];
+            if (rc360Its.cobro_danos_cliente && Number(rc360Its.monto_danos) > 0 && fotosDanosArr.length > 0) {
+              extraRental360 += Math.round(Number(rc360Its.monto_danos));
+            }
+            if (extraRental360 > 0) {
+              its.rental_cierre_360 = rc360Its;
+              its.monto_adicional_rental_360 = extraRental360;
+              its.total_ingresos_horas = Math.round(Number(its.total_ingresos_horas || 0) + extraRental360);
+            }
+          }
+
+          its.total_ingresos_facturables = Math.round(Number(its.total_ingresos_horas || 0) + Number(its.total_ingresos_fletes || 0));
+
+          // 6. Conciliación con Ajustes Autorizados EDP (Acuerdo #6: Control de Gestión / Tesorería)
+          const ajEdpIts = proyecto.json_field?.edp_ajustes_v1 || null;
+          const tieneAjusteEdpActivo = Boolean(
+            ajEdpIts && (
+              (ajEdpIts.tarifas_editadas && Object.keys(ajEdpIts.tarifas_editadas).length > 0) ||
+              (ajEdpIts.cantidades_editadas && Object.keys(ajEdpIts.cantidades_editadas).length > 0) ||
+              (ajEdpIts.totales_editados && Object.keys(ajEdpIts.totales_editados).length > 0) ||
+              (Array.isArray(ajEdpIts.otros_items) && ajEdpIts.otros_items.length > 0) ||
+              Number(ajEdpIts.descuento_tesoreria ?? ajEdpIts.descuento_global ?? 0) > 0 ||
+              Number(ajEdpIts.sobretiempo_override || 0) > 0
+            )
+          );
+          if (tieneAjusteEdpActivo && lineas.length > 0) {
+            const pickEd = (dict, l, idx) => {
+              if (!dict || typeof dict !== 'object') return undefined;
+              if (l.id_linea && dict[l.id_linea] !== undefined) return dict[l.id_linea];
+              if (l.id_linea_servicio && dict[l.id_linea_servicio] !== undefined) return dict[l.id_linea_servicio];
+              if (dict[`idx_${idx}`] !== undefined) return dict[`idx_${idx}`];
+              if (dict[idx] !== undefined) return dict[idx];
+              return undefined;
+            };
+            const diasRep = Math.max(1, reportsRows.length);
+            const totalHrsRep = reportsRows.reduce((acc, r) => acc + Number(r.horas_facturables || r.horas_operadas || 0), 0);
+            let subConciliado = 0;
+            lineas.forEach((l, idx) => {
+              const tarEd = pickEd(ajEdpIts.tarifas_editadas, l, idx);
+              const cantEd = pickEd(ajEdpIts.cantidades_editadas, l, idx);
+              const totEd = pickEd(ajEdpIts.totales_editados, l, idx);
+              const vUnit = tarEd !== undefined ? Number(tarEd) : Number(l.valorUnitario || l.precio_unitario || l.valor_unitario || 0);
+              const uCanon = normalizarUnidad(l.unidad || l.unidad_cobro || '');
+              let subL = 0;
+              if (totEd !== undefined && totEd !== null && totEd !== '') {
+                subL = Math.round(Number(totEd));
+              } else if (isLineaCobroUnico(l)) {
+                subL = Math.round(vUnit);
+              } else if (cantEd !== undefined && cantEd !== null && cantEd !== '') {
+                subL = Math.round(vUnit * Number(cantEd));
+              } else if (uCanon === 'Valor Fijo Diario') {
+                const dBase = reportsRows.length > 0 ? diasRep : Math.max(1, Number(l.cantidad_dias || l.cantidad || 1));
+                subL = Math.round(vUnit * dBase);
+              } else if (uCanon === 'Valor Fijo Mensual') {
+                subL = Math.round(vUnit * Math.max(1, Number(l.cantidad_meses || l.cantidad || 1)));
+              } else if (uCanon === 'Horas Mes Minimas') {
+                const b = Math.max(1, Number(l.piso_minimo_horas || l.pisoMinimo || l.cantidad_horas || 180));
+                subL = Math.round(vUnit * Math.max(b, totalHrsRep));
+              } else if (uCanon === 'Tarifa por Km') {
+                subL = Math.round(vUnit * Math.max(0, Number(l.cantidad_km ?? l.distancia_km ?? l.cantidad ?? 0)));
+              } else if (uCanon === 'Horas Diarias Minimas' || uCanon === 'Hora Efectiva') {
+                const hBase = totalHrsRep > 0 ? totalHrsRep : (Number(l.cantidad || 1) * Number(l.pisoMinimo || l.cantidad_horas || 8));
+                subL = Math.round(vUnit * hBase);
+              } else {
+                subL = calcularSubtotalNodo({ ...l, valorUnitario: vUnit }) || Math.round(vUnit * Number(l.cantidad || 1));
+              }
+              subConciliado += subL;
+            });
+            if (its.monto_adicional_rental_360) subConciliado += Number(its.monto_adicional_rental_360);
+            if (Array.isArray(ajEdpIts.otros_items)) {
+              ajEdpIts.otros_items.forEach(io => {
+                subConciliado += Math.round(Number(
+                  io.monto_subtotal ??
+                  (io.subtotal_override !== '' && io.subtotal_override !== null && io.subtotal_override !== undefined ? io.subtotal_override : undefined) ??
+                  io.valorUnitario ??
+                  io.valor_unitario ??
+                  io.monto ??
+                  0
+                ));
+              });
+            }
+            if (Number(ajEdpIts.sobretiempo_override || 0) > 0) {
+              subConciliado += Math.round(Number(ajEdpIts.sobretiempo_override));
+            }
+            const descEdp = Math.round(Number(ajEdpIts.descuento_tesoreria ?? ajEdpIts.descuento_global ?? 0));
+            its.edp_ajustes_v1 = ajEdpIts;
+            its.total_ingresos_facturables = Math.max(0, subConciliado - descEdp);
+          }
+        }
+
+        its.utilidad_bruta = Math.round(its.total_ingresos_facturables - its.total_costos_operacionales);
+        its.margen_porcentaje = its.total_ingresos_facturables > 0
+          ? Number(((its.utilidad_bruta / its.total_ingresos_facturables) * 100).toFixed(2))
+          : 0;
+      }
+
       return res.status(200).json({
         success: true,
         data: {
@@ -1915,6 +2279,7 @@ const itsController = {
           its,
           jornadas,
           costos,
+          visita_tecnica: visitaTecnicaData,
           crm_pensiones: proyecto.json_field?.crm_v1?.pensiones || {},
           asignaciones: {
             equipos: equiposAsignados,
@@ -2030,7 +2395,14 @@ const itsController = {
           const tarifa = parseFloat(j.tarifa_hora !== undefined && j.tarifa_hora !== null ? j.tarifa_hora : (cabecera.valor_hora_pactado || 0));
           const subtotal = parseFloat(j.subtotal !== undefined && j.subtotal !== null ? j.subtotal : ((j.horas_report || 0) * tarifa));
           let tipoServicioFila = j.tipo_servicio || 'Hora';
-          if (tipoServicioFila.includes('Fijo') && !tipoServicioFila.includes('Flete')) {
+          if (
+            tipoServicioFila.includes('Fijo') &&
+            !tipoServicioFila.includes('Flete') &&
+            !tipoServicioFila.includes('Diario') &&
+            !tipoServicioFila.includes('Mensual') &&
+            !tipoServicioFila.includes('Semanal') &&
+            !tipoServicioFila.includes('Adicional')
+          ) {
             tipoServicioFila = 'Valor Fijo';
           }
           await client.query(`
@@ -4083,7 +4455,10 @@ const itsController = {
   // Fallback compatibilidad previa
   async firmarPasoITS(req, res) {
     return itsController.firmarFesITS(req, res);
-  }
+  },
+
+  esJornadaTraslado,
+  esJornadaAdicionalFijo
 };
 
 module.exports = itsController;

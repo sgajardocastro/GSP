@@ -249,11 +249,9 @@ function buildItsHtml(data) {
     const esVehiculoLiviano = normP.startsWith('RK') || normP.startsWith('CL') || String(eq.modelo || '').toUpperCase().includes('CAMIONETA') || String(eq.modelo || '').toUpperCase().includes('DX');
     if (esVehiculoLiviano) return;
 
-    // Si ya mostramos un tracto camión y viene otro, evitar duplicar
+    // Si es tracto o camión, mostrar cada máquina activa o relevo deduplicando solo por patente exacta
     const esTracto = String(eq.tipo_equipo || eq.modelo || '').toUpperCase().includes('TRACTO') || String(eq.tipo_equipo || eq.modelo || '').toUpperCase().includes('CAMION') || String(eq.tipo_equipo || eq.modelo || '').toUpperCase().includes('TRANSPORTE');
     if (esTracto) {
-      if (patentesYaMostradas.has('TRACTO_INCLUIDO')) return;
-      patentesYaMostradas.add('TRACTO_INCLUIDO');
       patentesYaMostradas.add(normP);
       equipos.push({
         patente: rawPat,

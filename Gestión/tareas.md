@@ -1486,6 +1486,68 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
   - **5. Certificación Empírica E2E:** Generación y auditoría de OT v15 (`OT-GSP-2611-00139V15-274.pdf`) con exactamente 2 vehículos únicos (`PAD-33` y `DRCX-62`).
   - **6. Gobernanza y Hard Gate:** Elevación a Web `v1.0.227`, compilación limpia (0 errores), sincronización en `/var/www/html/lg-gsp-dev/`, reinicio de PM2 ID 10 y registro en `sch_leangsp.tcfg_releases` (ID 1999) y `RELEASE_LOG.md`.
 
+* [x] **149. `[REQ-1182]` [Producción & Web — SPEC-135] Hotfix Quirúrgico: Sanitización Determinista de Fechas y Supresión de Rigger Fantasma en OT 51 (CASO-20261116-05) [PROD CERTIFICADO - 16-Nov-2026 / v1.0.224]:**
+  - **1. Diagnóstico de Causa Raíz de Sistema (Cero Parches BD):**
+    - Input HTML5 de año con 6 dígitos (`202616`) en `GestorOportunidades.vue` provocaba que `Torre.vue:3359` recortara a 10 caracteres (`202616-11-`), dejando el día vacío y formateando `"" + "/" + "11" + "/" + "202616"` = `"/11/202616"`.
+    - `new Date("202616-11-16").toISOString()` lanzaba un `RangeError: Invalid time value` capturado silenciosamente en `try/catch` del CRM, abortando `POST /proyectos/:id/asignaciones/sincronizar` sin actualizar la tripulación en base de datos.
+    - `proyectoModel.js:523` (`updateProyecto`) reinyectaba automáticamente el rigger previo (`mergedEjec.rigger_id = prevEjec.rigger_id`) cuando `inEjec.rigger_id` venía vacío, y `generarOTVersion` imprimía al rigger en PDF aun cuando `crm.requiere_rigger === false`.
+  - **2. Aislamiento Git en Rama Limpia `main` (SPEC-135):**
+    - Intervención ejecutada sobre Git Worktree independiente conectado a `main` sin interferir con la remediación estructural en curso (`feature/spec130-remediacion-estructural`).
+  - **3. Implementación de Blindaje en 3 Capas de Código:**
+    - **Frontend CRM (`GestorOportunidades.vue`):** Agregados atributos `min="2024-01-01"` y `max="2035-12-31"` a los inputs de fecha de asignación y función normalizadora `sanitizarFechaLocal` que valida y trunca años a 4 dígitos antes de invocar `toISOString()`.
+    - **Frontend Torre (`Torre.vue`):** Normalizado `formatIsoToDdMmYyyy` con expresión regular robusta `^(\d{4,6})-(\d{2})-(\d{2})` que extrae exactamente 4 dígitos de año, 2 de mes y 2 de día.
+    - **Backend OT Engine (`proyectoModel.js`):** Suprimida la reasignación ciega del rigger previo en `updateProyecto` si `requiere_rigger !== true`, y condicionado el bloque del rigger en `generarOTVersion` a `crm.requiere_rigger !== false`.
+  - **4. Compilación, Despliegue y Gobernanza en Servidor de Producción:**
+    - Compilación limpia con Vite (`dist_prod`, 0 errores).
+    - Despliegue de bundle web a `/var/www/html/lg-gsp-prod/`.
+    - Despliegue de backend a `/home/nodeadmin/proyectos/lean-services-gsp-prod/` y reinicio sin caída del servicio PM2 ID 13 (`lean-services-gsp-prod`).
+    - Verificación HTTP 200 OK y registro formal de versión `1.0.224` en `sch_leangsp_prod.tcfg_releases` (ID 2001) y [RELEASE_LOG.md](file:///d:/SGajardo/Google%20Drive/Antigravity/Grúas%20San%20Pablo/Propuesta%20Gestión%20Operación%20Grúas/RELEASE_LOG.md).
+    - Documentación de soporte canónica en [CASO-20261116-05](file:///d:/SGajardo/Google%20Drive/Antigravity/Grúas%20San%20Pablo/Propuesta%20Gestión%20Operación%20Grúas/Soporte/CASO-20261116-05_Hotfix_Sanitizacion_Fechas_Torre_Y_Supresion_Rigger_Fantasma_OT51.md) y [Soporte/README.md](file:///d:/SGajardo/Google%20Drive/Antigravity/Grúas%20San%20Pablo/Propuesta%20Gestión%20Operación%20Grúas/Soporte/README.md).
+
+* [x] **150. `[REQ-1183]` [Producción, OTs & PWA Móvil — SPEC-133 & SPEC-134] Blindaje Operacional: Sincronización Relacional de OTs y Despliegue PWA v1.0.68 con Fail-Open [PROD CERTIFICADO - 16-Nov-2026 / Backend v1.0.225 / PWA v1.0.68]:**
+  - **1. Fuente de Verdad Relacional en OTs (`proyectoModel.js`):**
+    - `generarOTVersion` consulta directamente las tablas relacionales activas `sch_leangsp_prod.tpry_rel_persona` y `sch_leangsp_prod.tpry_rel_equipo` como fuente de máxima jerarquía.
+    - Se erradican fallbacks zombis que leían JSON obsoleto; si un operador o rigger no está activo en `tpry_rel_persona`, no aparece en el PDF oficial.
+    - Filtro de compuerta comercial: si `crm.requiere_rigger === false`, se excluye automáticamente a cualquier rigger del documento legal.
+  - **2. Backend PWA Fail-Open en Terreno (`reportDiarioController.js`):**
+    - Desescalamiento de errores HTTP 403 (`SERVICIO_CONCLUIDO`) y HTTP 409 (`SERVICIO_ACTIVO_OTRA_OT`) a advertencias operativas (`console.warn`), permitiendo que operadores en terreno reporten y sellen jornadas adicionales sin quedar bloqueados.
+    - Habilitación de `es_dia_adicional: true` en la lista de reportes para continuar la captura obligatoria de firma del supervisor mandante y coordenadas GPS.
+  - **3. Compilación y Despliegue PWA Móvil (`v1.0.68`):**
+    - Compilación limpia con Vue CLI (`dist`) bajo base canónica `/pwa-gsp-prod/`.
+    - Módulo `pwaStorageHelper.js` activo con compresión HTML5 Canvas a 1024px @ 0.70 (reducción de fotos pesadas de 8 MB a 100 KB).
+    - Despliegue del bundle móvil a `/var/www/html/pwa-gsp-prod/`, permisos asignados a `nginx:nginx` y verificación HTTPS 200 OK.
+  - **4. Gobernanza y Registro:**
+    - Versión Backend elevada a `1.0.225` y PWA a `1.0.68`.
+    - Reinicio sin caída de PM2 ID 13 (`lean-services-gsp-prod`).
+    - Registro oficial en `sch_leangsp_prod.tcfg_releases` (ID 2135).
+
+* [x] **151. `[REQ-1184]` [Arquitectura Relacional Integral — SPEC-136] Blindaje Canónico Anti-JSON en Reportes Diarios, Estado de Pago (EDP) e Informe de Término de Servicio (ITS):**
+  - **1. Reportes Diarios (`reportDiarioController.js`):**
+    - Desacoplar `getReportContexto` de `json_field.crm_v1.lineas_servicio` y `ejecucion_v1.tripulacion_asignada` para la resolución de máquina del operador; consultar directamente `tpry_rel_equipo` y `tpry_rel_persona` en estado `PROGRAMADO`.
+    - Ajustar `resolverPisoMinimoContractualOT` para que no dependa de matching por `equipo_asignado_id` congelado en el JSON comercial.
+  - **2. Estado de Pago (`estadoPagoController.js`):**
+    - Sincronizar las líneas operativas del EDP contra los equipos efectivamente reportados en `tedp_reporte_avance` y la asignación activa de `tpry_rel_equipo`.
+    - Blindar la conciliación de tarifas para evitar fallbacks ciegos de "líneas sin equipo asignado" ante sustituciones de flota.
+  - **3. Informe de Término de Servicio (`itsController.js`):**
+    - Sincronizar el cruce de P&L de horas y costos con la flota real que prestó el servicio según `tpry_rel_equipo` y `tedp_reporte_avance`.
+
+* [x] **152. `[REQ-1185]` [Unificación Canónica SPEC-16 §28 — v1.0.228] Erradicación Integral de `json_field` desde Asignación hasta Facturación (DEV):**
+  - **1. Base de Datos (`sch_leangsp`):**
+    - Saneamiento de duplicados en `tpry_rel_equipo` y `tpry_rel_persona`.
+    - Candado físico de unicidad: `CREATE UNIQUE INDEX uq_tedp_proyecto_dia_equipo ON sch_leangsp.tedp_reporte_avance (id_proyecto, dia_correlativo, id_equipo) WHERE estado_reporte != 'ANULADO'`.
+  - **2. Backend (Controladores, Modelos y PDF Services):**
+    - `asignacionRecursosController.js`: Filtro estricto `estado_real != 'REEMPLAZADO'` y orden determinista.
+    - `proyectoModel.js`: Flota y dotación de OT (Tablas 3 y 4) 100% relacionales desde `tpry_rel_equipo` y `tpry_rel_persona`.
+    - `reportDiarioController.js`: Política de cobro y tarifas desde `tpry_linea_servicio`; `regularizarReporteManual` con `ON CONFLICT (...) DO UPDATE` idempotente.
+    - `viajeModel.js` y `viajeController.js`: Erradicación de joins contra `json_field` y resolución directa con tablas relacionales.
+    - `itsPdfService.js`: Eliminado filtro deduplicador que ocultaba convoy o relevos en ITS.
+  - **3. Frontend Web & PWA:**
+    - Sanitización y límites `min="2024-01-01" max="2035-12-31"` con regex en `Torre.vue` y `GestorOportunidades.vue`.
+    - Enlace estricto en PWA (`ReportDiarioIzaje.vue`) a la grúa activa para la fecha del reporte.
+  - **4. Despliegue y Gobernanza en DEV:**
+    - Frontend compilado limpio en `dist_dev` y backend sincronizado.
+    - Reinicio exitoso de PM2 ID 10 en servidor DEV.
+    - Registro en `sch_leangsp.tcfg_backlog` y `sch_leangsp.tcfg_releases` (`v1.0.228`).
 
 
 
@@ -1498,3 +1560,23 @@ Actualmente la visita a terreno se puede crear desde el comercial. Esto no es co
 
 
 
+
+
+
+
+
+
+* [x] **[Release v1.0.226 - PROD] Erradicación Estructural de Duplicados en OT y Blindaje Relacional en 4 Niveles (SPEC-134):**
+  - **1. Base de Datos (`sch_leangsp_prod`):**
+    - Candado físico de unicidad: `CREATE UNIQUE INDEX uq_tedp_proyecto_dia_equipo ON sch_leangsp_prod.tedp_reporte_avance (id_proyecto, dia_correlativo, id_equipo) WHERE estado_reporte != 'ANULADO'`.
+    - Data fix de resolución absoluta en HTTPS para fotos de telemetría de viajes en `tequ_log_desplazamiento`.
+  - **2. Backend (`asignacionRecursosController.js` y `proyectoModel.js`):**
+    - Deduplicación previa al upsert unificando por `id_equipo` y consolidación de `id_linea_servicio`.
+    - Blindaje relacional en Tablas 3 y 4 de la OT oficial evitando productos cruz de flota o dotación.
+  - **3. Frontend Web (`GestorOportunidades.vue`):**
+    - Unificación de `personasMap` y `equiposMap` en `guardarCambiosAsignacion()`.
+    - Compilación limpia de producción en `dist_prod`.
+  - **4. Despliegue en PROD:**
+    - Subida a `/var/www/html/lg-gsp-prod` y `/home/nodeadmin/proyectos/lean-services-gsp-prod/`.
+    - Reinicio exitoso de PM2 ID 13 (`lean-services-gsp-prod`).
+    - Registro formal en `sch_leangsp_prod.tcfg_releases`.

@@ -17,4 +17,7 @@ router.delete('/equipos/:id_rel_equipo', asignacionRecursosController.eliminarAs
 // Resumen
 router.get('/resumen', asignacionRecursosController.getResumenAsignacionesProyecto);
 
+// Sincronización masiva de asignaciones (REQ-1160 / REQ-1172)
+router.post('/sincronizar', asignacionRecursosController.sincronizarAsignacionesProyecto);
+
 module.exports = router;

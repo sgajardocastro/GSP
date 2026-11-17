@@ -110,6 +110,20 @@ async function despacharWhatsAppHttp({ telefono, mensaje }) {
     return { success: false, error: 'NUMERO_INVALIDO' };
   }
 
+  const isProd = esAmbienteProduccion();
+
+  // DEV SANDBOX TRAP: En ambientes que no sean producción (DEV), se suprime el envío real a WhatsApp
+  if (!isProd) {
+    console.log(`[DEV-SANDBOX-WSP] Despacho suprimido en DEV para ${telefonoSanitizado}. Mensaje retenido en log de auditoría.`);
+    console.log(`[DEV-SANDBOX-WSP] Contenido retenido:\n${mensaje}`);
+    return {
+      success: true,
+      simuladoDev: true,
+      destinatarioOriginal: telefonoSanitizado,
+      mensaje: 'DEV Sandbox: Despacho WhatsApp suprimido de forma segura (sin impacto a usuarios reales).'
+    };
+  }
+
   const payload = {
     numero: telefonoSanitizado,
     mensaje: mensaje
@@ -122,7 +136,6 @@ async function despacharWhatsAppHttp({ telefono, mensaje }) {
   // Endpoint local (por si estamos en servidor remoto con puerto 3085 activo)
   listaEndpoints.push('http://127.0.0.1:3085/enviar');
   // Endpoint HTTPS canónico en servidor.leanglobal.cl (para desarrollo local o fallback resiliente)
-  const isProd = esAmbienteProduccion();
   listaEndpoints.push(isProd 
     ? 'https://servidor.leanglobal.cl/lg-gsp-prod/whatsapp/enviar' 
     : 'https://servidor.leanglobal.cl/lg-gsp-dev/whatsapp/enviar');
@@ -288,8 +301,8 @@ async function despacharNotificacion(opts = {}) {
     await registrarLogAuditoria({
       evento,
       canal: 'EMAIL',
-      destinatario: emailDest,
-      payload: { ...emailData, asuntoFinal, urlFinal },
+      destinatario: isProd ? emailDest : `sgajardoc@gmail.com [DEV TRAP de ${emailDest}]`,
+      payload: { ...emailData, asuntoFinal, urlFinal, destinatarioOriginal: emailDest, devSandboxTrap: !isProd },
       resultado: resMail
     });
   }
@@ -320,8 +333,8 @@ async function despacharNotificacion(opts = {}) {
     await registrarLogAuditoria({
       evento,
       canal: 'WHATSAPP',
-      destinatario: telDest,
-      payload: { mensaje: mensajeWsp, urlFinal },
+      destinatario: isProd ? telDest : `SUPRIMIDO_DEV [Original: ${telDest}]`,
+      payload: { mensaje: mensajeWsp, urlFinal, destinatarioOriginal: telDest, devSandboxTrap: !isProd },
       resultado: resWsp
     });
   }

@@ -1,0 +1,77 @@
+{
+  "timestamp": "2026-11-14T22:27:39.808Z",
+  "ambiente": "DEV",
+  "proyecto_testigo": {
+    "id_proyecto": 149,
+    "codi_proyecto": "GSP-2611-00094",
+    "nombre": "Servicio de izaje y maniobra de vigas metalicas en nave industrial Ferrero. Grua 70T con traslado y rigger certificado.",
+    "total_cotizado": 4950000,
+    "total_liquidado_edp": 4950000,
+    "diferencia_clp": 0,
+    "servicios_arbol_count": 1,
+    "items_count": 3
+  },
+  "reports_diarios": [
+    {
+      "dia_correlativo": 1,
+      "id_user_operador": 62,
+      "horas_operadas": "8.00",
+      "horometro_inicio": "1050.00",
+      "horometro_termino": "1058.00"
+    },
+    {
+      "dia_correlativo": 2,
+      "id_user_operador": 62,
+      "horas_operadas": "8.00",
+      "horometro_inicio": "1058.00",
+      "horometro_termino": "1066.00"
+    },
+    {
+      "dia_correlativo": 3,
+      "id_user_operador": 9,
+      "horas_operadas": "8.00",
+      "horometro_inicio": "1066.00",
+      "horometro_termino": "1074.00"
+    },
+    {
+      "dia_correlativo": 4,
+      "id_user_operador": 9,
+      "horas_operadas": "8.00",
+      "horometro_inicio": "1074.00",
+      "horometro_termino": "1082.00"
+    },
+    {
+      "dia_correlativo": 5,
+      "id_user_operador": 9,
+      "horas_operadas": "8.00",
+      "horometro_inicio": "1082.00",
+      "horometro_termino": "1090.00"
+    }
+  ],
+  "edp": {
+    "id_edp": "14",
+    "numero_edp": "EDP-2026-149",
+    "monto_neto": "4950000.00",
+    "monto_iva": "940500.00",
+    "monto_total": "5890500.00",
+    "estado_edp": "APROBADO"
+  },
+  "seguridad_p47": {
+    "id_proyecto": 47,
+    "estado": "INMUTABLE_VERIFICADO",
+    "data": {
+      "id_proyecto": 47,
+      "codi_proyecto": "GSP-2611-00014",
+      "nombre_proyecto": "SURLAT PITRUFQUEN"
+    }
+  },
+  "evidencias_capturadas": [
+    "01_web_crm_arbol_unificado_cotizacion.png",
+    "02_web_crm_cotizacion_guardada_preventa.png",
+    "03_web_crm_requerimiento_operaciones.png",
+    "04_web_validacion_diff_aprobada.png",
+    "05_web_etapa3_asignacion_flota.png",
+    "06_pwa_dashboard_operador.png",
+    "07_web_crm_caso_final_certificado.png"
+  ]
+}

@@ -2,6 +2,39 @@
 
 Este archivo contiene el historial detallado de versiones y mejoras liberadas en los ambientes del Ecosistema GSP (Web, PWA y Backend).
 
+## [Portal Web GSP & Backend] - Versión 1.0.226
+- **Ambiente:** `prod`
+- **Fecha de Despliegue:** 2026-11-17 14:15:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-prod`, `/home/nodeadmin/proyectos/lean-services-gsp-prod/src`
+- **Requerimientos Asociados:** `REQ-1180` / `SPEC-134` / `CASO-20261116-04` (Erradicación Estructural de Duplicados en OT)
+- **Especificación Técnica:** Blindaje Relacional y Erradicación Defensiva de Duplicados en OT y Flota en Producción:
+  - **[Base de Datos (`sch_leangsp_prod`)]**: Creación del índice único parcial `uq_tedp_proyecto_dia_equipo` sobre `sch_leangsp_prod.tedp_reporte_avance (id_proyecto, dia_correlativo, id_equipo) WHERE estado_reporte != 'ANULADO'` para impedir inserciones dobles de reportes diarios para el mismo equipo en la misma jornada. Data fix aplicado en `tequ_log_desplazamiento` para resolución absoluta de fotos de telemetría de viaje en HTTPS.
+  - **[Portal Web (`GestorOportunidades.vue`)]**: Unificación de `personasMap` y `equiposMap` en `guardarCambiosAsignacion()`. Se erradica la clave disyuntiva `${eqId}_${dbLineaId || 'null'}` que generaba duplicados al iterar primero sobre `linesValidas` y luego sobre `servicios`. Consolidación automática de `id_linea_servicio` manteniendo la compatibilidad con relevos formales.
+  - **[Backend Controlador (`asignacionRecursosController.js`)]**: Deduplicación previa al upsert unificando por `id_equipo` (salvo relevos temporales) y consolidación de `id_linea_servicio`. Cláusula `SELECT eqExistente` ampliada con `(COALESCE(id_linea_servicio, 0) = COALESCE($3, 0) OR id_linea_servicio IS NULL OR $3 IS NULL)` y ordenamiento preferente para reutilizar registros preexistentes mediante `UPDATE` en lugar de insertar clones con `NULL`. Deduplicación homóloga para `tpry_rel_persona`.
+  - **[Backend Modelo de OT (`proyectoModel.js`)]**: Inyección de conjuntos de control defensivo `patentesProcesadasBD` en Tabla 3 (Flota & Convoy) y `personasVistasTrip` en Tabla 4 (Tripulación). Garantiza que ninguna patente física se imprima repetida en el documento oficial ante contingencias relacionales.
+  - **[Certificación Empírica E2E]**: Verificación HTTP 200 OK en `https://servidor.leanglobal.cl/lg-gsp-prod/` y PM2 ID 13 online sin reinicios inestables.
+
+## [Portal Web GSP, Backend & Base de Datos] - Versión 1.0.228
+- **Ambiente:** `dev`
+- **Fecha de Despliegue:** 2026-11-17 13:30:00 (-03:00)
+- **Ruta de Despliegue:** `/var/www/html/lg-gsp-dev`, `/home/nodeadmin/proyectos/lean-services-gsp/src`, `sch_leangsp`
+- **Requerimientos Asociados:** `REQ-1185` / `SPEC-16 §28` (Erradicación Integral de `json_field` desde Asignación hasta Facturación)
+- **Especificación Técnica:** Blindaje Canónico Anti-Resurrección y Erradicación Integral de `json_field` en 4 Capas:
+  - **[Capa 1: Base de Datos (`sch_leangsp`)]**: Saneamiento relacional preventivo de duplicados huérfanos en `tpry_rel_equipo` y `tpry_rel_persona`. Creación de candado físico determinista con índice único: `CREATE UNIQUE INDEX uq_tedp_proyecto_dia_equipo ON sch_leangsp.tedp_reporte_avance (id_proyecto, dia_correlativo, id_equipo) WHERE estado_reporte != 'ANULADO'`. Soporte simultáneo multi-máquina (convoy con distintos equipos) y bloqueo físico de duplicados para una misma máquina en la misma jornada.
+  - **[Capa 2: Backend y Controladores (`asignacionRecursosController`, `proyectoModel`, `reportDiarioController`, `viajeModel`, `controlVivoController`, `itsController`, `estadoPagoController`)]**:
+    1. Erradicación total de lectura y escritura en `tpry_proyecto.json_field` para proyectos adjudicados (`id_proyecto_estado >= 4`).
+    2. Ordenamiento determinista en asignaciones (`ORDER BY re.fecha_plan_ini ASC, re.id_rel_equipo ASC`).
+    3. Resolución relacional de equipos y tripulación en `proyectoModel.js` (Tablas 3 y 4 de OT PDF) directo desde `tpry_rel_equipo` y `tpry_rel_persona`.
+    4. En `reportDiarioController.js`, política de cobro y tarifas leídas de `tpry_linea_servicio`; `regularizarReporteManual` resuelve `finalEqId` desde `tpry_rel_equipo` para la fecha y utiliza `ON CONFLICT (...) DO UPDATE` evitando colisiones.
+    5. En `viajeModel.js` y `viajeController.js`, eliminación de joins espurios contra `json_field` y sincronización directa con `tpry_rel_persona` y `tpry_linea_servicio`.
+    6. En `itsPdfService.js`, soporte completo para convoy y relevos múltiples en informe ITS.
+  - **[Capa 3: Portal Web (`GestorOportunidades.vue`, `AsignadorArbolRecursos.vue`, `Torre.vue`, `ControlOperativoVivo.vue`)]**:
+    1. Sanitización de fechas mediante `sanitizarFechaLocal` con regex `^\d{4}-\d{2}-\d{2}$` y límites `min="2024-01-01"` y `max="2035-12-31"`, erradicando excepciones `RangeError: Invalid time value` por tipeo accidental de años inválidos.
+    2. En `ControlOperativoVivo.vue`, envío explícito de `id_equipo` acorde a la máquina activa en la fecha de la jornada seleccionada.
+  - **[Capa 4: PWA Móvil (`Surveys.vue`, `ReportDiarioIzaje.vue`)]**:
+    1. Enlace estricto de horómetros y jornadas al equipo canónico devuelto por el backend (`id_equipo_seleccionado`), respetando relevos de maquinaria sin arrastrar lecturas previas.
+  - **[Certificación E2E]**: Verificación de consistencia triangular (UI = API = PDF = $0 diferencia).
+
 ## [Portal Web GSP & Backend] - Versión 1.0.227
 - **Ambiente:** `dev`
 - **Fecha de Despliegue:** 2026-11-16 16:30:00 (-03:00)

@@ -48,6 +48,11 @@ Ausencia de una herramienta en la interfaz de gestión operativa para registrar 
    - Ejecución de script en el servidor de producción mediante Node.js e invocación de `reportDiarioPdfService.generarPdfReportDiario`.
    - Recompilación con Puppeteer inyectando la patente **`RSPL.82-3`** y el modelo **`C7H8X4 440 EV FORESTAL`**, preservando firmas, horómetros y observaciones intactas.
    - Sobreescritura física de los 6 archivos PDF oficiales en `/u05/LeanDocs/GSP/prod/reports/2026/11/`.
+4. **Restauración y Blindaje de `json_field` en Cabecera (`tpry_proyecto`):**
+   - Durante la actualización inicial, una función `jsonb_set` sobre una ruta inexistente en la raíz evaluó a `NULL`, lo que ocasionó que el Kanban reclasificara temporalmente el proyecto a *Preparación de Operaciones* y que el modal colapsara por falta de `ejecucion_v1`.
+   - Se restauró atómicamente el 100% de la metadata original desde el snapshot de seguridad (36.830 bytes con `crm_v1`, `ejecucion_v1`, `documentos_por_dia`, `obs_validador_por_dia` y `dias_laborales_override`).
+   - Se homologaron los overrides de Torre de Control duplicando la clave del equipo para que tanto `56` como `57` resuelvan los ajustes de Yiara Mendoza sin descalce.
+   - El proyecto retornó inmediatamente a la **Columna 5: En Ejecución / Faena** con apertura fluida y 0 errores de consola.
 
 ---
 

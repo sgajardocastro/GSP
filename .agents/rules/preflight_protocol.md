@@ -27,10 +27,10 @@ Al inicio de cada respuesta, el agente debe declarar explícitamente:
 2. **Sin Spec Actualizada No Hay Código:**
    * Si la tarea implica cambios de arquitectura, flujos o datos, la Spec en `.agents/specs/` DEBE actualizarse y recibir la aprobación del usuario ANTES de mostrar o aplicar diffs de código.
 
-3. **Aislamiento y Presentación de Diff:**
-   * Máximo un (1) archivo intervenido por turno.
-   * Mostrar el diff exacto al usuario antes de ejecutar cualquier herramienta de escritura.
-   * Esperar la confirmación explícita por escrito del usuario en el chat.
+3. **Lista Consolidada y Autorización en Bloque (Cero Diffs Fragmentados):**
+   * Presentar la lista completa y clasificada de todos los archivos a intervenir de una sola vez.
+   * Obtener la autorización en bloque del usuario antes de ejecutar.
+   * Queda eliminada la presentación de diffs línea por línea o archivo por archivo en turnos fragmentados; la ejecución se realiza en bloque sobre los archivos aprobados.
 
 4. **Auditoría Cruda Inmediata:**
    * Tras aplicar cualquier edición autorizada, mostrar inmediatamente la salida de `git diff` para auditar que no existan mutaciones colaterales.

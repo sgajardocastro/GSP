@@ -128,18 +128,27 @@ const viajeModel = {
         COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
         COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
         COALESCE(e.marca, 'GSP') AS marca,
+        e.id_subcategoria,
+        e.codigo_interno,
+        COALESCE(sc.nombre_subcategoria, '') AS nombre_subcategoria,
+        COALESCE((p.json_field->'crm_v1'->>'distancia_km')::numeric, (p.json_field->>'distancia_km')::numeric, 0) AS distancia_km,
         COALESCE(e.odometro_acumulado, 0) AS odometro_acumulado,
         COALESCE(e.horometro_chasis_acumulado, 0) AS horometro_chasis_acumulado,
         COALESCE(e.horometro_grua_acumulado, 0) AS horometro_grua_acumulado
       FROM tequ_log_desplazamiento v
       JOIN tpry_proyecto p ON v.id_proyecto = p.id_proyecto
       LEFT JOIN tequ_equipo e ON v.id_equipo = e.id_equipo
+      LEFT JOIN tequ_subcategoria sc ON e.id_subcategoria = sc.id_subcategoria
       LEFT JOIN tsec_users u ON v.id_user_chofer = u.id_user
-      LEFT JOIN tsec_users u_alt ON u_alt.id_user = COALESCE(
-        (p.json_field->'ejecucion_v1'->'preparacion_salida'->'inspecciones_patio'->v.id_equipo::text->>'operador_id')::int,
-        (p.json_field->'ejecucion_v1'->>'operador_id')::int,
-        55
-      )
+      LEFT JOIN LATERAL (
+        SELECT u2.id_user, u2.name_frst, u2.apellido_pat, u2.email
+        FROM tpry_rel_persona rp
+        JOIN tsec_users u2 ON rp.id_user = u2.id_user
+        WHERE rp.id_proyecto = v.id_proyecto 
+          AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+        ORDER BY rp.fecha_plan_ini ASC, rp.id_rel_persona ASC
+        LIMIT 1
+      ) u_alt ON true
       WHERE v.token_viaje = $1;
     `;
     const res = await db.query(sql, [token]);
@@ -241,11 +250,15 @@ const viajeModel = {
           p.json_field->'crm_v1'->'lineas_servicio' AS lineas_servicio
         FROM tpry_proyecto p
         LEFT JOIN tequ_equipo e ON e.id_equipo = $2
-        LEFT JOIN tsec_users u ON u.id_user = COALESCE(
-          (p.json_field->'ejecucion_v1'->'preparacion_salida'->'inspecciones_patio'->$2::text->>'operador_id')::int,
-          (p.json_field->'ejecucion_v1'->>'operador_id')::int,
-          55
-        )
+        LEFT JOIN LATERAL (
+          SELECT u2.id_user, u2.name_frst, u2.apellido_pat
+          FROM tpry_rel_persona rp
+          JOIN tsec_users u2 ON rp.id_user = u2.id_user
+          WHERE rp.id_proyecto = p.id_proyecto 
+            AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+          ORDER BY rp.fecha_plan_ini ASC, rp.id_rel_persona ASC
+          LIMIT 1
+        ) u ON true
         WHERE p.id_proyecto = $1;
       `;
       const infoRes = await db.query(infoSql, [id_proyecto, id_equipo || 0]);
@@ -335,12 +348,12 @@ const viajeModel = {
       );
       if (eqAcumRes.rows.length > 0) {
         const acum = eqAcumRes.rows[0];
-        // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de excepción bloqueante en odómetro de salida
+        // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de excepción bloqueante en odómetro y horómetro de salida
         if (km_inicial !== undefined && km_inicial !== null && Number(km_inicial) > 0 && Number(acum.odo) > 0 && Number(km_inicial) < Number(acum.odo)) {
           console.warn(`[REQ-1143] Odómetro de salida (${km_inicial} km) menor al acumulado (${acum.odo} km) para equipo ${eqIdVal}. Se permite registro temporalmente.`);
         }
         if (horometro_inicial !== undefined && horometro_inicial !== null && Number(horometro_inicial) > 0 && Number(acum.h_chasis) > 0 && Number(horometro_inicial) < Number(acum.h_chasis)) {
-          throw new Error(`El Horómetro de salida (${horometro_inicial} hrs) no puede ser menor al último registro acumulado del equipo (${acum.h_chasis} hrs).`);
+          console.warn(`[REQ-1143] Horómetro de salida (${horometro_inicial} hrs) menor al acumulado (${acum.h_chasis} hrs) para equipo ${eqIdVal}. Se permite registro temporalmente.`);
         }
       }
       await db.query(
@@ -451,9 +464,14 @@ const viajeModel = {
       let tipoTrayectoInsert = 'IDA';
       if (idPry) {
         try {
-          const pRes = await db.query(`SELECT json_field->'crm_v1'->'lineas_servicio' AS lineas_servicio FROM tpry_proyecto WHERE id_proyecto = $1`, [idPry]);
-          if (pRes.rows.length > 0) {
-            tipoTrayectoInsert = inferirTipoTrayectoDesdeLineas(pRes.rows[0].lineas_servicio, idEq);
+          const lsRes = await db.query(`SELECT * FROM tpry_linea_servicio WHERE id_proyecto = $1 AND activo = true`, [idPry]);
+          if (lsRes.rows.length > 0) {
+            tipoTrayectoInsert = inferirTipoTrayectoDesdeLineas(lsRes.rows, idEq);
+          } else {
+            const pRes = await db.query(`SELECT json_field->'crm_v1'->'lineas_servicio' AS lineas_servicio FROM tpry_proyecto WHERE id_proyecto = $1`, [idPry]);
+            if (pRes.rows.length > 0) {
+              tipoTrayectoInsert = inferirTipoTrayectoDesdeLineas(pRes.rows[0].lineas_servicio, idEq);
+            }
           }
         } catch (e) {}
       }
@@ -575,12 +593,12 @@ const viajeModel = {
     );
     if (prevViajeRes.rows.length > 0) {
       const pv = prevViajeRes.rows[0];
-      // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de excepción bloqueante en odómetro de llegada
+      // REQ-1143 / SPEC-006 v1.6: Deshabilitación temporal de excepción bloqueante en odómetro y horómetro de llegada
       if (km_final !== undefined && km_final !== null && pv.km_inicial !== null && Number(km_final) < Number(pv.km_inicial)) {
         console.warn(`[REQ-1143] Odómetro de llegada (${km_final} km) menor a salida (${pv.km_inicial} km) en viaje ${token_viaje}. Se permite registro temporalmente.`);
       }
       if (horometro_final !== undefined && horometro_final !== null && pv.horometro_inicial !== null && Number(horometro_final) < Number(pv.horometro_inicial)) {
-        throw new Error(`El Horómetro de llegada (${horometro_final} hrs) no puede ser menor al Horómetro de salida (${pv.horometro_inicial} hrs).`);
+        console.warn(`[REQ-1143] Horómetro de llegada (${horometro_final} hrs) menor a salida (${pv.horometro_inicial} hrs) en viaje ${token_viaje}. Se permite registro temporalmente.`);
       }
       if (pv.id_equipo) {
         await db.query(
@@ -728,9 +746,14 @@ const viajeModel = {
     let tipoTrayectoFinal = tipo_trayecto || 'IDA';
     if (!tipo_trayecto && id_proyecto) {
       try {
-        const pRes = await db.query(`SELECT json_field->'crm_v1'->'lineas_servicio' AS lineas_servicio FROM tpry_proyecto WHERE id_proyecto = $1`, [id_proyecto]);
-        if (pRes.rows.length > 0) {
-          tipoTrayectoFinal = inferirTipoTrayectoDesdeLineas(pRes.rows[0].lineas_servicio, id_equipo);
+        const lsRes = await db.query(`SELECT * FROM tpry_linea_servicio WHERE id_proyecto = $1 AND activo = true`, [id_proyecto]);
+        if (lsRes.rows.length > 0) {
+          tipoTrayectoFinal = inferirTipoTrayectoDesdeLineas(lsRes.rows, id_equipo);
+        } else {
+          const pRes = await db.query(`SELECT json_field->'crm_v1'->'lineas_servicio' AS lineas_servicio FROM tpry_proyecto WHERE id_proyecto = $1`, [id_proyecto]);
+          if (pRes.rows.length > 0) {
+            tipoTrayectoFinal = inferirTipoTrayectoDesdeLineas(pRes.rows[0].lineas_servicio, id_equipo);
+          }
         }
       } catch (e) {}
     }
@@ -800,11 +823,15 @@ const viajeModel = {
         e.tipo_equipo,
         e.modelo,
         e.marca,
+        e.id_subcategoria,
+        e.codigo_interno,
+        COALESCE(sc.nombre_subcategoria, '') AS nombre_subcategoria,
         COALESCE(comb.total_litros, 0) AS total_litros,
         COALESCE(comb.total_gasto, 0) AS total_gasto
       FROM tequ_log_desplazamiento v
       LEFT JOIN tsec_users u ON v.id_user_chofer = u.id_user
       LEFT JOIN tequ_equipo e ON v.id_equipo = e.id_equipo
+      LEFT JOIN tequ_subcategoria sc ON e.id_subcategoria = sc.id_subcategoria
       LEFT JOIN (
         SELECT id_log_desplazamiento, SUM(litros_combustible) AS total_litros, SUM(monto_costo) AS total_gasto
         FROM tedp_costos_servicio
@@ -844,12 +871,17 @@ const viajeModel = {
         COALESCE(e.tipo_equipo, 'GRUAS TELESCOPICAS') AS tipo_equipo,
         COALESCE(e.modelo, 'Maquinaria de Izaje') AS modelo,
         COALESCE(e.marca, 'GSP') AS marca,
+        e.id_subcategoria,
+        e.codigo_interno,
+        COALESCE(sc.nombre_subcategoria, '') AS nombre_subcategoria,
+        COALESCE((p.json_field->'crm_v1'->>'distancia_km')::numeric, (p.json_field->>'distancia_km')::numeric, 0) AS distancia_km,
         COALESCE(e.odometro_acumulado, 0) AS odometro_acumulado,
         COALESCE(e.horometro_chasis_acumulado, 0) AS horometro_chasis_acumulado,
         COALESCE(e.horometro_grua_acumulado, 0) AS horometro_grua_acumulado
       FROM tequ_log_desplazamiento v
       JOIN tpry_proyecto p ON v.id_proyecto = p.id_proyecto
       LEFT JOIN tequ_equipo e ON v.id_equipo = e.id_equipo
+      LEFT JOIN tequ_subcategoria sc ON e.id_subcategoria = sc.id_subcategoria
       WHERE v.id_user_chofer = $1
       ORDER BY 
         CASE 

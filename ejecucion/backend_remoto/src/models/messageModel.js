@@ -1,21 +1,68 @@
 const pool = require("../config/postgresPool");
 const nodemailer = require("nodemailer");
+const { config } = require("../config/config");
+
+function esAmbienteProduccion() {
+  const schema = (config && config.dbSchema) || process.env.DB_SCHEMA || 'sch_leangsp';
+  return process.env.APP_ENV === 'prod' || process.env.NODE_ENV === 'production' || schema === 'sch_leangsp_prod';
+}
 
 class MessageModel {
   constructor() {
     this.pool = pool;
     this.transporter = nodemailer.createTransport({
-        host: 'powercp2.zglobalhost.com',
-        port: 465,
-        secure: true, 
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, 
         auth: {
-            user: 'notificaciones.gsp@leanglobal.cl',
-            pass: 'notificaciones.gsp'
+            user: 'sgajardoc@gmail.com',
+            pass: 'fivzwxcrhhrxqhrc'
         },
         tls: {
             rejectUnauthorized: false
         }
     });
+
+    // DEV SANDBOX TRAP: Interceptor transversal inviolable para cualquier envío Nodemailer
+    const rawSendMail = this.transporter.sendMail.bind(this.transporter);
+    this.transporter.sendMail = async (mailOptions, callback) => {
+      const isProd = esAmbienteProduccion();
+      if (!isProd) {
+        const originalTo = mailOptions.to;
+        const originalCc = mailOptions.cc;
+        const originalBcc = mailOptions.bcc;
+
+        // Redirección estricta y forzosa a Sergio Gajardo en DEV
+        mailOptions.to = 'sgajardoc@gmail.com';
+        delete mailOptions.cc;
+        delete mailOptions.bcc;
+
+        const bannerHtml = `
+<div style="background:#fef3c7;border:2px solid #f59e0b;padding:14px 18px;margin-bottom:20px;border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#92400e;line-height:1.5;">
+  <strong style="font-size:14px;color:#b45309;display:block;margin-bottom:6px;">🟡 [DEV SANDBOX TRAP — AMBIENTE DE DESARROLLO GSP]</strong>
+  <span>Este correo fue interceptado automáticamente por el sandbox de seguridad de desarrollo y redirigido exclusivamente a la casilla de auditoría técnica. Ningún destinatario real fue notificado.</span><br/>
+  <div style="margin-top:8px;padding-top:6px;border-top:1px dashed #d97706;font-size:12px;">
+    <strong>Destinatario Original (TO):</strong> <code style="background:#fde68a;padding:2px 5px;border-radius:4px;color:#78350f;">${JSON.stringify(originalTo)}</code><br/>
+    ${originalCc ? `<strong>Copia Original (CC):</strong> <code style="background:#fde68a;padding:2px 5px;border-radius:4px;color:#78350f;">${JSON.stringify(originalCc)}</code><br/>` : ''}
+    ${originalBcc ? `<strong>Copia Oculta Original (BCC):</strong> <code style="background:#fde68a;padding:2px 5px;border-radius:4px;color:#78350f;">${JSON.stringify(originalBcc)}</code><br/>` : ''}
+  </div>
+</div>
+`;
+
+        if (mailOptions.html) {
+          mailOptions.html = bannerHtml + mailOptions.html;
+        } else if (mailOptions.text) {
+          mailOptions.text = `[DEV SANDBOX TRAP]\nDestinatario Original: ${JSON.stringify(originalTo)}\nCC Original: ${JSON.stringify(originalCc)}\n\n` + mailOptions.text;
+        }
+
+        if (mailOptions.subject && !mailOptions.subject.includes('[DEV')) {
+          mailOptions.subject = `🟡 [DEV] ${mailOptions.subject}`;
+        }
+
+        console.log(`[DEV-SANDBOX-MAIL] Correo interceptado y redirigido. Original TO: ${JSON.stringify(originalTo)} -> Destino DEV: sgajardoc@gmail.com`);
+      }
+      return rawSendMail(mailOptions, callback);
+    };
   }
 
   obtenerPlantillaHTML({ titulo, subtitulo, contenido, botonTexto, botonUrl }) {
@@ -195,7 +242,8 @@ class MessageModel {
   async enviarYRegistrarCorreo({ para, cc, asunto, cuerpo, esHtml = false }) {
     console.log(`[MAILER] Enviando correo a ${para}${cc ? ` (CC: ${cc})` : ''} con asunto: "${asunto}"...`);
     const mailOptions = {
-        from: '"GSP Platform" <notificaciones.gsp@leanglobal.cl>',
+        from: '"Grúas San Pablo - Plataforma" <sgajardoc@gmail.com>',
+        replyTo: 'notificaciones.gsp@leanglobal.cl',
         to: para,
         cc: cc || undefined,
         subject: asunto,

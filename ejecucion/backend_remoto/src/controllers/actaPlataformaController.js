@@ -243,17 +243,9 @@ const actaPlataformaController = {
         id_file_pdf_entrega: docPdf.id_doc
       });
 
-      // 10. Actualizar flag en tpry_proyecto.json_field para retrocompatibilidad
-      if (!jf.ejecucion_v1) jf.ejecucion_v1 = {};
-      jf.ejecucion_v1.acta_plataforma_360 = {
-        id_acta: actaGuardada.id_acta,
-        folio: folio,
-        estado: 'ENTREGADA',
-        url_pdf: `/api/archivo/ver/${docPdf.id_doc}`,
-        id_doc_pdf: docPdf.id_doc,
-        fecha_entrega: new Date().toISOString()
-      };
-      await pool.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [jf, id_proyecto]);
+      // 10. SPEC-16 §28: Cese de mutación a json_field. El acta vive en tope_acta_plataforma.
+      // Al registrar Entrega (T0), el proyecto RENTAL se mantiene en ejecución activa (5)
+      await pool.query('UPDATE tpry_proyecto SET id_proyecto_estado = 5 WHERE id_proyecto = $1', [id_proyecto]);
 
       return res.status(200).json({
         success: true,
@@ -280,7 +272,12 @@ const actaPlataformaController = {
         receptor_retiro_nombre,
         receptor_retiro_rut,
         receptor_retiro_cargo,
-        firma_retiro_base64
+        firma_retiro_base64,
+        litros_combustible_faltante = 0,
+        tarifa_litro_combustible = 1350,
+        cobro_danos_cliente = false,
+        monto_danos = 0,
+        fotos_danos = []
       } = req.body;
 
       if (!id_proyecto) return res.status(400).json({ error: 'id_proyecto es obligatorio' });
@@ -318,6 +315,33 @@ const actaPlataformaController = {
               url_data: dataUri
             });
           }
+        }
+      }
+
+      // 3.1. Procesar fotos de daños/siniestros (SPEC-129 2.7.M)
+      const fotosDanosProcesadas = [];
+      const rawFotosDanos = Array.isArray(fotos_danos) ? fotos_danos : (Array.isArray(req.body.fotos_danos) ? req.body.fotos_danos : []);
+      for (let i = 0; i < rawFotosDanos.length; i++) {
+        const fd = rawFotosDanos[i];
+        const dataUri = fd?.url_data || fd?.data || (typeof fd === 'string' && fd.startsWith('data:') ? fd : null);
+        if (dataUri) {
+          const imgSaved = saveBase64Image(dataUri, targetDir, `foto_dano_${i + 1}`);
+          if (imgSaved) {
+            const docFile = await archivoM.insertarTfmgFile(
+              'EVIDENCIA_FOTOGRAFICA',
+              imgSaved.mimeType,
+              imgSaved.fileName,
+              imgSaved.fileName,
+              relDir,
+              req.user?.id_user || null,
+              'A'
+            );
+            fotosDanosProcesadas.push(`/api/archivo/ver/${docFile.id_doc}`);
+          }
+        } else if (typeof fd === 'string' && fd.length > 0) {
+          fotosDanosProcesadas.push(fd);
+        } else if (fd && (fd.url_path || fd.path)) {
+          fotosDanosProcesadas.push(fd.url_path || fd.path);
         }
       }
 
@@ -465,17 +489,9 @@ const actaPlataformaController = {
         id_file_pdf_final: docPdfFinal.id_doc
       });
 
-      // 7. Actualizar json_field
-      const jf = pry.json_field || {};
-      if (!jf.ejecucion_v1) jf.ejecucion_v1 = {};
-      jf.ejecucion_v1.acta_plataforma_360 = {
-        ...(jf.ejecucion_v1.acta_plataforma_360 || {}),
-        estado: 'RECIBIDA_CONFORME',
-        url_pdf_final: `/api/archivo/ver/${docPdfFinal.id_doc}`,
-        id_doc_pdf_final: docPdfFinal.id_doc,
-        fecha_retiro: new Date().toISOString()
-      };
-      await pool.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [jf, id_proyecto]);
+      // 7. SPEC-16 §28: Cese de mutación a json_field. La devolución vive en tope_acta_plataforma.
+      // Al recepcionar Acta de Retiro/Devolución (T1), el arriendo pasa a estado 6 (Finalizado / Para Facturación)
+      await pool.query('UPDATE tpry_proyecto SET id_proyecto_estado = 6 WHERE id_proyecto = $1', [id_proyecto]);
 
       return res.status(200).json({
         success: true,

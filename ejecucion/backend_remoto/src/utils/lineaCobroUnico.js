@@ -16,11 +16,22 @@ function isLineaCobroUnico(linea) {
   const desc = String(linea.descripcion || linea.concepto || '').trim().toUpperCase();
   const subcat = String(linea.subcategoria || '').trim().toUpperCase();
 
-  const esFijo = unidad.includes('FIJO') || 
-                 unidad.includes('ALZADA') || 
-                 tipo.includes('FIJO') || 
-                 desc.includes('VALOR FIJO') ||
-                 desc.includes('SUMA ALZADA');
+  const esFijoPeriodico = unidad.includes('DIARIO') ||
+                          unidad.includes('DIA') ||
+                          unidad.includes('DÍA') ||
+                          unidad.includes('JORNADA') ||
+                          unidad.includes('SEMAN') ||
+                          unidad.includes('MENSUAL') ||
+                          unidad.includes('MES');
+
+  const esFijo = !esFijoPeriodico && (
+                 unidad === 'VALOR FIJO' ||
+                 unidad === 'FIJO' ||
+                 unidad.includes('ALZADA') ||
+                 tipo === 'VALOR FIJO' ||
+                 desc.includes('SUMA ALZADA') ||
+                 (desc.includes('VALOR FIJO') && !desc.includes('DIARIO') && !desc.includes('MENSUAL') && !desc.includes('SEMANAL'))
+                 );
 
   const esTraslado = tipo === 'TRASLADOS' || 
                      tipo.includes('TRASLADO') || 
@@ -64,24 +75,33 @@ function calcularSubtotalLinea(linea, ctx = {}) {
 
   const unidad = String(linea.unidad || linea.unidad_cobro || '').trim().toUpperCase();
   const cant = Number(linea.cantidad || 1);
+  const lineaNegocio = String(linea.linea_negocio || linea.linea_servicio || '').trim().toUpperCase();
+  const esRental = lineaNegocio === 'RENTAL' || String(linea.tipo_ot || '').toUpperCase().includes('RENTAL') || String(linea.tipo || '').toUpperCase().includes('ALZA') || String(linea.subcategoria || '').toUpperCase().includes('TIJERA');
 
-  if (unidad.includes('DIARIO') || unidad.includes('DIA') || unidad.includes('JORNADA')) {
-    const dias = Math.max(1, ctx.diasFaena || Number(linea.cantidad_dias) || cant);
-    return valUnit * dias * (Number(linea.cantidad_horas) || 1);
+  if ((unidad.includes('DIARIO') || unidad.includes('DIA') || unidad.includes('DÍA') || unidad.includes('JORNADA')) && !unidad.includes('HORA') && !unidad.includes('MINIMA') && !unidad.includes('MÍNIMA')) {
+    const dias = esRental
+      ? Math.max(1, Number(linea.cantidad_dias || linea.cantidad || 1))
+      : Math.max(1, ctx.diasFaena || Number(linea.cantidad_dias || linea.cantidad || 1));
+    return Math.round(valUnit * dias);
   }
 
-  if (unidad.includes('MES') || unidad.includes('MENSUAL')) {
-    const meses = Number(linea.cantidad_meses || cant || 1);
-    const hrsMes = Number(linea.cantidad_horas || linea.pisoMinimo || 180);
-    return valUnit * meses * hrsMes;
+  if ((unidad.includes('MES') || unidad.includes('MENSUAL')) && (unidad.includes('HORA') || unidad.includes('MINIMA') || unidad.includes('MÍNIMA') || unidad.includes('BOLSA'))) {
+    const meses = Math.max(1, Number(linea.cantidad_meses || cant || 1));
+    const hrsMes = Math.max(1, Number(linea.cantidad_horas || linea.piso_minimo_horas || linea.pisoMinimo || 180));
+    return Math.round(valUnit * meses * hrsMes);
   }
 
-  if (unidad.includes('HORA') || unidad.includes('MINIMA')) {
-    const hrs = Number(ctx.totalHorasFacturables !== undefined ? ctx.totalHorasFacturables : (Number(linea.cantidad_horas || linea.pisoMinimo || 8) * Number(linea.cantidad_dias || cant || 1)));
-    return valUnit * hrs;
+  if (unidad.includes('MES') || unidad.includes('MENSUAL') || unidad.includes('CANON')) {
+    const meses = Math.max(1, Number(linea.cantidad_meses || cant || 1));
+    return Math.round(valUnit * meses);
   }
 
-  return valUnit * cant;
+  if (unidad.includes('HORA') || unidad.includes('MINIMA') || unidad.includes('MÍNIMA')) {
+    const hrs = Number(ctx.totalHorasFacturables !== undefined ? ctx.totalHorasFacturables : (Number(linea.cantidad_horas || linea.piso_minimo_horas || linea.pisoMinimo || 8) * Number(linea.cantidad_dias || cant || 1)));
+    return Math.round(valUnit * hrs);
+  }
+
+  return Math.round(valUnit * cant);
 }
 
 module.exports = {

@@ -1323,3 +1323,170 @@ Para permitir la validación operativa en el ambiente de desarrollo (`DEV`) junt
 3. **Conmutación Instantánea Sin Pérdida (Round-Trip Safe):**
    - Cambiar de `'arbol'` a `'clasico'` o viceversa en cualquier momento sincroniza en memoria `serviciosArbol.value` $\leftrightarrow$ `lines.value`.
    - Todas las validaciones de guardado (`guardarOportunidad`), emisión de PDF (`generarPDF`) y paso a Operaciones (`generarRequerimiento`) operan indistintamente desde ambas vistas gracias a la proyección sincronizada en `lines.value`.
+
+## 27. Sustitución y Relevo de Equipos en Faena: Vigencia Relacional Temporal (`tpry_rel_equipo`), Desacople de JSON en Backend y Contexto Dinámico Reactivo en PWA (`REQ-1120` / `CASO-20261113-02` / `CASO-20261113-03` — Nov-2026)
+
+### 27.1. Diagnóstico de Causa Raíz y Lección Forense del Caso Mettco SPA (Planta Ferrero - Fundo Caracas)
+1. **Antecedente Real en Producción:**
+   - Durante la ejecución simultánea de los arriendos mensuales `GSP-2611-00004` (OT 33) y `GSP-2611-00007` (OT 36), Operaciones coordinó en terreno el intercambio recíproco de flota el 6 de noviembre:
+     - El camión pluma Sinotruk `RSPL.82-3` (`id_equipo = 56`) pasó a la OT 33 con Omar Garrido.
+     - El camión pluma Volkswagen Constellation `TRPS.20-8` (`id_equipo = 57`) pasó a la OT 36 con Ernesto Ríos.
+2. **El Fallo del Modelo Estático en JSON:**
+   - Al no existir soporte formal para relevos de equipos por intervalo de fecha, la asignación se gestionaba sobreescrita en `json_field.crm_v1.lineas_servicio` o congelada en `ejecucion_v1.tripulacion_asignada`.
+   - Cuando el operador Ernesto Ríos ingresó a la PWA a partir del 6 de noviembre, el backend resolvió el equipo desde el snapshot estático de preventa (`lines.find(...)`), inyectando en la pantalla del celular la patente antigua `RSPL.82-3`.
+   - El operador emitió 7 reportes consecutivos (Días 3 al 9) con la patente equivocada, provocando duplicidad física de la misma máquina en dos faenas y discrepancia frente a la inspección técnica de METTCO SPA, obligando a una corrección manual en base de datos y a la regeneración física de PDFs (`CASO-20261113-02` y `CASO-20261113-03`).
+
+### 27.2. Gobernanza de Datos: Modelo Relacional de Sustitución en `tpry_rel_equipo`
+1. **Segmentación Temporal Estricta en Base de Datos:**
+   - Queda estrictamente prohibido sobrescribir el campo `id_equipo` en los objetos JSON o modificar las fechas del registro original para ocultar el equipo saliente.
+   - Todo cambio o reemplazo de máquina en una orden de trabajo activa debe persistirse mediante segmentación cronológica en la tabla `tpry_rel_equipo`:
+     * **Equipo Saliente:** Se actualiza su vigencia acotando `fecha_plan_fin` al término de su última jornada operativa en faena (ej. `'YYYY-MM-DD 23:59:59-03'`).
+     * **Equipo Entrante (Reemplazo):** Se inserta una nueva fila en `tpry_rel_equipo` con `fecha_plan_ini` fijada al inicio de su jornada operativa (ej. `'YYYY-MM-DD 00:00:00-03'`), `fecha_plan_fin` vinculada al término del servicio, y metadatos explícitos:
+       - `es_reemplazo = TRUE`
+       - `id_equipo_reemplazado = <id_equipo_anterior>`
+       - `motivo_reemplazo = 'PANA_MECANICA' | 'MANTENCION_PROGRAMADA' | 'ENROQUE_OPERATIVO' | 'CONTINUIDAD'`
+2. **Preservación Inmutable de Historial de Flota:**
+   - La historia física de qué máquina operó cada día permanece intacta e inalterable en base de datos. Ningún reporte emitido previamente bajo el equipo saliente sufre mutación de su `id_equipo` original.
+
+### 27.3. Desacople del JSON en Backend API (`reportDiarioController.js`)
+1. **Resolución Determinista por Fecha (`CURRENT_DATE` / `fecha_reporte`):**
+   - Se elimina la dependencia ciega de `crm_v1.lineas_servicio` y `ejecucion_v1.tripulacion_asignada` para deducir el equipo en los endpoints de terreno:
+     * `GET /api/operaciones/report/contexto`
+     * `GET /api/operaciones/reports/usuario/pendientes`
+   - La consulta SQL debe resolver el equipo asignado priorizando la tabla relacional con filtro de vigencia temporal activo:
+     ```sql
+     SELECT re.id_equipo, e.patente, e.modelo, e.marca, e.tipo_equipo,
+            COALESCE((e.json_data->>'horometro')::numeric, 0) AS horometro_base
+     FROM tpry_rel_equipo re
+     JOIN tequ_equipo e ON re.id_equipo = e.id_equipo
+     WHERE re.id_proyecto = $1
+       AND (
+         (re.fecha_plan_ini IS NULL AND re.fecha_plan_fin IS NULL)
+         OR ($2::date BETWEEN re.fecha_plan_ini::date AND re.fecha_plan_fin::date)
+       )
+     ORDER BY re.es_reemplazo DESC, re.id_rel_equipo DESC
+     LIMIT 1;
+     ```
+2. **Prioridad Relacional sobre Fallback JSON:**
+   - La tabla relacional `tpry_rel_equipo` tiene precedencia absoluta. Los nodos JSON solo operan como mecanismo de respaldo (fallback de solo lectura) para proyectos antiguos que no cuenten con asignación relacional.
+
+### 27.4. Experiencia Operacional y Reactividad en PWA Móvil (`Surveys.vue` y `ReportDiarioIzaje.vue`)
+1. **Reactividad ante la Fecha de Jornada:**
+   - Cuando el conductor ingresa a la PWA o cambia la fecha a reportar, la aplicación invoca el contexto evaluando la fecha de emisión seleccionada (`fecha_reporte`).
+   - Si la fecha corresponde al período posterior al relevo, la PWA presenta de forma inmediata la patente y modelo del equipo entrante, sin arrastrar cachés locales de IndexedDB o Pinia.
+2. **Aviso Visual al Operador (Zero Confusión):**
+   - En la tarjeta del servicio de `Surveys.vue` y en la cabecera de `ReportDiarioIzaje.vue`, si el equipo asignado posee el flag `es_reemplazo`, la interfaz renderiza un banner informativo:
+     > **Equipo de Reemplazo Activo:** A partir del [Fecha Relevo], este servicio opera con la unidad **[Patente] - [Modelo]** (Relevo de [Patente Anterior]).
+3. **Línea Base Automática de Horómetros:**
+   - La PWA precarga automáticamente como horómetro inicial el horómetro del último reporte emitido por esa máquina específica (o el `horometro_grua_llegada` registrado en el viaje de traslado de ese equipo), eliminando cualquier colisión con el odómetro/horómetro de la máquina saliente.
+
+### 27.5. Liquidación Comercial y Estados de Pago ($0 Descuadre)
+1. **Consolidación Contractual de Línea Única:**
+   - Ante el cliente mandante (ej. Mettco, Besalco) y en la carátula oficial de Estado de Pago (EDP), la cotización y la facturación se mantienen bajo **una única línea de servicio comercial** (ej. *Arriendo Mensual Camión Pluma 20T*).
+   - Queda prohibido generar líneas comerciales duplicadas o cobrar fletes adicionales derivados de un cambio interno de máquina por motivos de mantenimiento o enroque operativo de Grúas San Pablo.
+2. **Auditoría Transparente en Respaldo Técnico (ITS / Anexo EDP):**
+   - El motor de cálculo (`estadoPagoController.js`) agrupa todos los reportes diarios aprobados bajo la línea de trabajo, liquidando:
+     $$\text{Total Días Facturables} = \sum \text{Días Equipo A} + \sum \text{Días Equipo B}$$
+   - Las horas mínimas garantizadas pactadas contractualmente se aplican sobre el servicio unificado.
+   - En el anexo o respaldo técnico del EDP se desglosan explícitamente los días operados por cada patente con sus correspondientes números de reporte firmados en faena.
+
+### 27.6. Interfaz de Usuario Web CRM en `AsignadorArbolRecursos.vue` — Soporte UI Nativo de Relevo de Equipos por Fechas y Motivo
+1. **Simetría Operativa Flota $\leftrightarrow$ Tripulación:**
+   - De forma análoga a la gestión de turnos de operadores (`+ Relevo` en Tripulación), la columna **Equipo / Vehículo Asignado** dispone de un botón interactivo **`+ Relevo`**.
+   - Permite al usuario programar en pantalla la sustitución de flota dentro de la misma línea de servicio:
+     * **`EQ:` (Equipo Titular):** Selector de la máquina principal y su ventana operativa inicial (ej. `2026-11-11` al `2026-11-14`).
+     * **`R1:`, `R2:` (Equipos de Relevo):** Selectores para máquinas entrantes con sus respectivas ventanas de vigencia y badge visual `RELEVO`.
+2. **Sincronización Atómica en Guardado:**
+   - Al pulsar `💾 GUARDAR CAMBIOS`, la matriz `turnos_equipos` se envía al backend vía `/proyectos/:id/asignaciones/sincronizar`.
+   - El backend persiste las filas correspondientes en `tpry_rel_equipo` asignando `es_reemplazo = TRUE` y vinculando `id_equipo_reemplazado` al equipo titular.
+
+## 28. Erradicación Integral de `json_field` desde Asignación hasta Facturación (`id_proyecto_estado >= 4`) y Blindaje Canónico en 4 Niveles (Web, PWA, Backend, BD y Motores PDF)
+
+### 28.1. Regla de Corte Arquitectónica Inviolable (Cero JSON en Operaciones)
+A partir del estado **Adjudicado / Asignación (`id_proyecto_estado >= 4`) hacia adelante** (Asignación de Recursos, Patio, Despacho y Viajes, Actas de Plataforma 360°, Monitor Control en Vivo, Reportes Diarios Web/PWA/PDF, ITS Web/PDF y EDP Web/PDF):
+1. **Prohibición Total de Lectura y Escritura en `tpry_proyecto.json_field`** para resolver o almacenar:
+   - Flota asignada, patentes, modelos o equipos de apoyo (`crm_v1.lineas_servicio[].equipo_asignado_id`, `ejecucion_v1.equipo_id`, `ejecucion_v1.equipos_asignados`, `ejecucion_v1.equipos_extra`, `operaciones_v1`).
+   - Dotación humana, operadores, choferes o riggers (`crm_v1.lineas_servicio[].operador_asignado_id`, `ejecucion_v1.operador_id`, `ejecucion_v1.chofer_id`, `ejecucion_v1.rigger_id`, `ejecucion_v1.tripulacion`, `ejecucion_v1.tripulacion_asignada`).
+   - Tarifas, unidades de cobro, pisos mínimos, horas ejecutadas, actas de entrega o documentos adjuntos por jornada (`crm_v1.lineas_operativas_vigentes`, `crm_v1.lineas_servicio`, `ejecucion_v1.acta_plataforma_360`, `json_field.documentos_por_dia`, `ejecucion_v1.dossier_documentos`).
+2. **Únicas Fuentes Canónicas de Verdad en `DEV`:**
+   - **Estructura comercial, tarifas, unidades y pisos mínimos:** `sch_leangsp.tpry_linea_servicio` + `motorValorizacionService.js`.
+   - **Asignación de maquinaria y relevos temporales:** `sch_leangsp.tpry_rel_equipo` (vinculada por `id_linea_servicio`, acotada por `fecha_plan_ini` y `fecha_plan_fin`).
+   - **Asignación de operadores, choferes y riggers:** `sch_leangsp.tpry_rel_persona` (acotada por `fecha_plan_ini` y `fecha_plan_fin`).
+   - **Desplazamientos, odómetros de ruta y cargas de combustible:** `sch_leangsp.tequ_log_desplazamiento` y `sch_leangsp.tedp_costos_servicio`.
+   - **Actas 360° de entrega y retiro Rental:** `sch_leangsp.tope_acta_plataforma` y `sch_leangsp.tfmg_file`.
+   - **Jornadas en faena, horómetros y respaldos diarios:** `sch_leangsp.tedp_reporte_avance` y `sch_leangsp.tfmg_file`.
+   - **Cierre operativo y facturación:** `sch_leangsp.tits_informe_termino` (`+ tits_*`) y `sch_leangsp.tedp_estado_pago` (`+ tedp_estado_pago_detalle`).
+
+### 28.2. Modelo de Integridad y Semántica de Estados en PostgreSQL (`sch_leangsp`)
+1. **Candado Físico de Unicidad en Motor SQL:**
+   ```sql
+   CREATE UNIQUE INDEX IF NOT EXISTS uq_tedp_proyecto_dia_equipo
+   ON sch_leangsp.tedp_reporte_avance (id_proyecto, dia_correlativo, id_equipo)
+   WHERE estado_reporte != 'ANULADO';
+   ```
+   *Justificación Técnica:* Incluir `id_equipo` habilita que un convoy simultáneo de Grúa + Camión reporte el mismo `dia_correlativo` con su propia máquina, impidiendo físicamente la duplicación de reportes de una misma unidad en la misma jornada.
+2. **Semántica Estricta de Estados en Asignaciones:**
+   - **Sustitución Previa a Operar (0 viajes y 0 reports):** La fila anterior pasa a `estado_real = 'REEMPLAZADO'` (o `'CANCELADO'`) y queda excluida de toda consulta operativa.
+   - **Relevo en Faena a Mitad de Servicio (ej. Equipo A días 1-6 y Equipo B días 7-13):**
+     - La fila del Equipo A **no se destruye ni se oculta del historial**; cierra su `fecha_plan_fin = 'YYYY-MM-DD 23:59:59'` en su último día real operado (manteniendo `estado_real = 'PROGRAMADO'` o `'FINALIZADO_RELEVO'`).
+     - La fila del Equipo B se inserta con `es_reemplazo = TRUE`, `id_equipo_reemplazado = <id_equipo_A>`, `id_linea_servicio = <misma_linea>`, `fecha_plan_ini = <inicio_dia_7>`, `fecha_plan_fin = <termino_servicio>` y `estado_real = 'PROGRAMADO'`.
+
+### 28.3. Especificación Técnica por Módulo y Archivo
+1. **Asignación y Orden de Trabajo (`GestorOportunidades.vue`, `AsignadorArbolRecursos.vue`, `asignacionRecursosController.js` y `proyectoModel.js`):**
+   - Atributos `min="2024-01-01"` y `max="2035-12-31"` en inputs de fecha más `sanitizarFechaLocal` (año de 4 dígitos) para neutralizar `RangeError: Invalid time value`.
+   - `guardarCambiosAsignacion`: Deduplicación estricta por `id_equipo` consolidando `id_linea_servicio`; cese total de escritura en `json_field`; hidratación exclusiva desde `GET /asignaciones/equipos` y `GET /asignaciones/personas`.
+   - `generarOTVersion`: Construcción de Tablas 3 (Flota) y 4 (Tripulación) exclusivamente desde `tpry_rel_equipo` y `tpry_rel_persona` (`NOT IN ('CANCELADO', 'REEMPLAZADO')`). Desglose de vigencia en relevos. Supresión estricta de `RIGGER` si no está contratado en `tpry_linea_servicio`. Piso mínimo resuelto desde `tpry_linea_servicio`.
+2. **Torre de Control (`Torre.vue`):**
+   - Regex de fecha `^(\d{4,6})-(\d{2})-(\d{2})` en `formatIsoToDdMmYyyy` tomando los primeros 4 dígitos. Resolución de devengado desde `tpry_linea_servicio` y estado de patio desde `tsrv_survey` / `tequ_log_desplazamiento`.
+3. **Viajes, Desplazamientos y Actas 360° Rental (`viajeModel.js`, `viajeController.js`, `actaPlataformaController.js`, `actaPlataformaModel.js`, `actaPlataformaPdfService.js`):**
+   - En `viajeModel.js`: Supresión de `LEFT JOIN tsec_users u_alt` contra `json_field`. Conductor resuelto desde `v.id_user_chofer` o `tpry_rel_persona`. Pisos mínimos y líneas resueltos desde `tpry_linea_servicio`.
+   - En `actaPlataformaController.js`: Cese total de escritura en `jf.ejecucion_v1.acta_plataforma_360`. Persistencia pura en `tope_acta_plataforma` y `tfmg_file` preservando `id_proyecto_estado = 5`.
+4. **Monitor Control Operativo en Vivo (`controlVivoController.js`, `ControlOperativoVivo.vue`):**
+   - Construcción de `eqList` exclusivamente desde `tpry_rel_equipo`. Acotamiento del Ribbon por la ventana de vigencia `[fecha_plan_ini, fecha_plan_fin]`.
+   - En `overrideHitoActividad`: Resolución relacional de `finalEqId` por vigencia temporal y compuerta transaccional con `UPDATE` idempotente.
+   - En `adjuntarDocumentoDia` / `eliminarDocumentoDia`: Cese de mutación sobre `json_field.documentos_por_dia` y `ejecucion_v1.dossier_documentos`; persistencia única en `tedp_reporte_avance` (`id_doc_pdf`).
+5. **Reportes Diarios Web, PWA y PDF (`reportDiarioController.js`, `reportDiarioPdfService.js`, `Surveys.vue`, `ReportDiarioIzaje.vue`):**
+   - Función relacional `resolverPoliticaCobroEquipoBD` en backend.
+   - Supresión de fallbacks a JSON.
+   - Desescalamiento de errores HTTP 403 y 409 a advertencias operativas (`es_dia_adicional: true`).
+   - `regularizarReporteManual`: Resolución relacional del equipo por vigencia temporal e idempotencia transaccional previa a `INSERT`.
+   - PDF Report Diario: Lectura 100% relacional desde `tedp_reporte_avance`, `tequ_equipo`, `tsec_users` y `tpry_linea_servicio`.
+6. **Informe de Término de Servicio — ITS (`itsController.js`, `itsPdfService.js`, `ModalITS.vue`):**
+   - Cero lecturas a `crmV1.lineas_operativas_vigentes` ni `crm_pensiones`; líneas y tarifas desde `tpry_linea_servicio` y cálculo vía `motorValorizacionService.js`.
+   - Preservación de costos y horas de equipos salientes en relevos.
+   - En `itsPdfService.js`: Eliminación del bloqueo `if (patentesYaMostradas.has('TRACTO_INCLUIDO')) return;`, permitiendo que el segundo camión figure en el PDF.
+7. **Estado de Pago — EDP (`estadoPagoController.js`, `edpPdfService.js`, `ModalCaratulaEDP.vue`):**
+   - Carga de líneas comerciales vigentes desde `tpry_linea_servicio` y asignaciones desde `tpry_rel_equipo`.
+   - Relevo interno sobre la misma línea comercial consolidado en una sola fila frente al mandante (`SPEC-16 §27.5`).
+   - En convoyes simultáneos, cada línea liquida únicamente las horas de su máquina. Líneas de cobro único invariantes `1 × valor_unitario`.
+   - Mandato de Consistencia Triangular: `UI Web = API = PDF Oficial = $0 diferencia`.
+
+### 28.4. Regla Canónica de Línea de Corte Temporal e Inmutabilidad del Pasado Reportado (Blindaje Anti-Regresión de Asignaciones)
+1. **Determinación de la Línea de Corte (`fecha_corte_inmutable`):**
+   - Cuando un proyecto cuenta con al menos un reporte activo en faena (`sch_leangsp.tedp_reporte_avance` con `estado_reporte != 'ANULADO'`), se define deterministamente:
+     $$\text{fecha\_corte} = \max(\text{fecha\_reporte})$$
+   - Todo el historial de asignaciones de flota (`tpry_rel_equipo`) y tripulación (`tpry_rel_persona`) para fechas $\le \text{fecha\_corte}$ queda **sellado en Solo Lectura (Inmutable)**.
+2. **Gobernanza en Pantalla del Coordinador (Frontend `AsignadorArbolRecursos.vue` y `GestorOportunidades.vue`):**
+   - En la Pestaña 3 (Asignaciones), los recursos con jornadas ya reportadas muestran un indicador visual de bloqueo.
+   - Si el Coordinador necesita cambiar una grúa o un operador, la interfaz prohíbe editar hacia atrás (los selectores de fecha tienen `min = fecha_corte + 1 día` para nuevos relevos).
+   - Todo cambio de recursos a mitad de servicio debe registrarse obligatoriamente como **Relevo Operativo** con fecha de inicio $\ge \text{fecha\_corte} + 1\text{ día}$.
+3. **Candado Duro en Backend (`asignacionRecursosController.js`):**
+   - Al recibir la sincronización del Coordinador (`sincronizarAsignacionesProyecto`), el backend audita contra `sch_leangsp.tedp_reporte_avance`:
+     - Si se intenta eliminar, modificar o desasignar un recurso que ya posee reportes emitidos en faena para las fechas afectadas, la transacción se aborta con error HTTP 400:
+       *`"Acción no permitida: El recurso cuenta con Reportes Diarios emitidos hasta el DD/MM/AAAA. No es posible alterar asignaciones del pasado. Registre un Relevo a partir de la fecha siguiente."`*
+   - La única mutación válida sobre el recurso saliente es acotar su `fecha_plan_fin = fecha_corte 23:59:59` y dar de alta al recurso entrante con `es_reemplazo = TRUE` desde la fecha siguiente.
+
+### 28.5. Protocolo de Remisión y Neutralización de Dispersión
+Las especificaciones satélites previas (`.agents/specs/130_sincronizacion_canonica_its_pl_frontend_backend_spec.md` y `.agents/specs/136_blindaje_canonico_anti_resurreccion_asignaciones_3capas_spec.md`) quedan formalmente declaradas como **notas de remisión histórica**, subordinadas en su totalidad a `SPEC-16 §28`.
+
+### 28.6. Matriz de Gates de Certificación E2E en DEV
+1. **Gate 1 — Auditoría Estática Anti-JSON:** `grep` Cero Residuos de lecturas/escrituras operativas a `json_field` en los 16 archivos intervenidos.
+2. **Gate 2 — Compilación y Sintaxis:** `node -c` (0 errores), `npm run build` frontend DEV (0 errores) y `npm run build` pwa DEV (0 errores).
+3. **Gate 3 — Certificación E2E Determinista (vía subagente independiente `qa-business-specialist` con casos testigo vivos en `sch_leangsp`):**
+   - Caso 1: Relevo de Maquinaria a mitad de faena (Réplica caso Ferrero con reportes, regularización, ITS y EDP).
+   - Caso 2: Convoy Simultáneo Grúa + Camión + Flete Cobro Único.
+   - Caso 3: Rental Plataforma con Actas T0 y T1.
+   - Caso 4: Candado de Línea de Corte Temporal (Bloqueo de mutación retroactiva en asignación con reports existentes).
+4. **Gate 4 — Gobernanza de Release en DEV:** Registro en `package.json`, `RELEASE_LOG.md`, `Gestión/tareas.md` y `sch_leangsp.tcfg_releases`.
+
+

@@ -86,6 +86,83 @@ function preSembrarBodyTemplate80(seedOrExec, proyecto, crm, contacto, observaci
 }
 
 /**
+ * Helper Acuerdo #2: Validación y resolución de costo de visita técnica y autorizador de exención
+ */
+async function validarYResolverCostoVisita({ costo_visita, id_user_autorizador, nombre_autorizador }) {
+    let costoNum = undefined;
+    let idAutorizador = null;
+    let nombreAutorizador = null;
+
+    if (costo_visita !== undefined && costo_visita !== null && String(costo_visita).trim() !== '') {
+        costoNum = Number(costo_visita);
+        if (isNaN(costoNum) || costoNum < 0) {
+            costoNum = 0;
+        }
+
+        idAutorizador = (id_user_autorizador !== undefined && id_user_autorizador !== null && String(id_user_autorizador).trim() !== '')
+            ? Number(id_user_autorizador)
+            : null;
+        nombreAutorizador = nombre_autorizador ? String(nombre_autorizador).trim() : null;
+
+        // Regla de Negocio Acuerdo #2: Si costo_visita === 0, exige id_user_autorizador > 0 o nombre_autorizador no vacío
+        if (costoNum === 0) {
+            const tieneId = idAutorizador && idAutorizador > 0;
+            const tieneNombre = nombreAutorizador && nombreAutorizador.length > 0;
+            if (!tieneId && !tieneNombre) {
+                const err = new Error('Toda visita técnica con costo $0 requiere indicar quién autoriza la exención de cobro (ej. Omar Ghisellini).');
+                err.statusCode = 400;
+                throw err;
+            }
+        }
+
+        // Si viene idAutorizador pero no nombreAutorizador, resolver nombre desde tsec_users
+        if (idAutorizador && !nombreAutorizador) {
+            try {
+                const uRes = await pool.query('SELECT name_frst, apellido_pat FROM tsec_users WHERE id_user = $1', [idAutorizador]);
+                if (uRes.rowCount > 0) {
+                    nombreAutorizador = `${uRes.rows[0].name_frst || ''} ${uRes.rows[0].apellido_pat || ''}`.trim();
+                }
+            } catch (_) {}
+        }
+    }
+
+    return {
+        costo_visita: costoNum,
+        id_user_autorizador: idAutorizador,
+        nombre_autorizador: nombreAutorizador
+    };
+}
+
+/**
+ * Helper Acuerdo #2: Sincronizar en tpry_proyecto.json_field.visita_tecnica_v1
+ */
+async function sincronizarVisitaTecnicaEnProyecto(idProyecto, visitaInfo, jf) {
+    if (!idProyecto || !visitaInfo || visitaInfo.costo_visita === undefined) return;
+    if (!jf.visita_tecnica_v1) jf.visita_tecnica_v1 = {};
+    jf.visita_tecnica_v1 = {
+        ...jf.visita_tecnica_v1,
+        costo_visita: visitaInfo.costo_visita,
+        id_user_autorizador: visitaInfo.id_user_autorizador,
+        nombre_autorizador: visitaInfo.nombre_autorizador,
+        actualizado_en: new Date().toISOString()
+    };
+    try {
+        await pool.query(`
+            UPDATE tpry_proyecto
+            SET json_field = jsonb_set(
+                COALESCE(json_field, '{}'::jsonb),
+                '{visita_tecnica_v1}',
+                $1::jsonb,
+                true
+            )
+            WHERE id_proyecto = $2
+        `, [JSON.stringify(jf.visita_tecnica_v1), Number(idProyecto)]);
+    } catch (e) {
+        console.warn('[sincronizarVisitaTecnicaEnProyecto] Advertencia actualizando jsonb_set:', e.message);
+    }
+}
+
+/**
  * 1. GET /api/operaciones/visita/proyecto/:id_proyecto (y /api/visitas/proyecto/:id_proyecto)
  * Retorna todas las visitas (1:N) asociadas al proyecto consultando tsrv_survey
  */
@@ -178,7 +255,10 @@ const getVisitasProyecto = async (req, res) => {
                 historial_asignaciones: header.historial_asignaciones || [],
                 pdf_url: `/api/servicio/exportar/${row.id_survey}`,
                 latitud: row.latitud,
-                longitud: row.longitud
+                longitud: row.longitud,
+                costo_visita: header.costo_visita !== undefined ? Number(header.costo_visita) : (jf?.visita_tecnica_v1?.costo_visita ?? null),
+                id_user_autorizador: header.id_user_autorizador || jf?.visita_tecnica_v1?.id_user_autorizador || null,
+                nombre_autorizador: header.nombre_autorizador || jf?.visita_tecnica_v1?.nombre_autorizador || null
             };
         });
 
@@ -198,6 +278,11 @@ const getVisitasProyecto = async (req, res) => {
                 cliente_rut: pry.cliente_rut,
                 estado_solicitud_visita: pry.estado_solicitud_visita,
                 visita_solicitada_comercial: visitaSolicitadaComercial,
+                visita_tecnica_v1: jf?.visita_tecnica_v1 || {
+                    costo_visita: null,
+                    id_user_autorizador: null,
+                    nombre_autorizador: null
+                },
                 contacto_sugerido: {
                     nombre: crm.contacto_nombre || null,
                     telefono: crm.contacto_telefono || null,
@@ -226,11 +311,30 @@ const asignarVisitaWeb = async (req, res) => {
             contacto_nombre,
             contacto_telefono,
             contacto_email,
-            observaciones
+            observaciones,
+            costo_visita,
+            id_user_autorizador,
+            nombre_autorizador
         } = req.body;
 
         if (!id_proyecto || !id_user_tecnico || !fecha_programada) {
             return res.status(400).json({ error: "Faltan parámetros requeridos: id_proyecto, id_user_tecnico y fecha_programada son obligatorios" });
+        }
+
+        // Acuerdo #2: Validación y resolución de costo de visita técnica y autorización de exención
+        let visitaInfo = {};
+        try {
+            visitaInfo = await validarYResolverCostoVisita({
+                costo_visita,
+                id_user_autorizador,
+                nombre_autorizador
+            });
+        } catch (valErr) {
+            return res.status(valErr.statusCode || 400).json({
+                success: false,
+                message: valErr.message,
+                error: valErr.message
+            });
         }
 
         // 1. Obtener proyecto y cliente
@@ -323,6 +427,11 @@ const asignarVisitaWeb = async (req, res) => {
 
             headerExec.contacto_obra = contactoPayload;
             headerExec.observaciones = observaciones || headerExec.observaciones || '';
+            if (visitaInfo.costo_visita !== undefined) {
+                headerExec.costo_visita = visitaInfo.costo_visita;
+                headerExec.id_user_autorizador = visitaInfo.id_user_autorizador;
+                headerExec.nombre_autorizador = visitaInfo.nombre_autorizador;
+            }
 
             const bodyPoblado = preSembrarBodyTemplate80(bodyExec, pry, crm, contactoPayload, observaciones);
 
@@ -369,6 +478,9 @@ const asignarVisitaWeb = async (req, res) => {
                 origen: 'ASIGNACION_WEB',
                 contacto_obra: contactoPayload,
                 observaciones: observaciones || '',
+                costo_visita: visitaInfo.costo_visita !== undefined ? visitaInfo.costo_visita : null,
+                id_user_autorizador: visitaInfo.id_user_autorizador || null,
+                nombre_autorizador: visitaInfo.nombre_autorizador || null,
                 historial_asignaciones: [
                     {
                         id_user: Number(id_user_tecnico),
@@ -423,6 +535,9 @@ const asignarVisitaWeb = async (req, res) => {
             id_user: Number(id_user_tecnico),
             tecnico_nombre: tecnicoNombre,
             fecha_programada: fecha_programada,
+            costo_visita: visitaInfo.costo_visita !== undefined ? visitaInfo.costo_visita : (jf.visita_tecnica_v1?.costo_visita ?? null),
+            id_user_autorizador: visitaInfo.id_user_autorizador || jf.visita_tecnica_v1?.id_user_autorizador || null,
+            nombre_autorizador: visitaInfo.nombre_autorizador || jf.visita_tecnica_v1?.nombre_autorizador || null,
             pdf_url: `/api/servicio/exportar/${resolvedSurveyId}`
         };
 
@@ -437,6 +552,9 @@ const asignarVisitaWeb = async (req, res) => {
         if (contacto_nombre) crm.contacto_nombre = contacto_nombre;
         if (contacto_telefono) crm.contacto_telefono = contacto_telefono;
         if (contacto_email) crm.contacto_email = contacto_email;
+
+        // Acuerdo #2: Sincronizar costo de visita y autorizador en tpry_proyecto.json_field.visita_tecnica_v1
+        await sincronizarVisitaTecnicaEnProyecto(id_proyecto, visitaInfo, jf);
 
         await pool.query(`
             UPDATE tpry_proyecto
@@ -680,11 +798,30 @@ const crearVisitaOperaciones = async (req, res) => {
             tipo_visita,
             id_user_tecnico,
             fecha_programada,
-            justificacion
+            justificacion,
+            costo_visita,
+            id_user_autorizador,
+            nombre_autorizador
         } = req.body;
 
         if (!id_proyecto || !id_user_tecnico || !fecha_programada) {
             return res.status(400).json({ error: "Faltan parámetros: id_proyecto, id_user_tecnico y fecha_programada son obligatorios" });
+        }
+
+        // Acuerdo #2: Validación y resolución de costo de visita técnica y autorización de exención
+        let visitaInfo = {};
+        try {
+            visitaInfo = await validarYResolverCostoVisita({
+                costo_visita,
+                id_user_autorizador,
+                nombre_autorizador
+            });
+        } catch (valErr) {
+            return res.status(valErr.statusCode || 400).json({
+                success: false,
+                message: valErr.message,
+                error: valErr.message
+            });
         }
 
         // 1. Obtener proyecto y cliente
@@ -770,6 +907,9 @@ const crearVisitaOperaciones = async (req, res) => {
             justificacion: justificacion || '',
             contacto_obra: contactoPayload,
             observaciones: justificacion || '',
+            costo_visita: visitaInfo.costo_visita !== undefined ? visitaInfo.costo_visita : null,
+            id_user_autorizador: visitaInfo.id_user_autorizador || null,
+            nombre_autorizador: visitaInfo.nombre_autorizador || null,
             historial_asignaciones: [
                 {
                     id_user: Number(id_user_tecnico),
@@ -823,6 +963,9 @@ const crearVisitaOperaciones = async (req, res) => {
             id_user: Number(id_user_tecnico),
             tecnico_nombre: tecnicoNombre,
             fecha_programada: fecha_programada,
+            costo_visita: visitaInfo.costo_visita !== undefined ? visitaInfo.costo_visita : (jf.visita_tecnica_v1?.costo_visita ?? null),
+            id_user_autorizador: visitaInfo.id_user_autorizador || jf.visita_tecnica_v1?.id_user_autorizador || null,
+            nombre_autorizador: visitaInfo.nombre_autorizador || jf.visita_tecnica_v1?.nombre_autorizador || null,
             pdf_url: `/api/servicio/exportar/${newSurveyId}`
         });
 
@@ -833,6 +976,9 @@ const crearVisitaOperaciones = async (req, res) => {
             usuario: asignadoPor,
             justificacion: justificacion || "Requerimiento de verificación operacional"
         });
+
+        // Acuerdo #2: Sincronizar costo de visita y autorizador en tpry_proyecto.json_field.visita_tecnica_v1
+        await sincronizarVisitaTecnicaEnProyecto(id_proyecto, visitaInfo, jf);
 
         await pool.query(`
             UPDATE tpry_proyecto
@@ -923,11 +1069,32 @@ const solicitarVisita = async (req, res) => {
             hora_visita_plan,
             fecha_programada,
             fecha_visita,
-            hora_visita
+            hora_visita,
+            costo_visita,
+            id_user_autorizador,
+            nombre_autorizador
         } = req.body;
 
         if (!id_proyecto) {
             return res.status(400).json({ error: "Falta id_proyecto" });
+        }
+
+        // Acuerdo #2: Validación y resolución de costo de visita técnica
+        let visitaInfo = {};
+        if (costo_visita !== undefined) {
+            try {
+                visitaInfo = await validarYResolverCostoVisita({
+                    costo_visita,
+                    id_user_autorizador,
+                    nombre_autorizador
+                });
+            } catch (valErr) {
+                return res.status(valErr.statusCode || 400).json({
+                    success: false,
+                    message: valErr.message,
+                    error: valErr.message
+                });
+            }
         }
 
         const pryRes = await pool.query(`
@@ -1006,6 +1173,17 @@ const solicitarVisita = async (req, res) => {
         if (hPlan) jsonField.crm_v1.hora_visita_plan = hPlan;
         if (fecha_programada || (fPlan && hPlan)) {
             jsonField.crm_v1.fecha_programada = fecha_programada || `${fPlan}T${hPlan}:00`;
+        }
+
+        // Acuerdo #2: Guardar costo de visita y autorizador si se enviaron
+        if (visitaInfo.costo_visita !== undefined) {
+            jsonField.visita_tecnica_v1 = {
+                ...(jsonField.visita_tecnica_v1 || {}),
+                costo_visita: visitaInfo.costo_visita,
+                id_user_autorizador: visitaInfo.id_user_autorizador,
+                nombre_autorizador: visitaInfo.nombre_autorizador,
+                actualizado_en: new Date().toISOString()
+            };
         }
 
         await pool.query(`
@@ -1150,7 +1328,34 @@ const getDatosVisita = async (req, res) => {
 const asignarVisita = async (req, res) => {
     try {
         const { token } = req.params;
-        const { id_ejecutor, fecha_visita, id_coordinador, fes_pin_hash, comentarios_coordinador } = req.body;
+        const {
+            id_ejecutor,
+            fecha_visita,
+            id_coordinador,
+            fes_pin_hash,
+            comentarios_coordinador,
+            costo_visita,
+            id_user_autorizador,
+            nombre_autorizador
+        } = req.body;
+
+        // Acuerdo #2: Validación y resolución de costo de visita técnica y autorización de exención
+        let visitaInfo = {};
+        if (costo_visita !== undefined) {
+            try {
+                visitaInfo = await validarYResolverCostoVisita({
+                    costo_visita,
+                    id_user_autorizador,
+                    nombre_autorizador
+                });
+            } catch (valErr) {
+                return res.status(valErr.statusCode || 400).json({
+                    success: false,
+                    message: valErr.message,
+                    error: valErr.message
+                });
+            }
+        }
 
         // 1. Obtener proyecto y resolver coordinador si no viene en el body
         const tokenPryRes = await pool.query(`
@@ -1264,6 +1469,11 @@ const asignarVisita = async (req, res) => {
 
             headerExec.contacto_obra = contactoPayload;
             headerExec.observaciones = comentarios_coordinador || headerExec.observaciones || '';
+            if (visitaInfo.costo_visita !== undefined) {
+                headerExec.costo_visita = visitaInfo.costo_visita;
+                headerExec.id_user_autorizador = visitaInfo.id_user_autorizador;
+                headerExec.nombre_autorizador = visitaInfo.nombre_autorizador;
+            }
 
             const bodyPoblado = preSembrarBodyTemplate80(bodyExec, pryRow, crm, contactoPayload, comentarios_coordinador);
 
@@ -1309,6 +1519,9 @@ const asignarVisita = async (req, res) => {
                 origen: 'ASIGNACION_TOKEN_PUBLICO',
                 contacto_obra: contactoPayload,
                 observaciones: comentarios_coordinador || '',
+                costo_visita: visitaInfo.costo_visita !== undefined ? visitaInfo.costo_visita : null,
+                id_user_autorizador: visitaInfo.id_user_autorizador || null,
+                nombre_autorizador: visitaInfo.nombre_autorizador || null,
                 historial_asignaciones: [
                     {
                         id_user: Number(id_ejecutor),
@@ -1366,6 +1579,9 @@ const asignarVisita = async (req, res) => {
             id_user: Number(id_ejecutor),
             tecnico_nombre: tecnicoNombre,
             fecha_programada: fecha_visita,
+            costo_visita: visitaInfo.costo_visita !== undefined ? visitaInfo.costo_visita : (jField.visita_tecnica_v1?.costo_visita ?? null),
+            id_user_autorizador: visitaInfo.id_user_autorizador || jField.visita_tecnica_v1?.id_user_autorizador || null,
+            nombre_autorizador: visitaInfo.nombre_autorizador || jField.visita_tecnica_v1?.nombre_autorizador || null,
             pdf_url: `/api/servicio/exportar/${resolvedSurveyId}`
         };
 
@@ -1380,6 +1596,9 @@ const asignarVisita = async (req, res) => {
         if (comentarios_coordinador) {
             crm.comentarios_visita_coordinador = comentarios_coordinador;
         }
+
+        // Acuerdo #2: Sincronizar costo de visita y autorizador en tpry_proyecto.json_field.visita_tecnica_v1
+        await sincronizarVisitaTecnicaEnProyecto(pryRow.id_proyecto, visitaInfo, jField);
 
         await pool.query(`
             UPDATE tpry_proyecto
@@ -1455,6 +1674,96 @@ const asignarVisita = async (req, res) => {
     }
 };
 
+/**
+ * 6. POST /api/operaciones/visita/:id_survey/actualizar (y cierre/actualización de visita)
+ * Actualiza parámetros operativos de la visita técnica, incluyendo costo y autorización (Acuerdo #2)
+ */
+const actualizarVisita = async (req, res) => {
+    try {
+        const { id_survey } = req.params;
+        const {
+            costo_visita,
+            id_user_autorizador,
+            nombre_autorizador,
+            estado_srv,
+            observaciones
+        } = req.body;
+
+        if (!id_survey) {
+            return res.status(400).json({ error: "id_survey es obligatorio" });
+        }
+
+        const srvRes = await pool.query(
+            `SELECT s.id_survey, s.id_proyecto, s.header_exec, p.json_field
+             FROM tsrv_survey s
+             LEFT JOIN tpry_proyecto p ON s.id_proyecto = p.id_proyecto
+             WHERE s.id_survey = $1`,
+            [Number(id_survey)]
+        );
+
+        if (srvRes.rowCount === 0) {
+            return res.status(404).json({ error: "Visita no encontrada" });
+        }
+
+        const row = srvRes.rows[0];
+        let headerExec = row.header_exec;
+        if (typeof headerExec === 'string') {
+            try { headerExec = JSON.parse(headerExec); } catch (_) { headerExec = {}; }
+        }
+        if (!headerExec || typeof headerExec !== 'object') headerExec = {};
+
+        // Validar costo y autorizador (Acuerdo #2) si viene costo_visita
+        let visitaInfo = {};
+        if (costo_visita !== undefined) {
+            try {
+                visitaInfo = await validarYResolverCostoVisita({
+                    costo_visita,
+                    id_user_autorizador,
+                    nombre_autorizador
+                });
+                headerExec.costo_visita = visitaInfo.costo_visita;
+                headerExec.id_user_autorizador = visitaInfo.id_user_autorizador;
+                headerExec.nombre_autorizador = visitaInfo.nombre_autorizador;
+            } catch (valErr) {
+                return res.status(valErr.statusCode || 400).json({
+                    success: false,
+                    message: valErr.message,
+                    error: valErr.message
+                });
+            }
+        }
+
+        if (observaciones) headerExec.observaciones = observaciones;
+
+        const nuevoEstado = estado_srv || headerExec.estado || 'PLANIFICADO';
+
+        await pool.query(
+            `UPDATE tsrv_survey SET estado_srv = $1, header_exec = $2 WHERE id_survey = $3`,
+            [nuevoEstado, JSON.stringify(headerExec), Number(id_survey)]
+        );
+
+        // Sincronizar en tpry_proyecto
+        if (row.id_proyecto && visitaInfo.costo_visita !== undefined) {
+            let jf = row.json_field;
+            if (typeof jf === 'string') {
+                try { jf = JSON.parse(jf); } catch (_) { jf = {}; }
+            }
+            if (!jf || typeof jf !== 'object') jf = {};
+            await sincronizarVisitaTecnicaEnProyecto(row.id_proyecto, visitaInfo, jf);
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Visita técnica actualizada con éxito.",
+            id_survey: Number(id_survey),
+            header_exec: headerExec
+        });
+    } catch (err) {
+        console.error("Error en actualizarVisita:", err);
+        return res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     solicitarVisita,
     getDatosVisita,
@@ -1462,5 +1771,6 @@ module.exports = {
     getVisitasProyecto,
     asignarVisitaWeb,
     reasignarVisita,
-    crearVisitaOperaciones
+    crearVisitaOperaciones,
+    actualizarVisita
 };

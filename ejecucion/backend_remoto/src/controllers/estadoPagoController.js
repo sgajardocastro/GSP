@@ -6,6 +6,7 @@ const { parsearFacturaDtePdf } = require('../services/dtePdfParserService');
 const db = require('../config/postgresPool');
 const notificacionService = require('../services/notificacionService');
 const { isLineaCobroUnico, calcularSubtotalLinea } = require('../utils/lineaCobroUnico');
+const { normalizarUnidad, clasificarLineaNegocio, calcularSubtotalNodo } = require('../services/motorValorizacionService');
 
 exports.registrarPingDesplazamiento = async (req, res) => {
   try {
@@ -200,29 +201,61 @@ exports.generarPdfEdp = async (req, res) => {
       reports = [];
     }
 
-    // Si no hay reports en tedp_reporte_avance pero sí jornadas en ITS, usarlas como respaldo cronológico
+    // Si no hay reports en tedp_reporte_avance pero sí jornadas en ITS, usarlas como respaldo cronológico (excluyendo filas de traslado/adicionales)
     if (reports.length === 0 && itsJornadas.length > 0) {
-      reports = itsJornadas.map((j, idx) => ({
-        dia_correlativo: j.orden || (idx + 1),
-        fecha_reporte: j.fecha,
-        patente: j.patente || 'GRÚA',
-        modelo: j.tipo_servicio || 'Servicio Izaje',
-        operador_nombre: 'Operador Asignado',
-        rigger_nombre: '',
-        hora_inicio: j.hora_llegada || j.hora_salida || '08:00',
-        hora_termino: j.hora_termino || '18:00',
-        horas_operadas: Number(j.horas_report || 0),
-        horas_facturables: Number(j.horas_report || 0),
-        horas_sobretiempo: 0,
-        horometro_inicio: j.horometro_inicio || '-',
-        horometro_termino: j.horometro_termino || '-',
-        cliente_nombre: j.cliente_nombre || 'Recepción en Faena',
-        cliente_cargo: j.cliente_cargo || 'Mandante'
-      }));
+      reports = itsJornadas
+        .filter(j => {
+          const ts = String(j.tipo_servicio || '').toUpperCase();
+          const nr = String(j.numero_report || '').toUpperCase();
+          return ts !== 'REGISTRO DE VIAJE' && !ts.includes('FLETE') && !ts.includes('TRASLADO') && nr !== 'TRASLADO' && nr !== 'ADICIONAL-FIJO';
+        })
+        .map((j, idx) => ({
+          id_equipo: j.id_equipo || null,
+          dia_correlativo: j.orden || (idx + 1),
+          fecha_reporte: j.fecha,
+          patente: j.patente || 'GRÚA',
+          modelo: j.tipo_servicio || 'Servicio Izaje',
+          operador_nombre: 'Operador Asignado',
+          rigger_nombre: '',
+          hora_inicio: j.hora_llegada || j.hora_salida || '08:00',
+          hora_termino: j.hora_termino || '18:00',
+          horas_operadas: Number(j.horas_report || 0),
+          horas_facturables: Number(j.horas_report || 0),
+          horas_sobretiempo: 0,
+          horometro_inicio: j.horometro_inicio || '-',
+          horometro_termino: j.horometro_termino || '-',
+          cliente_nombre: j.cliente_nombre || 'Recepción en Faena',
+          cliente_cargo: j.cliente_cargo || 'Mandante'
+        }));
     }
 
-    // 5. Calcular montos conciliados (priorizando ITS aprobado + Ajustes de Tesorería + Líneas Comerciales)
-    const snapLines = crmV1.lineas_operativas_vigentes || crmV1.lineas_servicio || jf.snapshot_comercial?.lines || jf.lines || [];
+    // 5. SPEC-16 §28: Cargar estructura comercial relacional desde tpry_linea_servicio
+    let snapLines = [];
+    try {
+      const lsRes = await db.query(
+        `SELECT * FROM tpry_linea_servicio WHERE id_proyecto = $1 AND activo = true ORDER BY orden ASC, id_linea_servicio ASC`,
+        [idProyecto]
+      );
+      if (lsRes.rows.length > 0) {
+        snapLines = lsRes.rows.map(l => ({
+          ...l,
+          tipo: l.tipo_servicio || l.categoria || 'SERVICIO',
+          subcategoria: l.subcategoria || l.descripcion || '',
+          valorUnitario: Number(l.valor_unitario || 0),
+          valor_unitario: Number(l.valor_unitario || 0),
+          subtotal: Number(l.subtotal || 0),
+          unidad: l.unidad || 'DIA',
+          pisoMinimo: Number(l.piso_minimo_horas || l.horas_minimas || 8.0),
+          horas_minimas: Number(l.piso_minimo_horas || l.horas_minimas || 8.0),
+          es_cobro_unico: Boolean(l.es_apoyo_operativo || String(l.unidad || '').toUpperCase() === 'GL' || String(l.unidad || '').toUpperCase() === 'GLOBAL')
+        }));
+      }
+    } catch (eLS) {
+      console.warn('[EDP] Error consultando tpry_linea_servicio:', eLS.message);
+    }
+    if (snapLines.length === 0) {
+      snapLines = crmV1.lineas_operativas_vigentes || crmV1.lineas_servicio || jf.snapshot_comercial?.lines || jf.lines || [];
+    }
     const ajustesTesoreria = jf.edp_ajustes_v1 || null;
     const descuentoMonto = Number(ajustesTesoreria?.descuento_tesoreria || 0);
     const descuentoMotivo = ajustesTesoreria?.motivo_descuento || '';
@@ -242,11 +275,44 @@ exports.generarPdfEdp = async (req, res) => {
 
     if (snapLines.length > 0) {
       const tarifasEditadas = ajustesTesoreria?.tarifas_editadas || {};
+      const cantidadesEditadas = ajustesTesoreria?.cantidades_editadas || {};
+      const totalesEditados = ajustesTesoreria?.totales_editados || {};
+      const glosasEditadas = ajustesTesoreria?.glosas_editadas || {};
       const diasFaena = Math.max(1, reports.length);
 
+      const esRentalEdp = snapLines.some(sl =>
+        clasificarLineaNegocio({
+          ...sl,
+          linea_negocio: sl.linea_negocio || crmV1.linea_negocio,
+          tipo_ot: sl.tipo_ot || crmV1.tipo_ot
+        }).linea_negocio === 'RENTAL'
+      );
+      const countLineasHorariasSinEq = Math.max(1, snapLines.filter(sl => {
+        const u = normalizarUnidad(sl.unidad || sl.unidad_cobro || '');
+        const eqId = Number(sl.equipo_asignado_id || sl.id_equipo_sugerido || 0);
+        return (u === 'Horas Diarias Minimas' || u === 'Hora Efectiva' || u === 'Horas Mes Minimas') && eqId === 0;
+      }).length);
+
+      let fleteRentalConsolidado = 0;
+      let tieneFleteRental = false;
+
+      const pickEdited = (dict, l, idx) => {
+        if (!dict || typeof dict !== 'object') return undefined;
+        if (l.id_linea && dict[l.id_linea] !== undefined) return dict[l.id_linea];
+        if (l.id_linea_servicio && dict[l.id_linea_servicio] !== undefined) return dict[l.id_linea_servicio];
+        if (dict[`idx_${idx}`] !== undefined) return dict[`idx_${idx}`];
+        if (dict[idx] !== undefined) return dict[idx];
+        return undefined;
+      };
+
       snapLines.forEach((l, idx) => {
-        const valUnit = tarifasEditadas[idx] !== undefined
-          ? Number(tarifasEditadas[idx])
+        const tarEdit = pickEdited(tarifasEditadas, l, idx);
+        const cantEdit = pickEdited(cantidadesEditadas, l, idx);
+        const totEdit = pickEdited(totalesEditados, l, idx);
+        const glosaEdit = pickEdited(glosasEditadas, l, idx);
+
+        const valUnit = tarEdit !== undefined
+          ? Number(tarEdit)
           : Number(l.valorUnitario || l.precio_unitario || 0);
         const cant = Number(l.cantidad || 1);
         let sub = 0;
@@ -256,8 +322,13 @@ exports.generarPdfEdp = async (req, res) => {
         const tipoL = String(l.tipo || '').toUpperCase();
         const subcatL = String(l.subcategoria || '').toUpperCase();
         const descL = String(l.descripcion || '').toUpperCase();
-        const esLineaTraslado = tipoL === 'TRASLADOS' || tipoL.includes('TRASLADO') || tipoL.includes('FLETE') || subcatL.includes('FLETE') || descL.includes('FLETE');
-        const esLineaEquipo = tipoL.includes('GRUA') || tipoL.includes('CAMION') || subcatL.includes('GRUA') || subcatL.includes('CAMION') || subcatL.includes('PLUMA') || ['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA'].includes(l.tipo);
+        const unidNorm = normalizarUnidad(l.unidad || l.unidad_cobro || '');
+        const esLineaTraslado = tipoL === 'TRASLADOS' || tipoL.includes('TRASLADO') || tipoL.includes('FLETE') || subcatL.includes('FLETE') || descL.includes('FLETE') || unidNorm.startsWith('Traslado');
+        const esLineaEquipo = !esLineaTraslado && (
+          tipoL.includes('GRUA') || tipoL.includes('CAMION') || tipoL.includes('ALZA') || tipoL.includes('MANLIFT') || tipoL.includes('MANIPULADOR') || tipoL.includes('HORQUILLA') ||
+          subcatL.includes('GRUA') || subcatL.includes('CAMION') || subcatL.includes('PLUMA') ||
+          ['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA'].includes(l.tipo)
+        );
 
         if (isLineaCobroUnico(l)) {
           // SPEC-128: Cobro único (Valor Fijo / TRASLADOS) -> 1 × valUnit
@@ -265,22 +336,82 @@ exports.generarPdfEdp = async (req, res) => {
           cantMostrar = 1;
           unidadMostrar = l.unidad || (esLineaTraslado ? 'TRASLADO IDA/VUELTA' : 'Valor Fijo');
         } else if (esLineaEquipo) {
-          if (l.unidad === 'Diario') {
-            sub = valUnit * diasFaena * cant;
-            cantMostrar = `${diasFaena} d`;
+          const eqIdLinea = Number(l.equipo_asignado_id || l.id_equipo_sugerido || 0);
+          const tieneMatchEquipo = eqIdLinea > 0 && reports.some(r => Number(r.id_equipo) === eqIdLinea);
+          const reportsEquipo = tieneMatchEquipo
+            ? reports.filter(r => Number(r.id_equipo) === eqIdLinea)
+            : reports;
+          const hrsEquipoRaw = reportsEquipo.reduce((acc, r) => acc + Number(r.horas_facturables || 0), 0);
+          const hrsEquipo = tieneMatchEquipo
+            ? hrsEquipoRaw
+            : ((hrsEquipoRaw || totalHorasFact) / (eqIdLinea === 0 ? countLineasHorariasSinEq : 1));
+          const esLineaRental = clasificarLineaNegocio({
+            ...l,
+            linea_negocio: l.linea_negocio || crmV1.linea_negocio,
+            tipo_ot: l.tipo_ot || crmV1.tipo_ot
+          }).linea_negocio === 'RENTAL';
+
+          const diasEquipo = Math.max(1, tieneMatchEquipo
+            ? reportsEquipo.length
+            : (esLineaRental ? Number(l.cantidad_dias || cant || 1) : (reports.length || Number(l.cantidad_dias || cant || 1))));
+
+          if (unidNorm === 'Valor Fijo Diario') {
+            const diasAplicar = cantEdit !== undefined ? Number(cantEdit) : diasEquipo;
+            sub = Math.round(valUnit * diasAplicar);
+            cantMostrar = `${diasAplicar} d`;
+            unidadMostrar = 'Valor Fijo Diario';
+          } else if (unidNorm === 'Valor Fijo Mensual') {
+            const mesesEq = cantEdit !== undefined ? Number(cantEdit) : Math.max(1, Number(l.cantidad_meses || cant || 1));
+            sub = Math.round(valUnit * mesesEq);
+            cantMostrar = `${mesesEq} mes(es)`;
+            unidadMostrar = 'Valor Fijo Mensual';
+          } else if (unidNorm === 'Horas Mes Minimas') {
+            const bolsa = Math.max(1, Number(l.piso_minimo_horas || l.pisoMinimo || l.cantidad_horas || 180));
+            const hrsMesAplicar = cantEdit !== undefined ? Number(cantEdit) : Math.max(bolsa, hrsEquipo);
+            sub = Math.round(valUnit * hrsMesAplicar);
+            cantMostrar = `${hrsMesAplicar.toFixed(1)} hrs`;
+            unidadMostrar = 'Bolsa Horas Mes';
+          } else if (unidNorm === 'Tarifa por Km') {
+            const kmBase = Math.max(0, Number(l.cantidad_km ?? l.distancia_km ?? cant ?? 0));
+            const kmAplicar = cantEdit !== undefined ? Number(cantEdit) : kmBase;
+            sub = Math.round(valUnit * kmAplicar);
+            cantMostrar = `${kmAplicar} km`;
+            unidadMostrar = 'Tarifa por Km';
           } else {
-            const hrsAplicar = totalHorasFact > 0 ? totalHorasFact : (cant * 8);
-            sub = valUnit * hrsAplicar;
+            const hrsBase = hrsEquipo > 0 ? hrsEquipo : (cant * Number(l.pisoMinimo || l.cantidad_horas || 8));
+            const hrsAplicar = cantEdit !== undefined ? Number(cantEdit) : hrsBase;
+            sub = Math.round(valUnit * hrsAplicar);
             cantMostrar = `${hrsAplicar.toFixed(1)} hrs`;
             unidadMostrar = 'Horas';
           }
         } else {
-          sub = Number(l.subtotal_calculado || l.subtotal || (valUnit * cant));
+          sub = calcularSubtotalLinea({ ...l, valorUnitario: valUnit }, { diasFaena, totalHorasFacturables: totalHorasFact });
+          if (unidNorm === 'Valor Fijo Diario') {
+            const diasAcc = cantEdit !== undefined ? Number(cantEdit) : (Number(l.cantidad_dias || cant) || diasFaena);
+            sub = Math.round(valUnit * diasAcc);
+            cantMostrar = `${diasAcc} d`;
+            unidadMostrar = 'Valor Fijo Diario';
+          } else if (cantEdit !== undefined) {
+            sub = Math.round(valUnit * Number(cantEdit));
+            cantMostrar = Number(cantEdit);
+          }
+        }
+
+        if (totEdit !== undefined && totEdit !== null && totEdit !== '') {
+          sub = Math.round(Number(totEdit));
         }
 
         subtotalBase += sub;
+
+        // SPEC-129 2.5.M / 2.6.M: En Rental consolidar traslados de entrega y retiro en 1 sola línea "Flete / Traslado"
+        if (esRentalEdp && esLineaTraslado) {
+          tieneFleteRental = true;
+          fleteRentalConsolidado += Math.round(sub);
+          return;
+        }
+
         detalles_adicionales.push({
-          concepto: `${l.tipo || 'Servicio'}${l.subcategoria ? ' — ' + l.subcategoria : ''}`,
+          concepto: glosaEdit || `${l.tipo || 'Servicio'}${l.subcategoria ? ' — ' + l.subcategoria : ''}`,
           subtitulo: l.descripcion || '',
           unidad_cobro: unidadMostrar,
           cantidad: cantMostrar,
@@ -288,6 +419,103 @@ exports.generarPdfEdp = async (req, res) => {
           monto_subtotal: Math.round(sub)
         });
       });
+
+      if (esRentalEdp && tieneFleteRental && fleteRentalConsolidado > 0) {
+        detalles_adicionales.push({
+          concepto: 'Flete / Traslado',
+          subtitulo: 'Traslado consolidado entrega y retiro de equipo',
+          unidad_cobro: 'GL',
+          cantidad: 1,
+          precio_unitario: Math.round(fleteRentalConsolidado),
+          monto_subtotal: Math.round(fleteRentalConsolidado)
+        });
+      }
+
+      // SPEC-129 2.2 / 2.7.M y Acuerdo #6: Liquidación 360° Rental (Diésel y Daños con respaldo fotográfico)
+      if (esRentalEdp) {
+        let rentalCierre = jf.rental_cierre_360_v1 || null;
+        if (!rentalCierre) {
+          try {
+            const actaRetiroRes = await db.query(
+              `SELECT * FROM tope_acta_plataforma 
+               WHERE id_proyecto = $1 
+               ORDER BY id_acta DESC LIMIT 1`,
+              [idProyecto]
+            );
+            if (actaRetiroRes.rows.length > 0) {
+              const aRow = actaRetiroRes.rows[0];
+              const aJson = typeof aRow.json_field === 'object' && aRow.json_field !== null ? aRow.json_field : {};
+              rentalCierre = {
+                litros_combustible_faltante: Number(aJson.litros_combustible_faltante ?? aRow.litros_combustible_faltante ?? 0),
+                tarifa_litro_combustible: Number(aJson.tarifa_litro_combustible ?? aRow.tarifa_litro_combustible ?? 1350),
+                cobro_danos_cliente: Boolean(aJson.cobro_danos_cliente ?? aRow.cobro_danos_cliente ?? false),
+                monto_danos: Number(aJson.monto_danos ?? aRow.monto_danos ?? 0),
+                fotos_danos: Array.isArray(aJson.fotos_danos) ? aJson.fotos_danos : (Array.isArray(aRow.fotos_retiro) ? aRow.fotos_retiro : [])
+              };
+            }
+          } catch (errActa) {
+            console.warn('[EDP_RENTAL] No se pudo consultar acta de plataforma:', errActa.message);
+          }
+        }
+
+        if (rentalCierre) {
+          const litros = Number(rentalCierre.litros_combustible_faltante || 0);
+          const tarifaLitro = Number(rentalCierre.tarifa_litro_combustible || 1350);
+          if (litros > 0) {
+            const cobroDiesel = Math.round(litros * tarifaLitro);
+            subtotalBase += cobroDiesel;
+            detalles_adicionales.push({
+              concepto: 'Reposición Diésel Acta Devolución Rental',
+              subtitulo: `${litros} Lts faltantes a tarifa pactada ($${tarifaLitro.toLocaleString('es-CL')}/Lt)`,
+              unidad_cobro: 'Lts',
+              cantidad: litros,
+              precio_unitario: tarifaLitro,
+              monto_subtotal: cobroDiesel
+            });
+          }
+
+          const cobroDanos = Boolean(rentalCierre.cobro_danos_cliente);
+          const montoDanos = Math.round(Number(rentalCierre.monto_danos || 0));
+          const fotosDanos = Array.isArray(rentalCierre.fotos_danos) ? rentalCierre.fotos_danos : [];
+
+          // Regla SPEC-129 2.7.M: solo se traspasa daño a EDP si existe respaldo fotográfico
+          if (cobroDanos && montoDanos > 0 && fotosDanos.length > 0) {
+            subtotalBase += montoDanos;
+            detalles_adicionales.push({
+              concepto: 'Cargos por Daños / Siniestro con Respaldo Fotográfico (Acta 360°)',
+              subtitulo: `Siniestro constatado en devolución (${fotosDanos.length} evidencia(s) fotográfica(s))`,
+              unidad_cobro: 'GL',
+              cantidad: 1,
+              precio_unitario: montoDanos,
+              monto_subtotal: montoDanos
+            });
+          }
+        }
+      }
+
+      if (Array.isArray(ajustesTesoreria?.otros_items) && ajustesTesoreria.otros_items.length > 0) {
+        ajustesTesoreria.otros_items.forEach(itemOtro => {
+          const montoOtro = Math.round(Number(
+            itemOtro.monto_subtotal ??
+            (itemOtro.subtotal_override !== '' && itemOtro.subtotal_override !== null && itemOtro.subtotal_override !== undefined ? itemOtro.subtotal_override : undefined) ??
+            itemOtro.valorUnitario ??
+            itemOtro.valor_unitario ??
+            itemOtro.monto ??
+            0
+          ));
+          if (montoOtro !== 0) {
+            subtotalBase += montoOtro;
+            detalles_adicionales.push({
+              concepto: itemOtro.concepto || itemOtro.descripcion || 'Otros — Ítem Adicional EDP',
+              subtitulo: itemOtro.subtitulo || itemOtro.motivo || 'Ajuste / ítem adicional autorizado en EDP',
+              unidad_cobro: itemOtro.unidad_cobro || 'GL',
+              cantidad: Number(itemOtro.cantidad || 1),
+              precio_unitario: montoOtro,
+              monto_subtotal: montoOtro
+            });
+          }
+        });
+      }
 
       // Erradicación de tarifa quemada ($65.000) y doble cobro. Las horas facturables consolidadas
       // (totalHorasFact) ya incluyen las horas de sobretiempo a la tarifa unitaria pactada.
@@ -344,11 +572,29 @@ exports.generarPdfEdp = async (req, res) => {
       }
     }
 
-    if (subtotalBase === 0 && edp?.monto_neto) {
+    const esProyectoInternoEdp = Boolean(
+      proyecto.es_interno ||
+      crmV1.es_interno ||
+      crmV1.es_requerimiento_interno ||
+      crmV1.tipo_ot === 'OT-INTERNA' ||
+      String(crmV1.linea_negocio || '').toUpperCase() === 'INTERNAS'
+    );
+
+    if (esProyectoInternoEdp) {
+      subtotalBase = 0;
+      detalles_adicionales = [{
+        concepto: 'Orden de Trabajo Interna (Uso Propio GSP)',
+        subtitulo: 'Movimiento interno no facturable comercialmente',
+        unidad_cobro: 'GL',
+        cantidad: 1,
+        precio_unitario: 0,
+        monto_subtotal: 0
+      }];
+    } else if (subtotalBase === 0 && edp?.monto_neto) {
       subtotalBase = Number(edp.monto_neto);
     }
 
-    const totalNetoFinal = Math.max(0, Math.round(subtotalBase - descuentoMonto));
+    const totalNetoFinal = esProyectoInternoEdp ? 0 : Math.max(0, Math.round(subtotalBase - descuentoMonto));
     const totalIvaFinal = Math.round(totalNetoFinal * 0.19);
     const totalBrutoFinal = totalNetoFinal + totalIvaFinal;
 
@@ -535,29 +781,49 @@ exports.guardarAjustesTesoreria = async (req, res) => {
     const nombreCompleto = `${usuario.name_frst || ''} ${usuario.apellido_pat || ''}`.toLowerCase();
     const email = (usuario.email || '').toLowerCase();
 
-    // Evaluar si alguno de sus roles es Admin o Contabilidad/Tesorería
+    // Evaluar si alguno de sus roles es Admin, Contabilidad/Tesorería o Control de Gestión (Acuerdo #6)
     const tieneRolAdmin = uRes.rows.some(r => Number(r.id_rol) === 1 || (r.name_rol || '').toUpperCase().includes('ADMIN'));
     const tieneRolConta = uRes.rows.some(r => Number(r.id_rol) === 33 || (r.name_rol || '').toUpperCase().includes('CONTA') || (r.name_rol || '').toUpperCase().includes('TESOR'));
+    const tieneRolControl = uRes.rows.some(r => Number(r.id_rol) === 35 || (r.name_rol || '').toUpperCase().includes('CONTROL') || (r.name_rol || '').toUpperCase().includes('ANALISTA') || (r.name_rol || '').toUpperCase().includes('GESTION'));
     const esEmailAdmin = email.includes('sgajardo') || email.includes('admin');
     const esPamela = nombreCompleto.includes('pamela') || email.includes('pamela');
+    const esYiara = nombreCompleto.includes('yiara') || email.includes('yiara');
 
-    const esHabilitado = tieneRolAdmin || tieneRolConta || esEmailAdmin || esPamela;
+    const esHabilitado = tieneRolAdmin || tieneRolConta || tieneRolControl || esEmailAdmin || esPamela || esYiara;
 
     if (!esHabilitado) {
       return res.status(403).json({
         success: false,
-        message: 'Acceso Denegado: Solo Pamela (Gerente de Tesorería) o Administradores del Sistema pueden modificar tarifas y aplicar ajustes en el EDP.'
+        message: 'Acceso Denegado: Solo Pamela (Gerente de Tesorería), Yiara (Control de Gestión) o Administradores del Sistema pueden modificar tarifas y aplicar ajustes en el EDP.'
       });
     }
+
+    let rolAjusteDesc = 'Gerencia de Tesorería';
+    if (tieneRolAdmin || esEmailAdmin) {
+      rolAjusteDesc = 'Administrador del Sistema';
+    } else if (tieneRolControl || esYiara) {
+      rolAjusteDesc = 'Control de Gestión';
+    }
+
+    const descuentoGlobalVal = Number(descuento_global ?? req.body.descuento_tesoreria) || 0;
+    const motivoAjusteVal = motivo_ajuste || req.body.motivo_descuento || 'Ajuste operacional EDP';
 
     const ajusteRegistro = {
       id_user_ajuste: usuario.id_user,
       nombre_ajuste: `${usuario.name_frst || ''} ${usuario.apellido_pat || ''}`.trim(),
-      rol_ajuste: tieneRolAdmin || esEmailAdmin ? 'Administrador del Sistema' : 'Gerencia de Tesorería',
+      rol_ajuste: rolAjusteDesc,
       fecha_ajuste: new Date().toISOString(),
-      motivo_ajuste: motivo_ajuste || 'Ajuste operacional de Tesorería/Administración',
-      descuento_global: Number(descuento_global) || 0,
-      lineas_ajustadas: lineas_ajustadas || []
+      motivo_ajuste: motivoAjusteVal,
+      motivo_descuento: req.body.motivo_descuento || motivoAjusteVal,
+      descuento_global: descuentoGlobalVal,
+      descuento_tesoreria: Number(req.body.descuento_tesoreria ?? descuentoGlobalVal) || 0,
+      lineas_ajustadas: lineas_ajustadas || [],
+      tarifas_editadas: req.body.tarifas_editadas || {},
+      cantidades_editadas: req.body.cantidades_editadas || {},
+      totales_editados: req.body.totales_editados || {},
+      glosas_editadas: req.body.glosas_editadas || {},
+      otros_items: Array.isArray(req.body.otros_items) ? req.body.otros_items : [],
+      sobretiempo_override: req.body.sobretiempo_override ?? null
     };
 
     const updSql = `
@@ -2196,30 +2462,32 @@ exports.getPerspectivaContabilidad = async (req, res) => {
               const valUnit = Number(l.valorUnitario || l.precio_unitario || 0);
               const cant = Number(l.cantidad || 1);
               const hrsOpm = Number(l.cantidad_horas ?? l.pisoMinimo ?? l.horas_minimas ?? 0);
-              const dias = Number(l.cantidad_dias ?? 1);
-              let sub = Number(l.subtotal_calculado || l.subtotal || 0);
+              const unidCanon = normalizarUnidad(l.unidad || l.unidad_cobro || '');
+              let sub = Number(l.subtotal_calculado || 0) || calcularSubtotalNodo(l) || Number(l.subtotal || 0);
               if (!sub) {
-                const unidadStr = String(l.unidad || '').toLowerCase();
-                if (hrsOpm > 0 && (unidadStr.includes('hora') || unidadStr.includes('minima') || unidadStr.includes('diari'))) {
-                  sub = valUnit * hrsOpm * dias * cant;
-                } else {
-                  sub = valUnit * cant;
-                }
+                sub = calcularSubtotalLinea({ ...l, valorUnitario: valUnit }, { diasFaena });
               }
 
               const tipoUpper = String(l.tipo || '').toUpperCase();
-              const subcatUpper = String(l.subcategoria || '').toUpperCase();
               const unidadLower = String(l.unidad || '').trim().toLowerCase();
 
               if (isLineaCobroUnico(l)) {
                 // SPEC-128: Cobro único (Valor Fijo / TRASLADOS) -> 1 × valUnit
                 subDev += valUnit;
-              } else if (['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA'].includes(tipoUpper)) {
-                if (['diario', 'dia', 'día', 'jornada'].includes(unidadLower)) {
-                  subDev += valUnit * diasFaena * cant;
-                } else if ((unidadLower.includes('hora') || unidadLower.includes('minima')) && valUnit < 350000) {
+              } else if (unidCanon === 'Valor Fijo Diario') {
+                const diasLinea = Number(l.cantidad_dias || cant) || diasFaena;
+                subDev += Math.round(valUnit * diasLinea);
+              } else if (unidCanon === 'Valor Fijo Mensual') {
+                const meses = Math.max(1, Number(l.cantidad_meses || cant || 1));
+                subDev += Math.round(valUnit * meses);
+              } else if (unidCanon === 'Horas Mes Minimas') {
+                const bolsa = Math.max(1, Number(l.piso_minimo_horas || l.pisoMinimo || l.cantidad_horas || 180));
+                const hrsMes = Math.max(bolsa, horasFacturablesPry > 0 ? (horasFacturablesPry / lineasHorariasCount) : bolsa);
+                subDev += Math.round(valUnit * hrsMes);
+              } else if (['GRUAS TELESCOPICAS', 'GRUA HORQUILLA', 'MANIPULADOR TELESCOPICO', 'CAMION PLUMA'].includes(tipoUpper) || tipoUpper.includes('GRUA') || tipoUpper.includes('CAMION')) {
+                if ((unidadLower.includes('hora') || unidadLower.includes('minima')) && valUnit < 500000) {
                   const hrsAplicar = horasFacturablesPry > 0 ? (horasFacturablesPry / lineasHorariasCount) : (hrsOpm > 0 ? hrsOpm : (cant * 8));
-                  subDev += valUnit * hrsAplicar;
+                  subDev += Math.round(valUnit * hrsAplicar);
                 } else {
                   subDev += sub;
                 }
@@ -2244,8 +2512,24 @@ exports.getPerspectivaContabilidad = async (req, res) => {
         montoDevengadoReports = Math.round(montoOcNeto);
       }
 
-      // Invariante contable: el devengado operativo no puede superar el comprometido contractual salvo override explícito de Tesorería
-      const tieneOverrideTesoreria = Boolean(jf.edp_ajustes_v1?.lineas_ajustadas?.length || jf.edp_ajustes_v1?.sobretiempo_override);
+      // Invariante contable: el devengado operativo no puede superar el comprometido contractual salvo override explícito de Tesorería / Control de Gestión (SPEC-129 Ac.6)
+      const ajEdp = jf.edp_ajustes_v1 || {};
+      const rc360 = jf.rental_cierre_360_v1 || null;
+      const tieneCierreRental360 = Boolean(
+        rc360 && (
+          Number(rc360.litros_combustible_faltante) > 0 ||
+          (rc360.cobro_danos_cliente && Number(rc360.monto_danos) > 0 && Array.isArray(rc360.fotos_danos) && rc360.fotos_danos.length > 0)
+        )
+      );
+      const tieneOverrideTesoreria = Boolean(
+        tieneCierreRental360 ||
+        ajEdp.lineas_ajustadas?.length ||
+        ajEdp.sobretiempo_override ||
+        (ajEdp.tarifas_editadas && Object.keys(ajEdp.tarifas_editadas).length > 0) ||
+        (ajEdp.cantidades_editadas && Object.keys(ajEdp.cantidades_editadas).length > 0) ||
+        (ajEdp.totales_editados && Object.keys(ajEdp.totales_editados).length > 0) ||
+        (Array.isArray(ajEdp.otros_items) && ajEdp.otros_items.length > 0)
+      );
       if (!tieneOverrideTesoreria && montoComprometido > 0 && montoDevengadoReports > montoComprometido) {
         montoDevengadoReports = montoComprometido;
       }

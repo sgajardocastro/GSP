@@ -308,12 +308,21 @@
         <div v-else-if="reportPrincipalPendiente" class="bg-amber-50/60 dark:bg-amber-950/30 rounded-xl pa-3 mb-3 border border-amber-100 dark:border-amber-900/40">
           <div class="d-flex align-center justify-space-between text-xs text-slate-800 dark:text-slate-200 mb-1">
             <span class="font-bold">OT {{ reportPrincipalPendiente.codi_proyecto }} • Día {{ reportPrincipalPendiente.dia_a_reportar }}</span>
-            <v-chip size="x-small" color="warning" variant="outlined" class="font-mono font-bold">
-              {{ reportPrincipalPendiente.patente }}
-            </v-chip>
+            <div class="d-flex align-center ga-1">
+              <v-chip v-if="reportPrincipalPendiente.es_reemplazo" size="x-small" color="info" variant="flat" class="font-bold text-[10px]">
+                RELEVO
+              </v-chip>
+              <v-chip size="x-small" color="warning" variant="outlined" class="font-mono font-bold">
+                {{ reportPrincipalPendiente.patente }}
+              </v-chip>
+            </div>
           </div>
           <div class="text-xs text-slate-600 dark:text-slate-400 truncate">
             Faena: <strong>{{ reportPrincipalPendiente.obra_nombre }}</strong>
+          </div>
+          <!-- SPEC-16 Sec 27: Banner visual cuando la orden opera con equipo de reemplazo -->
+          <div v-if="reportPrincipalPendiente.es_reemplazo" class="mt-1.5 pa-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-[11px] text-blue-900 dark:text-blue-200 font-medium">
+            ℹ️ <strong>Equipo de Reemplazo:</strong> Operas la patente <strong>{{ reportPrincipalPendiente.patente }}</strong>{{ reportPrincipalPendiente.patente_reemplazada ? ' (en reemplazo de ' + reportPrincipalPendiente.patente_reemplazada + ')' : '' }}.
           </div>
           <div class="text-[11px] text-amber-700 dark:text-amber-400 mt-1 font-semibold">
             {{ reportPrincipalPendiente.jornada_en_curso ? '⏳ Jornada iniciada. Registra horómetro final y firma supervisor.' : '⏱️ Listo para iniciar jornada de izaje.' }}

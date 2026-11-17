@@ -2056,7 +2056,21 @@ const abrirTelemetriaViaje = async (s, jornadaParam = null) => {
 const abrirVisorReportDirecto = async (s, jornadaParam = null) => {
   if (!s) return
   const jornada = jornadaParam || getJornadaSeleccionada(s)
-  const eq = getEquipoActivo(s)
+  let eq = getEquipoActivo(s)
+  if (jornada?.id_equipo && Array.isArray(s.equipos)) {
+    const eqJornada = s.equipos.find(e => Number(e.id_equipo) === Number(jornada.id_equipo))
+    if (eqJornada) eq = eqJornada
+  } else if (jornada?.fecha && Array.isArray(s.equipos)) {
+    const fJor = String(jornada.fecha).slice(0, 10)
+    const eqFecha = s.equipos.find(e => {
+      const ini = e.fecha_plan_ini ? String(e.fecha_plan_ini).slice(0, 10) : null
+      const fin = e.fecha_plan_fin ? String(e.fecha_plan_fin).slice(0, 10) : null
+      if (ini && fJor < ini) return false
+      if (fin && fJor > fin) return false
+      return true
+    })
+    if (eqFecha) eq = eqFecha
+  }
   const eqId = eq?.id_equipo || 0
   const fechaTarget = jornada?.fecha || null
   const diaSel = jornada?.dia || getDiaSeleccionado(s)

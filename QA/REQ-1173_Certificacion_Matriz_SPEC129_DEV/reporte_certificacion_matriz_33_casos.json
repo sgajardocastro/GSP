@@ -1,0 +1,84 @@
+{
+  "fecha": "2026-11-14T20:46:14.261Z",
+  "entorno": "DEV (sch_leangsp)",
+  "matriz_total_casos": 33,
+  "casos_modificados_validados": 14,
+  "casos_correctos_validados": 10,
+  "casos_descartados_bloqueados_400": 9,
+  "proyectos_testigo_vivos": [
+    {
+      "caso": "1.1.M / 1.7.M / 1.9.M / 1.11.M",
+      "id_proyecto": 138,
+      "folio": "GSP-2611-00083",
+      "cliente": "METTCO SPA",
+      "nombre": "[QA-REQ1173] Izaje Multidia 5d Relevo Mettco Ferrero (SPEC-129)",
+      "dias_reportados": 5,
+      "relevo_operador": "Claudio Gallardo (D1-D2) -> Ernesto Ríos (D3-D5)",
+      "contingencia_clima": "Día 3 sin firma por viento (Acuerdo #7)",
+      "monto_neto": 4950000
+    },
+    {
+      "caso": "1.2",
+      "id_proyecto": 139,
+      "folio": "GSP-2611-00084",
+      "cliente": "GERARD BARTHOU",
+      "nombre": "[QA-REQ1173] Izaje Urbano Suma Alzada Barthou (SPEC-129)",
+      "regla_clave": "Cant = 1 inmutable en EDP (jamás multiplica por 8h)",
+      "monto_neto": 1350000
+    },
+    {
+      "caso": "2.3.M / 2.5.M / 2.6.M / 2.7.M",
+      "id_proyecto": 140,
+      "folio": "GSP-2611-00085",
+      "cliente": "BESALCO CONSTRUCCIONES S.A.",
+      "nombre": "[QA-REQ1173] Rental Plataforma Mensual Actas 360 Royal (SPEC-129)",
+      "regla_clave": "Cierre 360: Horas libres mes + Actas con Diésel faltante ($1.250/L)",
+      "monto_neto": 1578750
+    },
+    {
+      "caso": "3.1.M",
+      "id_proyecto": 141,
+      "folio": "GSP-2611-00086",
+      "cliente": "BESALCO CONSTRUCCIONES S.A.",
+      "nombre": "[QA-REQ1173] Transporte Cama Baja Puro Flete (SPEC-129)",
+      "regla_clave": "CERO Report Diario de Grúa, horas_minimas = 0, comprobante FLT puro",
+      "monto_neto": 450000
+    },
+    {
+      "caso": "4.1",
+      "id_proyecto": 142,
+      "folio": "GSP-2611-00087",
+      "cliente": "INVERSIONES PLAENGE",
+      "nombre": "[QA-REQ1173] Profesional Solo-Staff Rigger Plaenge (SPEC-129)",
+      "regla_clave": "id_equipo = NULL, bypass de patio, Cant = 1 inmutable ($300k)",
+      "monto_neto": 300000
+    },
+    {
+      "caso": "1.1.M / 4.8.M",
+      "id_proyecto": 143,
+      "folio": "GSP-2611-00088",
+      "cliente": "CONSTRUCTORA POCURO",
+      "nombre": "[QA-REQ1173] Izaje Mixto Pocuro con Pestaña Otros (SPEC-129)",
+      "regla_clave": "Línea de izaje separada de cargos en pestaña Otros ($200k)",
+      "monto_neto": 1480000
+    },
+    {
+      "caso": "5.0",
+      "id_proyecto": 144,
+      "folio": "GSP-2611-00089",
+      "cliente": "GSP Operaciones Internas",
+      "nombre": "[QA-REQ1173] OT Interna Traslado Base Temuco a Lautaro (SPEC-129)",
+      "regla_clave": "Facturable cliente = $0 CLP, costo asignado a base interna",
+      "monto_neto": 0
+    }
+  ],
+  "proyecto_47_intacto": true,
+  "cuadratura_diferencia_clp": 0,
+  "evidencias_capturadas": [
+    "01_web_crm_arbol_mettco.png",
+    "02_web_etapa3_asignacion_mettco.png",
+    "03_pwa_dashboard_operador.png",
+    "04_web_crm_arbol_barthou.png",
+    "05_web_crm_arbol_royal.png"
+  ]
+}

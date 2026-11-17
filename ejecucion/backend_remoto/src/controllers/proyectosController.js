@@ -2,9 +2,63 @@ const ProyectoModel = require("../models/proyectoModel.js");
 const EquipoProyectoModel = require("../models/equipoProyectoModel.js"); // ✅ nuevo
 const pool = require("../config/postgresPool.js");
 const notificacionService = require("../services/notificacionService.js");
+const { validarReglaMatrizSpec129 } = require("../services/motorValorizacionService.js");
 
 const proyecto = new ProyectoModel();
 const equipoProyecto = new EquipoProyectoModel();
+
+function validarLineasPayloadSpec129(body) {
+  if (!body || typeof body !== "object") return { valido: true };
+  let jf = body.json_field;
+  if (typeof jf === "string") {
+    try { jf = JSON.parse(jf); } catch (_) { jf = null; }
+  }
+  const crm = (jf && typeof jf === "object" && jf.crm_v1 && typeof jf.crm_v1 === "object") ? jf.crm_v1 : null;
+  if (!crm) return { valido: true };
+
+  const candidatos = [];
+  if (Array.isArray(crm.lineas_servicio)) {
+    for (const l of crm.lineas_servicio) {
+      if (!l || typeof l !== "object") continue;
+      candidatos.push(l);
+      if (Array.isArray(l.hijos)) {
+        for (const h of l.hijos) {
+          if (h && typeof h === "object") candidatos.push({ ...h, id_linea_servicio_padre: h.id_linea_servicio_padre || 1 });
+        }
+      }
+    }
+  }
+  if (Array.isArray(crm.servicios)) {
+    for (const s of crm.servicios) {
+      if (!s || typeof s !== "object") continue;
+      const linSrv = s.linea_servicio || s.tipo || crm.linea_negocio;
+      if (s.primario && typeof s.primario === "object") {
+        candidatos.push({ ...s.primario, linea_negocio: s.primario.linea_negocio || linSrv, rol_nodo: "RAIZ" });
+      }
+      if (Array.isArray(s.ramas)) {
+        for (const r of s.ramas) {
+          if (r && typeof r === "object") candidatos.push({ ...r, linea_negocio: r.linea_negocio || linSrv, id_linea_servicio_padre: 1 });
+        }
+      }
+      if (Array.isArray(s.lineas)) {
+        s.lineas.forEach((l, idx) => {
+          if (l && typeof l === "object") {
+            candidatos.push({ ...l, linea_negocio: l.linea_negocio || linSrv, rol_nodo: l.rol_nodo || (idx === 0 ? "RAIZ" : "HIJO_COMERCIAL") });
+          }
+        });
+      }
+    }
+  }
+
+  for (const nodo of candidatos) {
+    const check = validarReglaMatrizSpec129({
+      ...nodo,
+      linea_negocio: nodo.linea_negocio || nodo.linea_servicio || crm.linea_negocio
+    });
+    if (!check.valido) return check;
+  }
+  return { valido: true };
+}
 
 function tryParseJson(val) {
   if (val == null || val === "") return null;
@@ -127,6 +181,10 @@ module.exports = {
 
   createProyecto: async (req, res) => {
     try {
+      const checkMatriz = validarLineasPayloadSpec129(req.body);
+      if (!checkMatriz.valido) {
+        return res.status(400).json({ error: checkMatriz.motivo, codigo: checkMatriz.codigo });
+      }
       let codi_proyecto = req.body.codi_proyecto;
       const isFormalCode = codi_proyecto && /^(GSP|BMQ|LDS|RYL|PRY|INT)-\d{4}(?:-\d+)?-\d{3,5}$/.test(codi_proyecto);
       if (!isFormalCode) {
@@ -157,6 +215,10 @@ module.exports = {
   // ✅ POST: Crear oportunidad comercial en preventa (RF-4.3)
   createProyectoPreventa: async (req, res) => {
     try {
+      const checkMatriz = validarLineasPayloadSpec129(req.body);
+      if (!checkMatriz.valido) {
+        return res.status(400).json({ error: checkMatriz.motivo, codigo: checkMatriz.codigo });
+      }
       // Usa el id_empresa enviado desde la UI (si existe rol global) o fuerza el del usuario actual
       const id_empresa = req.body.id_empresa || req.user?.id_empresa;
       
@@ -194,6 +256,10 @@ module.exports = {
   updateProyecto: async (req, res) => {
     try {
       const { id } = req.params;
+      const checkMatriz = validarLineasPayloadSpec129(req.body);
+      if (!checkMatriz.valido) {
+        return res.status(400).json({ error: checkMatriz.motivo, codigo: checkMatriz.codigo });
+      }
 
       const existing = await proyecto.getProyectoById(id);
       if (!existing) {
@@ -555,7 +621,8 @@ module.exports = {
       });
     } catch (err) {
       console.error("Error en generarContratoPdf:", err);
-      return res.status(500).json({ success: false, error: err.message });
+      const status = err.status || (/asignarse primero el equipo|no encontrado/i.test(err.message || '') ? 400 : 500);
+      return res.status(status).json({ success: false, error: err.message, code: err.code || undefined });
     }
   },
 

@@ -1,0 +1,50 @@
+[
+  {
+    "codigo": "HIB-01",
+    "id_proyecto": 186,
+    "codi_proyecto": "GSP-2611-00124",
+    "combinacion": "IZAJE (Grúa 70T 8h + Flete) + RENTAL (Plataforma Tijera 3d + Flete)",
+    "monto_esperado": 1620000,
+    "monto_its": 600000,
+    "monto_edp": 1620000,
+    "diferencia_clp": 0,
+    "evidencia_pdf": "HIB01_EDP_186.pdf",
+    "veredicto": "PASS"
+  },
+  {
+    "codigo": "HIB-02",
+    "id_proyecto": 187,
+    "codi_proyecto": "GSP-2611-00125",
+    "combinacion": "IZAJE (Grúa 100T Fijo $1.200k) + PROFESIONAL (Supervisor Rigging 2d $500k)",
+    "monto_esperado": 1700000,
+    "monto_its": 1450000,
+    "monto_edp": 1700000,
+    "diferencia_clp": 0,
+    "evidencia_pdf": "HIB02_EDP_187.pdf",
+    "veredicto": "PASS"
+  },
+  {
+    "codigo": "HIB-03",
+    "id_proyecto": 188,
+    "codi_proyecto": "RYL-2611-00014",
+    "combinacion": "RENTAL (2 Plataformas Mensual $2.800k) + TRANSPORTE (Flete Cama Baja $650k)",
+    "monto_esperado": 3450000,
+    "monto_its": 3450000,
+    "monto_edp": 3450000,
+    "diferencia_clp": 0,
+    "evidencia_pdf": "HIB03_EDP_188.pdf",
+    "veredicto": "PASS"
+  },
+  {
+    "codigo": "HIB-04",
+    "id_proyecto": 189,
+    "codi_proyecto": "GSP-2611-00126",
+    "combinacion": "PARADA DE PLANTA 360° (Izaje 16h + Rental 5d + Transporte Cama Baja + Rigger Staff)",
+    "monto_esperado": 2860000,
+    "monto_its": 890000,
+    "monto_edp": 2860000,
+    "diferencia_clp": 0,
+    "evidencia_pdf": "HIB04_EDP_189.pdf",
+    "veredicto": "PASS"
+  }
+]

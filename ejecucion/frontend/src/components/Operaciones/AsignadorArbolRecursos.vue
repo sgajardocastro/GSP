@@ -35,6 +35,23 @@
       </div>
     </div>
 
+    <!-- BANNER DE LÍNEA DE CORTE TEMPORAL E INMUTABILIDAD DEL PASADO REPORTADO (SPEC-16 §28.4) -->
+    <div
+      v-if="fechaCorteInmutable"
+      class="bg-amber-950/40 border border-amber-500/40 rounded-lg p-3 text-xs text-amber-200 flex items-center justify-between gap-3 shadow-sm"
+    >
+      <div class="flex items-center gap-2">
+        <span class="text-base">🔒</span>
+        <div>
+          <strong class="text-amber-300 font-semibold">Servicio con Jornadas en Faena:</strong>
+          <span> Existen reportes diarios emitidos hasta el <strong>{{ formatearFechaLocal(fechaCorteInmutable) }}</strong>. La asignación histórica de equipos y tripulación previa a esta fecha está protegida y es inmutable.</span>
+        </div>
+      </div>
+      <span class="text-[11px] font-mono text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30 whitespace-nowrap">
+        Corte: {{ fechaCorteInmutable }}
+      </span>
+    </div>
+
     <!-- ESTADO VACÍO -->
     <div
       v-if="serviciosLista.length === 0"
@@ -201,8 +218,9 @@
                           <select
                             v-model="turnoEq.equipo_id"
                             @change="onTurnoEquipoSelectChange(srv, eqIdx, turnoEq.equipo_id)"
-                            :disabled="disabled"
-                            class="field-input w-full px-1.5 py-0.5 text-xs cursor-pointer truncate"
+                            :disabled="disabled || (eqIdx === 0 && Boolean(fechaCorteInmutable))"
+                            :title="(eqIdx === 0 && fechaCorteInmutable) ? '🔒 Inmutable: Cuenta con reportes en faena hasta el ' + fechaCorteInmutable + '. Para cambiar equipo, use + Relevo' : 'Seleccionar Equipo'"
+                            class="field-input w-full px-1.5 py-0.5 text-xs cursor-pointer truncate disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             <option value="" class="bg-[#111827] text-slate-400">-- Seleccionar Equipo ({{ getSubcategoriaTexto(srv) || 'Flota' }}) --</option>
                             
@@ -253,14 +271,19 @@
                         <div class="flex items-center gap-0.5">
                           <input
                             type="date"
+                            min="2024-01-01"
+                            max="2035-12-31"
                             v-model="turnoEq.fecha_ini"
                             @change="onFechasTurnoEquipoCambiadas(srv)"
-                            :disabled="disabled"
-                            class="bg-transparent border border-slate-700 rounded px-1 py-0.5 text-slate-200 text-[10px] outline-none [color-scheme:dark] disabled:opacity-60"
+                            :disabled="disabled || (eqIdx === 0 && Boolean(fechaCorteInmutable))"
+                            :min="(eqIdx > 0 && fechaCorteInmutable) ? sumarDiasIso(fechaCorteInmutable, 1) : '2024-01-01'"
+                            class="bg-transparent border border-slate-700 rounded px-1 py-0.5 text-slate-200 text-[10px] outline-none [color-scheme:dark] disabled:opacity-60 disabled:cursor-not-allowed"
                           />
                           <span class="text-slate-500">➔</span>
                           <input
                             type="date"
+                            min="2024-01-01"
+                            max="2035-12-31"
                             v-model="turnoEq.fecha_fin"
                             @change="onFechasTurnoEquipoCambiadas(srv)"
                             :disabled="disabled"
@@ -313,8 +336,9 @@
                           <select
                             v-model="turno.operador_id"
                             @change="onOperadorCambiado(srv)"
-                            :disabled="disabled"
-                            class="field-input w-full px-1.5 py-0.5 text-xs cursor-pointer truncate"
+                            :disabled="disabled || (tIdx === 0 && Boolean(fechaCorteInmutable))"
+                            :title="(tIdx === 0 && fechaCorteInmutable) ? '🔒 Inmutable: Cuenta con reportes en faena hasta el ' + fechaCorteInmutable + '. Para cambiar operador, use + Relevo' : 'Seleccionar Operador'"
+                            class="field-input w-full px-1.5 py-0.5 text-xs cursor-pointer truncate disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             <option value="" class="bg-[#111827] text-slate-400">-- Seleccionar Operador --</option>
                             <optgroup v-if="getUsuariosAgrupados(getCargoRequerido(srv)).sugeridos.length > 0" label="Operadores Calificados" class="bg-[#111827] text-slate-200 font-semibold">
@@ -347,14 +371,19 @@
                         <div class="flex items-center gap-0.5 flex-shrink-0 text-[10px] font-mono">
                           <input
                             type="date"
+                            min="2024-01-01"
+                            max="2035-12-31"
                             v-model="turno.fecha_ini"
                             @change="onFechasTurnoCambiadas(srv)"
-                            :disabled="disabled"
-                            class="bg-transparent border border-slate-700 rounded px-1 py-0.5 text-slate-200 text-[10px] outline-none [color-scheme:dark] disabled:opacity-60"
+                            :disabled="disabled || (tIdx === 0 && Boolean(fechaCorteInmutable))"
+                            :min="(tIdx > 0 && fechaCorteInmutable) ? sumarDiasIso(fechaCorteInmutable, 1) : '2024-01-01'"
+                            class="bg-transparent border border-slate-700 rounded px-1 py-0.5 text-slate-200 text-[10px] outline-none [color-scheme:dark] disabled:opacity-60 disabled:cursor-not-allowed"
                           />
                           <span class="text-slate-500">➔</span>
                           <input
                             type="date"
+                            min="2024-01-01"
+                            max="2035-12-31"
                             v-model="turno.fecha_fin"
                             @change="onFechasTurnoCambiadas(srv)"
                             :disabled="disabled"
@@ -477,6 +506,8 @@
                 <div class="flex items-center gap-1 text-[11px] font-mono">
                   <input
                     type="date"
+                    min="2024-01-01"
+                    max="2035-12-31"
                     v-model="srv.fecha_plan_ini"
                     @change="emit('dirty')"
                     :disabled="disabled"
@@ -485,6 +516,8 @@
                   <span class="text-slate-500">➔</span>
                   <input
                     type="date"
+                    min="2024-01-01"
+                    max="2035-12-31"
                     v-model="srv.fecha_plan_fin"
                     @change="emit('dirty')"
                     :disabled="disabled"
@@ -698,6 +731,8 @@
                 <div class="flex items-center gap-1 text-[11px] font-mono">
                   <input
                     type="date"
+                    min="2024-01-01"
+                    max="2035-12-31"
                     v-model="rama.fecha_plan_ini"
                     @change="onRamaCambiado(srv, rama)"
                     :disabled="disabled"
@@ -706,6 +741,8 @@
                   <span class="text-slate-500">➔</span>
                   <input
                     type="date"
+                    min="2024-01-01"
+                    max="2035-12-31"
                     v-model="rama.fecha_plan_fin"
                     @change="onRamaCambiado(srv, rama)"
                     :disabled="disabled"
@@ -863,6 +900,10 @@ const props = defineProps({
   defaultFechaFin: {
     type: String,
     default: ''
+  },
+  fechaCorteInmutable: {
+    type: String,
+    default: null
   }
 })
 
@@ -1075,12 +1116,35 @@ const getTurnosEquipo = (srv) => {
   return srv.turnos_equipos
 }
 
+const sumarDiasIso = (fechaIso, dias) => {
+  if (!fechaIso) return ''
+  try {
+    const [y, m, d] = String(fechaIso).slice(0, 10).split('-').map(Number)
+    if (!y || !m || !d) return ''
+    const dateObj = new Date(Date.UTC(y, m - 1, d))
+    dateObj.setUTCDate(dateObj.getUTCDate() + dias)
+    return dateObj.toISOString().slice(0, 10)
+  } catch (e) {
+    return ''
+  }
+}
+
+const formatearFechaLocal = (isoStr) => {
+  if (!isoStr) return ''
+  const parts = String(isoStr).slice(0, 10).split('-')
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+  return isoStr
+}
+
 const agregarTurnoEquipoRelevo = (srv) => {
   const turnos = getTurnosEquipo(srv)
   const last = turnos[turnos.length - 1]
+  const fechaIniSugerida = props.fechaCorteInmutable
+    ? (sumarDiasIso(props.fechaCorteInmutable, 1) || props.defaultFechaFin || '')
+    : (last?.fecha_fin || props.defaultFechaFin || props.defaultFechaIni || '')
   turnos.push({
     equipo_id: '',
-    fecha_ini: last?.fecha_fin || props.defaultFechaFin || props.defaultFechaIni || '',
+    fecha_ini: fechaIniSugerida,
     fecha_fin: last?.fecha_fin || props.defaultFechaFin || '',
     es_reemplazo: true,
     motivo_reemplazo: 'RELEVO_PROGRAMADO'
@@ -1133,9 +1197,12 @@ const getTurnosOperador = (srv) => {
 const agregarTurnoRelevo = (srv) => {
   const turnos = getTurnosOperador(srv)
   const last = turnos[turnos.length - 1]
+  const fechaIniSugerida = props.fechaCorteInmutable
+    ? (sumarDiasIso(props.fechaCorteInmutable, 1) || props.defaultFechaFin || '')
+    : (last?.fecha_fin || props.defaultFechaFin || props.defaultFechaIni || '')
   turnos.push({
     operador_id: '',
-    fecha_ini: last?.fecha_fin || props.defaultFechaFin || props.defaultFechaIni || '',
+    fecha_ini: fechaIniSugerida,
     fecha_fin: last?.fecha_fin || props.defaultFechaFin || ''
   })
   emit('dirty')

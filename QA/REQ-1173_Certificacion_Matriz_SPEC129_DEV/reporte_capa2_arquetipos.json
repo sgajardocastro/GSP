@@ -1,0 +1,262 @@
+{
+  "fecha_ejecucion": "2026-11-15T01:10:04.189Z",
+  "entorno": "DEV (sch_leangsp)",
+  "api_base_url": "https://servidor.leanglobal.cl/lg-gsp-dev/api",
+  "metricas_globales": {
+    "arquetipos_ejecutados": 10,
+    "arquetipos_pass": 10,
+    "combinaciones_descartadas_bloqueadas_400": "9/9",
+    "llamadas_http_totales": 115,
+    "errores_http_500": 0,
+    "queries_sql_solo_lectura": 13,
+    "mutaciones_sql_directas": 0,
+    "diferencia_matematica_maxima_clp": 0,
+    "casos_testigo_vivos_dev": [
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177
+    ]
+  },
+  "gate_negativo_spec129": [
+    {
+      "codigo": "1.4",
+      "descripcion": "Izaje Valor Fijo Semanal",
+      "http_status": 400,
+      "error_recibido": "Modalidad Valor Fijo Semanal descartada en SPEC-129 (1.4 / 2.2 / 4.5)."
+    },
+    {
+      "codigo": "1.6",
+      "descripcion": "Izaje Valor Fijo Mensual (debe usar Horas Mes Minimas)",
+      "http_status": 400,
+      "error_recibido": "Valor Fijo Mensual descartado en raíz de Izaje (SPEC-129 1.6); utilice Horas Mes Mínimas (1.5.M)."
+    },
+    {
+      "codigo": "2.2",
+      "descripcion": "Rental Valor Fijo Semanal",
+      "http_status": 400,
+      "error_recibido": "Modalidad Valor Fijo Semanal descartada en SPEC-129 (1.4 / 2.2 / 4.5)."
+    },
+    {
+      "codigo": "2.4",
+      "descripcion": "Rental Horas Mes Minimas (debe usar Valor Fijo Mensual)",
+      "http_status": 400,
+      "error_recibido": "Horas Mes Mínimas descartado en Rental sin operador (SPEC-129 2.4); utilice Valor Fijo Mensual (2.3.M)."
+    },
+    {
+      "codigo": "3.2",
+      "descripcion": "Transporte Tarifa por Km (Descartado: Innecesario)",
+      "http_status": 400,
+      "error_recibido": "Modalidad Tarifa por Km descartada en SPEC-129 (3.2)."
+    },
+    {
+      "codigo": "3.5",
+      "descripcion": "Transporte Hora Efectiva sobreestadia hija",
+      "http_status": 400,
+      "error_recibido": "Sobreestadía en planta por Hora Efectiva descartada en Transporte (SPEC-129 3.5)."
+    },
+    {
+      "codigo": "4.3",
+      "descripcion": "Profesional Horas Diarias Minimas",
+      "http_status": 400,
+      "error_recibido": "Horas Diarias Mínimas descartado en Servicios Profesionales (SPEC-129 4.3)."
+    },
+    {
+      "codigo": "4.5",
+      "descripcion": "Profesional Valor Fijo Semanal",
+      "http_status": 400,
+      "error_recibido": "Modalidad Valor Fijo Semanal descartada en SPEC-129 (1.4 / 2.2 / 4.5)."
+    },
+    {
+      "codigo": "4.7",
+      "descripcion": "Profesional Estudio de Rigging standalone",
+      "http_status": 400,
+      "error_recibido": "Estudio de Rigging independiente descartado como raíz (SPEC-129 4.7); utilice Accesorio 1.10.M o pestaña Otros 4.8.M."
+    }
+  ],
+  "arquetipos": [
+    {
+      "codigo": "ARQ-01",
+      "id_proyecto": 168,
+      "codi_proyecto": "GSP-2611-00110",
+      "esperado_neto": 1000000,
+      "cotizacion_neto": 1000000,
+      "its_neto": 1000000,
+      "edp_neto": 1000000,
+      "diferencia_clp": 0,
+      "lineas_bd": 2,
+      "evidencia_pdf": "ARQ01_EDP_168.pdf",
+      "veredicto": "PASS",
+      "hitos_verificados": [
+        "OT PDF renderiza Peso 12.5 Ton, Radio 18 m y Altura 24 m",
+        "RRHH Urbano: 0h traslado operador y $0 bono chofer apoyo",
+        "Cuadratura exacta $1.000.000 en Cotizacion, ITS, EDP y PDF"
+      ]
+    },
+    {
+      "codigo": "ARQ-02",
+      "id_proyecto": 169,
+      "codi_proyecto": "GSP-2611-00111",
+      "esperado_neto": 1680000,
+      "cotizacion_neto": 1680000,
+      "its_neto": 1680000,
+      "edp_neto": 1680000,
+      "diferencia_clp": 0,
+      "lineas_bd": 5,
+      "evidencia_pdf": "ARQ02_EDP_169.pdf",
+      "veredicto": "PASS",
+      "hitos_verificados": [
+        "Candado 1.9.M: Rigger rechazado con HTTP 403 (RIGGER_NO_AUTORIZADO_REPORTE)",
+        "Candado Acuerdo #3: Simultaneidad en otra OT rechazada con HTTP 409 (SERVICIO_ACTIVO_OTRA_OT)",
+        "Cuadratura $1.680.000 (8h*$160k + Flete $200k + Otros $200k + Rigger/Balancin $0)"
+      ]
+    },
+    {
+      "codigo": "ARQ-03",
+      "id_proyecto": 170,
+      "codi_proyecto": "GSP-2611-00112",
+      "esperado_neto": 1080000,
+      "cotizacion_neto": 1080000,
+      "its_neto": 1080000,
+      "edp_neto": 1080000,
+      "diferencia_clp": 0,
+      "lineas_bd": 1,
+      "evidencia_pdf": "ARQ03_EDP_170.pdf",
+      "veredicto": "PASS",
+      "hitos_verificados": [
+        "Relevo limpio REQ-1160/1172: Hector Paredes REEMPLAZADO y ausente en OT PDF v2; Nicolas Ceballos activo",
+        "REQ-1146: Cierre sin firma rechazado sin motivo (400) y aprobado con motivo auditable",
+        "Piso rural flexible 9h x $120.000 = $1.080.000 + traslado rural RRHH (1.5h)"
+      ]
+    },
+    {
+      "codigo": "ARQ-04",
+      "id_proyecto": 171,
+      "codi_proyecto": "GSP-2611-00113",
+      "esperado_neto": 7500000,
+      "cotizacion_neto": 7500000,
+      "its_neto": 7500000,
+      "edp_neto": 7500000,
+      "diferencia_clp": 0,
+      "lineas_bd": 1,
+      "evidencia_pdf": "ARQ04_EDP_171.pdf",
+      "veredicto": "PASS",
+      "hitos_verificados": [
+        "Jornada corta (6.0h) guardada con horas_minimas = 0 (sin piso diario 8h)",
+        "Bolsa mensual flexible 150h x $50.000 liquidada en $7.500.000 exactos en ITS, EDP y PDF"
+      ]
+    },
+    {
+      "codigo": "ARQ-05",
+      "id_proyecto": 172,
+      "codi_proyecto": "RYL-2611-00011",
+      "esperado_neto": 2154000,
+      "cotizacion_neto": 1850000,
+      "its_neto": 2154000,
+      "edp_neto": 2154000,
+      "diferencia_clp": 0,
+      "lineas_bd": 3,
+      "evidencia_pdf": "ARQ05_EDP_172.pdf",
+      "veredicto": "PASS",
+      "hitos_verificados": [
+        "REQ-1171: Contrato CTR bloqueado sin equipo (400) y emitido con serie real PAD-01-SN + Horas libres de uso + firma publica FES",
+        "G2 Kanban: T0 mantiene estado 5; T1 transiciona a estado 6",
+        "EDP consolida 1 linea Flete / Traslado ($250k) + Diesel ($54k) + Danos con foto ($250k) = $2.154.000"
+      ]
+    },
+    {
+      "codigo": "ARQ-06",
+      "id_proyecto": 173,
+      "codi_proyecto": "RYL-2611-00012",
+      "esperado_neto": 780000,
+      "cotizacion_neto": 780000,
+      "its_neto": 780000,
+      "edp_neto": 780000,
+      "diferencia_clp": 0,
+      "lineas_bd": 1,
+      "evidencia_pdf": "ARQ06_EDP_173.pdf",
+      "veredicto": "PASS",
+      "hitos_verificados": [
+        "Dry-Lease Horquilla 12 dias x $65.000 = $780.000 sin reports diarios de grua (jamás aplastado a Cant=1)",
+        "Cierre por Acta Entrega/Retiro y cuadratura $0 CLP en ITS, EDP y PDF"
+      ]
+    },
+    {
+      "codigo": "ARQ-07",
+      "id_proyecto": 174,
+      "codi_proyecto": "GSP-2611-00114",
+      "esperado_neto": 920000,
+      "cotizacion_neto": 920000,
+      "its_neto": 920000,
+      "edp_neto": 920000,
+      "diferencia_clp": 0,
+      "lineas_bd": 2,
+      "evidencia_pdf": "ARQ07_EDP_174.pdf",
+      "veredicto": "PASS",
+      "hitos_verificados": [
+        "Rampla Hija (id_equipo=70) marcada exento_bitacora_viaje=true",
+        "Acuerdo #1: Carga combustible previa a salida rechazada (400) y carga valida ($108.000) reflejada en ITS",
+        "Acuerdo #8: Cero reports FLT- y $0 bono variable chofer; cuadratura exacta $920.000"
+      ]
+    },
+    {
+      "codigo": "ARQ-08",
+      "id_proyecto": 175,
+      "codi_proyecto": "GSP-2611-00115",
+      "esperado_neto": 300000,
+      "cotizacion_neto": 300000,
+      "its_neto": 300000,
+      "edp_neto": 300000,
+      "diferencia_clp": 0,
+      "lineas_bd": 1,
+      "evidencia_pdf": "ARQ08_EDP_175.pdf",
+      "veredicto": "PASS",
+      "hitos_verificados": [
+        "Rigger autorizado en OT-STAFF con id_equipo = null y sin horometro",
+        "Camioneta urbana CTA-216 exenta de bitacora de viaje (4.8.M)",
+        "Cuadratura exacta $300.000 en Cotizacion, ITS, EDP y PDF"
+      ]
+    },
+    {
+      "codigo": "ARQ-09",
+      "id_proyecto": 176,
+      "codi_proyecto": "INT-2611-00021",
+      "esperado_neto": 0,
+      "cotizacion_neto": 0,
+      "its_neto": 0,
+      "edp_neto": 0,
+      "diferencia_clp": 0,
+      "lineas_bd": 0,
+      "evidencia_pdf": "ARQ09_EDP_176.pdf",
+      "veredicto": "PASS",
+      "hitos_verificados": [
+        "Folio interno INT-2611-00021: Ingresos facturables ITS = $0 y EDP = $0 CLP",
+        "Costo operacional interno real auditado en ITS = $45.000"
+      ]
+    },
+    {
+      "codigo": "ARQ-10",
+      "id_proyecto": 177,
+      "codi_proyecto": "GSP-2611-00116",
+      "esperado_neto": 1680000,
+      "cotizacion_neto": 2350000,
+      "its_neto": 1680000,
+      "edp_neto": 1680000,
+      "diferencia_clp": 0,
+      "lineas_bd": 2,
+      "evidencia_pdf": "ARQ10_EDP_177.pdf",
+      "veredicto": "PASS",
+      "hitos_verificados": [
+        "Acuerdo #2: Visita $0 sin autorizador rechazada (400) y aprobada con Omar Ghiselini (id_user=2) visible en ITS",
+        "Acuerdo #6: Yiara Mendoza (Control de Gestion) ajusta horas (8h->5h) + agrega item Otros ($80.000)",
+        "Cuadratura exacta post-ajuste $1.680.000 en ITS, EDP Resumen y EDP PDF"
+      ]
+    }
+  ]
+}

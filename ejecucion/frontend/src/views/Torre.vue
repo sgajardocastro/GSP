@@ -194,6 +194,8 @@
                 v-model="fechaDesdeKanbanPro"
                 @change="presetFechaKanbanPro = 'CUSTOM'"
                 type="date"
+                min="2024-01-01"
+                max="2035-12-31"
                 class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
               />
               <span class="text-slate-600">➔</span>
@@ -202,6 +204,8 @@
                 v-model="fechaHastaKanbanPro"
                 @change="presetFechaKanbanPro = 'CUSTOM'"
                 type="date"
+                min="2024-01-01"
+                max="2035-12-31"
                 class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
               />
             </div>
@@ -603,6 +607,8 @@
               v-model="fechaDesdeKanbanPro"
               @change="presetFechaKanbanPro = 'CUSTOM'; fechaPuntualKardex = ''"
               type="date"
+              min="2024-01-01"
+              max="2035-12-31"
               class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
             />
             <span class="text-slate-600">➔</span>
@@ -611,6 +617,8 @@
               v-model="fechaHastaKanbanPro"
               @change="presetFechaKanbanPro = 'CUSTOM'; fechaPuntualKardex = ''"
               type="date"
+              min="2024-01-01"
+              max="2035-12-31"
               class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
             />
           </div>
@@ -1739,6 +1747,8 @@
                 v-model="fechaDesdeGantt"
                 @change="onChangeFechasCustomGantt"
                 type="date"
+                min="2024-01-01"
+                max="2035-12-31"
                 class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
               />
               <span class="text-slate-600">➔</span>
@@ -1747,6 +1757,8 @@
                 v-model="fechaHastaGantt"
                 @change="onChangeFechasCustomGantt"
                 type="date"
+                min="2024-01-01"
+                max="2035-12-31"
                 class="bg-transparent text-white font-mono text-[11px] focus:outline-none cursor-pointer"
               />
             </div>
@@ -2294,18 +2306,16 @@ const desplazamiento = ref([])
 const maniobra       = ref([])
 const completados    = ref([])
 
-// Helper unificado para determinar si un proyecto está operacionalmente finalizado o en contabilidad
+// Helper unificado para determinar si un proyecto está operacionalmente finalizado o en contabilidad (SPEC-130 / BUG-02)
 const esFinalizadoOperacional = (p) => {
   if (!p) return false
   const st = Number(p.id_proyecto_estado)
   // Desestimado o cancelado no califica como completado
   if (st >= 99 || (st === 6 && p.motivo_desestimacion)) return false
 
-  if (st === 7 || st === 8) return true
-  if (st === 6 && !p.motivo_desestimacion) return true
-  if (['EN_REVISION_CONTABILIDAD', 'CONCLUIDO'].includes(p.estado_its)) return true
-  if (['FACTURADO_CONFORME', 'DEVENGADO_PENDIENTE_FACTURA'].includes(p.estado_financiero)) return true
-  if (p.json_field?.its_v1?.concluido || p.json_field?.ejecucion_v1?.preparacion_salida?.ejecucion_finalizada) return true
+  // Un proyecto solo es finalizado operacional cuando su estado oficial en BD es 6, 7 u 8
+  // Evita tratar estado 5 (En Ejecución / Rental Activo) como finalizado cuando tiene acta de entrega Rental sin retiro
+  if ([6, 7, 8].includes(st)) return true
   return false
 }
 
@@ -2333,7 +2343,7 @@ const cargarProyectos = async () => {
     verificacion.value   = proyectos.filter(p => Number(p.id_proyecto_estado) === 3)
 
     // Columna 3: En Asignación Recursos OT (Flota y Tripulación)
-    asignados.value      = proyectos.filter(p => Number(p.id_proyecto_estado) === 4)
+    asignados.value      = proyectos.filter(p => Number(p.id_proyecto_estado) === 4 && !esFinalizadoOperacional(p))
 
     // Helper para determinar si un proyecto en estado 5 ya tiene equipos autorizados o en faena
     const estaEnFaena = (p) => {
@@ -3326,8 +3336,11 @@ const diasGantt = computed(() => {
   hoy.setHours(0, 0, 0, 0)
   const diasSemanaNombres = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB']
 
-  let inicio = fechaDesdeGantt.value ? new Date(fechaDesdeGantt.value + 'T00:00:00') : new Date(hoy)
-  let fin = fechaHastaGantt.value ? new Date(fechaHastaGantt.value + 'T00:00:00') : new Date(hoy)
+  const regexFecha = /^\d{4}-\d{2}-\d{2}$/
+  const fDesde = regexFecha.test(fechaDesdeGantt.value || '') ? fechaDesdeGantt.value : ''
+  const fHasta = regexFecha.test(fechaHastaGantt.value || '') ? fechaHastaGantt.value : ''
+  let inicio = fDesde ? new Date(fDesde + 'T00:00:00') : new Date(hoy)
+  let fin = fHasta ? new Date(fHasta + 'T00:00:00') : new Date(hoy)
   if (isNaN(inicio.getTime()) || isNaN(fin.getTime()) || inicio > fin) {
     const r = calcularRangoInicialGantt(rangoDiasGantt.value)
     inicio = new Date(r.desde + 'T00:00:00')
@@ -4416,9 +4429,12 @@ const coincideFiltrosKanbanPro = (p) => {
   }
 
   // 2. Filtro por Fecha (Ejecución o Venta)
-  if (fechaDesdeKanbanPro.value || fechaHastaKanbanPro.value) {
-    const desde = fechaDesdeKanbanPro.value || '0000-01-01'
-    const hasta = fechaHastaKanbanPro.value || '9999-12-31'
+  const regexFechaIso = /^\d{4}-\d{2}-\d{2}$/
+  const fDesdeValida = regexFechaIso.test(fechaDesdeKanbanPro.value || '') ? fechaDesdeKanbanPro.value : ''
+  const fHastaValida = regexFechaIso.test(fechaHastaKanbanPro.value || '') ? fechaHastaKanbanPro.value : ''
+  if (fDesdeValida || fHastaValida) {
+    const desde = fDesdeValida || '0000-01-01'
+    const hasta = fHastaValida || '9999-12-31'
     if (tipoFechaKanbanPro.value === 'VENTA') {
       if (!ficha.fechaVentaIso) return false
       if (ficha.fechaVentaIso < desde || ficha.fechaVentaIso > hasta) return false

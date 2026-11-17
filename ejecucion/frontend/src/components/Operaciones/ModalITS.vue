@@ -1557,6 +1557,10 @@
                     <span class="text-slate-300">2. Ingreso Fletes / Traslados:</span>
                     <strong class="text-white">{{ formatMoneda(its.total_ingresos_fletes) }} ({{ getPctSobreVenta(its.total_ingresos_fletes) }}%)</strong>
                   </div>
+                  <div v-if="its.monto_otros_items_edp" class="flex justify-between py-0.5 text-amber-300">
+                    <span>3. Otros Cargos Autorizados EDP:</span>
+                    <strong>{{ formatMoneda(its.monto_otros_items_edp) }} ({{ getPctSobreVenta(its.monto_otros_items_edp) }}%)</strong>
+                  </div>
                   <div class="flex justify-between text-emerald-400 font-bold border-t border-white/10 pt-1.5 text-sm">
                     <span>TOTAL INGRESOS FACTURABLES:</span>
                     <span>{{ formatMoneda(its.total_ingresos_facturables) }} (100%)</span>
@@ -2041,15 +2045,12 @@ const resolverConductorOperadorEquipo = (eq) => {
     return cMatch.nombre_personal;
   }
 
-  // 3. Buscar en proyecto.json_field (ejecucion_v1 / operaciones_v1)
-  const ejV1 = proyecto.value?.json_field?.ejecucion_v1;
-  const opV1 = proyecto.value?.json_field?.operaciones_v1;
-  const eqList = [...(ejV1?.equipos || []), ...(opV1?.equipos_extra || [])];
-  const eqJson = eqList.find(e => 
-    String(e.patente || e.id_equipo || '').trim().toUpperCase() === pat
+  // 3. Buscar en asignaciones relacionales (tpry_rel_equipo)
+  const eqRel = (asignaciones.value?.equipos || []).find(e => 
+    String(e.patente || '').trim().toUpperCase() === pat
   );
-  if (eqJson && (eqJson.conductor_nombre || eqJson.operador_nombre || eqJson.nombre_conductor || eqJson.chofer)) {
-    return eqJson.conductor_nombre || eqJson.operador_nombre || eqJson.nombre_conductor || eqJson.chofer;
+  if (eqRel && (eqRel.conductor_nombre || eqRel.operador_nombre || eqRel.operador || eqRel.nombre_operador)) {
+    return eqRel.conductor_nombre || eqRel.operador_nombre || eqRel.operador || eqRel.nombre_operador;
   }
 
   // 4. Mapeo contextual con asignaciones.personal por rol
@@ -2174,17 +2175,27 @@ const categoriasPendientesList = computed(() => {
 });
 
 // Computed
+// SPEC-130: Helper unificado canónico para traslados y fletes
+const esJornadaTraslado = (j) => {
+  if (!j || typeof j !== 'object') return false;
+  const ts = String(j.tipo_servicio || '').trim();
+  if (ts === 'Registro de Viaje') return false;
+  const tsLow = ts.toLowerCase();
+  const nr = String(j.numero_report || '').trim().toUpperCase();
+  return tsLow.includes('flete') || tsLow.includes('traslado') || nr === 'TRASLADO' || nr.startsWith('FLE-');
+};
+
 const jornadasActivas = computed(() => jornadas.value.filter(j => !j.es_oculta));
 
 const totalHorasRealesActivas = computed(() => {
   return jornadasActivas.value
-    .filter(j => !j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete'))
+    .filter(j => !esJornadaTraslado(j))
     .reduce((acc, j) => acc + (parseFloat(j.horas_reales) || 0), 0);
 });
 
 const totalHorasViaticosActivas = computed(() => {
   return jornadasActivas.value
-    .filter(j => !j.tipo_servicio || !j.tipo_servicio.toLowerCase().includes('flete'))
+    .filter(j => !esJornadaTraslado(j))
     .reduce((acc, j) => acc + (parseFloat(j.horas_viaticos) || 0), 0);
 });
 
@@ -2383,6 +2394,17 @@ const cargarITS = async () => {
           its.value.horas_minimas_pactadas = 0;
         }
       }
+      // SPEC-130: Captura de la verdad canónica del backend para ingresos y EDP
+      its.value.ingresos_facturables_backend = Number(res.data.data.its?.total_ingresos_facturables ?? 0);
+      its.value.ingresos_horas_backend = Number(res.data.data.its?.total_ingresos_horas ?? 0);
+      its.value.ingresos_fletes_backend = Number(res.data.data.its?.total_ingresos_fletes ?? 0);
+      its.value.horas_report_backend = Number(res.data.data.its?.total_horas_report ?? 0);
+
+      const ajEdpLoad = res.data.data.proyecto?.json_field?.edp_ajustes_v1 || res.data.data.its?.edp_ajustes_v1 || null;
+      if (ajEdpLoad && Array.isArray(ajEdpLoad.otros_items)) {
+        its.value.monto_otros_items_edp = ajEdpLoad.otros_items.reduce((acc, it) => acc + Number(it.monto_subtotal ?? it.monto ?? it.subtotal ?? 0), 0);
+      }
+
       crmPensiones.value = res.data.data.crm_pensiones || res.data.data.proyecto?.json_field?.crm_v1?.pensiones || {};
       categoriasSinCosto.value = res.data.data.its?.categorias_sin_costo || {};
       tarifaOperadorComercial.value = res.data.data.tarifa_operador_comercial || null;
@@ -2403,7 +2425,7 @@ const cargarITS = async () => {
         const hTer = j.hora_termino ? String(j.hora_termino).slice(0, 5) : '';
         const hRet = j.hora_retorno ? String(j.hora_retorno).slice(0, 5) : '';
         const colMin = j.colacion_minutos !== null && j.colacion_minutos !== undefined ? Number(j.colacion_minutos) : 0;
-        const esFlete = j.tipo_servicio && String(j.tipo_servicio).toLowerCase().includes('flete');
+        const esFlete = esJornadaTraslado(j);
         let hrsServ = parseFloat(j.horas_reales || 0);
         let hrsViat = parseFloat(j.horas_viaticos || 0);
         if (!esFlete) {
@@ -2864,7 +2886,7 @@ const recalcularTotales = () => {
 
   jornadas.value.forEach(j => {
     const tipo = j.tipo_servicio || '';
-    const esViajeOTraslado = tipo === 'Registro de Viaje' || tipo === 'Traslado' || String(tipo).toUpperCase().includes('REGISTRO DE VIAJE');
+    const esViajeOTraslado = tipo === 'Registro de Viaje' || String(tipo).toUpperCase().includes('REGISTRO DE VIAJE');
 
     if (esViajeOTraslado) {
       j.tarifa_hora = 0;
@@ -2876,7 +2898,7 @@ const recalcularTotales = () => {
       return;
     }
 
-    const esFlete = tipo && tipo.toLowerCase().includes('flete');
+    const esFlete = esJornadaTraslado(j);
     const esJornadaFija = esFijo || String(tipo).toUpperCase().includes('FIJO');
 
     if (j.tarifa_hora === undefined || j.tarifa_hora === null || isNaN(j.tarifa_hora)) {
@@ -2892,7 +2914,7 @@ const recalcularTotales = () => {
     const tarifa = parseFloat(j.tarifa_hora || 0);
 
     if (esFlete) {
-      j.subtotal = hrs * tarifa;
+      j.subtotal = hrs > 0 ? (j.subtotal !== undefined && j.subtotal !== null && Number(j.subtotal) > 0 ? Number(j.subtotal) : hrs * tarifa) : (Number(j.subtotal) || tarifa);
     } else if (esJornadaFija) {
       // REQ-1104: En servicio valor fijo, el subtotal comercial es el valor fijo pactado, NO hrs * tarifa
       if (!fijoAsignado && !j.es_oculta) {
@@ -2915,20 +2937,55 @@ const recalcularTotales = () => {
     }
   });
 
-  its.value.total_horas_report = totalHrs;
-  // SPEC-128: En servicio de Valor Fijo, si no hay jornadas cargadas o subtotal acumuló 0, el ingreso facturable de horas es el valor_fijo_pactado
-  if (esFijo && totalIngHoras === 0 && Number(its.value.valor_fijo_pactado || 0) > 0) {
-    totalIngHoras = Number(its.value.valor_fijo_pactado);
-  }
-  its.value.total_ingresos_horas = totalIngHoras;
+  // SPEC-130: Conciliación con verdad canónica del backend / EDP (Acuerdo #6 / Arriendos Mensuales / Rental 360)
+  const ajEdp = proyecto.value?.json_field?.edp_ajustes_v1 || its.value?.edp_ajustes_v1 || null;
+  const tieneAjusteEdp = Boolean(
+    ajEdp && (
+      (ajEdp.cantidades_editadas && Object.keys(ajEdp.cantidades_editadas).length > 0) ||
+      (ajEdp.tarifas_editadas && Object.keys(ajEdp.tarifas_editadas).length > 0) ||
+      (ajEdp.totales_editados && Object.keys(ajEdp.totales_editados).length > 0) ||
+      (Array.isArray(ajEdp.otros_items) && ajEdp.otros_items.length > 0) ||
+      Number(ajEdp.descuento_tesoreria ?? ajEdp.descuento_global ?? 0) > 0
+    )
+  );
 
-  // 2. Ingresos
-  if (totalIngFletes > 0) {
-    its.value.total_ingresos_fletes = totalIngFletes;
+  const backendFacturable = Number(its.value?.ingresos_facturables_backend ?? its.value?.total_ingresos_facturables ?? 0);
+  const esServicioEspecial = (
+    tieneAjusteEdp ||
+    jornadas.value.length === 0 ||
+    backendFacturable > (totalIngHoras + totalIngFletes) ||
+    String(proyecto.value?.codi_proyecto || '').startsWith('RYL-')
+  );
+
+  if (esServicioEspecial && backendFacturable > 0) {
+    its.value.total_ingresos_facturables = backendFacturable;
+    if (Number(its.value.ingresos_horas_backend) > 0) {
+      its.value.total_ingresos_horas = Number(its.value.ingresos_horas_backend);
+    }
+    if (Number(its.value.ingresos_fletes_backend) > 0) {
+      its.value.total_ingresos_fletes = Number(its.value.ingresos_fletes_backend);
+    }
+    if (Number(its.value.horas_report_backend) > 0) {
+      its.value.total_horas_report = Number(its.value.horas_report_backend);
+    } else {
+      its.value.total_horas_report = totalHrs;
+    }
   } else {
-    its.value.total_ingresos_fletes = parseFloat(its.value.valor_flete_pactado || 0);
+    its.value.total_horas_report = totalHrs;
+    // SPEC-128: En servicio de Valor Fijo, si no hay jornadas cargadas o subtotal acumuló 0, el ingreso facturable de horas es el valor_fijo_pactado
+    if (esFijo && totalIngHoras === 0 && Number(its.value.valor_fijo_pactado || 0) > 0) {
+      totalIngHoras = Number(its.value.valor_fijo_pactado);
+    }
+    its.value.total_ingresos_horas = totalIngHoras;
+
+    // 2. Ingresos
+    if (totalIngFletes > 0) {
+      its.value.total_ingresos_fletes = totalIngFletes;
+    } else {
+      its.value.total_ingresos_fletes = parseFloat(its.value.valor_flete_pactado || 0);
+    }
+    its.value.total_ingresos_facturables = its.value.total_ingresos_horas + its.value.total_ingresos_fletes;
   }
-  its.value.total_ingresos_facturables = its.value.total_ingresos_horas + its.value.total_ingresos_fletes;
 
   // 3. Costos (suma de las 9 categorías)
   let totalCostos = 0;

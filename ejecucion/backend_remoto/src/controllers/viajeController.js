@@ -1,6 +1,43 @@
 const viajeModel = require('../models/viajeModel');
 const estadoPagoModel = require('../models/estadoPagoModel');
 
+function evaluarExencionBitacoraViaje(v = {}, distanciaFallback = 0) {
+  const idSub = Number(v.id_subcategoria || 0);
+  const subEq = String(v.nombre_subcategoria || '').toUpperCase();
+  const codEq = String(v.codigo_interno || '').toUpperCase();
+  const tipoEq = String(v.tipo_equipo || '').toUpperCase();
+  const modEq = String(v.modelo || '').toUpperCase();
+  const distKm = Number(v.distancia_km ?? distanciaFallback ?? 0);
+
+  const esRamplaOSemi = (
+    idSub === 84 ||
+    subEq.includes('SEMI') ||
+    subEq.includes('RAMPLA') ||
+    subEq.includes('CAMA BAJA') ||
+    codEq.startsWith('RPL-') ||
+    codEq.startsWith('CBA-') ||
+    tipoEq.includes('RAMPLA') ||
+    tipoEq.includes('CAMA BAJA') ||
+    tipoEq.includes('CAMABAJA') ||
+    tipoEq.includes('SEMI') ||
+    modEq.includes('SRPL') ||
+    modEq.includes('RAMPLA') ||
+    modEq.includes('CAMA BAJA') ||
+    modEq.includes('CAMABAJA') ||
+    modEq.includes('SEMI')
+  );
+  const esCamionetaUrbana = (
+    (idSub === 100 ||
+      subEq.includes('CAMIONETA') ||
+      codEq.startsWith('CTA-') ||
+      tipoEq.includes('VEHICULOS LIVIANOS') ||
+      tipoEq.includes('CAMIONETA') ||
+      modEq.includes('CAMIONETA')) &&
+    distKm <= 30
+  );
+  return Boolean(esRamplaOSemi || esCamionetaUrbana);
+}
+
 const viajeController = {
   // 1. Obtener datos del viaje por token (Público / PWA)
   async getViajePorToken(req, res) {
@@ -10,6 +47,10 @@ const viajeController = {
       if (!viaje) {
         return res.status(404).json({ error: 'Viaje no encontrado o token inválido' });
       }
+
+      // SPEC-129 1.11.M / 3.1.M / 4.8.M: Marcar exención de bitácora para ramplas sin motor y camionetas urbanas
+      viaje.exento_bitacora_viaje = evaluarExencionBitacoraViaje(viaje, viaje.distancia_km);
+
       res.json(viaje);
     } catch (err) {
       console.error('Error al obtener viaje por token:', err);
@@ -65,34 +106,104 @@ const viajeController = {
     }
   },
 
-  // 3. Registrar Carga de Combustible (Copec)
+  // 3. Registrar Carga de Combustible (Copec / Acuerdo #1)
   async registrarCombustible(req, res) {
     try {
       const { token } = req.params;
-      const {
-        tipo_estanque,
-        litros,
-        monto,
-        foto_voucher,
-        foto_tablero,
-        id_autorizacion_copec,
-        odometro,
-        horometro,
-        observacion
-      } = req.body;
+      const db = require('../config/dbConfig');
 
-      const costoRegistrado = await viajeModel.registrarCombustible({
-        token_viaje: token,
-        tipo_estanque,
-        litros,
-        monto,
-        foto_voucher,
-        foto_tablero,
-        id_autorizacion_copec,
-        odometro,
-        horometro,
-        observacion
-      });
+      const payload = req.body || {};
+      const cargaObj = payload.carga_combustible || {};
+      const cargasArray = Array.isArray(payload.cargas_combustible) ? payload.cargas_combustible : null;
+
+      // Resolver parámetros admitiendo carga_combustible, cargas_combustible o campos raíz
+      const primeraCarga = (cargasArray && cargasArray.length > 0) ? cargasArray[0] : cargaObj;
+      const horaCarga = primeraCarga.hora_carga || payload.hora_carga || null;
+      const litros = primeraCarga.litros !== undefined ? primeraCarga.litros : payload.litros;
+      const monto = primeraCarga.valor_total ?? primeraCarga.monto ?? payload.valor_total ?? payload.monto ?? payload.monto_costo ?? 0;
+      const odometro = primeraCarga.odometro !== undefined ? primeraCarga.odometro : payload.odometro;
+      const horometro = primeraCarga.horometro !== undefined ? primeraCarga.horometro : payload.horometro;
+      const tipo_estanque = primeraCarga.tipo_estanque || payload.tipo_estanque || 'ESTANQUE_PRINCIPAL';
+      const foto_voucher = primeraCarga.foto_voucher || payload.foto_voucher || null;
+      const foto_tablero = primeraCarga.foto_tablero || payload.foto_tablero || null;
+      const id_autorizacion_copec = primeraCarga.id_autorizacion_copec || payload.id_autorizacion_copec || null;
+      const observacion = primeraCarga.observacion || payload.observacion || (horaCarga ? `Carga registrada hora: ${horaCarga}` : null);
+
+      // Validación cronológica obligatoria (Acuerdo #1):
+      // Si viene hora_carga y el viaje ya tiene hora_salida_patio en la misma fecha (o timestamp), no puede ser anterior
+      if (horaCarga) {
+        const viajeCheck = await db.query(
+          `SELECT fecha_salida_patio, km_inicial FROM tequ_log_desplazamiento WHERE token_viaje = $1 LIMIT 1`,
+          [token]
+        );
+        if (viajeCheck.rows.length > 0 && viajeCheck.rows[0].fecha_salida_patio) {
+          const fSalida = viajeCheck.rows[0].fecha_salida_patio;
+          const hCargaStr = String(horaCarga).trim();
+          let esAnterior = false;
+
+          if (/^\d{1,2}:\d{2}/.test(hCargaStr)) {
+            const mCarga = hCargaStr.match(/^(\d{1,2}):(\d{2})/);
+            const minCarga = parseInt(mCarga[1], 10) * 60 + parseInt(mCarga[2], 10);
+            const dSal = new Date(fSalida);
+            if (!isNaN(dSal.getTime())) {
+              const hhSal = dSal.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', hour12: false });
+              const mSal = hhSal.match(/^(\d{1,2}):(\d{2})/);
+              if (mSal) {
+                const minSal = parseInt(mSal[1], 10) * 60 + parseInt(mSal[2], 10);
+                if (minCarga < minSal) {
+                  esAnterior = true;
+                }
+              }
+            }
+          } else {
+            const tsCarga = new Date(hCargaStr).getTime();
+            const tsSal = new Date(fSalida).getTime();
+            if (!isNaN(tsCarga) && !isNaN(tsSal) && tsCarga < tsSal) {
+              esAnterior = true;
+            }
+          }
+
+          if (esAnterior) {
+            return res.status(400).json({
+              success: false,
+              error: 'La hora de carga de combustible no puede ser anterior a la hora de salida de patio.',
+              message: 'La hora de carga de combustible no puede ser anterior a la hora de salida de patio.'
+            });
+          }
+        }
+      }
+
+      // Si vienen múltiples cargas en cargas_combustible
+      let costoRegistrado = null;
+      if (cargasArray && cargasArray.length > 0) {
+        for (const c of cargasArray) {
+          costoRegistrado = await viajeModel.registrarCombustible({
+            token_viaje: token,
+            tipo_estanque: c.tipo_estanque || tipo_estanque,
+            litros: c.litros || 0,
+            monto: c.valor_total || c.monto || 0,
+            foto_voucher: c.foto_voucher || null,
+            foto_tablero: c.foto_tablero || null,
+            id_autorizacion_copec: c.id_autorizacion_copec || null,
+            odometro: c.odometro || null,
+            horometro: c.horometro || null,
+            observacion: c.observacion || (c.hora_carga ? `Carga ${c.hora_carga}` : null)
+          });
+        }
+      } else {
+        costoRegistrado = await viajeModel.registrarCombustible({
+          token_viaje: token,
+          tipo_estanque,
+          litros: litros || 0,
+          monto: monto || 0,
+          foto_voucher,
+          foto_tablero,
+          id_autorizacion_copec,
+          odometro,
+          horometro,
+          observacion
+        });
+      }
 
       res.status(201).json({ success: true, message: 'Carga de combustible registrada exitosamente', data: costoRegistrado });
     } catch (err) {
@@ -225,8 +336,22 @@ const viajeController = {
   async getViajesPorProyecto(req, res) {
     try {
       const { id_proyecto } = req.params;
+      const db = require('../config/dbConfig');
+      const pryRes = await db.query('SELECT json_field FROM tpry_proyecto WHERE id_proyecto = $1', [id_proyecto]);
+      let distanciaKm = 0;
+      if (pryRes.rows.length > 0) {
+        const jf = pryRes.rows[0].json_field || {};
+        distanciaKm = Number(jf.crm_v1?.distancia_km ?? jf.distancia_km ?? 0);
+      }
+
       const viajes = await viajeModel.getViajesPorProyecto(id_proyecto);
-      res.json(viajes);
+      const viajesMapeados = (viajes || []).map(v => ({
+        ...v,
+        distancia_km: distanciaKm,
+        exento_bitacora_viaje: evaluarExencionBitacoraViaje(v, distanciaKm)
+      }));
+
+      res.json(viajesMapeados);
     } catch (err) {
       console.error('Error al listar viajes por proyecto:', err);
       res.status(500).json({ error: err.message });
@@ -255,114 +380,165 @@ const viajeController = {
     const idPry = actualizado.id_proyecto;
     if (!idPry) return;
 
-    // 9.1 Obtener proyecto y estructurador
-    const pryRes = await db.query('SELECT id_proyecto, codi_proyecto, json_field FROM tpry_proyecto WHERE id_proyecto = $1', [idPry]);
-    if (pryRes.rows.length === 0) return;
+    // 9.1 SPEC-16 §28: Marcar cumplimiento de traslado en tpry_linea_servicio (metadata_json)
+    try {
+      await db.query(`
+        UPDATE tpry_linea_servicio
+        SET metadata_json = jsonb_set(
+          COALESCE(metadata_json, '{}'::jsonb),
+          '{cumplido}',
+          'true'::jsonb,
+          true
+        )
+        WHERE id_proyecto = $1 
+          AND (UPPER(descripcion) LIKE '%TRASLADO%' OR UPPER(descripcion) LIKE '%FLETE%' OR UPPER(subcategoria) LIKE '%TRASLADO%' OR UPPER(subcategoria) LIKE '%FLETE%')
+      `, [idPry]);
+      console.log(`[Handoff Traslado] Ítem TRASLADO marcado como CUMPLIDO relacionalmente en tpry_linea_servicio (#${idPry})`);
+    } catch (errLs) {
+      console.warn(`[Handoff Traslado] Error actualizando cumplimiento en tpry_linea_servicio:`, errLs.message);
+    }
 
-    const proyecto = pryRes.rows[0];
-    const jf = proyecto.json_field || {};
-    const lineas = jf.crm_v1?.lineas_servicio || [];
-
-    let lineaModificada = false;
-    for (const l of lineas) {
-      const tipo = (l.tipo || '').toUpperCase();
-      const desc = (l.descripcion || '').toUpperCase();
-      if (tipo.includes('TRASLADO') || desc.includes('TRASLADO') || desc.includes('FLETE')) {
-        l.cumplido = true;
-        l.estado = 'CUMPLIDO';
-        l.fecha_cumplido = actualizado.fecha_llegada_faena || new Date().toISOString();
-        l.token_viaje = token;
-        l.id_log_desplazamiento = actualizado.id_log_desplazamiento;
-        lineaModificada = true;
+    // Acuerdo #8 / SPEC-129 1.8.M / 3.1.M: Verificar si es vehículo de transporte/soporte (incluyendo catálogo real tequ_subcategoria)
+    let tipoEqNorm = '';
+    let modeloEqNorm = '';
+    let subEqNorm = '';
+    let codEqNorm = '';
+    if (actualizado.id_equipo) {
+      const eqRes = await db.query(
+        `SELECT e.tipo_equipo, e.modelo, e.codigo_interno, COALESCE(sc.nombre_subcategoria, '') AS nombre_subcategoria
+         FROM tequ_equipo e
+         LEFT JOIN tequ_subcategoria sc ON e.id_subcategoria = sc.id_subcategoria
+         WHERE e.id_equipo = $1`,
+        [actualizado.id_equipo]
+      );
+      if (eqRes.rows.length > 0) {
+        tipoEqNorm = String(eqRes.rows[0].tipo_equipo || '').toUpperCase();
+        modeloEqNorm = String(eqRes.rows[0].modelo || '').toUpperCase();
+        subEqNorm = String(eqRes.rows[0].nombre_subcategoria || '').toUpperCase();
+        codEqNorm = String(eqRes.rows[0].codigo_interno || '').toUpperCase();
       }
     }
+    if (!tipoEqNorm && actualizado.tipo_equipo) tipoEqNorm = String(actualizado.tipo_equipo).toUpperCase();
+    if (!modeloEqNorm && actualizado.modelo) modeloEqNorm = String(actualizado.modelo).toUpperCase();
 
-    if (lineaModificada) {
-      await db.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [JSON.stringify(jf), idPry]);
-      console.log(`[Handoff Traslado] Ítem TRASLADO marcado como CUMPLIDO en OT ${proyecto.codi_proyecto}`);
-    }
-
-    // 9.2 Inyectar automáticamente en Report Diario (tedp_reporte_avance)
-    const tokenReport = `FLT-${token}`;
-    const repCheck = await db.query(
-      'SELECT id_reporte_avance FROM tedp_reporte_avance WHERE token_report = $1 OR id_log_desplazamiento = $2 LIMIT 1',
-      [tokenReport, actualizado.id_log_desplazamiento]
+    const noEsPlumaNiGrua = !subEqNorm.includes('PLUMA') && !tipoEqNorm.includes('PLUMA') && !modeloEqNorm.includes('PLUMA') && !tipoEqNorm.includes('GRUA') && !tipoEqNorm.includes('GRÚA');
+    const esVehiculoTransporte = noEsPlumaNiGrua && (
+      tipoEqNorm === 'CAMIONES' ||
+      tipoEqNorm.includes('VEHICULOS LIVIANOS') ||
+      tipoEqNorm.includes('TRACTO') ||
+      tipoEqNorm.includes('CAMA BAJA') ||
+      tipoEqNorm.includes('CAMABAJA') ||
+      tipoEqNorm.includes('RAMPLA') ||
+      tipoEqNorm.includes('SEMI') ||
+      tipoEqNorm.includes('CAMIONETA') ||
+      tipoEqNorm.includes('TRANSPORTE') ||
+      tipoEqNorm.includes('SOPORTE') ||
+      subEqNorm.includes('TRACTO') ||
+      subEqNorm.includes('SEMI') ||
+      subEqNorm.includes('RAMPLA') ||
+      subEqNorm.includes('CAMA BAJA') ||
+      subEqNorm.includes('CAMIONETA') ||
+      codEqNorm.startsWith('TRC-') ||
+      codEqNorm.startsWith('CBA-') ||
+      codEqNorm.startsWith('RPL-') ||
+      codEqNorm.startsWith('CTA-') ||
+      modeloEqNorm.includes('TRACTO') ||
+      modeloEqNorm.includes('CAMA BAJA') ||
+      modeloEqNorm.includes('CAMABAJA') ||
+      modeloEqNorm.includes('RAMPLA') ||
+      modeloEqNorm.includes('CAMIONETA')
     );
 
     let idReporteFlete = null;
-    if (repCheck.rows.length === 0) {
-      const fIni = actualizado.fecha_salida_patio || new Date().toISOString();
-      const fFin = actualizado.fecha_llegada_faena || new Date().toISOString();
-      const diffMs = new Date(fFin) - new Date(fIni);
-      const horasCarretera = Math.max(0.1, Number((diffMs / 3600000).toFixed(1)));
+    const tokenReport = `FLT-${token}`;
 
-      const insertRepSql = `
-        INSERT INTO tedp_reporte_avance (
-          id_proyecto, id_equipo, id_user_operador, id_log_desplazamiento,
-          dia_correlativo, fecha_reporte, fecha_inicio_servicio, fecha_termino_servicio,
-          horas_operadas, horas_minimas, horas_facturables,
-          horometro_inicio, horometro_termino, odometro_inicio, odometro_termino,
-          observacion_trabajo, cliente_nombre, cliente_cargo,
-          estado_reporte, estado_jornada, token_report, incluye_flete_independiente
-        ) VALUES (
-          $1, $2, $3, $4,
-          1, CURRENT_DATE, $5, $6,
-          $7, 0, 0,
-          $8, $9, $10, $11,
-          'FLETE / TRASLADO CARRETERA (CUMPLIDO AUTOMÁTICO DESDE CONVOY)',
-          'Control Conductor', 'Flete Carretero',
-          'VALIDADO_ANALISTA', 'FINALIZADA', $12, true
-        ) RETURNING id_reporte_avance;
-      `;
-      const repIns = await db.query(insertRepSql, [
-        idPry,
-        actualizado.id_equipo || null,
-        actualizado.id_user_chofer || 55,
-        actualizado.id_log_desplazamiento,
-        fIni,
-        fFin,
-        horasCarretera,
-        actualizado.horometro_inicial || null,
-        actualizado.horometro_final || null,
-        actualizado.km_inicial || null,
-        actualizado.km_final || null,
-        tokenReport
-      ]);
-      idReporteFlete = repIns.rows[0]?.id_reporte_avance;
-      console.log(`[Handoff Traslado] Report Diario de Flete inyectado ID: ${idReporteFlete}`);
+    if (esVehiculoTransporte) {
+      // Choferes de Tracto, Cama Baja, Rampla y Camioneta tienen sueldo fijo mensual, $0 bono hora y $0 viático automático.
+      // Su registro vive en tequ_log_desplazamiento / fila 'Registro de Viaje' informativa. Cero FLT- en tedp_reporte_avance.
+      console.log(`[Handoff Traslado] Vehículo de transporte/soporte detectado (${tipoEqNorm || modeloEqNorm || 'TRANSPORTE'}). Se omite generación de Report Diario FLT- y bono de chofer según Acuerdo #8 / SPEC-129 1.8.M / 3.1.M.`);
     } else {
-      idReporteFlete = repCheck.rows[0].id_reporte_avance;
+      // 9.2 Inyectar automáticamente en Report Diario (tedp_reporte_avance) sólo para grúas autopropulsadas
+      const repCheck = await db.query(
+        'SELECT id_reporte_avance FROM tedp_reporte_avance WHERE token_report = $1 OR id_log_desplazamiento = $2 LIMIT 1',
+        [tokenReport, actualizado.id_log_desplazamiento]
+      );
+
+      if (repCheck.rows.length === 0) {
+        const fIni = actualizado.fecha_salida_patio || new Date().toISOString();
+        const fFin = actualizado.fecha_llegada_faena || new Date().toISOString();
+        const diffMs = new Date(fFin) - new Date(fIni);
+        const horasCarretera = Math.max(0.1, Number((diffMs / 3600000).toFixed(1)));
+
+        const insertRepSql = `
+          INSERT INTO tedp_reporte_avance (
+            id_proyecto, id_equipo, id_user_operador, id_log_desplazamiento,
+            dia_correlativo, fecha_reporte, fecha_inicio_servicio, fecha_termino_servicio,
+            unidad_cobro, horas_operadas, horas_minimas, horas_facturables,
+            horometro_inicio, horometro_termino, odometro_inicio, odometro_termino,
+            observacion_trabajo, cliente_nombre, cliente_cargo,
+            estado_reporte, estado_jornada, token_report, incluye_flete_independiente
+          ) VALUES (
+            $1, $2, $3, $4,
+            1, CURRENT_DATE, $5, $6,
+            'GL', $7, 0, 0,
+            $8, $9, $10, $11,
+            'FLETE / TRASLADO CARRETERA (CUMPLIDO AUTOMÁTICO DESDE CONVOY)',
+            'Control Conductor', 'Flete Carretero',
+            'VALIDADO_ANALISTA', 'FINALIZADA', $12, true
+          ) RETURNING id_reporte_avance;
+        `;
+        const repIns = await db.query(insertRepSql, [
+          idPry,
+          actualizado.id_equipo || null,
+          actualizado.id_user_chofer || 55,
+          actualizado.id_log_desplazamiento,
+          fIni,
+          fFin,
+          horasCarretera,
+          actualizado.horometro_inicial || null,
+          actualizado.horometro_final || null,
+          actualizado.km_inicial || null,
+          actualizado.km_final || null,
+          tokenReport
+        ]);
+        idReporteFlete = repIns.rows[0]?.id_reporte_avance;
+        console.log(`[Handoff Traslado] Report Diario de Flete inyectado ID: ${idReporteFlete}`);
+      } else {
+        idReporteFlete = repCheck.rows[0].id_reporte_avance;
+      }
     }
 
-    // 9.3 Sincronizar en Liquidación ITS (tits_jornada_detalle) si ya existe
-    const itsRes = await db.query('SELECT id_its FROM tits_cabecera WHERE id_proyecto = $1 LIMIT 1', [idPry]);
-    if (itsRes.rows.length > 0) {
-      const idIts = itsRes.rows[0].id_its;
-      const jorCheck = await db.query(
-        'SELECT id_jornada FROM tits_jornada_detalle WHERE id_its = $1 AND (numero_report = $2 OR tipo_servicio ILIKE \'%Flete%\') LIMIT 1',
-        [idIts, tokenReport]
-      );
-      if (jorCheck.rows.length === 0) {
-        const horaSal = actualizado.fecha_salida_patio ? new Date(actualizado.fecha_salida_patio).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }) : '06:40';
-        const horaLleg = actualizado.fecha_llegada_faena ? new Date(actualizado.fecha_llegada_faena).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }) : '08:30';
-        const diffH = Math.max(0.1, Number(((new Date(actualizado.fecha_llegada_faena || Date.now()) - new Date(actualizado.fecha_salida_patio || Date.now())) / 3600000).toFixed(1)));
+    // 9.3 Sincronizar en Liquidación ITS (tits_jornada_detalle) si ya existe (Acuerdo #8: corregido nombre de tabla tits_informe_termino)
+    if (!esVehiculoTransporte && idReporteFlete) {
+      const itsRes = await db.query('SELECT id_its FROM tits_informe_termino WHERE id_proyecto = $1 LIMIT 1', [idPry]);
+      if (itsRes.rows.length > 0) {
+        const idIts = itsRes.rows[0].id_its;
+        const jorCheck = await db.query(
+          'SELECT id_jornada FROM tits_jornada_detalle WHERE id_its = $1 AND (numero_report = $2 OR tipo_servicio ILIKE \'%Flete%\') LIMIT 1',
+          [idIts, tokenReport]
+        );
+        if (jorCheck.rows.length === 0) {
+          const horaSal = actualizado.fecha_salida_patio ? new Date(actualizado.fecha_salida_patio).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }) : '06:40';
+          const horaLleg = actualizado.fecha_llegada_faena ? new Date(actualizado.fecha_llegada_faena).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }) : '08:30';
+          const diffH = Math.max(0.1, Number(((new Date(actualizado.fecha_llegada_faena || Date.now()) - new Date(actualizado.fecha_salida_patio || Date.now())) / 3600000).toFixed(1)));
 
-        await db.query(`
-          INSERT INTO tits_jornada_detalle (
-            id_its, id_reporte_avance, fecha, numero_ot, id_equipo, patente,
-            tipo_servicio, hora_salida, hora_llegada, hora_termino, hora_retorno,
-            colacion_minutos, horas_reales, horas_report, numero_report, es_oculta, vb_conciliado, orden
-          ) VALUES (
-            $1, $2, CURRENT_DATE, $3, $4, $5,
-            'Flete Solo Ida', $6, $7, $7, $7,
-            0, $8, 1, $9, false, true, 0
-          );
-        `, [
-          idIts, idReporteFlete, proyecto.codi_proyecto || `OT-${idPry}`,
-          actualizado.id_equipo || null, actualizado.patente || 'S/P',
-          horaSal, horaLleg, diffH, tokenReport
-        ]);
-        console.log(`[Handoff Traslado] Flete Solo Ida inyectado en ITS ID: ${idIts}`);
+          await db.query(`
+            INSERT INTO tits_jornada_detalle (
+              id_its, id_reporte_avance, fecha, numero_ot, id_equipo, patente,
+              tipo_servicio, hora_salida, hora_llegada, hora_termino, hora_retorno,
+              colacion_minutos, horas_reales, horas_report, numero_report, es_oculta, vb_conciliado, orden
+            ) VALUES (
+              $1, $2, CURRENT_DATE, $3, $4, $5,
+              'Flete Solo Ida', $6, $7, $7, $7,
+              0, $8, 1, $9, false, true, 0
+            );
+          `, [
+            idIts, idReporteFlete, proyecto.codi_proyecto || `OT-${idPry}`,
+            actualizado.id_equipo || null, actualizado.patente || 'S/P',
+            horaSal, horaLleg, diffH, tokenReport
+          ]);
+          console.log(`[Handoff Traslado] Flete Solo Ida inyectado en ITS ID: ${idIts}`);
+        }
       }
     }
 

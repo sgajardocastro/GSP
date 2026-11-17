@@ -311,10 +311,10 @@ const controlVivoController = {
         pool.query(`SELECT id_user, name_frst, apellido_pat, movil, email FROM ${SCHEMA}.tsec_users`),
         pool.query(`SELECT id_equipo, patente, modelo, marca, tipo_equipo FROM ${SCHEMA}.tequ_equipo`),
         pIds.length > 0
-          ? pool.query(`SELECT id_proyecto, id_equipo, rol_equipo FROM ${SCHEMA}.tpry_rel_equipo WHERE id_proyecto = ANY($1)`, [pIds])
+          ? pool.query(`SELECT id_proyecto, id_equipo, rol_equipo, fecha_plan_ini, fecha_plan_fin, estado_real FROM ${SCHEMA}.tpry_rel_equipo WHERE id_proyecto = ANY($1) AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO') ORDER BY fecha_plan_ini ASC, id_rel_equipo ASC`, [pIds])
           : { rows: [] },
         pIds.length > 0
-          ? pool.query(`SELECT id_proyecto, id_user, rol_asignado FROM ${SCHEMA}.tpry_rel_persona WHERE id_proyecto = ANY($1) ORDER BY id_rel_persona DESC`, [pIds])
+          ? pool.query(`SELECT id_proyecto, id_user, rol_asignado, fecha_plan_ini, fecha_plan_fin, estado_real FROM ${SCHEMA}.tpry_rel_persona WHERE id_proyecto = ANY($1) AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO') ORDER BY fecha_plan_ini ASC, id_rel_persona ASC`, [pIds])
           : { rows: [] },
         pIds.length > 0
           ? pool.query(`SELECT id_proyecto, id_its, folio_its, estado_its, fecha_creacion, fecha_elaborado, total_ingresos_facturables FROM ${SCHEMA}.tits_informe_termino WHERE id_proyecto = ANY($1)`, [pIds])
@@ -482,66 +482,67 @@ const controlVivoController = {
           return null;
         };
 
-        lines.forEach(l => {
-          const idEq = Number(l.equipo_asignado_id || l.id_equipo);
-          if (idEq && !seenEq.has(idEq)) {
-            // Si ya existe asignación formal en tpry_rel_equipo y este idEq de lines fue reemplazado (no está en tpry_rel_equipo, ni tiene viajes ni reports), omitir equipo fantasma
-            const estaEnRelEquipos = relEquipos.some(re => Number(re.id_equipo) === idEq);
-            const tieneActividadReal = viajesOT.some(v => Number(v.id_equipo) === idEq) || histReports.some(r => Number(r.id_equipo) === idEq);
-            if (relEquipos.length > 0 && !estaEnRelEquipos && !tieneActividadReal) {
-              return;
+        // SPEC-16 §28: Autoridad relacional estricta. Si existen asignaciones en tpry_rel_equipo,
+        // eqList se construye exclusivamente desde tpry_rel_equipo activo.
+        if (relEquipos.length > 0) {
+          relEquipos.forEach(re => {
+            const idEq = Number(re.id_equipo);
+            if (idEq && !seenEq.has(idEq)) {
+              seenEq.add(idEq);
+              const eqObj = eqMap.get(idEq);
+              const uObj = resolverOperadorDeEquipo(idEq, fechaConsulta);
+              eqList.push({
+                id_equipo: idEq,
+                patente: eqObj?.patente || 'S/P',
+                modelo: eqObj?.modelo || '',
+                tipo_equipo: eqObj?.tipo_equipo || 'EQUIPO',
+                rol_equipo: re.rol_equipo || 'Equipo Asignado',
+                operador: uObj?.nombre || '',
+                telefono_operador: uObj?.telefono || '',
+                fecha_plan_ini: re.fecha_plan_ini,
+                fecha_plan_fin: re.fecha_plan_fin
+              });
             }
-            seenEq.add(idEq);
-            const eqObj = eqMap.get(idEq);
-            const uObj = resolverOperadorDeEquipo(idEq, fechaConsulta);
-            const lineWithRole = lines.find(x => Number(x.equipo_asignado_id || x.id_equipo) === idEq && !String(x.tipo || '').toUpperCase().includes('TRASLADO')) || l;
-            eqList.push({
-              id_equipo: idEq,
-              patente: eqObj?.patente || l.patente || 'S/P',
-              modelo: eqObj?.modelo || l.modelo || '',
-              tipo_equipo: eqObj?.tipo_equipo || lineWithRole.tipo || l.tipo || 'EQUIPO',
-              rol_equipo: lineWithRole.subcategoria || lineWithRole.tipo || l.subcategoria || l.tipo || 'Equipo Asignado',
-              operador: uObj?.nombre || '',
-              telefono_operador: uObj?.telefono || ''
-            });
-          }
-        });
+          });
+        } else {
+          // Fallback exclusivo para proyectos pre-operativos sin tpry_rel_equipo
+          lines.forEach(l => {
+            const idEq = Number(l.equipo_asignado_id || l.id_equipo);
+            if (idEq && !seenEq.has(idEq)) {
+              seenEq.add(idEq);
+              const eqObj = eqMap.get(idEq);
+              const uObj = resolverOperadorDeEquipo(idEq, fechaConsulta);
+              const lineWithRole = lines.find(x => Number(x.equipo_asignado_id || x.id_equipo) === idEq && !String(x.tipo || '').toUpperCase().includes('TRASLADO')) || l;
+              eqList.push({
+                id_equipo: idEq,
+                patente: eqObj?.patente || l.patente || 'S/P',
+                modelo: eqObj?.modelo || l.modelo || '',
+                tipo_equipo: eqObj?.tipo_equipo || lineWithRole.tipo || l.tipo || 'EQUIPO',
+                rol_equipo: lineWithRole.subcategoria || lineWithRole.tipo || l.subcategoria || l.tipo || 'Equipo Asignado',
+                operador: uObj?.nombre || '',
+                telefono_operador: uObj?.telefono || ''
+              });
+            }
+          });
 
-        relEquipos.forEach(re => {
-          const idEq = Number(re.id_equipo);
-          if (idEq && !seenEq.has(idEq)) {
-            seenEq.add(idEq);
-            const eqObj = eqMap.get(idEq);
-            const uObj = resolverOperadorDeEquipo(idEq);
-            eqList.push({
-              id_equipo: idEq,
-              patente: eqObj?.patente || 'S/P',
-              modelo: eqObj?.modelo || '',
-              tipo_equipo: eqObj?.tipo_equipo || 'EQUIPO',
-              rol_equipo: re.rol_equipo || 'Equipo Asignado',
-              operador: uObj?.nombre || '',
-              telefono_operador: uObj?.telefono || ''
-            });
-          }
-        });
-
-        eqExtras.forEach(ex => {
-          const idEq = Number(ex.id_equipo || ex.equipo_asignado_id);
-          if (idEq && !seenEq.has(idEq)) {
-            seenEq.add(idEq);
-            const eqObj = eqMap.get(idEq);
-            const uObj = resolverOperadorDeEquipo(idEq);
-            eqList.push({
-              id_equipo: idEq,
-              patente: eqObj?.patente || ex.patente || 'S/P',
-              modelo: eqObj?.modelo || ex.modelo || '',
-              tipo_equipo: eqObj?.tipo_equipo || ex.tipo || 'CAMIONES',
-              rol_equipo: ex.rol || ex.subcategoria || 'Equipo de Apoyo',
-              operador: uObj?.nombre || '',
-              telefono_operador: uObj?.telefono || ''
-            });
-          }
-        });
+          eqExtras.forEach(ex => {
+            const idEq = Number(ex.id_equipo || ex.equipo_asignado_id);
+            if (idEq && !seenEq.has(idEq)) {
+              seenEq.add(idEq);
+              const eqObj = eqMap.get(idEq);
+              const uObj = resolverOperadorDeEquipo(idEq);
+              eqList.push({
+                id_equipo: idEq,
+                patente: eqObj?.patente || ex.patente || 'S/P',
+                modelo: eqObj?.modelo || ex.modelo || '',
+                tipo_equipo: eqObj?.tipo_equipo || ex.tipo || 'CAMIONES',
+                rol_equipo: ex.rol || ex.subcategoria || 'Equipo de Apoyo',
+                operador: uObj?.nombre || '',
+                telefono_operador: uObj?.telefono || ''
+              });
+            }
+          });
+        }
 
         // Operador por defecto de la OT si alguno quedó sin operador específico
         const opTrip = trip.find(t => {
@@ -2103,28 +2104,8 @@ const controlVivoController = {
         url_descarga: `/api/v1/storage/download/${idDoc}`
       };
 
-      // 2. Guardar en json_field.documentos_por_dia[fechaOperativa] y en ejecucion_v1.dossier_documentos
-      if (!jsonField.documentos_por_dia) jsonField.documentos_por_dia = {};
-      if (!Array.isArray(jsonField.documentos_por_dia[fechaOperativa])) {
-        jsonField.documentos_por_dia[fechaOperativa] = [];
-      }
-      jsonField.documentos_por_dia[fechaOperativa].push(docItem);
-
-      if (!jsonField.ejecucion_v1) jsonField.ejecucion_v1 = {};
-      if (!Array.isArray(jsonField.ejecucion_v1.dossier_documentos)) {
-        jsonField.ejecucion_v1.dossier_documentos = [];
-      }
-      jsonField.ejecucion_v1.dossier_documentos.unshift({
-        ...docItem,
-        nombre: `${docItem.titulo} — Día ${diaNum} (${fechaOperativa})`,
-        url_view: docItem.url_vista,
-        url_download: docItem.url_descarga
-      });
-
-      await pool.query(
-        `UPDATE ${SCHEMA}.tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2`,
-        [JSON.stringify(jsonField), id_proyecto]
-      );
+      // 2. SPEC-16 §28: Cese de escritura en json_field.documentos_por_dia.
+      // El archivo ya fue registrado en tfmg_file y se vincula directamente a tedp_reporte_avance.
 
       // 3. Vincular también al registro tedp_reporte_avance del día si existe
       let repTarget = null;

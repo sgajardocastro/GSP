@@ -23,7 +23,7 @@ const getAsignacionesPersona = async (req, res) => {
                 rp.id_proyecto = $1
                 AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
             ORDER BY 
-                rp.fecha_plan_ini ASC`,
+                rp.fecha_plan_ini ASC, rp.id_rel_persona ASC`,
             [id]
         );
         res.status(200).json(result.rows);
@@ -127,7 +127,7 @@ const getAsignacionesEquipo = async (req, res) => {
                 re.id_proyecto = $1
                 AND COALESCE(re.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
             ORDER BY 
-                re.fecha_plan_ini ASC`,
+                re.fecha_plan_ini ASC, re.id_rel_equipo ASC`,
             [id]
         );
         res.status(200).json(result.rows);
@@ -217,11 +217,23 @@ const getResumenAsignacionesProyecto = async (req, res) => {
                AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')`,
             [id]
         );
+
+        const repRes = await pool.query(
+            `SELECT COUNT(*) as total_reports, TO_CHAR(MAX(fecha_reporte), 'YYYY-MM-DD') as max_fecha_reporte 
+             FROM tedp_reporte_avance 
+             WHERE id_proyecto = $1 AND estado_reporte != 'ANULADO'`,
+            [id]
+        );
+        const totalReports = parseInt(repRes.rows[0]?.total_reports || '0', 10);
+        const maxFechaReporte = repRes.rows[0]?.max_fecha_reporte || null;
         
         res.status(200).json({
             id_proyecto: id,
             total_personas: parseInt(pRes.rows[0].total_personas, 10),
-            total_equipos: parseInt(eRes.rows[0].total_equipos, 10)
+            total_equipos: parseInt(eRes.rows[0].total_equipos, 10),
+            total_reports: totalReports,
+            max_fecha_reporte: maxFechaReporte,
+            tiene_reports_activos: totalReports > 0
         });
     } catch (error) {
         console.error('Error al obtener resumen de asignaciones:', error);
@@ -237,6 +249,41 @@ const sincronizarAsignacionesProyecto = async (req, res) => {
         const { id_user_creacion, personas = [], equipos = [] } = req.body;
 
         await client.query('BEGIN');
+
+        // 0. Validar línea de corte temporal e inmutabilidad del pasado reportado (SPEC-16 §28.4)
+        const repRes = await client.query(
+            `SELECT COUNT(*) as total_reports, TO_CHAR(MAX(fecha_reporte), 'YYYY-MM-DD') as max_fecha_reporte
+             FROM tedp_reporte_avance
+             WHERE id_proyecto = $1 AND estado_reporte != 'ANULADO'`,
+            [id]
+        );
+        const totalReports = parseInt(repRes.rows[0]?.total_reports || '0', 10);
+        const maxFechaReporte = repRes.rows[0]?.max_fecha_reporte || null;
+
+        if (totalReports > 0 && maxFechaReporte) {
+            // Validar que ningún relevo nuevo intente sobreescribir fechas hacia atrás
+            for (const eq of equipos) {
+                if (!eq || !eq.id_equipo) continue;
+                const esRelevo = Boolean(eq.json_field?.es_reemplazo || eq.observaciones?.includes('Relevo'));
+                if (esRelevo && eq.fecha_plan_ini && String(eq.fecha_plan_ini).slice(0, 10) < maxFechaReporte) {
+                    await client.query('ROLLBACK');
+                    return res.status(400).json({
+                        error: `Acción no permitida: El servicio ya cuenta con reportes emitidos hasta el ${maxFechaReporte}. El relevo de equipo debe iniciar a partir de esa fecha o posterior.`
+                    });
+                }
+            }
+
+            for (const p of personas) {
+                if (!p || !p.id_user) continue;
+                const esTurnoRelevo = Boolean(p.fecha_plan_ini && p.fecha_plan_fin && (p.rol_asignado?.includes('Relevo') || p.observaciones?.includes('Relevo')));
+                if (esTurnoRelevo && p.fecha_plan_ini && String(p.fecha_plan_ini).slice(0, 10) < maxFechaReporte) {
+                    await client.query('ROLLBACK');
+                    return res.status(400).json({
+                        error: `Acción no permitida: El servicio ya cuenta con reportes emitidos hasta el ${maxFechaReporte}. El relevo de tripulación debe iniciar a partir de esa fecha o posterior.`
+                    });
+                }
+            }
+        }
 
         // a) Validar líneas de servicio válidas en este proyecto
         let lineasValidas = new Set();
@@ -342,26 +389,44 @@ const sincronizarAsignacionesProyecto = async (req, res) => {
             equiposVigentesIds.push(idRelEq);
         }
 
-        // c) Marcar con estado_real = 'REEMPLAZADO' cualquier otra fila activa de tpry_rel_equipo
+        // c) Si el equipo tiene reports activos, preservar su historia como 'FINALIZADO_RELEVO' acotando fecha_plan_fin
+        // Si no tiene reports, marcarlo como 'REEMPLAZADO'
         let reemplazadosEqRes;
+        const subqueryEqConReports = `SELECT DISTINCT id_equipo FROM tedp_reporte_avance WHERE id_proyecto = $1 AND estado_reporte != 'ANULADO'`;
+        const fFinCorte = maxFechaReporte ? `${maxFechaReporte} 23:59:59` : null;
+
         if (equiposVigentesIds.length > 0) {
             reemplazadosEqRes = await client.query(
                 `UPDATE tpry_rel_equipo 
-                 SET estado_real = 'REEMPLAZADO' 
+                 SET estado_real = CASE 
+                     WHEN id_equipo IN (${subqueryEqConReports}) THEN 'FINALIZADO_RELEVO' 
+                     ELSE 'REEMPLAZADO' 
+                 END,
+                 fecha_plan_fin = CASE 
+                     WHEN id_equipo IN (${subqueryEqConReports}) AND $3::timestamp IS NOT NULL THEN LEAST(COALESCE(fecha_plan_fin, $3::timestamp), $3::timestamp)
+                     ELSE fecha_plan_fin 
+                 END
                  WHERE id_proyecto = $1 
                    AND id_rel_equipo != ALL($2::int[])
-                   AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO', 'FINALIZADO')
-                 RETURNING id_rel_equipo, id_equipo`,
-                [id, equiposVigentesIds]
+                   AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO', 'FINALIZADO', 'FINALIZADO_RELEVO')
+                 RETURNING id_rel_equipo, id_equipo, estado_real`,
+                [id, equiposVigentesIds, fFinCorte]
             );
         } else {
             reemplazadosEqRes = await client.query(
                 `UPDATE tpry_rel_equipo 
-                 SET estado_real = 'REEMPLAZADO' 
+                 SET estado_real = CASE 
+                     WHEN id_equipo IN (${subqueryEqConReports}) THEN 'FINALIZADO_RELEVO' 
+                     ELSE 'REEMPLAZADO' 
+                 END,
+                 fecha_plan_fin = CASE 
+                     WHEN id_equipo IN (${subqueryEqConReports}) AND $2::timestamp IS NOT NULL THEN LEAST(COALESCE(fecha_plan_fin, $2::timestamp), $2::timestamp)
+                     ELSE fecha_plan_fin 
+                 END
                  WHERE id_proyecto = $1 
-                   AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO', 'FINALIZADO')
-                 RETURNING id_rel_equipo, id_equipo`,
-                [id]
+                   AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO', 'FINALIZADO', 'FINALIZADO_RELEVO')
+                 RETURNING id_rel_equipo, id_equipo, estado_real`,
+                [id, fFinCorte]
             );
         }
         const equiposReemplazados = reemplazadosEqRes.rows;
@@ -495,26 +560,42 @@ const sincronizarAsignacionesProyecto = async (req, res) => {
             personasVigentesIds.push(idRelPersona);
         }
 
-        // f) Marcar con estado_real = 'REEMPLAZADO' cualquier otra fila activa de tpry_rel_persona
+        // f) Preservar personas con reports como 'FINALIZADO_RELEVO', y las no reportadas como 'REEMPLAZADO'
         let reemplazadosPerRes;
+        const subqueryPerConReports = `SELECT DISTINCT id_user_operador FROM tedp_reporte_avance WHERE id_proyecto = $1 AND estado_reporte != 'ANULADO' AND id_user_operador IS NOT NULL`;
+
         if (personasVigentesIds.length > 0) {
             reemplazadosPerRes = await client.query(
                 `UPDATE tpry_rel_persona 
-                 SET estado_real = 'REEMPLAZADO' 
+                 SET estado_real = CASE 
+                     WHEN id_user IN (${subqueryPerConReports}) THEN 'FINALIZADO_RELEVO' 
+                     ELSE 'REEMPLAZADO' 
+                 END,
+                 fecha_plan_fin = CASE 
+                     WHEN id_user IN (${subqueryPerConReports}) AND $3::timestamp IS NOT NULL THEN LEAST(COALESCE(fecha_plan_fin, $3::timestamp), $3::timestamp)
+                     ELSE fecha_plan_fin 
+                 END
                  WHERE id_proyecto = $1 
                    AND id_rel_persona != ALL($2::int[])
-                   AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO', 'FINALIZADO')
-                 RETURNING id_rel_persona, id_user`,
-                [id, personasVigentesIds]
+                   AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO', 'FINALIZADO', 'FINALIZADO_RELEVO')
+                 RETURNING id_rel_persona, id_user, estado_real`,
+                [id, personasVigentesIds, fFinCorte]
             );
         } else {
             reemplazadosPerRes = await client.query(
                 `UPDATE tpry_rel_persona 
-                 SET estado_real = 'REEMPLAZADO' 
+                 SET estado_real = CASE 
+                     WHEN id_user IN (${subqueryPerConReports}) THEN 'FINALIZADO_RELEVO' 
+                     ELSE 'REEMPLAZADO' 
+                 END,
+                 fecha_plan_fin = CASE 
+                     WHEN id_user IN (${subqueryPerConReports}) AND $2::timestamp IS NOT NULL THEN LEAST(COALESCE(fecha_plan_fin, $2::timestamp), $2::timestamp)
+                     ELSE fecha_plan_fin 
+                 END
                  WHERE id_proyecto = $1 
-                   AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO', 'FINALIZADO')
-                 RETURNING id_rel_persona, id_user`,
-                [id]
+                   AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO', 'FINALIZADO', 'FINALIZADO_RELEVO')
+                 RETURNING id_rel_persona, id_user, estado_real`,
+                [id, fFinCorte]
             );
         }
         const personasReemplazadas = reemplazadosPerRes.rows;

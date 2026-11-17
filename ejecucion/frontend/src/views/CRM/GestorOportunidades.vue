@@ -1080,6 +1080,7 @@
             :get-semaforo-tripulante="getSemaforoTripulante"
             :default-fecha-ini="operacionesAssignment.fecha_salida_plan"
             :default-fecha-fin="operacionesAssignment.fecha_fin_plan"
+            :fecha-corte-inmutable="fechaCorteInmutable"
             @dirty="marcarDirtyAsignacion"
             @abrir-acreditacion-equipo="abrirDetalleAcreditacion('equipo', $event)"
             @abrir-acreditacion-persona="abrirDetalleAcreditacion('persona', $event)"
@@ -6718,6 +6719,14 @@ const modalMapaViajeAbierto = ref(false)
 const viajeSeleccionadoParaMapa = ref(null)
 
 const reportsProyecto = ref([])
+const fechaCorteInmutable = computed(() => {
+  const activos = (reportsProyecto.value || []).filter(r => r && r.estado_reporte !== 'ANULADO')
+  if (activos.length === 0) return null
+  const fechas = activos.map(r => r.fecha_reporte_iso || (r.fecha_reporte ? String(r.fecha_reporte).slice(0, 10) : '')).filter(Boolean)
+  if (fechas.length === 0) return null
+  fechas.sort()
+  return fechas[fechas.length - 1]
+})
 const actaPlataformaProyecto = ref(null)
 const filtroEquipoReports = ref('TODOS')
 const cargandoReports = ref(false)
@@ -7512,6 +7521,20 @@ const isRequerimientoAprobado = computed(() => {
 const isDirtyAsignacion = ref(false)
 const marcarDirtyAsignacion = () => { isDirtyAsignacion.value = true }
 
+const sanitizarFechaLocal = (fechaStr, fallbackIso) => {
+  if (!fechaStr) return fallbackIso || new Date().toISOString()
+  if (typeof fechaStr !== 'string') {
+    const d = new Date(fechaStr)
+    return isNaN(d.getTime()) ? (fallbackIso || new Date().toISOString()) : d.toISOString()
+  }
+  const match = fechaStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!match) return fallbackIso || new Date().toISOString()
+  const anio = parseInt(match[1], 10)
+  if (anio < 2024 || anio > 2035) return fallbackIso || new Date().toISOString()
+  const d = new Date(fechaStr)
+  return isNaN(d.getTime()) ? (fallbackIso || new Date().toISOString()) : d.toISOString()
+}
+
 const guardarCambiosAsignacion = async (silent = false) => {
   try {
     const token = localStorage.getItem('token') || ''
@@ -7585,8 +7608,10 @@ const guardarCambiosAsignacion = async (silent = false) => {
       headers: { Authorization: `Bearer ${token}` }
     })
 
-    const fechaIniGbl = operacionesAssignment.value.fecha_salida_plan ? new Date(operacionesAssignment.value.fecha_salida_plan + 'T' + (operacionesAssignment.value.hora_salida_plan || '08:00')).toISOString() : new Date().toISOString()
-    const fechaFinGbl = operacionesAssignment.value.fecha_fin_plan ? new Date(operacionesAssignment.value.fecha_fin_plan + 'T' + (operacionesAssignment.value.hora_fin_plan || '18:00')).toISOString() : new Date().toISOString()
+    const fIniStr = operacionesAssignment.value.fecha_salida_plan ? operacionesAssignment.value.fecha_salida_plan + 'T' + (operacionesAssignment.value.hora_salida_plan || '08:00') : null
+    const fFinStr = operacionesAssignment.value.fecha_fin_plan ? operacionesAssignment.value.fecha_fin_plan + 'T' + (operacionesAssignment.value.hora_fin_plan || '18:00') : null
+    const fechaIniGbl = sanitizarFechaLocal(fIniStr, new Date().toISOString())
+    const fechaFinGbl = sanitizarFechaLocal(fFinStr, new Date().toISOString())
 
     // Sincronización Atómica de Recursos en PostgreSQL (REQ-1160 / REQ-1172 / SPEC-22)
     try {
@@ -7634,8 +7659,8 @@ const guardarCambiosAsignacion = async (silent = false) => {
           id_user: uid,
           id_linea_servicio: dbLineaId,
           rol_asignado: rol || 'Personal Asignado',
-          fecha_plan_ini: fIni ? new Date(fIni).toISOString() : fechaIniGbl,
-          fecha_plan_fin: fFin ? new Date(fFin).toISOString() : fechaFinGbl,
+          fecha_plan_ini: fIni ? sanitizarFechaLocal(fIni, fechaIniGbl) : fechaIniGbl,
+          fecha_plan_fin: fFin ? sanitizarFechaLocal(fFin, fechaFinGbl) : fechaFinGbl,
           estado_real: 'PROGRAMADO'
         }
         personasMap.set(clave, item)
@@ -7715,8 +7740,8 @@ const guardarCambiosAsignacion = async (silent = false) => {
           id_equipo: eqId,
           id_linea_servicio: dbLineaId,
           rol_equipo: rol || 'Equipo Asignado',
-          fecha_plan_ini: fIni ? new Date(fIni).toISOString() : fechaIniGbl,
-          fecha_plan_fin: fFin ? new Date(fFin).toISOString() : fechaFinGbl,
+          fecha_plan_ini: fIni ? sanitizarFechaLocal(fIni, fechaIniGbl) : fechaIniGbl,
+          fecha_plan_fin: fFin ? sanitizarFechaLocal(fFin, fechaFinGbl) : fechaFinGbl,
           estado_real: 'PROGRAMADO',
           json_field: esReemplazo ? {
             es_reemplazo: true,

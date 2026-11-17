@@ -84,6 +84,40 @@ function resolverPisoMinimoContractualOT(jsonField = {}, targetIdEquipo = null) 
   return 8.0;
 }
 
+// SPEC-16 §28: Resolución relacional de política de cobro y piso mínimo desde tpry_linea_servicio
+async function resolverPoliticaCobroEquipoBD(id_proyecto, targetIdEquipo = null) {
+  try {
+    if (!id_proyecto) return { pisoMinimo: 8.0, unidad: 'DIA', esMensual: false };
+    const { rows } = await db.query(`
+      SELECT 
+        ls.piso_minimo_horas,
+        ls.cantidad_horas,
+        ls.unidad,
+        ls.tipo_ot,
+        ls.descripcion,
+        ls.subcategoria
+      FROM tpry_linea_servicio ls
+      LEFT JOIN tpry_rel_equipo re ON re.id_linea_servicio = ls.id_linea_servicio AND re.id_proyecto = ls.id_proyecto
+      WHERE ls.id_proyecto = $1 AND ls.activo = true
+        AND (re.id_equipo = $2 OR $2 IS NULL OR ls.id_equipo_sugerido = $2)
+      ORDER BY CASE WHEN re.id_equipo = $2 THEN 0 ELSE 1 END, ls.orden ASC
+      LIMIT 1
+    `, [id_proyecto, targetIdEquipo ? Number(targetIdEquipo) : null]);
+
+    if (rows.length > 0) {
+      const r = rows[0];
+      const u = String(r.unidad || '').toUpperCase();
+      const esMensual = u.includes('MES');
+      if (esMensual) return { pisoMinimo: 0, unidad: 'MES', esMensual: true };
+      const piso = Number(r.piso_minimo_horas || r.cantidad_horas || 8.0);
+      return { pisoMinimo: (piso > 0 && piso <= 24) ? piso : 8.0, unidad: r.unidad || 'DIA', esMensual: false };
+    }
+  } catch (err) {
+    console.warn('[SPEC-16 §28] Error en resolverPoliticaCobroEquipoBD:', err.message);
+  }
+  return { pisoMinimo: 8.0, unidad: 'DIA', esMensual: false };
+}
+
 // --- SPEC-106 / REQ-1081: LIQUIDACIÓN DIARIA DE PERSONAL Y VIÁTICOS EN EL REPORT DIARIO ---
 function construirLiquidacionPersonalDiaReport({
   rep = {},
@@ -3934,27 +3968,7 @@ const reportDiarioController = {
 
       const repActualizado = upRes.rows[0];
 
-      // 4. Registrar en dossier_documentos de la OT
-      try {
-        const proyRes = await db.query('SELECT json_field FROM tpry_proyecto WHERE id_proyecto = $1', [rep.id_proyecto]);
-        if (proyRes.rows.length > 0) {
-          const jf = proyRes.rows[0].json_field || {};
-          if (!jf.ejecucion_v1) jf.ejecucion_v1 = {};
-          if (!Array.isArray(jf.ejecucion_v1.dossier_documentos)) jf.ejecucion_v1.dossier_documentos = [];
-          jf.ejecucion_v1.dossier_documentos.push({
-            id_doc: idDocFinal,
-            tipo_documento: 'REPORT_FISICO_RESPALDO',
-            titulo: `Respaldo Físico Reporte Día ${rep.dia_correlativo || 1} (OT ${rep.codi_proyecto || rep.id_proyecto})`,
-            nombre_archivo: archivoInfo?.name_doc_orig || `Respaldo_D${rep.dia_correlativo}.pdf`,
-            url_vista: `/api/v1/storage/view/${idDocFinal}`,
-            url_descarga: `/api/v1/storage/download/${idDocFinal}`,
-            fecha_adjunto: nowIso
-          });
-          await db.query('UPDATE tpry_proyecto SET json_field = $1 WHERE id_proyecto = $2', [JSON.stringify(jf), rep.id_proyecto]);
-        }
-      } catch (errDossier) {
-        console.warn('[Dossier] No se pudo agregar al dossier:', errDossier.message);
-      }
+      // 4. SPEC-16 §28: Cese de escritura en json_field. El respaldo ya quedó enlazado a tedp_reporte_avance.id_doc_pdf y tfmg_file.
 
       res.json({
         success: true,
@@ -4001,32 +4015,61 @@ const reportDiarioController = {
       }
       const proyecto = pRes.rows[0];
 
-      // Determinar equipo, operador y rigger (REQ-1090: soporte nativo para servicios Solo Personal / Rigger sin maquinaria)
+      // Determinar equipo, operador y rigger (SPEC-16 §28)
       let finalEqId = parseInt(id_equipo, 10) || null;
       if (!finalEqId) {
-        const eqRes = await db.query('SELECT id_equipo FROM tpry_rel_equipo WHERE id_proyecto = $1 LIMIT 1', [id_proyecto]);
+        const eqRes = await db.query(`
+          SELECT id_equipo FROM tpry_rel_equipo 
+          WHERE id_proyecto = $1 
+            AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+            AND ($2::date BETWEEN fecha_plan_ini::date AND COALESCE(fecha_plan_fin::date, '2099-12-31'::date))
+          ORDER BY id_rel_equipo DESC 
+          LIMIT 1
+        `, [id_proyecto, fecha_reporte]);
         finalEqId = eqRes.rows[0]?.id_equipo || null;
+        if (!finalEqId) {
+          const eqFallback = await db.query(`
+            SELECT id_equipo FROM tpry_rel_equipo 
+            WHERE id_proyecto = $1 AND COALESCE(estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+            ORDER BY id_rel_equipo ASC LIMIT 1
+          `, [id_proyecto]);
+          finalEqId = eqFallback.rows[0]?.id_equipo || null;
+        }
       }
 
       const rigRes = await db.query(`
         SELECT u.id_user FROM tpry_rel_persona rp
         JOIN tsec_users u ON rp.id_user = u.id_user
-        WHERE rp.id_proyecto = $1 AND UPPER(rp.rol_asignado) LIKE '%RIGGER%'
+        WHERE rp.id_proyecto = $1 
+          AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+          AND UPPER(rp.rol_asignado) LIKE '%RIGGER%'
         ORDER BY rp.id_rel_persona DESC
         LIMIT 1
       `, [id_proyecto]);
-      const finalRiggerId = rigRes.rows[0]?.id_user || parseInt(proyecto.json_field?.ejecucion_v1?.rigger_id, 10) || null;
+      const finalRiggerId = rigRes.rows[0]?.id_user || null;
 
       let finalOpId = parseInt(id_user_operador, 10) || null;
       if (!finalOpId) {
         const uRes = await db.query(`
           SELECT u.id_user FROM tpry_rel_persona rp 
           JOIN tsec_users u ON rp.id_user = u.id_user 
-          WHERE rp.id_proyecto = $1 AND (UPPER(rp.rol_asignado) LIKE '%OPERADOR%' OR UPPER(rp.rol_asignado) LIKE '%CHOFER%')
+          WHERE rp.id_proyecto = $1 
+            AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+            AND (UPPER(rp.rol_asignado) LIKE '%OPERADOR%' OR UPPER(rp.rol_asignado) LIKE '%CHOFER%')
+            AND ($2::date BETWEEN rp.fecha_plan_ini::date AND COALESCE(rp.fecha_plan_fin::date, '2099-12-31'::date))
           ORDER BY rp.id_rel_persona DESC
           LIMIT 1
-        `, [id_proyecto]);
-        finalOpId = uRes.rows[0]?.id_user || finalRiggerId || 53;
+        `, [id_proyecto, fecha_reporte]);
+        finalOpId = uRes.rows[0]?.id_user || null;
+        if (!finalOpId) {
+          const uFallback = await db.query(`
+            SELECT u.id_user FROM tpry_rel_persona rp 
+            JOIN tsec_users u ON rp.id_user = u.id_user 
+            WHERE rp.id_proyecto = $1 AND COALESCE(rp.estado_real, 'PROGRAMADO') NOT IN ('CANCELADO', 'REEMPLAZADO')
+            ORDER BY rp.id_rel_persona ASC LIMIT 1
+          `, [id_proyecto]);
+          finalOpId = uFallback.rows[0]?.id_user || 53;
+        }
       }
 
       // Determinar correlativo
@@ -4087,7 +4130,8 @@ const reportDiarioController = {
             : 0.0)
         : 0;
       const operadas = tieneTerminoReal ? Math.max(0, parseFloat(((diffMin - colac * 60) / 60).toFixed(2))) : 0;
-      const pisoContractualOT = resolverPisoMinimoContractualOT(proyecto?.json_field || {}, finalEqId);
+      const polCobro = await resolverPoliticaCobroEquipoBD(id_proyecto, finalEqId);
+      const pisoContractualOT = polCobro.pisoMinimo;
       const minimas = (horas_minimas !== undefined && horas_minimas !== null && String(horas_minimas).trim() !== '')
         ? parseFloat(horas_minimas)
         : (pisoContractualOT !== undefined && pisoContractualOT !== null ? parseFloat(pisoContractualOT) : 8.0);
@@ -4144,7 +4188,31 @@ const reportDiarioController = {
           fecha_validacion
         ) VALUES (
           $1, $2, $3, $4, $5, $6, 'HRS_DIA', $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, CURRENT_TIMESTAMP, $26
-        ) RETURNING *;
+        )
+        ON CONFLICT (id_proyecto, dia_correlativo, id_equipo) WHERE estado_reporte != 'ANULADO'
+        DO UPDATE SET
+          id_user_operador = EXCLUDED.id_user_operador,
+          id_user_rigger = EXCLUDED.id_user_rigger,
+          fecha_inicio_servicio = COALESCE(EXCLUDED.fecha_inicio_servicio, tedp_reporte_avance.fecha_inicio_servicio),
+          fecha_termino_servicio = COALESCE(EXCLUDED.fecha_termino_servicio, tedp_reporte_avance.fecha_termino_servicio),
+          horas_operadas = EXCLUDED.horas_operadas,
+          horas_facturables = EXCLUDED.horas_facturables,
+          horas_sobretiempo = EXCLUDED.horas_sobretiempo,
+          horas_colacion = EXCLUDED.horas_colacion,
+          horas_minimas = EXCLUDED.horas_minimas,
+          horometro_inicio = COALESCE(EXCLUDED.horometro_inicio, tedp_reporte_avance.horometro_inicio),
+          horometro_termino = COALESCE(EXCLUDED.horometro_termino, tedp_reporte_avance.horometro_termino),
+          odometro_inicio = COALESCE(EXCLUDED.odometro_inicio, tedp_reporte_avance.odometro_inicio),
+          odometro_termino = COALESCE(EXCLUDED.odometro_termino, tedp_reporte_avance.odometro_termino),
+          cliente_nombre = EXCLUDED.cliente_nombre,
+          cliente_cargo = EXCLUDED.cliente_cargo,
+          observacion_trabajo = EXCLUDED.observacion_trabajo,
+          estado_reporte = EXCLUDED.estado_reporte,
+          estado_jornada = EXCLUDED.estado_jornada,
+          id_doc_pdf = COALESCE(EXCLUDED.id_doc_pdf, tedp_reporte_avance.id_doc_pdf),
+          ajustes_analista = EXCLUDED.ajustes_analista,
+          fecha_validacion = COALESCE(EXCLUDED.fecha_validacion, tedp_reporte_avance.fecha_validacion)
+        RETURNING *;
       `;
 
       const result = await db.query(insSql, [

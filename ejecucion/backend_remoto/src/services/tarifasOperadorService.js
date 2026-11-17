@@ -103,6 +103,25 @@ function extraerTonelaje(tipo_equipo, capacidad_ton) {
   return 0;
 }
 
+function esVehiculoTransporteOSoporteSinBono(rawTipo) {
+  const tipoNorm = normalizarTexto(rawTipo);
+  if (!tipoNorm) return false;
+  if (tipoNorm.includes('PLUMA') || tipoNorm.includes('GRUA')) return false;
+  return (
+    tipoNorm.includes('TRACTO') ||
+    tipoNorm.includes('CAMA BAJA') ||
+    tipoNorm.includes('RAMPLA') ||
+    tipoNorm.includes('SEMIRREMOLQUE') ||
+    tipoNorm.includes('SEMIREMOLQUE') ||
+    tipoNorm.includes('CAMIONETA') ||
+    tipoNorm.includes('VEHICULOS LIVIANOS') ||
+    tipoNorm.includes('FURGON') ||
+    tipoNorm.includes('ESCOLTA') ||
+    tipoNorm.includes('CAMIONES') ||
+    (tipoNorm.includes('CAMION') && tipoNorm.includes('PLATAFORMA'))
+  );
+}
+
 /**
  * Resuelve deterministamente la tarifa por hora de operador ($)
  * @param {string} tipo_equipo - Nombre, tipo o modelo de equipo
@@ -126,6 +145,11 @@ function resolverTarifaOperador(tipo_equipo, capacidad_ton, catalogo = TARIFAS_M
   if (tipoNorm.includes('HORQUILLA')) {
     const matchHorq = lista.find(t => normalizarTexto(t.equipo).includes('HORQUILLA'));
     return matchHorq ? Number(matchHorq.valor_hora) : 3000;
+  }
+
+  // Regla SPEC-129 (1.8.M / 1.11.M / 3.1.M / Acuerdo #8): Conductores de transporte y apoyo tienen $0 bono variable
+  if (esVehiculoTransporteOSoporteSinBono(tipoNorm)) {
+    return 0;
   }
 
   // 2. Grúas Telescópicas / Grúas Móviles por tramo de tonelaje
@@ -224,9 +248,9 @@ function calcularLiquidacionHorasDia({
     : Math.max(0, Number((parseFloat(horas_reales_report) || 0).toFixed(2)));
 
   if (!esRural) {
-    // Política Urbana: No se paga traslado de equipo, únicamente se consideran las horas reportadas del servicio
-    // contabilizadas desde salida de base (o inicio) hasta término en obra menos colación.
-    const inicioUrbano = hora_salida || hora_inicio || hora_llegada;
+    // Regla SPEC-129 (1.7.M Urbana): NO se consideran horas de traslado para el pago de operador en radio urbano.
+    // Se liquida estrictamente desde inicio/llegada en obra hasta término en obra menos colación.
+    const inicioUrbano = hora_inicio || hora_llegada || hora_salida;
     const terminoUrbano = hora_termino || hora_retorno;
     const spanUrbanoBruto = calcularDiferenciaHoras(inicioUrbano, terminoUrbano);
     const hrsPagar = spanUrbanoBruto > 0
@@ -243,8 +267,11 @@ function calcularLiquidacionHorasDia({
   }
 
   // Política Rural: Si las horas reales son menores a las mínimas, el traslado cubre la brecha
-  // y solo se paga la diferencia positiva por sobre las horas mínimas.
-  const minPactado = parseFloat(horas_minimas) || 8;
+  // y solo se paga la diferencia positiva por sobre las horas mínimas. Respetar horas_minimas = 0 en Valor Fijo.
+  const minParsed = Number(horas_minimas);
+  const minPactado = (horas_minimas !== undefined && horas_minimas !== null && horas_minimas !== '' && !Number.isNaN(minParsed))
+    ? Math.max(0, minParsed)
+    : 8;
   const horasFaenaPagar = horasRealesEquipo > 0 ? Math.max(minPactado, horasRealesEquipo) : 0;
   const hrsIda = (hora_salida && inicioObra && hora_salida !== inicioObra)
     ? calcularDiferenciaHoras(hora_salida, inicioObra)
@@ -320,15 +347,66 @@ function calcularViaticoAlimentacionDia({
   };
 }
 
+/**
+ * Regla SPEC-129 (1.8.M / 1.11.M / 3.1.M / Acuerdo #8):
+ * Los conductores de camiones, tractos, camas bajas y camionetas están cubiertos por sueldo base
+ * ($0 bono hora y $0 viático por traslado standard), salvo activación manual explícita de excepción.
+ */
+function calcularLiquidacionChoferTraslado({
+  hora_salida,
+  hora_llegada,
+  hora_inicio,
+  hora_termino,
+  hora_retorno,
+  colacion_minutos = 0,
+  excepcion_autorizada = false,
+  tarifa_hora_excepcional = 0,
+  condicion_dia = 'IDA_Y_REGRESO'
+} = {}) {
+  const colacionHoras = Number(((parseFloat(colacion_minutos) || 0) / 60).toFixed(2));
+  const desde = hora_salida || hora_inicio || hora_llegada;
+  const hasta = hora_retorno || hora_termino;
+  const spanBruto = calcularDiferenciaHoras(desde, hasta);
+  const horasEfectivas = spanBruto > 0 ? Math.max(0, Number((spanBruto - colacionHoras).toFixed(2))) : 0;
+
+  if (!excepcion_autorizada) {
+    return {
+      horas_traslado_fisicas: horasEfectivas,
+      bono_hora: 0,
+      monto_viatico: 0,
+      excepcion_autorizada: false
+    };
+  }
+
+  const viatico = calcularViaticoAlimentacionDia({
+    condicion_dia,
+    hora_salida,
+    hora_llegada,
+    hora_inicio,
+    hora_termino,
+    hora_retorno,
+    colacion_minutos
+  });
+
+  return {
+    horas_traslado_fisicas: horasEfectivas,
+    bono_hora: Math.round(horasEfectivas * Math.max(0, Number(tarifa_hora_excepcional) || 0)),
+    monto_viatico: viatico.monto_viatico,
+    excepcion_autorizada: true
+  };
+}
+
 module.exports = {
   TARIFAS_MAESTRAS_OPERADOR,
   obtenerTarifasDesdeBD,
   normalizarTexto,
   extraerTonelaje,
+  esVehiculoTransporteOSoporteSinBono,
   resolverTarifaOperador,
   resolverTarifaTraslado,
   resolverTarifaPorCotizacion,
   calcularDiferenciaHoras,
   calcularLiquidacionHorasDia,
-  calcularViaticoAlimentacionDia
+  calcularViaticoAlimentacionDia,
+  calcularLiquidacionChoferTraslado
 };
